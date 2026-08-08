@@ -66,9 +66,17 @@ export function isStageComplete(song: EncoreOriginalSong, stage: OriginalsWorkfl
   return false;
 }
 
-/** All workflow stages complete — song has lyrics, chords, and at least one demo take. */
+/**
+ * All workflow stages complete — song has lyrics, chords, and at least one demo take.
+ *
+ * Uses `isStageCompleteRaw`, NOT the monotonic `isStageComplete`. Monotonicity is a stepper
+ * *display* rule ("you're on lyrics, so brainstorm is behind you"); folding it in here makes every
+ * earlier stage true as soon as a take exists, collapsing the whole predicate to
+ * `takes.length > 0` — so importing one voice memo into a song with no lyrics would label it
+ * "Demo ready" in the library.
+ */
 export function isOriginalDemoReady(song: EncoreOriginalSong): boolean {
-  return ORIGINALS_WORKFLOW_STAGES.every((step) => isStageComplete(song, step.id));
+  return ORIGINALS_WORKFLOW_STAGES.every((step) => isStageCompleteRaw(song, step.id));
 }
 
 /** First incomplete stage, or `takes` when everything is done (use {@link isOriginalDemoReady} for display). */

@@ -64,6 +64,8 @@ let extrasTable: InMemoryTable<RepertoireExtrasRow>;
 let dirtyTable: InMemoryTable<DirtySyncRow>;
 let syncMetaState: SyncMetaRow;
 let remoteManifestJson: string;
+// `vi.mock` factories are hoisted above module scope, so the spy must be too.
+const { markDirtyRowMock } = vi.hoisted(() => ({ markDirtyRowMock: vi.fn(async () => undefined) }));
 
 vi.mock('../../db/encoreDb', () => ({
   encoreDb: {
@@ -84,7 +86,7 @@ vi.mock('../../db/encoreDb', () => ({
   patchSyncMeta: vi.fn(async (patch: Partial<SyncMetaRow>) => {
     syncMetaState = { ...syncMetaState, ...patch, id: 'default' };
   }),
-  markDirtyRow: vi.fn(async () => undefined),
+  markDirtyRow: markDirtyRowMock,
   takeDirtyRows: vi.fn(async () => [...dirtyTable.rows]),
   clearDirtyRows: vi.fn(async (ids: string[]) => {
     dirtyTable.rows = dirtyTable.rows.filter((r) => !ids.includes(r.id));
@@ -108,6 +110,7 @@ vi.mock('../../drive/bootstrapFolders', () => ({
   ensureEncoreDriveLayout: vi.fn(async () => ({ rootFolderId: 'root-folder-id' })),
 }));
 
+import { driveGetMedia } from '../../drive/driveFetch';
 import { pullChangedOriginalsShards } from './originalsSharded';
 
 function original(id: string, updatedAt: string): EncoreOriginalSong {
@@ -147,6 +150,8 @@ beforeEach(() => {
     originalsManifestFileId: 'manifest-file-id',
   } as SyncMetaRow;
   remoteManifestJson = JSON.stringify({ version: 1, originals: {} });
+  markDirtyRowMock.mockClear();
+  (driveGetMedia as any).mockImplementation(async () => remoteManifestJson);
 });
 
 describe('pullChangedOriginalsShards — delete policy', () => {
@@ -189,6 +194,57 @@ describe('pullChangedOriginalsShards — delete policy', () => {
     await pullChangedOriginalsShards('token');
 
     expect(originalsTable.rows).toEqual([]);
+  });
+
+  it('keeps a row the SAME pull just refreshed from a newer remote shard (B1 cross-device restore)', async () => {
+    // The sweep must judge post-pull state. Reading the pre-pull snapshot compares a stale
+    // `updatedAt` and deletes a row that a peer restored/edited after the delete — defeating the
+    // clock supersede entirely, and (because the merge marks the row dirty) going on to trash the
+    // peer's Drive shard on the next push.
+    originalsTable.rows = [original('o1', '2026-05-01T00:00:00.000Z')];
+    extrasTable.rows = [
+      {
+        id: 'default',
+        venueCatalog: [],
+        milestoneTemplate: [],
+        deletedOriginalIds: { o1: '2026-05-02T00:00:00.000Z' },
+        updatedAt: '2026-05-02T00:00:00.000Z',
+      } as RepertoireExtrasRow,
+    ];
+    // Remote holds a restored/edited o1 with a clock NEWER than the tombstone.
+    const restored = original('o1', '2026-05-03T00:00:00.000Z');
+    remoteManifestJson = JSON.stringify({
+      version: 1,
+      originals: { o1: { fileId: 'shard-o1', updatedAt: restored.updatedAt } },
+    });
+    (driveGetMedia as any).mockImplementation(async (_t: string, fileId: string) =>
+      fileId === 'shard-o1' ? JSON.stringify(restored) : remoteManifestJson,
+    );
+
+    await pullChangedOriginalsShards('token');
+
+    expect(originalsTable.rows.map((r) => r.id)).toEqual(['o1']);
+    expect(originalsTable.rows[0]!.updatedAt).toBe('2026-05-03T00:00:00.000Z');
+  });
+
+  it('propagates a tombstoned delete so the shard and manifest entry go too', async () => {
+    // A local-only delete leaves the row in the manifest, so the next pull re-inserts it and the
+    // song flaps in and out on alternating syncs.
+    originalsTable.rows = [original('o1', '2026-05-01T00:00:00.000Z')];
+    extrasTable.rows = [
+      {
+        id: 'default',
+        venueCatalog: [],
+        milestoneTemplate: [],
+        deletedOriginalIds: { o1: '2026-05-02T00:00:00.000Z' },
+        updatedAt: '2026-05-02T00:00:00.000Z',
+      } as RepertoireExtrasRow,
+    ];
+
+    await pullChangedOriginalsShards('token');
+
+    expect(originalsTable.rows).toEqual([]);
+    expect(markDirtyRowMock).toHaveBeenCalledWith('original', 'o1', 'delete');
   });
 
   it('keeps an original edited after its delete (clock supersede, matches song/performance rules)', async () => {

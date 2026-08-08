@@ -75,7 +75,7 @@ Auto-sync waits for **`libraryReady`**, then two rAF ticks, before Drive I/O.
 
 ## Dexie (`db/encoreDb.ts`)
 
-Schema v4+: `songs`, `performances`, `syncMeta`, `repertoireExtras`, **`dirtySync`** (`<kind>:<rowId>`). Mutations → `markDirtyRow`; sharded pusher drains via `takeDirtyRows` / `clearDirtyRows`.
+Schema v7: `songs`, `performances`, `originals`, `originalTakeBlobs`, `syncMeta`, `repertoireExtras`, **`dirtySync`** (`<kind>:<rowId>`). Mutations → `markDirtyRow`; sharded pusher drains via `takeDirtyRows` / `clearDirtyRows`. The repertoire pull/merge clears via **`clearRepertoireDirtyRows`**, never a blanket `dirtySync.clear()` — the blanket call dropped `kind: 'original'` push intent and the originals pull then deleted the unpushed row (P0).
 
 ## Drive modules
 

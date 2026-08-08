@@ -21,6 +21,8 @@ import Typography from '@mui/material/Typography';
 import { useEffect, useMemo, useState, type MouseEvent as ReactMouseEvent, type ReactElement, type ReactNode } from 'react';
 import type { EncorePerformance, EncoreSong } from '../types';
 import type { EncoreOriginalSong } from '../originals/types';
+import { encoreSubjectRoute, type PerformanceSubject } from '../performances/performanceSubject';
+import type { EncoreAppRoute } from '../routes/encoreAppHash';
 import {
   performanceSubjectKey,
   resolvePerformanceSubject,
@@ -36,24 +38,30 @@ import {
   type PerformanceDashboardStats,
 } from '../performances/performancesStatsModel';
 
-function WrappedSongInlineLink({
-  songId,
-  songTitle,
-  onOpenSong,
+function WrappedSubjectInlineLink({
+  subject,
+  onOpenSubject,
   sx,
 }: {
-  songId: string;
-  songTitle: string;
-  onOpenSong: (songId: string, e?: ReactMouseEvent) => void;
+  subject: PerformanceSubject;
+  onOpenSubject: (route: EncoreAppRoute, e?: ReactMouseEvent) => void;
   sx?: Record<string, unknown>;
 }): ReactElement {
+  const route = encoreSubjectRoute(subject);
+  if (!route) {
+    return (
+      <Box component="span" sx={{ fontWeight: 700, ...sx }}>
+        {subject.title}
+      </Box>
+    );
+  }
   return (
     <Link
-      href={encoreAppHref({ kind: 'song', id: songId })}
-      onClick={(e) => handleSpaLinkClick(e, () => onOpenSong(songId))}
+      href={encoreAppHref(route)}
+      onClick={(e) => handleSpaLinkClick(e, () => onOpenSubject(route, e))}
       sx={{ fontWeight: 700, fontSize: 'inherit', verticalAlign: 'baseline', ...sx }}
     >
-      {songTitle}
+      {subject.title}
     </Link>
   );
 }
@@ -67,7 +75,7 @@ export type PerformancesWrappedScreenProps = {
   songById: Map<string, EncoreSong>;
   originalById?: Map<string, EncoreOriginalSong>;
   normalizeVenue: (tag: string) => string;
-  onOpenSong: (songId: string, e?: ReactMouseEvent) => void;
+  onOpenSubject: (route: EncoreAppRoute, e?: ReactMouseEvent) => void;
   onFocusYear: (year: string) => void;
   onFocusVenue: (venue: string) => void;
   onAddPerformance: () => void;
@@ -318,7 +326,7 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
     songById,
     originalById,
     normalizeVenue,
-    onOpenSong,
+    onOpenSubject,
     onFocusYear,
     onFocusVenue,
     onAddPerformance,
@@ -575,10 +583,9 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
               {activeStats.mostPerformed?.subject.href ? (
                 <>
                   . You have returned to{' '}
-                  <WrappedSongInlineLink
-                    songId={activeStats.mostPerformed.subject.id}
-                    songTitle={activeStats.mostPerformed.subject.title}
-                    onOpenSong={onOpenSong}
+                  <WrappedSubjectInlineLink
+                    subject={activeStats.mostPerformed.subject}
+                    onOpenSubject={onOpenSubject}
                   />{' '}
                   most often ({activeStats.mostPerformed.count}×).
                 </>
@@ -586,10 +593,9 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
               {activeStats.bestRecent?.subject.href ? (
                 <>
                   Your most recent logged show was{' '}
-                  <WrappedSongInlineLink
-                    songId={activeStats.bestRecent.subject.id}
-                    songTitle={activeStats.bestRecent.subject.title}
-                    onOpenSong={onOpenSong}
+                  <WrappedSubjectInlineLink
+                    subject={activeStats.bestRecent.subject}
+                    onOpenSubject={onOpenSubject}
                   />{' '}
                   on {activeStats.bestRecent.perf.date}.
                 </>
@@ -597,10 +603,9 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
               {activeStats.leastRecentlyPerformed?.subject.href ? (
                 <>
                   The song you have gone longest without performing is{' '}
-                  <WrappedSongInlineLink
-                    songId={activeStats.leastRecentlyPerformed.subject.id}
-                    songTitle={activeStats.leastRecentlyPerformed.subject.title}
-                    onOpenSong={onOpenSong}
+                  <WrappedSubjectInlineLink
+                    subject={activeStats.leastRecentlyPerformed.subject}
+                    onOpenSubject={onOpenSubject}
                   />{' '}
                   (last {activeStats.leastRecentlyPerformed.perf.date}).
                 </>
@@ -616,10 +621,9 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
               {activeStats.mostPerformed?.subject.href ? (
                 <>
                   . Most often played:{' '}
-                  <WrappedSongInlineLink
-                    songId={activeStats.mostPerformed.subject.id}
-                    songTitle={activeStats.mostPerformed.subject.title}
-                    onOpenSong={onOpenSong}
+                  <WrappedSubjectInlineLink
+                    subject={activeStats.mostPerformed.subject}
+                    onOpenSubject={onOpenSubject}
                   />{' '}
                   ({activeStats.mostPerformed.count}×).
                 </>
@@ -723,9 +727,10 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
                 size="small"
                 component="a"
                 href={activeStats.leastRecentlyPerformed.subject.href}
-                onClick={(e) =>
-                  handleSpaLinkClick(e, () => onOpenSong(activeStats.leastRecentlyPerformed!.subject.id))
-                }
+                onClick={(e) => {
+                  const route = encoreSubjectRoute(activeStats.leastRecentlyPerformed!.subject);
+                  if (route) handleSpaLinkClick(e, () => onOpenSubject(route, e));
+                }}
                 sx={{ mt: 1.5, fontWeight: 600, borderRadius: 2, textTransform: 'none' }}
               >
                 Revival pick: {activeStats.leastRecentlyPerformed.subject.title}
@@ -747,13 +752,13 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
               {
                 label: 'Most played',
                 icon: <StarIcon sx={{ fontSize: 32 }} />,
-                song: activeStats.mostPerformed?.song,
+                subject: activeStats.mostPerformed?.subject,
                 sub: activeStats.mostPerformed ? `${activeStats.mostPerformed.count}×` : undefined,
               },
               {
                 label: 'Latest in scope',
                 icon: <ScheduleIcon sx={{ fontSize: 32 }} />,
-                song: activeStats.bestRecent?.song,
+                subject: activeStats.bestRecent?.subject,
                 sub: activeStats.bestRecent
                   ? `${activeStats.bestRecent.perf.date} · ${normalizeVenue(activeStats.bestRecent.perf.venueTag)}`
                   : undefined,
@@ -761,7 +766,7 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
               {
                 label: 'Longest quiet',
                 icon: <MusicNoteIcon sx={{ fontSize: 32 }} />,
-                song: activeStats.leastRecentlyPerformed?.song,
+                subject: activeStats.leastRecentlyPerformed?.subject,
                 sub: activeStats.leastRecentlyPerformed
                   ? `Last ${activeStats.leastRecentlyPerformed.perf.date}`
                   : undefined,
@@ -791,17 +796,16 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
               </Typography>
               <Button
                 variant="text"
-                disabled={!block.song}
-                component={block.song ? 'a' : 'button'}
-                href={block.song ? encoreAppHref({ kind: 'song', id: block.song.id }) : undefined}
-                onClick={(e: ReactMouseEvent) =>
-                  block.song
-                    ? handleSpaLinkClick(e, () => onOpenSong(block.song!.id))
-                    : undefined
-                }
+                disabled={!block.subject?.href}
+                component={block.subject?.href ? 'a' : 'button'}
+                href={block.subject?.href ?? undefined}
+                onClick={(e: ReactMouseEvent) => {
+                  const route = block.subject ? encoreSubjectRoute(block.subject) : null;
+                  if (route) handleSpaLinkClick(e, () => onOpenSubject(route, e));
+                }}
                 sx={{ fontWeight: 700, fontSize: '1rem', textTransform: 'none', lineHeight: 1.35 }}
               >
-                {block.song?.title ?? '–'}
+                {block.subject?.title ?? '–'}
               </Button>
               {block.sub ? (
                 <Typography variant="caption" sx={{
@@ -835,7 +839,7 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
           ) : (
             (isAllTime ? topSongsAllTime : activeExtended.topSongsThisYear).map((row, i) => (
               <Card
-                key={row.song?.id ?? i}
+                key={`${row.subject.kind}:${row.subject.id}`}
                 elevation={0}
                 sx={{
                   p: 1.5,
@@ -864,15 +868,16 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
                   </Typography>
                   <Button
                     variant="text"
-                    disabled={!row.song}
-                    component={row.song ? 'a' : 'button'}
-                    href={row.song ? encoreAppHref({ kind: 'song', id: row.song.id }) : undefined}
-                    onClick={(e: ReactMouseEvent) =>
-                      row.song ? handleSpaLinkClick(e, () => onOpenSong(row.song!.id)) : undefined
-                    }
+                    disabled={!row.subject.href}
+                    component={row.subject.href ? 'a' : 'button'}
+                    href={row.subject.href ?? undefined}
+                    onClick={(e: ReactMouseEvent) => {
+                      const route = encoreSubjectRoute(row.subject);
+                      if (route) handleSpaLinkClick(e, () => onOpenSubject(route, e));
+                    }}
                     sx={{ textTransform: 'none', fontWeight: 700, fontSize: '0.95rem', minWidth: 0, flex: 1, justifyContent: 'flex-start' }}
                   >
-                    {row.song?.title ?? '–'}
+                    {row.subject.title ?? '–'}
                   </Button>
                 </Stack>
                 <Chip label={`${row.count}×`} size="small" color="primary" variant="outlined" sx={{ fontWeight: 700 }} />

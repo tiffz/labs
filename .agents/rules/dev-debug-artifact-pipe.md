@@ -21,9 +21,7 @@ pipe exists or you can add one in a few lines.
 | ---------------------- | ---------------------- | ------------------------------ |
 | `/__debug_log`         | dev console (terminal) | structured logs / ServerLogger |
 | `/__debug_snapshot`    | `.debug-snapshots/`    | screenshot + meta JSON         |
-| `/__debug_audio_trace` | `.debug-audio-traces/` | audio scheduling traces\*      |
-
-\* `/__debug_audio_trace` lands in a sibling PR; the first two are on `main` today.
+| `/__debug_audio_trace` | `.debug-audio-traces/` | audio scheduling traces        |
 
 ## Add a new one (mirror `/__debug_snapshot`)
 

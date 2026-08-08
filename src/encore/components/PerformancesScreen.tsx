@@ -77,7 +77,7 @@ import type { EncoreActionsContextValue } from '../context/EncoreActionsContext'
 import type { RepertoireExtrasRow } from '../db/encoreDb';
 import { useEncoreOriginalsLibrary } from '../context/EncoreOriginalsLibraryContext';
 import type { EncoreOriginalSong } from '../originals/types';
-import { resolvePerformanceSubject } from '../performances/performanceSubject';
+import { isOriginalPerformance, resolvePerformanceSubject } from '../performances/performanceSubject';
 import { useEncoreMediaPlayback } from '../context/encoreMediaPlaybackContextStore';
 import type { EncoreMediaPlaybackContextValue } from '../context/encoreMediaPlaybackContextStore';
 import {
@@ -501,8 +501,12 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
     });
     let rows = all;
     if (originChipFilters.length > 0) {
-      // Derived from the subject pointer, never a stored tag — it cannot drift out of date.
-      rows = rows.filter((r) => originChipFilters.includes(r.subject.kind === 'original' ? 'original' : 'cover'));
+      // Read the stored discriminant, NOT the resolved subject: an original that has not synced
+      // to this device yet resolves to `unknown`, and classifying that as a cover would silently
+      // hide the owner's own rows from her own filter.
+      rows = rows.filter((r) =>
+        originChipFilters.includes(isOriginalPerformance(r.perf) ? 'original' : 'cover'),
+      );
     }
     if (songChipFilters.length > 0) {
       rows = rows.filter((r) =>
@@ -582,7 +586,7 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
         id: 'origin',
         label: 'Origin',
         options: [
-          { value: 'original', label: 'My original' },
+          { value: 'original', label: 'Original' },
           { value: 'cover', label: 'Cover' },
         ],
       },
@@ -1581,12 +1585,12 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
           songById={songById}
           originalById={originalById}
           normalizeVenue={normalizePerfVenueLabel}
-          onOpenSong={(id, e) => {
+          onOpenSubject={(route, e) => {
             if (e && isModifiedOrNonPrimaryClick(e)) {
-              openEncoreRouteInBackgroundTab({ kind: 'song', id });
+              openEncoreRouteInBackgroundTab(route);
               return;
             }
-            navigateEncore({ kind: 'song', id });
+            navigateEncore(route);
           }}
           onFocusYear={focusYearFilter}
           onFocusVenue={focusVenueFilter}

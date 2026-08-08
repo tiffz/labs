@@ -293,14 +293,20 @@ export async function pullChangedOriginalsShards(accessToken: string): Promise<n
   // `filterTombstonedRows`. An original edited after its delete supersedes the tombstone and lives.
   const extras = await encoreDb.repertoireExtras.get('default');
   const tombstones = extras?.deletedOriginalIds;
-  if (tombstones) {
-    for (const [id, row] of local) {
-      const deletedAt = tombstones[id];
-      if (deletedAt !== undefined && deletedAt >= row.updatedAt) {
-        await encoreDb.originals.delete(id);
-        await deleteOriginalTakeBlobsForSong(id);
-        pulled += 1;
-      }
+  if (tombstones && Object.keys(tombstones).length > 0) {
+    // Re-read AFTER the pull loop. Judging the pre-pull snapshot would compare a stale `updatedAt`
+    // and delete a row this very pull had just refreshed from a newer remote shard — the
+    // cross-device restore-after-delete case (B1) that clock supersede exists to protect.
+    for (const row of await encoreDb.originals.toArray()) {
+      const deletedAt = tombstones[row.id];
+      if (deletedAt === undefined || deletedAt < row.updatedAt) continue;
+      await encoreDb.originals.delete(row.id);
+      await deleteOriginalTakeBlobsForSong(row.id);
+      // Propagate the delete so the pusher trashes the shard and drops the manifest entry.
+      // Local-only removal leaves the row in the manifest, and the next pull re-inserts it —
+      // a deleted song flapping in and out on alternating syncs.
+      await markDirtyRow('original', row.id, 'delete');
+      pulled += 1;
     }
   }
 

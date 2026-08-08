@@ -1,3 +1,4 @@
+import type { EncoreAppRoute } from '../routes/encoreAppHash';
 import type { EncorePerformance, EncoreSong } from '../types';
 import type { EncoreOriginalSong } from '../originals/types';
 
@@ -80,4 +81,15 @@ export function resolvePerformanceSubject(
     artist: song.artist,
     href: `#/song/${song.id}`,
   };
+}
+
+/**
+ * Route for a subject — an original opens its songwriting page, never `#/song/<id>`.
+ *
+ * Returns `null` for an unresolved subject so callers render plain text instead of a dead link.
+ */
+export function encoreSubjectRoute(subject: PerformanceSubject): EncoreAppRoute | null {
+  if (subject.kind === 'original') return { kind: 'original', id: subject.id };
+  if (subject.kind === 'song') return { kind: 'song', id: subject.id };
+  return null;
 }

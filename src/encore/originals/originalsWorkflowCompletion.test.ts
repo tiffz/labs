@@ -67,6 +67,22 @@ describe('originalsWorkflowCompletion', () => {
     expect(formatOriginalStageSummary(song)).toBe('Demo ready');
   });
 
+  it('is NOT demo-ready from a take alone — monotonic display must not leak into the predicate', () => {
+    // `isStageComplete` is monotonic ("you're on lyrics, so brainstorm is behind you"). Using it in
+    // `isOriginalDemoReady` collapsed the predicate to `takes.length > 0`, so importing one voice
+    // memo into a song with no lyrics and no chords labelled it "Demo ready" across the library.
+    const takeOnly = {
+      ...createBlankOriginalSong(),
+      lyricsAndChords: '',
+      takes: [{ id: 't1', label: 'memo.m4a', timestamp: 1, source: 'imported' as const }],
+      mainTakeId: 't1',
+    };
+    expect(isOriginalDemoReady(takeOnly)).toBe(false);
+    expect(originalsLibraryStageLabel(takeOnly)).not.toBe('Demo ready');
+    // ...while the stepper still treats the earlier stages as behind you.
+    expect(isStageComplete(takeOnly, 'brainstorm')).toBe(true);
+  });
+
   it('shows current in-progress stage, not last completed', () => {
     const song = {
       ...createBlankOriginalSong(),

@@ -1,7 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import playwrightConfig from '../../playwright.config';
 
 /**
  * Guardrails for test-tooling config that broke pushes in the 2026-07 session and
@@ -57,12 +56,32 @@ function matchesAny(entries: IgnoreEntry[], absolutePath: string): boolean {
   );
 }
 
+/**
+ * Loaded at RUNTIME with a computed specifier so TypeScript does not pull `playwright.config.ts`
+ * into the typechecked program — it is deliberately outside `tsconfig.app.json`, and importing it
+ * statically surfaced unrelated pre-existing type debt. Vitest still resolves it through Vite, so
+ * these assertions run against the real exported values, not text.
+ */
+type PlaywrightConfigShape = {
+  testIgnore?: IgnoreEntry | IgnoreEntry[];
+  projects?: Array<{ name?: string; testIgnore?: IgnoreEntry | IgnoreEntry[] }>;
+};
+
+async function loadPlaywrightConfig(): Promise<PlaywrightConfigShape> {
+  // Vite serves modules over http:, so `import.meta.url` is not a filesystem URL here. Resolve
+  // against the repo root instead and let Vitest transform the TS config.
+  const specifier = resolve(root, 'playwright.config.ts');
+  const mod = (await import(/* @vite-ignore */ specifier)) as { default: PlaywrightConfigShape };
+  return mod.default;
+}
+
 describe('tooling excludes .claude/worktrees from discovery', () => {
   it('ESLint flat config ignores .claude/worktrees', () => {
     expect(read('eslint.config.js')).toContain('.claude/worktrees/');
   });
 
-  it('Playwright testIgnore excludes nested worktree specs but keeps this checkout’s own', () => {
+  it('Playwright testIgnore excludes nested worktree specs but keeps this checkout’s own', async () => {
+    const playwrightConfig = await loadPlaywrightConfig();
     // Behavioural, not a string match. The previous version asserted the literal `**/.claude/**`
     // appeared twice — which is exactly the pattern that broke: matched against the ABSOLUTE path,
     // it also excluded every spec whenever the checkout itself lived under `.claude/` (i.e. while

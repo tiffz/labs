@@ -172,7 +172,7 @@ export function LibrarySongPickerDialog(props: LibrarySongPickerDialogProps): Re
               })}
               {matchingOriginals.length > 0 ? (
                 <ListSubheader sx={{ typography: 'caption', fontWeight: 700, bgcolor: 'background.paper', lineHeight: 2.5 }}>
-                  My originals
+                  Originals
                 </ListSubheader>
               ) : null}
               {matchingOriginals.map((o) => (
