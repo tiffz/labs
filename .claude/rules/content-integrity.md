@@ -1,6 +1,7 @@
 ---
 paths:
   - 'src/scales/curriculum/**'
+  - 'src/scales/practice/**'
   - 'src/scales/progress/**'
   - 'src/sight/curriculum/**'
   - 'src/sight/generators/**'

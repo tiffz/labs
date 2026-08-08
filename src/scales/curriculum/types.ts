@@ -1,5 +1,7 @@
 import type { Key } from '../../shared/music/scoreTypes';
 
+export type { Key } from '../../shared/music/scoreTypes';
+
 export type Hand = 'right' | 'left' | 'both';
 /**
  * Pedagogically distinct exercise types. The minor scale is split into
@@ -129,7 +131,53 @@ export interface SessionExercise {
   purpose: 'new' | 'review';
 }
 
+/**
+ * Where a session's exercises came from. Absent is treated as `'curriculum'`
+ * so old persisted snapshots (which predate this field) keep the original
+ * behavior. Non-curriculum plans (`'free'`, `'routine'`) run on the same
+ * generic runtime but must NOT feed the linear ladder: on completion they
+ * return home instead of chaining `planSession`, their runs are not recorded
+ * into `progress.exercises`, and snapshot-resume validates them by
+ * "score is generatable" rather than by curriculum lookup/unlock.
+ */
+export type SessionPlanKind = 'curriculum' | 'free' | 'routine';
+
 export interface SessionPlan {
   exercises: SessionExercise[];
   generatedAt: number;
+  /** @see SessionPlanKind. Absent = `'curriculum'`. */
+  kind?: SessionPlanKind;
+}
+
+/**
+ * One user-chosen practice item — the free-practice tuple. Shared by
+ * free practice (a one-item session) and custom routines (an ordered list).
+ * Unlike a curriculum {@link Stage}, it carries no stage id or advancement
+ * semantics: it is pure "what to play". Optional fields default to a plain
+ * metronome run at the given tempo.
+ */
+export interface PracticeItem {
+  kind: ExerciseKind;
+  key: Key;
+  hand: Hand;
+  octaves: 1 | 2;
+  bpm: number;
+  subdivision: SubdivisionMode;
+  useMetronome?: boolean;
+  clickMode?: ClickMode;
+  mutePlayback?: boolean;
+}
+
+/**
+ * A named, user-defined practice routine — an ordered list of {@link PracticeItem}s
+ * the app runs on autopilot exactly like a curriculum session, but with the
+ * user's own content and in the order they set. Modeled on Encore's
+ * `EncoreRepertoireSavedSearch` (id / name / updatedAt + payload).
+ */
+export interface ScalesCustomRoutine {
+  id: string;
+  name: string;
+  /** ISO timestamp, last-writer-wins key for Drive merge. */
+  updatedAt: string;
+  items: PracticeItem[];
 }

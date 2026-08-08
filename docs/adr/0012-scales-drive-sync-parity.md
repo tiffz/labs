@@ -19,6 +19,22 @@ Mirror Stanza’s Drive safety model for Scales:
 5. **`progressUpdatedAt`** on `ScalesProgressData` for merge clocks.
 6. **Restore merges** and runs `normalizeScalesProgressPayload` (migrate + reconcile); resets active session UI.
 
+## Update — custom routines (v5)
+
+The Free Practice / My Routines feature adds two synced fields to `ScalesProgressData`
+(version bumped 4 → 5), extending — not changing — the model above:
+
+- **`customRoutines`** — user-defined practice routines, merged by `id` with
+  last-writer-wins on `updatedAt` (`mergeCustomRoutinesWithTombstones`), reusing the
+  Encore `SavedSearch` shape.
+- **`deletedRoutineIds`** — deletion tombstones (id → ISO time) so a delete on one
+  device is not resurrected by a remote that still lists the routine; a re-creation
+  with a newer `updatedAt` beats a stale tombstone (per the silent-union + tombstone
+  model of [ADR 0020](./0020-silent-union-sync-row-conflicts-only.md) and the
+  drive-data-loss rule). Covered by `scalesDriveMerge.test.ts`.
+- **`lastFreePracticeParams`** — device-local scratch (last picker selection), **stripped
+  from the synced envelope** and carried through merges from the local side only.
+
 ## Links
 
 - [`src/scales/hooks/useScalesDriveBackup.ts`](../../src/scales/hooks/useScalesDriveBackup.ts)

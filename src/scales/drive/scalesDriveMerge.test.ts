@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ExerciseProgress, ScalesProgressData } from '../progress/types';
+import type { ScalesCustomRoutine } from '../curriculum/types';
 import {
   applyScalesConflictChoices,
   mergeScalesProgress,
@@ -8,7 +9,7 @@ import {
 
 function baseProgress(overrides: Partial<ScalesProgressData> = {}): ScalesProgressData {
   return {
-    version: 4,
+    version: 5,
     exercises: {},
     currentTierId: 'beginner',
     seenOnboarding: false,
@@ -91,7 +92,7 @@ describe('mergeScalesProgress', () => {
   it('normalizes unknown remote payload through migration pipeline', () => {
     const local = baseProgress();
     const remote = {
-      version: 4,
+      version: 5,
       currentTierId: 'beginner',
       exercises: {},
       seenOnboarding: true,
@@ -161,5 +162,72 @@ describe('applyScalesConflictChoices', () => {
   it('takes Drive’s progress for choice=remote', () => {
     const { progress } = applyScalesConflictChoices(local, remote, new Map([[exerciseId, 'remote']]));
     expect(progress.exercises[exerciseId]?.currentStageId).toBe(stageLate);
+  });
+});
+
+describe('custom routine merge', () => {
+  const routine = (id: string, name: string, updatedAt: string): ScalesCustomRoutine => ({
+    id,
+    name,
+    updatedAt,
+    items: [{ kind: 'major-scale', key: 'C', hand: 'both', octaves: 2, bpm: 72, subdivision: 'none' }],
+  });
+
+  it('unions routines from both sides by id', () => {
+    const local = baseProgress({ customRoutines: [routine('a', 'A', '2026-01-01T00:00:00.000Z')] });
+    const remote = baseProgress({ customRoutines: [routine('b', 'B', '2026-01-01T00:00:00.000Z')] });
+    const { progress } = mergeScalesProgress(local, remote);
+    expect((progress.customRoutines ?? []).map(r => r.id).sort()).toEqual(['a', 'b']);
+  });
+
+  it('resolves an edited routine by newer updatedAt (last writer wins)', () => {
+    const local = baseProgress({ customRoutines: [routine('a', 'Old', '2026-01-01T00:00:00.000Z')] });
+    const remote = baseProgress({ customRoutines: [routine('a', 'New', '2026-06-01T00:00:00.000Z')] });
+    const { progress } = mergeScalesProgress(local, remote);
+    expect(progress.customRoutines).toHaveLength(1);
+    expect(progress.customRoutines?.[0].name).toBe('New');
+  });
+
+  it('keeps a local delete deleted when the remote still lists the routine', () => {
+    const local = baseProgress({
+      customRoutines: [],
+      deletedRoutineIds: { a: '2026-06-01T00:00:00.000Z' },
+    });
+    const remote = baseProgress({ customRoutines: [routine('a', 'A', '2026-01-01T00:00:00.000Z')] });
+    const { progress } = mergeScalesProgress(local, remote);
+    expect(progress.customRoutines ?? []).toEqual([]);
+    expect(progress.deletedRoutineIds?.a).toBe('2026-06-01T00:00:00.000Z');
+  });
+
+  it('a re-creation newer than the tombstone survives the merge', () => {
+    const local = baseProgress({
+      customRoutines: [],
+      deletedRoutineIds: { a: '2026-06-01T00:00:00.000Z' },
+    });
+    const remote = baseProgress({ customRoutines: [routine('a', 'Reborn', '2026-09-01T00:00:00.000Z')] });
+    const { progress } = mergeScalesProgress(local, remote);
+    expect(progress.customRoutines?.map(r => r.id)).toEqual(['a']);
+    expect(progress.deletedRoutineIds?.a).toBeUndefined();
+  });
+
+  it('preserves the device-local lastFreePracticeParams through a merge', () => {
+    const local = baseProgress({
+      lastFreePracticeParams: { kind: 'major-scale', key: 'Bb', hand: 'both', octaves: 2, bpm: 88, subdivision: 'none' },
+    });
+    const remote = baseProgress(); // stripped from the synced envelope, so never present remotely
+    const { progress } = mergeScalesProgress(local, remote);
+    expect(progress.lastFreePracticeParams?.key).toBe('Bb');
+  });
+
+  it('keeps device-local recents from the local side and ignores any remote recents', () => {
+    const local = baseProgress({
+      recentPracticeItems: [{ kind: 'major-scale', key: 'Bb', hand: 'both', octaves: 2, bpm: 72, subdivision: 'none' }],
+    });
+    // A stray remote recents (should never happen — stripped from the envelope) must not bleed in.
+    const remote = baseProgress({
+      recentPracticeItems: [{ kind: 'major-scale', key: 'F#', hand: 'both', octaves: 2, bpm: 72, subdivision: 'none' }],
+    });
+    const { progress } = mergeScalesProgress(local, remote);
+    expect(progress.recentPracticeItems?.map(r => r.key)).toEqual(['Bb']);
   });
 });

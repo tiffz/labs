@@ -10,11 +10,17 @@ export interface ScalesDriveEnvelopeV1 {
 }
 
 export function buildScalesDriveEnvelope(progress: ScalesProgressData): ScalesDriveEnvelopeV1 {
+  // `lastFreePracticeParams` and `recentPracticeItems` are device-local scratch
+  // (last picker selection + recents row); keep them out of the synced payload
+  // so they never ride between devices. Routines and their tombstones DO sync.
+  const synced: ScalesProgressData = { ...progress };
+  delete synced.lastFreePracticeParams;
+  delete synced.recentPracticeItems;
   return {
     schemaVersion: 1,
     exportedAt: new Date().toISOString(),
     app: SCALES_DRIVE_APP_ID,
-    payload: progress,
+    payload: synced,
   };
 }
 

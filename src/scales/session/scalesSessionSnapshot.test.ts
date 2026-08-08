@@ -7,6 +7,8 @@ import {
   validateSessionSnapshot,
 } from './scalesSessionSnapshot';
 import { planSession } from '../curriculum/sessionPlanner';
+import { planFreePracticeSession } from '../practice/freePractice';
+import { buildFreeSessionExercise } from '../practice/practiceItem';
 import type { ScalesProgressData } from '../progress/types';
 import { findExercise } from '../curriculum/tiers';
 
@@ -14,7 +16,7 @@ function freshProgress(): ScalesProgressData {
   const cId = 'C-pentascale-major';
   const stageId = findExercise(cId)!.exercise.stages[0].id;
   return {
-    version: 4,
+    version: 5,
     currentTierId: 'tier-0',
     exercises: {
       [cId]: {
@@ -88,5 +90,29 @@ describe('scalesSessionSnapshot', () => {
     };
     expect(validateSessionSnapshot(snapshot, progress)).toBe(false);
     clearSessionSnapshot();
+  });
+
+  it('resumes a free-practice snapshot without curriculum lookup', () => {
+    const progress = freshProgress();
+    const freeExercise = buildFreeSessionExercise({
+      kind: 'major-scale', key: 'Bb', hand: 'both', octaves: 2, bpm: 80, subdivision: 'none',
+    });
+    const plan = planFreePracticeSession(
+      { kind: 'major-scale', key: 'Bb', hand: 'both', octaves: 2, bpm: 80, subdivision: 'none' },
+      1,
+    );
+    saveSessionSnapshot({
+      sessionPlan: plan,
+      activeExerciseIndex: 0,
+      activeExercise: freeExercise,
+      sessionTierIdAtStart: null,
+    });
+
+    const restored = restoreSessionFromSnapshot(progress);
+    // Synthetic id — findExercise would fail; validation must lean on "score
+    // generates" instead, and resume the free session.
+    expect(restored?.activeExercise.exerciseId).toBe('free:major-scale:Bb');
+    expect(restored?.score).not.toBeNull();
+    expect(restored?.sessionPlan.kind).toBe('free');
   });
 });

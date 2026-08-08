@@ -6,6 +6,7 @@ import type {
   PracticeRecord,
   ScalesProgressData,
 } from '../progress/types';
+import type { ScalesCustomRoutine } from '../curriculum/types';
 import { normalizeScalesProgressPayload } from '../progress/store';
 
 const MAX_HISTORY_PER_EXERCISE = 20;
@@ -109,6 +110,44 @@ function mergeExerciseProgress(local: ExerciseProgress, remote: ExerciseProgress
     reviewStageId,
     lastPracticedAt,
   };
+}
+
+/**
+ * Merge two routine lists plus their deletion tombstones. Routines union by
+ * id with last-writer-wins on `updatedAt`; tombstones union by id keeping the
+ * latest deletion time. A routine is dropped when a tombstone for its id is at
+ * least as new as its `updatedAt` (a delete beats a stale edit); a re-creation
+ * newer than the tombstone survives and prunes the stale tombstone. This is
+ * what stops a local delete from being resurrected by a remote that still
+ * lists the routine.
+ */
+export function mergeCustomRoutinesWithTombstones(
+  localRoutines: ScalesCustomRoutine[],
+  remoteRoutines: ScalesCustomRoutine[],
+  localTombs: Record<string, string>,
+  remoteTombs: Record<string, string>,
+): { customRoutines: ScalesCustomRoutine[]; deletedRoutineIds: Record<string, string> } {
+  const tombstones: Record<string, string> = { ...localTombs };
+  for (const [id, ts] of Object.entries(remoteTombs)) {
+    if (!tombstones[id] || ts > tombstones[id]!) tombstones[id] = ts;
+  }
+
+  const byId = new Map<string, ScalesCustomRoutine>();
+  for (const r of [...localRoutines, ...remoteRoutines]) {
+    const existing = byId.get(r.id);
+    if (!existing || r.updatedAt >= existing.updatedAt) byId.set(r.id, r);
+  }
+
+  const customRoutines: ScalesCustomRoutine[] = [];
+  for (const routine of byId.values()) {
+    const tomb = tombstones[routine.id];
+    if (tomb && tomb >= routine.updatedAt) continue; // deleted, and not re-created since
+    if (tomb) delete tombstones[routine.id]; // survived a stale tombstone → prune it
+    customRoutines.push(routine);
+  }
+  customRoutines.sort((a, b) => a.updatedAt.localeCompare(b.updatedAt));
+
+  return { customRoutines, deletedRoutineIds: tombstones };
 }
 
 function maxIso(a: string | undefined, b: string | undefined): string | undefined {
@@ -224,8 +263,15 @@ export function mergeScalesProgress(
   const remoteTierIdx = tierIndex(remote.currentTierId);
   const currentTierId = remoteTierIdx > localTierIdx ? remote.currentTierId : local.currentTierId;
 
+  const { customRoutines, deletedRoutineIds } = mergeCustomRoutinesWithTombstones(
+    local.customRoutines ?? [],
+    remote.customRoutines ?? [],
+    local.deletedRoutineIds ?? {},
+    remote.deletedRoutineIds ?? {},
+  );
+
   const progress = normalizeScalesProgressPayload({
-    version: 4,
+    version: 5,
     exercises,
     currentTierId,
     seenOnboarding: local.seenOnboarding || remote.seenOnboarding,
@@ -234,6 +280,13 @@ export function mergeScalesProgress(
       local.introducedExerciseHands,
       remote.introducedExerciseHands,
     ),
+    customRoutines,
+    deletedRoutineIds,
+    // Device-local scratch: keep the local last-picker selection and recents
+    // through the merge so a Drive pull does not reset the Practice picker.
+    // (Both are stripped from the synced envelope, so `remote` never carries them.)
+    lastFreePracticeParams: local.lastFreePracticeParams,
+    recentPracticeItems: local.recentPracticeItems,
     progressUpdatedAt: maxIso(local.progressUpdatedAt, remote.progressUpdatedAt),
   })!;
 

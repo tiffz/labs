@@ -9,7 +9,7 @@ function envelope(overrides: Partial<ScalesDriveEnvelopeV1> = {}): ScalesDriveEn
     app: SCALES_DRIVE_APP_ID,
     exportedAt: '2026-06-03T00:00:00.000Z',
     payload: {
-      version: 4,
+      version: 5,
       exercises: { 'C-major': { exerciseId: 'C-major' } as never },
       currentTierId: 'beginner',
       seenOnboarding: false,
@@ -23,7 +23,7 @@ function envelope(overrides: Partial<ScalesDriveEnvelopeV1> = {}): ScalesDriveEn
 
 function progress(overrides: Partial<ScalesProgressData> = {}): ScalesProgressData {
   return {
-    version: 4,
+    version: 5,
     exercises: {},
     currentTierId: 'beginner',
     seenOnboarding: false,

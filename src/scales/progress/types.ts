@@ -1,3 +1,5 @@
+import type { PracticeItem, ScalesCustomRoutine } from '../curriculum/types';
+
 /** Per-note outcome counts from a finished run (same shape as session `ExerciseResult.breakdown`). */
 export interface PracticeRunBreakdown {
   perfect: number;
@@ -140,7 +142,7 @@ export interface IntroducedHands {
 }
 
 export interface ScalesProgressData {
-  version: 4;
+  version: 5;
   exercises: Record<string, ExerciseProgress>;
   /** The tier the user is currently working through. */
   currentTierId: string;
@@ -171,6 +173,32 @@ export interface ScalesProgressData {
    * round-trips and forward compatibility.
    */
   introducedExerciseHands: Record<string, IntroducedHands>;
+  /**
+   * User-defined practice routines (Free Practice / My Routines feature).
+   * Independent of the linear curriculum — running one never touches
+   * `exercises`, unlock, or tier state. Synced via Drive by id / `updatedAt`.
+   * Absent on pre-v5 blobs; migration defaults it to `[]`.
+   */
+  customRoutines?: ScalesCustomRoutine[];
+  /**
+   * Tombstones for deleted routines: routine id → ISO deletion timestamp.
+   * Synced so a delete on one device is not resurrected by a remote that
+   * still lists the routine. A tombstone loses to a later re-creation of the
+   * same id (routine `updatedAt` newer than the tombstone wins).
+   */
+  deletedRoutineIds?: Record<string, string>;
+  /**
+   * Last free-practice picker selection, so the picker re-opens pre-filled
+   * with what the user chose last time. Device-local scratch — intentionally
+   * excluded from Drive sync.
+   */
+  lastFreePracticeParams?: PracticeItem;
+  /**
+   * Recently practiced items (newest first, capped), powering the "pick up
+   * where you left off" row that makes Practice mode fast and personal.
+   * Device-local scratch — excluded from Drive sync.
+   */
+  recentPracticeItems?: PracticeItem[];
   /** ISO timestamp bumped on meaningful local saves — used for Drive merge heuristics. */
   progressUpdatedAt?: string;
 }

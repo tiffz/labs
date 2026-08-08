@@ -1,4 +1,6 @@
 import { lazy, Suspense } from 'react';
+import CircularProgress from '@mui/material/CircularProgress';
+import Box from '@mui/material/Box';
 import { ScalesProvider, useScales, hasEnabledMidiDevice } from './store';
 import HomeScreen from './components/HomeScreen';
 import ProgressScreen from './components/ProgressScreen';
@@ -12,9 +14,20 @@ import { ScalesDriveBackupProvider } from './context/ScalesDriveBackupContext';
 
 /** SessionScreen pulls ScoreDisplay/VexFlow — keep off the home-screen first paint. */
 const SessionScreen = lazy(() => import('./components/SessionScreen'));
+/** Free-practice + routines are secondary surfaces — lazy so they don't weigh the home paint. */
+const FreePracticeScreen = lazy(() => import('./components/FreePracticeScreen'));
+const RoutinesScreen = lazy(() => import('./components/RoutinesScreen'));
 
 const debugMode = readLabsDebugFromLocation().debug;
 if (debugMode) enableDebug();
+
+function LazyScreenFallback() {
+  return (
+    <Box sx={{ display: 'flex', justifyContent: 'center', pt: 12 }} aria-label="Loading" role="status">
+      <CircularProgress size={28} />
+    </Box>
+  );
+}
 
 function ScreenRouter() {
   const { state } = useScales();
@@ -30,6 +43,18 @@ function ScreenRouter() {
       );
     case 'progress':
       return <ProgressScreen />;
+    case 'free-practice':
+      return (
+        <Suspense fallback={<LazyScreenFallback />}>
+          <FreePracticeScreen />
+        </Suspense>
+      );
+    case 'routines':
+      return (
+        <Suspense fallback={<LazyScreenFallback />}>
+          <RoutinesScreen />
+        </Suspense>
+      );
     default:
       return <HomeScreen />;
   }

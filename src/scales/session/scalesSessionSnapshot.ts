@@ -98,6 +98,19 @@ export function validateSessionSnapshot(
   if (activeExerciseIndex < 0 || activeExerciseIndex >= sessionPlan.exercises.length) {
     return false;
   }
+
+  // Free-practice and routine plans are not curriculum rows, so `findExercise`
+  // and the unlock gate do not apply. Validate them by "is this a well-formed
+  // exercise whose score still generates" — the same property that lets the
+  // runtime play them.
+  if (sessionPlan.kind === 'free' || sessionPlan.kind === 'routine') {
+    for (const slot of sessionPlan.exercises) {
+      if (!isSessionExercise(slot)) return false;
+      if (!generateScoreForExercise(slot)) return false;
+    }
+    return true;
+  }
+
   if (!isCurriculumExerciseUnlocked(progress, activeExercise.exerciseId)) return false;
 
   const activeFound = findExercise(activeExercise.exerciseId);
