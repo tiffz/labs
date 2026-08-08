@@ -1,4 +1,30 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from '@playwright/test';
+
+const configDir = path.dirname(fileURLToPath(import.meta.url));
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Ignore agent-isolation worktrees **nested under this checkout** (`<root>/.claude/worktrees/...`),
+ * which are full copies of the repo and would double-run every spec.
+ *
+ * Anchored to `configDir`, and a RegExp rather than a glob, for two separate reasons:
+ *
+ * 1. Playwright matches `testIgnore` against the ABSOLUTE file path, so the bare `**<slash>.claude/**`
+ *    glob this replaces also matched every spec whenever the checkout itself lived under a
+ *    `.claude/` directory — i.e. while working *inside* one of those worktrees, where it silently
+ *    reduced the suite to "No tests found" and made the pre-push e2e gate unrunnable.
+ * 2. A checkout path may contain glob metacharacters (this repo lives in
+ *    `labs [second checkout]`, where `[...]` is a character class), so an anchored *glob* would
+ *    silently fail to match and let the nested worktrees back in.
+ */
+const NESTED_AGENT_WORKTREES = new RegExp(
+  `^${escapeRegExp(configDir + path.sep + '.claude' + path.sep)}`,
+);
 
 export default defineConfig({
   reporter: [
@@ -12,9 +38,7 @@ export default defineConfig({
     'src/**/e2e/**/*.spec.ts',
     'e2e/**/*.spec.ts',
   ],
-  // Never discover specs inside agent-isolation worktrees (harness copies of the
-  // whole repo under .claude/worktrees/) — they would double-run and flake.
-  testIgnore: ['**/.claude/**'],
+  testIgnore: [NESTED_AGENT_WORKTREES],
   timeout: 30_000,
   retries: 0,
   // Cap local parallelism to keep peak memory low. Playwright's default (~50% of
@@ -48,7 +72,7 @@ export default defineConfig({
   projects: [
     {
       name: 'e2e',
-      testIgnore: ['**/*.visual.spec.ts', '**/.claude/**'],
+      testIgnore: ['**/*.visual.spec.ts', NESTED_AGENT_WORKTREES],
     },
     {
       name: 'visual',
