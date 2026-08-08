@@ -2360,21 +2360,44 @@ export default function StanzaWorkspace() {
       !stanzaTapMetronomeTapActive,
   );
 
-  const stanzaDrumScheduler = useMemo(() => {
-    // No `drumsHasGrid` gate. The comment on `drumsHasGrid` above promises that without
-    // calibration we fall back to STANZA_DRUMS_DEFAULT_BPM and anchor 0 "so sounds still play" —
-    // but returning undefined here left `DrumAccompaniment` with no scheduler, so its scheduling
-    // effect bailed and nothing sounded. Enabling drums on a song that had never been calibrated
-    // did nothing at all, which is the "added drums, they don't play" report.
-    // `drumsBpm` and `drumsAnchorMediaTime` already carry the fallback.
-    return createMediaTimelineDrumScheduler({
-      bpm: drumsBpm,
-      timeSignature: STANZA_DRUMS_DEFAULT_TIME_SIGNATURE,
-      anchorMediaTime: drumsAnchorMediaTime,
-      getMediaTime: getTime,
-      isPlaying: drumsActuallyPlaying,
-    });
-  }, [drumsBpm, drumsAnchorMediaTime, getTime, drumsActuallyPlaying]);
+  /**
+   * ONE long-lived drum scheduler for the session.
+   *
+   * This used to be a `useMemo` keyed on bpm / anchor / isPlaying, with no cleanup — and
+   * `createMediaTimelineDrumScheduler` mints an `AudioPlayer` and therefore an `AudioContext`.
+   * `drumsActuallyPlaying` flips on every play and pause, and `drumsAnchorMediaTime` changes at
+   * every section boundary, so looping a section leaked one AudioContext plus a full set of
+   * decoded samples PER WRAP, none of them ever released. Browsers cap contexts per document and
+   * then throw; before that the memory climbs. That is the "crashes after a while of looping"
+   * report, and it is the same shape as the Encore playback OOM that produced ADR 0025.
+   *
+   * The options object is mutated in place instead — the scheduler reads `opts.*` at tick time —
+   * so retuning tempo or anchor never re-mints hardware.
+   */
+  const drumSchedulerOptsRef = useRef({
+    bpm: drumsBpm,
+    timeSignature: STANZA_DRUMS_DEFAULT_TIME_SIGNATURE,
+    anchorMediaTime: drumsAnchorMediaTime,
+    getMediaTime: getTime,
+    isPlaying: drumsActuallyPlaying,
+  });
+  drumSchedulerOptsRef.current.bpm = drumsBpm;
+  drumSchedulerOptsRef.current.anchorMediaTime = drumsAnchorMediaTime;
+  drumSchedulerOptsRef.current.getMediaTime = getTime;
+  drumSchedulerOptsRef.current.isPlaying = drumsActuallyPlaying;
+
+  const stanzaDrumScheduler = useMemo(
+    () => createMediaTimelineDrumScheduler(drumSchedulerOptsRef.current),
+    [],
+  );
+
+  // Start/stop the driver when playback state changes, without recreating the scheduler.
+  useEffect(() => {
+    stanzaDrumScheduler.syncPlayback();
+  }, [stanzaDrumScheduler, drumsActuallyPlaying, drumsBpm, drumsAnchorMediaTime]);
+
+  // Release the context and decoded samples when the workspace unmounts.
+  useEffect(() => () => stanzaDrumScheduler.destroy(), [stanzaDrumScheduler]);
 
   const analysisAudioContextRef = useRef<AudioContext | null>(null);
   const getAnalysisAudioContext = useCallback((): AudioContext | null => {

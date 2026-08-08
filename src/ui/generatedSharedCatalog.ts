@@ -2087,12 +2087,28 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "hook",
     "stability": "stable",
     "owner": "playback-core",
-    "description": "DrumScheduler for media-slaved hosts (Stanza). Invokes DrumAccompaniment callback with beat windows derived from media timeline + look-ahead. Keeps playing while the tab is hidden. Previously this was driven by `requestAnimationFrame` alone, which a background tab pauses — so switching tabs silenced the drum layer while the `<audio>` element carried on, and the two came back out of step. Putting on a practice track and multitasking is a core use case, so a timer drives the hidden case with a wider horizon.",
+    "description": "No JSDoc summary provided.",
     "tags": [
       "audio"
     ],
     "appsUsing": [],
     "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-hooks-usemediatimelinedrumscheduler-ts-mediatimelinedrumscheduler",
+    "name": "MediaTimelineDrumScheduler",
+    "path": "src/shared/audio/platform/hooks/useMediaTimelineDrumScheduler.ts",
+    "kind": "hook",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "DrumScheduler for media-slaved hosts (Stanza). Invokes DrumAccompaniment callback with beat windows derived from media timeline + look-ahead. Keeps playing while the tab is hidden. Previously this was driven by `requestAnimationFrame` alone, which a background tab pauses — so switching tabs silenced the drum layer while the `<audio>` element carried on, and the two came back out of step. Putting on a practice track and multitasking is a core use case, so a timer drives the hidden case with a wider horizon.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
     "demoId": null
   },
   {

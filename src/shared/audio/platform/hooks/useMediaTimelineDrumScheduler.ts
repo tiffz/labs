@@ -36,9 +36,16 @@ const BACKGROUND_TICK_INTERVAL_MS = 500;
  * `<audio>` element carried on, and the two came back out of step. Putting on a practice track and
  * multitasking is a core use case, so a timer drives the hidden case with a wider horizon.
  */
+export type MediaTimelineDrumScheduler = DrumScheduler & {
+  /** Re-evaluate `opts.isPlaying` and start or stop the driver. Call after mutating `opts`. */
+  syncPlayback(): void;
+  /** Release the AudioContext and decoded samples. MUST be called on unmount. */
+  destroy(): void;
+};
+
 export function createMediaTimelineDrumScheduler(
   opts: MediaTimelineDrumSchedulerOptions,
-): DrumScheduler {
+): MediaTimelineDrumScheduler {
   const player = createDrumAudioPlayer({ includeClick: false });
   let storedCallback: DrumSchedulerCallback | null = null;
   let raf = 0;
@@ -138,6 +145,15 @@ export function createMediaTimelineDrumScheduler(
   };
 
   return {
+    syncPlayback: () => {
+      if (storedCallback && opts.isPlaying) startDriver();
+      else stopDriver();
+    },
+    destroy: () => {
+      storedCallback = null;
+      stopDriver();
+      player.destroy();
+    },
     loadSound: async () => {
       // Every sample is warmed as one batch; per-sound calls are a no-op beyond that.
       await warmAssets();
