@@ -38,6 +38,15 @@ export class DrumAudioPlayerFacade {
     return this.player.getAudioContext();
   }
 
+  /**
+   * True once samples are decoded. Schedulers use this to SKIP a tick rather than schedule beats
+   * that `playNowIfReady` would silently drop — dropping them while still advancing the scheduled
+   * cursor is how the opening beats went missing.
+   */
+  isReady(): boolean {
+    return this.initialized;
+  }
+
   playNowIfReady(sound: DrumSound, volume = 1, duration?: number, startTime?: number): void {
     if (sound === 'rest') return;
     this.player.playNowIfReady(sound, volume, duration, startTime);

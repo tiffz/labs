@@ -114,20 +114,22 @@ export function usePlatformMediaMetronome(opts: UsePlatformMediaMetronomeOptions
     }
 
     let raf = 0;
+    const poll = async (): Promise<void> => {
+      if (!audioEnabled || mutedRef.current) return;
+      // Never mint a context from inside the tick — that is how the leak compounded.
+      // `primePlatformMetronomeAudio` owns creation, on a user gesture.
+      const ctx = sharedClickCtx;
+      if (!ctx || ctx.state === 'closed') return;
+      const mediaTime = getMediaTime();
+      const prefs = prefsRef.current as GridMetronomePlaybackPrefs;
+      const legacyMetVolume = prefs.masterMuted ? 0 : prefs.masterVolume;
+      await schedulerRef.current.pollTimeline(ctx, mediaTime, prefs, legacyMetVolume, 0);
+    };
+
     const tick = () => {
       void labsPlaybackSafeCallAsync('metronome RAF tick', async () => {
         try {
-          if (!audioEnabled || mutedRef.current) return;
-
-          // Never mint a context from inside the tick — that is how the leak compounded.
-          // `primePlatformMetronomeAudio` owns creation, on a user gesture.
-          const ctx = sharedClickCtx;
-          if (ctx && ctx.state !== 'closed') {
-            const mediaTime = getMediaTime();
-            const prefs = prefsRef.current as GridMetronomePlaybackPrefs;
-            const legacyMetVolume = prefs.masterMuted ? 0 : prefs.masterVolume;
-            await schedulerRef.current.pollTimeline(ctx, mediaTime, prefs, legacyMetVolume, 0);
-          }
+          await poll();
         } finally {
           raf = window.requestAnimationFrame(tick);
         }
@@ -135,6 +137,18 @@ export function usePlatformMediaMetronome(opts: UsePlatformMediaMetronomeOptions
     };
 
     raf = window.requestAnimationFrame(tick);
-    return () => window.cancelAnimationFrame(raf);
+
+    // rAF pauses entirely in a hidden tab while the media element keeps playing, so without this
+    // the click drops out the moment you switch tabs and the drum layer and metronome come back
+    // out of step. Guarded to hidden so it never double-drives the foreground rAF loop.
+    const backgroundTimer = window.setInterval(() => {
+      if (typeof document === 'undefined' || !document.hidden) return;
+      void labsPlaybackSafeCallAsync('metronome background tick', poll);
+    }, 500);
+
+    return () => {
+      window.cancelAnimationFrame(raf);
+      window.clearInterval(backgroundTimer);
+    };
   }, [enabled, bpm, anchorMediaTime, isPlaying, audioEnabled, getMediaTime, muted]);
 }

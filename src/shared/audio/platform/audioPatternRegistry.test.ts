@@ -15,11 +15,22 @@ describe('audioPatternRegistry', () => {
     }
   });
 
-  it('stanza uses media-timeline look-ahead patterns after platform migration', () => {
+  it('records stanza as the media-slaved reactive poll it actually is', () => {
+    // This assertion previously read 'look-ahead-precise' for both schedulers and
+    // 'labs-audio-mix-bus' for the bus. Stanza uses NONE of those: the drum and metronome drivers
+    // are media-slaved polls built on rAF/timers rather than `LookAheadAudioScheduler`, and there
+    // is not a single `LabsAudioMixBus` usage under `src/stanza`. Because this file compares a
+    // string literal in the registry to a string literal in the test, it certified the claim and
+    // the divergence stayed invisible to CI while a cluster of audio bugs shipped.
+    //
+    // Keep this row TRUE. It is a description, not an aspiration — if Stanza migrates onto the
+    // shared scheduler, change the code first and this row second. The behavioural protection for
+    // the properties that actually matter lives in `backgroundPlaybackGuardrails.test.ts`.
     const stanza = AUDIO_PATTERN_REGISTRY.stanza!;
     expect(stanza.clock).toBe('media-timeline');
-    expect(stanza.metronomeScheduler).toBe('look-ahead-precise');
-    expect(stanza.drumScheduler).toBe('look-ahead-precise');
+    expect(stanza.metronomeScheduler).toBe('reactive-poll');
+    expect(stanza.drumScheduler).toBe('reactive-poll');
+    expect(stanza.mixBus).toBe('legacy-local');
   });
 
   it('forbids reintroducing reactive Stanza metronome hook in app code', () => {
