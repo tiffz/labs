@@ -33,7 +33,7 @@ ADR 0019's empty-over-filled clobber, #99's cross-device video loss, the origina
 delete sweep. A bad deploy costs an hour; a silent sync bug costs work that does not
 exist anywhere else.
 
-So the risk tolerance is high for *behaviour* and low for *durability*. Before merging a
+So the risk tolerance is high for _behaviour_ and low for _durability_. Before merging a
 change that touches sync, merge, tombstones, delete paths, or a Drive/Dexie schema:
 
 - Write the characterization test **and verify it fails against the old code**. A test
@@ -73,7 +73,7 @@ Tier still tells you how much a regression costs
 ([`docs/app-quality-tiers.json`](../../docs/app-quality-tiers.json)):
 
 - **`protected`** (drums, encore, count) — keep e2e/visual green and never weaken a
-  guardrail. Tier raises the bar on *durability*, not on how much permission you need.
+  guardrail. Tier raises the bar on _durability_, not on how much permission you need.
 - **`standard` / `experimental`** — move fast; sweeping changes are fine with light
   testing.
 

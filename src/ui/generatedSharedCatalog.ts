@@ -5184,6 +5184,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-beat-decodemediaforbeat-ts-beat-analysis-sample-rate",
+    "name": "BEAT_ANALYSIS_SAMPLE_RATE",
+    "path": "src/shared/beat/decodeMediaForBeat.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Sample rate every Essentia rhythm algorithm assumes. `RhythmExtractor2013(signal, maxTempo, method, minTempo)` has **no sample-rate parameter** — the rate is fixed at 44100 inside the algorithm. `PercivalBpmEstimator` takes one but defaults to 44100 and we never pass it. So analysis audio MUST be at 44.1 kHz.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
     "id": "src-shared-beat-decodemediaforbeat-ts-decodemediatobuffer",
     "name": "decodeMediaToBuffer",
     "path": "src/shared/beat/decodeMediaForBeat.ts",
@@ -5191,6 +5206,19 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "stability": "stable",
     "owner": "shared-core",
     "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-decodemediaforbeat-ts-tobeatanalysisbuffer",
+    "name": "toBeatAnalysisBuffer",
+    "path": "src/shared/beat/decodeMediaForBeat.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Re-render a decoded buffer to mono at . Two bugs this fixes, both of which corrupted every single analysis: 1. **Sample rate.** `decodeAudioData` resamples to the *playback* context's rate, which is the output device's rate — 48 kHz on most Macs and on every Bluetooth device. Essentia then read that 48 kHz audio as if it were 44.1 kHz, scaling every tempo by 44100/48000 = 0.91875. Measured across synthetic drum patterns: 100 BPM → 91.88, 120 → 110.25, 140 → 128.64 (ratio 0.9184–0.9191). A song at 100 BPM was reported as 92, and the beat grid drifted a full beat every ~11 beats. This is why detection failed even on bare drum loops. 2. **Channel selection.** Callers took `getChannelData(0)` — the *left channel only*, not a downmix. A hard-panned kick or a wide stereo mix lost transient energy before onset detection ever ran. Rendering through a mono `OfflineAudioContext` applies the spec's proper downmix. The repo's synthetic fixtures are all generated at exactly 44100, so the whole test suite was structurally blind to (1) — see `regression/syntheticAudioGenerator.ts`.",
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
