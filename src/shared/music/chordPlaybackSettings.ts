@@ -20,6 +20,8 @@ export type ChordPlaybackSettings = {
   drumPattern: string;
   /** Song-wide beat click track, in sync with chords and drums. */
   metronomeEnabled: boolean;
+  /** Loop the whole song end-to-end when the main Play starts (distinct from per-section loop). */
+  loopWholeSong: boolean;
 };
 
 export const DEFAULT_CHORD_PLAYBACK_SETTINGS: ChordPlaybackSettings = {
@@ -32,6 +34,7 @@ export const DEFAULT_CHORD_PLAYBACK_SETTINGS: ChordPlaybackSettings = {
   drumsMuted: false,
   drumPattern: 'D---D---D---D---',
   metronomeEnabled: false,
+  loopWholeSong: false,
 };
 
 export function loadChordPlaybackSettings(

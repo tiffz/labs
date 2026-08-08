@@ -378,9 +378,11 @@ export default defineConfig({
       ],
     },
     fs: {
-      // A git worktree symlinks node_modules to the main checkout, outside the worktree
-      // root — so Vite's default fs.allow 403s every @fontsource asset. Follow the symlink
-      // and allow its real parent so fonts/icons serve from any worktree.
+      // A git worktree symlinks node_modules to the main checkout, which lives outside the
+      // worktree root — so Vite's default fs.allow 403s every @fontsource asset. Follow the
+      // symlink and allow its real parent so fonts/icons serve from any worktree. In a normal
+      // (non-worktree) checkout node_modules is real and its parent is the project root, so
+      // this is a harmless no-op there.
       allow: [
         process.cwd(),
         ...(() => {
