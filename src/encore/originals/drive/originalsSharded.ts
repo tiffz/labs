@@ -21,6 +21,10 @@ import {
 } from '../../drive/driveFetch';
 import { ensureEncoreDriveLayout } from '../../drive/bootstrapFolders';
 import {
+  deleteOriginalTakeBlobsForSong,
+  pruneOrphanedOriginalTakeBlobs,
+} from '../originalTakeLocalAudio';
+import {
   ENCORE_ORIGINALS_AUDIO_FOLDER,
   ENCORE_ORIGINALS_FOLDER,
   ENCORE_ORIGINALS_MANIFEST_FILE,
@@ -278,13 +282,30 @@ export async function pullChangedOriginalsShards(accessToken: string): Promise<n
     pulled += 1;
   }
 
-  const manifestIds = new Set(Object.keys(manifest.originals));
-  for (const [id] of local) {
-    if (!manifestIds.has(id)) {
-      await encoreDb.originals.delete(id);
-      pulled += 1;
+  // Deletes are driven by tombstones, never by manifest absence.
+  //
+  // P0 data-loss fix: this loop used to delete every local original missing from the remote
+  // manifest. Manifest absence cannot distinguish "deleted on another device" from "created here
+  // and not pushed yet" — and a freshly-created Drive layout writes an *empty* manifest
+  // (`ensureOriginalsDriveLayout`), so a first sign-in from a device holding local originals wiped
+  // all of them. Now a local original is removed only when it carries a tombstone whose clock is at
+  // or newer than the row's `updatedAt`, matching the song/performance semantics in
+  // `filterTombstonedRows`. An original edited after its delete supersedes the tombstone and lives.
+  const extras = await encoreDb.repertoireExtras.get('default');
+  const tombstones = extras?.deletedOriginalIds;
+  if (tombstones) {
+    for (const [id, row] of local) {
+      const deletedAt = tombstones[id];
+      if (deletedAt !== undefined && deletedAt >= row.updatedAt) {
+        await encoreDb.originals.delete(id);
+        await deleteOriginalTakeBlobsForSong(id);
+        pulled += 1;
+      }
     }
   }
+
+  // Reclaim audio left behind by earlier local deletes (kept around for undo).
+  await pruneOrphanedOriginalTakeBlobs();
 
   return pulled;
 }

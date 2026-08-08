@@ -398,4 +398,10 @@ export interface RepertoireWirePayload {
   deletedSongIds?: Record<string, string>;
   /** Deleted-performance tombstones (`id -> deletedAt` ISO); merge filters by clock supersede. */
   deletedPerformanceIds?: Record<string, string>;
+  /**
+   * Deleted-original tombstones (`id -> deletedAt` ISO). Originals sync through their own shard
+   * layout, but their tombstones ride here so both devices agree on what was deleted versus what
+   * simply has not been pushed yet.
+   */
+  deletedOriginalIds?: Record<string, string>;
 }

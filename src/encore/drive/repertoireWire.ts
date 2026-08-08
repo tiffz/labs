@@ -142,6 +142,7 @@ export function parseRepertoireWire(json: string): RepertoireWirePayload {
     // Tombstones parse both the clock map and the legacy id-only array (pre-clock wires).
     deletedSongIds: parseTombstones(data.deletedSongIds, exportedAt),
     deletedPerformanceIds: parseTombstones(data.deletedPerformanceIds, exportedAt),
+    deletedOriginalIds: parseTombstones(data.deletedOriginalIds, exportedAt),
   };
 }
 
@@ -237,6 +238,7 @@ export function buildWireFromTables(
         : undefined,
     deletedSongIds: nonEmptyTombstones(extras.deletedSongIds),
     deletedPerformanceIds: nonEmptyTombstones(extras.deletedPerformanceIds),
+    deletedOriginalIds: nonEmptyTombstones(extras.deletedOriginalIds),
   };
 }
 
@@ -274,6 +276,7 @@ export function repertoireExtrasFromWire(wire: RepertoireWirePayload): Repertoir
         : undefined,
     deletedSongIds: nonEmptyTombstones(wire.deletedSongIds),
     deletedPerformanceIds: nonEmptyTombstones(wire.deletedPerformanceIds),
+    deletedOriginalIds: nonEmptyTombstones(wire.deletedOriginalIds),
     updatedAt: wire.exportedAt,
   };
 }
@@ -345,6 +348,7 @@ export function mergeRepertoireExtras(
     ),
     deletedSongIds: unionDeletedRowIds(local.deletedSongIds, remote.deletedSongIds),
     deletedPerformanceIds: unionDeletedRowIds(local.deletedPerformanceIds, remote.deletedPerformanceIds),
+    deletedOriginalIds: unionDeletedRowIds(local.deletedOriginalIds, remote.deletedOriginalIds),
     updatedAt:
       [local.updatedAt, remote.updatedAt].sort((a, b) => b.localeCompare(a))[0] ?? new Date().toISOString(),
   };
