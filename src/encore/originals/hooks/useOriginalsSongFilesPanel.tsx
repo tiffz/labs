@@ -59,7 +59,6 @@ import {
 } from '../originalsSongFileSlots';
 import { preferredOriginalTake, type EncoreOriginalSong, type OriginalAudioTake } from '../types';
 import { OriginalsBrainstormDocChip } from '../components/OriginalsBrainstormDocChip';
-import { OriginalsTakeCard, type TakeStorageStatus } from '../components/OriginalsTakeCard';
 
 export type OriginalsSongFilesPanelProps = {
   song: EncoreOriginalSong;
@@ -67,21 +66,7 @@ export type OriginalsSongFilesPanelProps = {
   readOnly?: boolean;
   /** Opens the built-in Encore brainstorm doc editor. */
   onOpenBrainstorm?: () => void;
-  /**
-   * `chips` (default): dense inline take chips, used in the sidebar and every other stage.
-   * `detailed`: bigger take cards with inline notes, for the focused Record takes stage.
-   */
-  takesLayout?: 'chips' | 'detailed';
 };
-
-function takeStorageStatus(
-  take: OriginalAudioTake,
-  localAudioIds: ReadonlySet<string>,
-): TakeStorageStatus {
-  if (take.driveFileId?.trim()) return 'drive';
-  if (take.hasLocalAudio || localAudioIds.has(take.id)) return 'local';
-  return 'missing';
-}
 
 function takeIsPlayable(take: OriginalAudioTake, localAudioIds: ReadonlySet<string>): boolean {
   return Boolean(take.driveFileId?.trim()) || take.hasLocalAudio === true || localAudioIds.has(take.id);
@@ -105,10 +90,9 @@ export function useOriginalsSongFilesPanel({
   onChange,
   readOnly = false,
   onOpenBrainstorm,
-  takesLayout = 'chips',
 }: Pick<
   OriginalsSongFilesPanelProps,
-  'song' | 'onChange' | 'readOnly' | 'onOpenBrainstorm' | 'takesLayout'
+  'song' | 'onChange' | 'readOnly' | 'onOpenBrainstorm'
 >): {
   panel: ReactElement;
   resourceGroups: PracticeResourceGroup[];
@@ -642,92 +626,6 @@ export function useOriginalsSongFilesPanel({
     </>
   );
 
-  const demoTakesDetailedBody: ReactNode = (
-    <Stack useFlexGap sx={{ gap: 1.25 }}>
-      {song.takes.map((t) => {
-        const playable = takeIsPlayable(t, localAudioIds);
-        const openUrl = t.driveFileId ? driveFileWebUrl(t.driveFileId) : undefined;
-        const downloadTarget = encoreResourceDownloadTargetFromTake(t);
-        const downloadGate = encoreResourceDownloadDisabled({ driveFileId: t.driveFileId }, googleAccessToken);
-        return (
-          <OriginalsTakeCard
-            key={t.id}
-            take={t}
-            isPreferred={song.mainTakeId === t.id}
-            isPlaying={isPlayingTake(song.id, t.id)}
-            playable={playable}
-            storageStatus={takeStorageStatus(t, localAudioIds)}
-            driveOpenUrl={openUrl}
-            readOnly={readOnly}
-            onPlay={() => {
-              if (!playable) {
-                replaceTakeIdRef.current = t.id;
-                replaceInputRef.current?.click();
-                return;
-              }
-              playTake({
-                songId: song.id,
-                songTitle: song.title,
-                takeId: t.id,
-                takeLabel: t.label,
-                driveFileId: t.driveFileId,
-                localTakeKey: originalTakeBlobKey(song.id, t.id),
-                mimeType: t.mimeType,
-              });
-            }}
-            onMakePreferred={
-              readOnly || song.mainTakeId === t.id
-                ? undefined
-                : () => applySong(patchSongTimestamp({ ...songRef.current, mainTakeId: t.id }))
-            }
-            onRename={readOnly ? undefined : (value) => updateTake(t.id, { label: value.trim() || t.label })}
-            onNotesChange={
-              readOnly ? undefined : (value) => updateTake(t.id, { notes: value.trim() || undefined })
-            }
-            onRemove={
-              readOnly
-                ? undefined
-                : () => {
-                    if (isPlayingTake(song.id, t.id)) stopPlayback();
-                    void deleteOriginalTakeBlob(song.id, t.id);
-                    const remaining = songRef.current.takes.filter((x) => x.id !== t.id);
-                    applySong(
-                      patchSongTimestamp({
-                        ...songRef.current,
-                        takes: remaining,
-                        mainTakeId:
-                          songRef.current.mainTakeId === t.id
-                            ? (remaining[0]?.id ?? null)
-                            : songRef.current.mainTakeId,
-                      }),
-                    );
-                  }
-            }
-            {...(downloadTarget
-              ? {
-                  onDownload: () => triggerEncoreResourceDownload(downloadTarget, googleAccessToken),
-                  downloadDisabled: downloadGate.disabled,
-                  downloadDisabledReason: downloadGate.reason,
-                }
-              : {})}
-          />
-        );
-      })}
-      {!readOnly ? (
-        <Button
-          variant="outlined"
-          color="inherit"
-          disabled={uploading}
-          startIcon={<AddIcon />}
-          onClick={() => takeFileInputRef.current?.click()}
-          sx={(t) => ({ ...encoreMediaHubAddButtonSx(t), alignSelf: 'flex-start' })}
-        >
-          Add take
-        </Button>
-      ) : null}
-    </Stack>
-  );
-
   const referencesBody: ReactNode = (
     <EncoreResourceLinksPanel
       layout="practice-list"
@@ -776,7 +674,7 @@ export function useOriginalsSongFilesPanel({
       subheader: ORIGINALS_SONG_FILE_SLOT_META.demoTakes.subheader,
       itemCount: song.takes.length,
       primarySummary: preferred?.label ?? null,
-      body: takesLayout === 'detailed' ? demoTakesDetailedBody : demoTakesBody,
+      body: demoTakesBody,
     },
     {
       id: 'references',

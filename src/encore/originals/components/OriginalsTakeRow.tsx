@@ -1,31 +1,30 @@
 import Box from '@mui/material/Box';
+import CircularProgress from '@mui/material/CircularProgress';
 import IconButton from '@mui/material/IconButton';
 import InputBase from '@mui/material/InputBase';
 import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
-import CircularProgress from '@mui/material/CircularProgress';
 import CloseIcon from '@mui/icons-material/Close';
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
 import PauseIcon from '@mui/icons-material/Pause';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import StarIcon from '@mui/icons-material/Star';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
-import { useEffect, useState, type ReactElement } from 'react';
+import { useEffect, useRef, useState, type ReactElement } from 'react';
 import { GoogleDriveBrandIcon } from '../../components/EncoreBrandIcon';
 import { encoreExternalToolLinkProps } from '../../theme/encoreUiTokens';
 import { originalTakeDisplayName } from '../originalsTakeDisplay';
+import type { TakeStorageStatus } from '../hooks/useOriginalsTakes';
 import type { OriginalAudioTake } from '../types';
 
-export type TakeStorageStatus = 'drive' | 'local' | 'missing';
-
 const STORAGE_STATUS_COPY: Record<TakeStorageStatus, string> = {
-  drive: 'Backed up to Drive',
-  local: 'Saved on this device',
-  missing: 'Choose the audio file again to play on this device',
+  drive: 'Backed up',
+  local: 'On this device',
+  missing: 'Choose the file again to play it here',
 };
 
-export type OriginalsTakeCardProps = {
+export type OriginalsTakeRowProps = {
   take: OriginalAudioTake;
   isPreferred: boolean;
   isPlaying: boolean;
@@ -44,11 +43,14 @@ export type OriginalsTakeCardProps = {
 };
 
 /**
- * Detailed take card for the focused Record takes stage. Unlike the dense chip used in the
- * sidebar and other stages, this shows notes inline (always visible) and gives each take a
- * proper recording-log row: play, preferred, Drive link, download, remove, and storage state.
+ * One take on the Record-takes workspace.
+ *
+ * Deliberately lighter than the card it replaced: no border ring on the preferred take (the filled
+ * star already says it), and notes collapse to a single line until clicked. An always-open empty
+ * textarea per take was the bulk of the old surface's visual weight for content that is usually
+ * absent.
  */
-export function OriginalsTakeCard(props: OriginalsTakeCardProps): ReactElement {
+export function OriginalsTakeRow(props: OriginalsTakeRowProps): ReactElement {
   const {
     take,
     isPreferred,
@@ -68,19 +70,25 @@ export function OriginalsTakeCard(props: OriginalsTakeCardProps): ReactElement {
   } = props;
 
   const displayName = originalTakeDisplayName(take.label);
+  const notes = take.notes?.trim() ?? '';
   const [titleDraft, setTitleDraft] = useState(displayName);
   const [titleEditing, setTitleEditing] = useState(false);
-  const [notesDraft, setNotesDraft] = useState(take.notes ?? '');
-  const [notesEditing, setNotesEditing] = useState(false);
+  const [notesDraft, setNotesDraft] = useState(notes);
+  const [notesOpen, setNotesOpen] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const notesFieldRef = useRef<HTMLTextAreaElement | null>(null);
+
+  useEffect(() => {
+    if (notesOpen) notesFieldRef.current?.focus();
+  }, [notesOpen]);
 
   useEffect(() => {
     if (!titleEditing) setTitleDraft(displayName);
   }, [displayName, titleEditing]);
 
   useEffect(() => {
-    if (!notesEditing) setNotesDraft(take.notes ?? '');
-  }, [take.notes, notesEditing]);
+    if (!notesOpen) setNotesDraft(notes);
+  }, [notes, notesOpen]);
 
   const commitTitle = () => {
     setTitleEditing(false);
@@ -90,8 +98,8 @@ export function OriginalsTakeCard(props: OriginalsTakeCardProps): ReactElement {
   };
 
   const commitNotes = () => {
-    setNotesEditing(false);
-    if (onNotesChange) onNotesChange(notesDraft.trim());
+    setNotesOpen(false);
+    if (onNotesChange && notesDraft.trim() !== notes) onNotesChange(notesDraft);
   };
 
   const handleDownload = async () => {
@@ -105,23 +113,29 @@ export function OriginalsTakeCard(props: OriginalsTakeCardProps): ReactElement {
   };
 
   const playTooltip = isPlaying ? 'Pause' : playable ? 'Play take' : 'Choose the file to play it here';
+  const canEditNotes = !readOnly && Boolean(onNotesChange);
 
   return (
     <Box
-      sx={(t) => ({
+      component="li"
+      sx={{
+        listStyle: 'none',
         display: 'flex',
         flexDirection: 'column',
-        gap: 1.25,
-        p: 2,
-        borderRadius: 2,
-        border: 1,
-        borderColor: isPreferred ? 'primary.main' : 'divider',
-        bgcolor: 'background.paper',
-        boxShadow: isPreferred ? `0 0 0 1px ${t.palette.primary.main}` : 'none',
-        transition: 'border-color 120ms ease, box-shadow 120ms ease',
-      })}
+        gap: 0.5,
+        py: 1.25,
+      }}
     >
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0 }}>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1.5,
+          minWidth: 0,
+          // 390px: let the action cluster wrap under the title instead of crushing it.
+          flexWrap: { xs: 'wrap', sm: 'nowrap' },
+        }}
+      >
         <Tooltip title={playTooltip}>
           <IconButton
             aria-label={playTooltip}
@@ -132,9 +146,7 @@ export function OriginalsTakeCard(props: OriginalsTakeCardProps): ReactElement {
               height: 44,
               color: isPlaying ? 'primary.contrastText' : 'primary.main',
               bgcolor: isPlaying ? 'primary.main' : t.palette.action.hover,
-              '&:hover': {
-                bgcolor: isPlaying ? 'primary.dark' : t.palette.action.selected,
-              },
+              '&:hover': { bgcolor: isPlaying ? 'primary.dark' : t.palette.action.selected },
             })}
           >
             {isPlaying ? <PauseIcon /> : <PlayArrowIcon />}
@@ -143,7 +155,7 @@ export function OriginalsTakeCard(props: OriginalsTakeCardProps): ReactElement {
 
         <Box sx={{ minWidth: 0, flex: 1 }}>
           {readOnly || !onRename ? (
-            <Typography sx={{ fontWeight: 700, lineHeight: 1.3, wordBreak: 'break-word' }}>
+            <Typography sx={{ fontWeight: 600, lineHeight: 1.3, wordBreak: 'break-word' }}>
               {displayName}
             </Typography>
           ) : (
@@ -164,7 +176,7 @@ export function OriginalsTakeCard(props: OriginalsTakeCardProps): ReactElement {
               }}
               inputProps={{ 'aria-label': 'Take name' }}
               sx={{
-                fontWeight: 700,
+                fontWeight: 600,
                 fontSize: '1rem',
                 lineHeight: 1.3,
                 width: '100%',
@@ -176,22 +188,16 @@ export function OriginalsTakeCard(props: OriginalsTakeCardProps): ReactElement {
               }}
             />
           )}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mt: 0.25 }}>
-            {isPreferred ? (
-              <Typography variant="caption" sx={{ color: 'primary.main', fontWeight: 700 }}>
-                Preferred take
-              </Typography>
-            ) : null}
-            <Typography
-              variant="caption"
-              sx={{ color: storageStatus === 'missing' ? 'warning.main' : 'text.secondary' }}
-            >
-              {STORAGE_STATUS_COPY[storageStatus]}
-            </Typography>
-          </Box>
+          <Typography
+            variant="caption"
+            sx={{ color: storageStatus === 'missing' ? 'warning.main' : 'text.secondary' }}
+          >
+            {isPreferred ? 'Preferred take · ' : ''}
+            {STORAGE_STATUS_COPY[storageStatus]}
+          </Typography>
         </Box>
 
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25, flexShrink: 0 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25, flexShrink: 0, ml: 'auto' }}>
           {onMakePreferred || isPreferred ? (
             <Tooltip title={isPreferred ? 'Preferred take' : 'Make preferred take'}>
               <span>
@@ -210,12 +216,12 @@ export function OriginalsTakeCard(props: OriginalsTakeCardProps): ReactElement {
             </Tooltip>
           ) : null}
           {driveOpenUrl ? (
-            <Tooltip title="Open in Google Drive">
+            <Tooltip title="Open in Drive">
               <IconButton
                 component="a"
                 href={driveOpenUrl}
                 {...encoreExternalToolLinkProps}
-                aria-label="Open in Google Drive"
+                aria-label="Open in Drive"
                 sx={{ color: 'text.secondary', '&:hover': { color: 'text.primary' } }}
               >
                 <GoogleDriveBrandIcon sx={{ fontSize: 18 }} />
@@ -223,7 +229,7 @@ export function OriginalsTakeCard(props: OriginalsTakeCardProps): ReactElement {
             </Tooltip>
           ) : null}
           {onDownload ? (
-            <Tooltip title={downloadDisabled ? downloadDisabledReason ?? 'Download' : 'Download'}>
+            <Tooltip title={downloadDisabled ? (downloadDisabledReason ?? 'Download') : 'Download'}>
               <span>
                 <IconButton
                   aria-label="Download take"
@@ -254,28 +260,69 @@ export function OriginalsTakeCard(props: OriginalsTakeCardProps): ReactElement {
         </Box>
       </Box>
 
-      {readOnly ? (
-        take.notes?.trim() ? (
-          <Typography variant="body2" sx={{ color: 'text.secondary', whiteSpace: 'pre-wrap', pl: 7.5 }}>
-            {take.notes.trim()}
-          </Typography>
-        ) : null
-      ) : (
+      {notesOpen && canEditNotes ? (
         <TextField
           value={notesDraft}
           onChange={(e) => setNotesDraft(e.target.value)}
-          onFocus={() => setNotesEditing(true)}
           onBlur={commitNotes}
-          placeholder="Notes on this take, e.g. use the second chorus, a little flat on the bridge"
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              setNotesDraft(notes);
+              setNotesOpen(false);
+            }
+          }}
+          placeholder="Use the second chorus, a little flat on the bridge"
           size="small"
           fullWidth
           multiline
           minRows={2}
           maxRows={8}
-          aria-label={`Notes for ${displayName}`}
-          sx={{ pl: 7.5 }}
+          // Focus follows the user's explicit click on "Add notes" — not a page-load autofocus,
+          // which is what jsx-a11y/no-autofocus guards against.
+          inputRef={notesFieldRef}
+          // A bare `aria-label` on TextField lands on the wrapper div, leaving the textarea
+          // unnamed; MUI v9 removed `inputProps`, so the label must go through `slotProps.htmlInput`
+          // to reach the real control.
+          slotProps={{ htmlInput: { 'aria-label': `Notes for ${displayName}` } }}
+          sx={{ pl: { xs: 0, sm: 7.5 } }}
         />
-      )}
+      ) : notes ? (
+        <Typography
+          variant="body2"
+          onClick={canEditNotes ? () => setNotesOpen(true) : undefined}
+          sx={{
+            color: 'text.secondary',
+            whiteSpace: 'pre-wrap',
+            pl: { xs: 0, sm: 7.5 },
+            ...(canEditNotes
+              ? { cursor: 'text', borderRadius: 1, '&:hover': { bgcolor: 'action.hover' } }
+              : {}),
+          }}
+        >
+          {notes}
+        </Typography>
+      ) : canEditNotes ? (
+        <Box
+          component="button"
+          type="button"
+          onClick={() => setNotesOpen(true)}
+          sx={{
+            alignSelf: 'flex-start',
+            ml: { xs: 0, sm: 7.5 },
+            p: 0.25,
+            border: 0,
+            bgcolor: 'transparent',
+            color: 'text.disabled',
+            font: 'inherit',
+            fontSize: '0.8125rem',
+            cursor: 'text',
+            borderRadius: 1,
+            '&:hover': { color: 'text.secondary' },
+          }}
+        >
+          Add notes
+        </Box>
+      ) : null}
     </Box>
   );
 }
