@@ -131,6 +131,38 @@ async function buildE2eSongWithLoopPlayback(): Promise<StanzaSong> {
   };
 }
 
+export const STANZA_E2E_SOAK_SONG_ID = '__stanza_e2e_soak__';
+export const STANZA_E2E_SOAK_SONG_TITLE = 'E2E Soak Song';
+
+/**
+ * Loop fixture for the leak soak — with the metronome AND drums switched on.
+ *
+ * The soak used to reuse {@link buildE2eSongWithLoopPlayback}, a bare audio row with no metronome,
+ * no drums and no stems. Both AudioContext leaks it existed to catch lived in the metronome and
+ * the drum scheduler, so 20 loop wraps never executed a line of the leaking code and the spec
+ * stayed green through the crash the owner reported. A soak fixture has to enable the features
+ * whose per-repeat allocation it is measuring.
+ *
+ * `metronomeSongCalibration` is required, not decorative: the drum scheduler and the click track
+ * both no-op on an uncalibrated song, so without it `drumsEnabled` alone still schedules nothing.
+ */
+async function buildE2eSongWithSoakPlayback(): Promise<StanzaSong> {
+  const primary = createMinimalWavBlobForStanzaE2e(2.5);
+  return {
+    id: STANZA_E2E_SOAK_SONG_ID,
+    ytId: null,
+    title: STANZA_E2E_SOAK_SONG_TITLE,
+    markers: [],
+    stats: {},
+    updatedAt: Date.now(),
+    localAudioBlob: primary,
+    metronomeEnabled: true,
+    metronomeSongCalibration: { bpm: 120, anchorMediaTime: 0, source: 'tap' },
+    drumsEnabled: true,
+    drumPattern: 'D---D---D---D---',
+  };
+}
+
 /** ~3s local WAV for play-through / premature-metadata e2e. */
 async function buildE2eSongWithPlaythrough(): Promise<StanzaSong> {
   const durationSec = 3;
@@ -174,6 +206,7 @@ export type StanzaE2eWindowHooks = {
   seedSongWithStems: () => Promise<string>;
   seedSongWithDrumsPlayback: () => Promise<string>;
   seedSongWithLoopPlayback: () => Promise<string>;
+  seedSongWithSoakPlayback: () => Promise<string>;
   seedSongWithPlaythrough: () => Promise<string>;
   seedSongWithPracticeRail: () => Promise<string>;
   seedSongWithDualSources: () => Promise<string>;
@@ -205,6 +238,12 @@ export function installStanzaE2eHooks(): void {
     },
     async seedSongWithLoopPlayback() {
       const row = await buildE2eSongWithLoopPlayback();
+      await stanzaDb.songs.put(row);
+      writeStanzaLastSelectedSongId(row.id);
+      return row.id;
+    },
+    async seedSongWithSoakPlayback() {
+      const row = await buildE2eSongWithSoakPlayback();
       await stanzaDb.songs.put(row);
       writeStanzaLastSelectedSongId(row.id);
       return row.id;
