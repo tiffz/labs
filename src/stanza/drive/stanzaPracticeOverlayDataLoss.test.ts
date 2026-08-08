@@ -38,7 +38,7 @@ describe('practice overlay round trip', () => {
         stems: [
           {
             id: 'stem-1',
-            name: 'vocals',
+            label: 'vocals',
             localBlob: new Blob(['audio-bytes']),
           },
         ],
@@ -58,7 +58,7 @@ describe('practice overlay round trip', () => {
     const realBlob = new Blob(['audio-bytes']);
     const rows = [
       song({
-        stems: [{ id: 'stem-1', name: 'vocals', localBlob: realBlob }],
+        stems: [{ id: 'stem-1', label: 'vocals', localBlob: realBlob }],
       } as Partial<StanzaSong>),
     ];
 
