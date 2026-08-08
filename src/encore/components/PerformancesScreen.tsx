@@ -75,6 +75,9 @@ import {
 } from '../context/EncoreContext';
 import type { EncoreActionsContextValue } from '../context/EncoreActionsContext';
 import type { RepertoireExtrasRow } from '../db/encoreDb';
+import { useEncoreOriginalsLibrary } from '../context/EncoreOriginalsLibraryContext';
+import type { EncoreOriginalSong } from '../originals/types';
+import { resolvePerformanceSubject } from '../performances/performanceSubject';
 import { useEncoreMediaPlayback } from '../context/encoreMediaPlaybackContextStore';
 import type { EncoreMediaPlaybackContextValue } from '../context/encoreMediaPlaybackContextStore';
 import {
@@ -158,15 +161,17 @@ const PERFORMANCES_FILTER_PINNED = ['venue', 'accompaniment', 'perfDate'] as con
 
 function PerfSongColumnCell({ row }: { row: MRT_Row<PerfMrtRow> }): ReactElement {
   const highlight = useContext(EncoreMrtSearchHighlightContext);
-  const { song, artistLabel, perf } = row.original;
+  const { subject, artistLabel, perf } = row.original;
+  // Route by subject, so an original opens its songwriting page rather than dead-ending.
+  const href = subject.href ?? undefined;
   return (
     <Box>
       <Button
         variant="text"
         size="small"
-        disabled={!song}
-        component={song ? 'a' : 'button'}
-        href={song ? encoreAppHref({ kind: 'song', id: song.id }) : undefined}
+        disabled={!href}
+        component={href ? 'a' : 'button'}
+        href={href}
         sx={{
           textAlign: 'left',
           justifyContent: 'flex-start',
@@ -247,6 +252,7 @@ type PerformancesScreenBodyProps = PerformancesScreenProps & {
   deletePerformance: EncoreActionsContextValue['deletePerformance'];
   saveSong: EncoreActionsContextValue['saveSong'];
   bulkSavePerformances: EncoreActionsContextValue['bulkSavePerformances'];
+  originals: EncoreOriginalSong[];
   bulkDeletePerformances: EncoreActionsContextValue['bulkDeletePerformances'];
   saveRepertoireExtras: EncoreActionsContextValue['saveRepertoireExtras'];
   playMediaQueue: EncoreMediaPlaybackContextValue['playMediaQueue'];
@@ -259,6 +265,7 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
   spotifyLinked,
   songs,
   songsHydrated,
+  originals,
   performances,
   performancesHydrated,
   repertoireExtras,
@@ -282,6 +289,7 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
   const venueOptionsCacheRef = useRef<string[]>([]);
   const perfVenueFilterOptionsCacheRef = useRef<string[]>([]);
   const songByIdCacheRef = useRef(new Map<string, EncoreSong>());
+  const originalByIdCacheRef = useRef(new Map<string, EncoreOriginalSong>());
   const perfMrtDataCacheRef = useRef<PerfMrtRow[]>([]);
   const perfFilterFieldDefsCacheRef = useRef<EncoreFilterFieldConfig[]>([]);
   const perfDashboardStatsCacheRef = useRef<PerformanceDashboardStats | null>(null);
@@ -297,6 +305,7 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
     perfDateAfter: [],
     perfDateBefore: [],
     song: [],
+    origin: [],
   }));
   const [visiblePerfFilterIds, setVisiblePerfFilterIds] = useState<string[]>([
     ...PERFORMANCES_FILTER_PINNED,
@@ -306,6 +315,7 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
   const [perfOpen, setPerfOpen] = useState(false);
   const [perfEditing, setPerfEditing] = useState<EncorePerformance | null>(null);
   const [perfSongId, setPerfSongId] = useState<string | null>(null);
+  const [perfSubjectKind, setPerfSubjectKind] = useState<'song' | 'original'>('song');
   const [viewMode, setViewMode] = useState<PerformancesViewMode>(() => {
     if (typeof window === 'undefined') return 'table';
     return window.localStorage.getItem(VIEW_STORAGE_KEY) === 'grid' ? 'grid' : 'table';
@@ -452,6 +462,15 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
     return next;
   }, [heavyListTabActive, songs]);
 
+  // Gated on `heavyListTabActive` like every other heavy memo here — Performances stays mounted
+  // when hidden, and rebuilding this on originals churn would regress CUJ-001 tab latency.
+  const originalById = useMemo(() => {
+    if (!heavyListTabActive) return originalByIdCacheRef.current;
+    const next = new Map(originals.map((o) => [o.id, o] as const));
+    originalByIdCacheRef.current = next;
+    return next;
+  }, [heavyListTabActive, originals]);
+
   const hasAnyPerformanceVideoLink = useMemo(() => {
     if (!heavyListTabActive) return hasAnyPerformanceVideoLinkCacheRef.current;
     const next = performances.some((p) => Boolean(performanceVideoOpenUrl(p)));
@@ -464,24 +483,32 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
     const venueChipFilters = perfFilterValues.venue ?? [];
     const accompanimentChipFilters = perfFilterValues.accompaniment ?? [];
     const songChipFilters = perfFilterValues.song ?? [];
+    const originChipFilters = perfFilterValues.origin ?? [];
     const perfDateRange = encoreDateRangeFromFilterRecord(perfFilterValues, 'perfDate');
     const q = debouncedQuery.trim().toLowerCase();
     const all = performances.map((p) => {
-      const song = songById.get(p.songId) ?? null;
+      const subject = resolvePerformanceSubject(p, songById, originalById);
       return {
         perf: p,
-        song,
+        song: subject.kind === 'song' ? (songById.get(subject.id) ?? null) : null,
+        subject,
         date: p.date,
-        songLabel: song?.title ?? 'Unknown song',
-        artistLabel: song?.artist ?? '',
+        songLabel: subject.title,
+        artistLabel: subject.artist,
         venue: normalizePerfVenueLabel(p.venueTag),
         accompaniment: p.accompanimentTags ?? [],
       };
     });
     let rows = all;
+    if (originChipFilters.length > 0) {
+      // Derived from the subject pointer, never a stored tag — it cannot drift out of date.
+      rows = rows.filter((r) => originChipFilters.includes(r.subject.kind === 'original' ? 'original' : 'cover'));
+    }
     if (songChipFilters.length > 0) {
       rows = rows.filter((r) =>
-        songChipFilters.some((v) => (v === ENCORE_FILTER_SENTINEL.unknownSong ? r.song == null : false)),
+        songChipFilters.some((v) =>
+          v === ENCORE_FILTER_SENTINEL.unknownSong ? r.subject.kind === 'unknown' : false,
+        ),
       );
     }
     if (venueChipFilters.length > 0) {
@@ -527,6 +554,7 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
     heavyListTabActive,
     performances,
     songById,
+    originalById,
     debouncedQuery,
     perfFilterValues,
   ]);
@@ -550,6 +578,14 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
         label: 'Song',
         options: [{ value: ENCORE_FILTER_SENTINEL.unknownSong, label: 'Unknown in library' }],
       },
+      {
+        id: 'origin',
+        label: 'Origin',
+        options: [
+          { value: 'original', label: 'My original' },
+          { value: 'cover', label: 'Cover' },
+        ],
+      },
     ];
     perfFilterFieldDefsCacheRef.current = next;
     return next;
@@ -569,11 +605,12 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
     (perfFilterValues.venue ?? []).length > 0 ||
       (perfFilterValues.accompaniment ?? []).length > 0 ||
       isEncoreDateRangeActive(perfDateRange) ||
-      (perfFilterValues.song ?? []).length > 0,
+      (perfFilterValues.song ?? []).length > 0 ||
+      (perfFilterValues.origin ?? []).length > 0,
   );
 
   const clearPerfFilters = useCallback(() => {
-    setPerfFilterValues({ venue: [], accompaniment: [], perfDateAfter: [], perfDateBefore: [], song: [] });
+    setPerfFilterValues({ venue: [], accompaniment: [], perfDateAfter: [], perfDateBefore: [], song: [], origin: [] });
     setVisiblePerfFilterIds([...PERFORMANCES_FILTER_PINNED]);
   }, []);
 
@@ -689,6 +726,7 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
   const openEdit = useCallback((p: EncorePerformance) => {
     setPerfEditing(p);
     setPerfSongId(p.songId);
+    setPerfSubjectKind(p.subjectKind ?? 'song');
     setPerfOpen(true);
   }, []);
 
@@ -1569,11 +1607,21 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
           setPickQuery('');
           setPerfEditing(null);
           setPerfSongId(s.id);
+          setPerfSubjectKind('song');
+          setPerfOpen(true);
+        }}
+        originals={originals}
+        onSelectOriginal={(o) => {
+          setPickSongOpen(false);
+          setPickQuery('');
+          setPerfEditing(null);
+          setPerfSongId(o.id);
+          setPerfSubjectKind('original');
           setPerfOpen(true);
         }}
         linkedOnOtherRow={() => false}
         emptyLibraryHint="Your library is empty. Add a song from Repertoire first."
-        emptySearchHint="No songs match that search."
+        emptySearchHint="Nothing matches that search."
       />
       <PlaylistImportDialog
         open={importOpen}
@@ -1606,11 +1654,16 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
           open={perfOpen}
           performance={perfEditing}
           songId={perfSongId}
+          subjectKind={perfSubjectKind}
+          subjectTitle={
+            perfSubjectKind === 'original' ? originalById.get(perfSongId)?.title : undefined
+          }
           googleAccessToken={googleAccessToken}
           venueOptions={venueOptions}
           onClose={() => {
             setPerfOpen(false);
             setPerfSongId(null);
+            setPerfSubjectKind('song');
             setPerfEditing(null);
           }}
           onSave={async (perf) => {
@@ -1761,6 +1814,7 @@ export function PerformancesScreen(props?: PerformancesScreenProps): ReactElemen
   const tabActive = props?.heavyListTabActive ?? true;
   const { googleAccessToken, spotifyLinked } = useEncoreAuth();
   const { songs, songsHydrated, performances, performancesHydrated } = useEncoreLibraryTables();
+  const { originals } = useEncoreOriginalsLibrary();
   const { repertoireExtras, effectiveDisplayName } = useEncoreLibraryExtras();
   const {
     savePerformance,
@@ -1778,6 +1832,7 @@ export function PerformancesScreen(props?: PerformancesScreenProps): ReactElemen
     spotifyLinked,
     songs,
     songsHydrated,
+    originals,
     performances,
     performancesHydrated,
     repertoireExtras,

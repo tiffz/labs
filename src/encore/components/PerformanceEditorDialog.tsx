@@ -62,7 +62,7 @@ function buildVideoLinkDrafts(videos: { id: string; externalVideoUrl?: string; v
   return map;
 }
 
-function newPerformance(songId: string): EncorePerformance {
+function newPerformance(songId: string, subjectKind: 'song' | 'original'): EncorePerformance {
   // ISO timestamps for createdAt/updatedAt are stored as instants and intentionally use UTC
   // (`toISOString`). The user-visible `date` field, however, is the **local calendar day** the
   // performance happened — slicing `YYYY-MM-DD` out of `toISOString()` would tip into tomorrow
@@ -71,6 +71,9 @@ function newPerformance(songId: string): EncorePerformance {
   return {
     id: crypto.randomUUID(),
     songId,
+    // Omitted for songs so rows stay byte-identical to everything logged before originals could
+    // be performed; only originals carry the discriminant.
+    ...(subjectKind === 'original' ? { subjectKind: 'original' as const } : {}),
     date: calendarDateFromIsoTimestamp(),
     venueTag: '',
     createdAt: now,
@@ -120,6 +123,10 @@ export function PerformanceEditorDialog(props: {
   open: boolean;
   performance: EncorePerformance | null;
   songId: string;
+  /** Which table `songId` points at. Defaults to a repertoire song. */
+  subjectKind?: 'song' | 'original';
+  /** Title to show when the subject is an original (originals are not in `songs`). */
+  subjectTitle?: string;
   googleAccessToken: string | null;
   /** Distinct venue tags for autocomplete chips. */
   venueOptions: string[];
@@ -141,6 +148,8 @@ export function PerformanceEditorDialog(props: {
     open,
     performance,
     songId,
+    subjectKind = 'song',
+    subjectTitle,
     googleAccessToken,
     venueOptions,
     initialLocalVideoFile,
@@ -152,8 +161,11 @@ export function PerformanceEditorDialog(props: {
   const { songs, repertoireExtras } = useEncore();
   const { withBlockingJob } = useEncoreBlockingJobs();
   const { uploadWithDuplicateCheck, registerUploadedDriveFile } = useEncoreDriveUploadDedup();
-  const songForPerformance = useMemo(() => songs.find((s) => s.id === songId) ?? null, [songs, songId]);
-  const [draft, setDraft] = useState<EncorePerformance>(newPerformance(songId));
+  const songForPerformance = useMemo(
+    () => (subjectKind === 'original' ? null : (songs.find((s) => s.id === songId) ?? null)),
+    [songs, songId, subjectKind],
+  );
+  const [draft, setDraft] = useState<EncorePerformance>(newPerformance(songId, subjectKind));
   const [videoInput, setVideoInput] = useState('');
   const [shortcutMsg, setShortcutMsg] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -184,7 +196,9 @@ export function PerformanceEditorDialog(props: {
 
   useEffect(() => {
     if (open) {
-      const base = normalizeEncorePerformance(performance ? { ...performance } : newPerformance(songId));
+      const base = normalizeEncorePerformance(
+        performance ? { ...performance } : newPerformance(songId, subjectKind),
+      );
       setDraft(base);
       const primary = base.videos?.find((v) => v.id === base.primaryVideoId) ?? base.videos?.[0];
       initialDriveFileIdRef.current = normalizeDriveFileIdForCompare(primary?.videoTargetDriveFileId);
@@ -201,7 +215,7 @@ export function PerformanceEditorDialog(props: {
       setRemoveConfirmOpen(false);
       setDriveLinkFeedback(null);
     }
-  }, [open, performance, songId, initialLocalVideoFile, addVideoMode]);
+  }, [open, performance, songId, subjectKind, initialLocalVideoFile, addVideoMode]);
 
   useEffect(() => {
     if (open) {
@@ -499,8 +513,9 @@ export function PerformanceEditorDialog(props: {
             const { extension } = splitFileNameExtension(file.name);
             const desiredName = buildPerformanceVideoName(
               { date: draft.date, venueTag: venueForNaming },
-              songForPerformance,
+              songForPerformance ?? (subjectTitle ? { title: subjectTitle, artist: '' } : null),
               extension,
+              { omitArtist: subjectKind === 'original' },
             );
             const uploadedId = await uploadWithDuplicateCheck({
               file,
@@ -855,7 +870,7 @@ export function PerformanceEditorDialog(props: {
       >
         <DialogTitle id="perf-editor-title" sx={encoreDialogTitleSx}>
           {metadataLocked ? 'Add video to performance' : performance ? 'Edit performance' : 'Log performance'}
-          {songForPerformance && !metadataLocked ? (
+          {(songForPerformance || subjectTitle) && !metadataLocked ? (
             <Typography
               component="div"
               variant="body2"
@@ -865,12 +880,19 @@ export function PerformanceEditorDialog(props: {
                 fontWeight: 600,
                 lineHeight: 1.4
               }}>
-              {songForPerformance.title}
-              {songForPerformance.artist ? (
+              {songForPerformance?.title ?? subjectTitle}
+              {songForPerformance?.artist ? (
                 <>
                   {' '}
                   <Box component="span" sx={{ fontWeight: 500 }}>
                     · {songForPerformance.artist}
+                  </Box>
+                </>
+              ) : subjectKind === 'original' ? (
+                <>
+                  {' '}
+                  <Box component="span" sx={{ fontWeight: 500 }}>
+                    · Original
                   </Box>
                 </>
               ) : null}
@@ -891,7 +913,9 @@ export function PerformanceEditorDialog(props: {
                         artist: songForPerformance.artist,
                         albumArtUrl: songForPerformance.albumArtUrl,
                       }
-                    : null
+                    : subjectTitle
+                      ? { title: subjectTitle, artist: subjectKind === 'original' ? 'Original' : '' }
+                      : null
                 }
               />
               <PerformanceEditorSection title="Video" caption="Drop a file anywhere below, or add from the panel.">

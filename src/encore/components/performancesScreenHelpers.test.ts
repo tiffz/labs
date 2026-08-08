@@ -14,6 +14,13 @@ function perfRow(partial: Partial<PerfMrtRow> & Pick<PerfMrtRow, 'perf' | 'song'
   return {
     perf: partial.perf,
     song: partial.song,
+    subject: partial.subject ?? {
+      kind: 'song',
+      id: partial.perf.songId,
+      title: partial.songLabel,
+      artist: partial.artistLabel,
+      href: `#/song/${partial.perf.songId}`,
+    },
     date: partial.date,
     songLabel: partial.songLabel,
     artistLabel: partial.artistLabel,

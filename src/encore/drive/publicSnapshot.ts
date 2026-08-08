@@ -72,7 +72,13 @@ export function filterSnapshotSource(
   performances: EncorePerformance[],
   options?: BuildPublicSnapshotOptions,
 ): { songs: EncoreSong[]; performances: EncorePerformance[] } {
-  if (!options?.onlyPerformedSongs) return { songs, performances };
+  // Originals have no representation in the public snapshot, so a performance logged against one
+  // would publish a date, venue, notes, and a resolved video URL with no subject a guest could
+  // resolve. Drop them FIRST — the `onlyPerformedSongs` intersection below is optional, so relying
+  // on it to hide them would leak every such row on the default publish path.
+  const shareable = performances.filter((p) => p.subjectKind !== 'original');
+  if (!options?.onlyPerformedSongs) return { songs, performances: shareable };
+  performances = shareable;
   const performedIds = new Set(performances.map((p) => p.songId));
   const songsOut = songs.filter((s) => performedIds.has(s.id));
   const allowed = new Set(songsOut.map((s) => s.id));

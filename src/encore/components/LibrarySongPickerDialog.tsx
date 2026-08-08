@@ -12,9 +12,11 @@ import ListItemText from '@mui/material/ListItemText';
 import ListSubheader from '@mui/material/ListSubheader';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
+import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import { useMemo, type ReactElement } from 'react';
 import { encoreDialogActionsSx, encoreDialogContentSx, encoreDialogTitleSx } from '../theme/encoreUiTokens';
 import type { EncoreSong } from '../types';
+import type { EncoreOriginalSong } from '../originals/types';
 import { scoreSongSimilarityForImport } from '../import/findExistingSongForImport';
 
 export type LibrarySongPickerDialogProps = {
@@ -32,6 +34,14 @@ export type LibrarySongPickerDialogProps = {
   emptyLibraryHint?: string;
   /** Shown when search yields no rows. */
   emptySearchHint?: string;
+  /**
+   * Songwriting originals offered below the repertoire songs. Omit to keep the picker songs-only —
+   * the bulk import flows deliberately do, because title-matching an import row against an original
+   * would silently file a gig video under the wrong subject.
+   */
+  originals?: EncoreOriginalSong[];
+  /** Required to make {@link LibrarySongPickerDialogProps.originals} selectable. */
+  onSelectOriginal?: (original: EncoreOriginalSong) => void;
 };
 
 /**
@@ -49,6 +59,8 @@ export function LibrarySongPickerDialog(props: LibrarySongPickerDialogProps): Re
     linkedOnOtherRow,
     emptyLibraryHint = 'Your library is empty. Add songs from Library first, or use Spotify / manual match on the row.',
     emptySearchHint = 'No songs match that search.',
+    originals,
+    onSelectOriginal,
   } = props;
 
   const { preferred, rest } = useMemo(() => {
@@ -71,6 +83,13 @@ export function LibrarySongPickerDialog(props: LibrarySongPickerDialogProps): Re
     rest.sort(sortBySimThenTitle);
     return { preferred, rest };
   }, [existingSongs, pickQuery, incoming, linkedOnOtherRow]);
+
+  const matchingOriginals = useMemo(() => {
+    if (!originals || !onSelectOriginal) return [];
+    const q = pickQuery.trim().toLowerCase();
+    const list = q ? originals.filter((o) => o.title.toLowerCase().includes(q)) : [...originals];
+    return list.sort((a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: 'base' }));
+  }, [originals, onSelectOriginal, pickQuery]);
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth aria-labelledby="library-song-picker-title">
@@ -98,12 +117,14 @@ export function LibrarySongPickerDialog(props: LibrarySongPickerDialogProps): Re
           }}
         />
         <List dense sx={{ maxHeight: 360, overflow: 'auto', border: 1, borderColor: 'divider', borderRadius: 1 }}>
-          {preferred.length === 0 && rest.length === 0 ? (
+          {preferred.length === 0 && rest.length === 0 && matchingOriginals.length === 0 ? (
             <Box sx={{ px: 2, py: 3 }}>
               <Typography variant="body2" sx={{
                 color: "text.secondary"
               }}>
-                {existingSongs.length === 0 ? emptyLibraryHint : emptySearchHint}
+                {existingSongs.length === 0 && (originals?.length ?? 0) === 0
+                  ? emptyLibraryHint
+                  : emptySearchHint}
               </Typography>
             </Box>
           ) : (
@@ -149,6 +170,27 @@ export function LibrarySongPickerDialog(props: LibrarySongPickerDialogProps): Re
                   </ListItemButton>
                 );
               })}
+              {matchingOriginals.length > 0 ? (
+                <ListSubheader sx={{ typography: 'caption', fontWeight: 700, bgcolor: 'background.paper', lineHeight: 2.5 }}>
+                  My originals
+                </ListSubheader>
+              ) : null}
+              {matchingOriginals.map((o) => (
+                <ListItemButton key={o.id} onClick={() => onSelectOriginal?.(o)} alignItems="flex-start">
+                  <ListItemAvatar sx={{ minWidth: 56 }}>
+                    <Avatar variant="rounded" alt="" sx={{ width: 44, height: 44 }}>
+                      <MusicNoteIcon fontSize="small" />
+                    </Avatar>
+                  </ListItemAvatar>
+                  <ListItemText
+                    primary={o.title}
+                    secondary="Original"
+                    slotProps={{
+                      primary: { noWrap: true, title: o.title },
+                      secondary: { noWrap: true }
+                    }} />
+                </ListItemButton>
+              ))}
             </>
           )}
         </List>

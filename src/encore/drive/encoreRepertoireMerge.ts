@@ -294,7 +294,12 @@ export function mergeSongRecords(
  */
 export const PERFORMANCE_MERGE_POLICY = {
   id: 'lww',
+  // The subject pointer must move as a UNIT with its kind, so both are `lww`.
+  // Never `preserve-filled-*` here: the policy-driven recovery union writes `accVal ?? histVal`
+  // per key, so a "preserve filled" disposition on one half of the pair would keep a stale
+  // `songId` next to a newer `subjectKind` and point the row at the wrong table.
   songId: 'lww',
+  subjectKind: 'lww',
   date: 'lww',
   venueTag: 'lww',
   videoShortcutDriveFileId: 'preserve-filled-scalar',
