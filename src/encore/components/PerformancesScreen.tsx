@@ -732,19 +732,19 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
 
   const performanceDashboardStats = useMemo(() => {
     if (!heavyListTabActive) return perfDashboardStatsCacheRef.current;
-    const next = buildPerformanceDashboardStats(performances, songById, normalizePerfVenueLabel);
+    const next = buildPerformanceDashboardStats(performances, songById, normalizePerfVenueLabel, originalById);
     perfDashboardStatsCacheRef.current = next;
     return next;
-  }, [heavyListTabActive, performances, songById]);
+  }, [heavyListTabActive, performances, songById, originalById]);
 
   const extendedPerformanceInsights = useMemo(() => {
     if (!heavyListTabActive) return perfExtendedInsightsCacheRef.current;
     const next = performanceDashboardStats
-      ? buildExtendedPerformanceInsights(performances, songById, performanceDashboardStats)
+      ? buildExtendedPerformanceInsights(performances, songById, performanceDashboardStats, undefined, originalById)
       : null;
     perfExtendedInsightsCacheRef.current = next;
     return next;
-  }, [heavyListTabActive, performances, songById, performanceDashboardStats]);
+  }, [heavyListTabActive, performances, songById, originalById, performanceDashboardStats]);
 
   const columns = useMemo<MRT_ColumnDef<PerfMrtRow>[]>(() => {
     if (!heavyListTabActive) return perfColumnsCacheRef.current;
@@ -1579,6 +1579,7 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
           extended={extendedPerformanceInsights}
           performances={performances}
           songById={songById}
+          originalById={originalById}
           normalizeVenue={normalizePerfVenueLabel}
           onOpenSong={(id, e) => {
             if (e && isModifiedOrNonPrimaryClick(e)) {
