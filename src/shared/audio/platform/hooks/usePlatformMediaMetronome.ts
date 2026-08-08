@@ -9,19 +9,35 @@ import {
   type GridMetronomePlaybackPrefs,
 } from '../../metronome/gridMetronomePlayback';
 
-function getClickContext(): AudioContext | null {
-  const Ctor = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-  if (!Ctor) return null;
-  return new Ctor();
-}
-
 let sharedClickCtx: AudioContext | null = null;
 
+/**
+ * Resume the one shared click context, creating it only if it does not exist yet.
+ *
+ * This used to call `new AudioContext()` **unconditionally** and overwrite `sharedClickCtx`,
+ * orphaning the previous context without closing it. Since it is called from the first line of
+ * Stanza's `playUnified` — which also re-runs on every loop wrap and on premature-end resume —
+ * practising a looped section minted one AudioContext per pass. Chrome caps contexts per document
+ * (~6) and then throws, after which the metronome and drums are silent for the rest of the session
+ * while the `<audio>` element keeps playing normally. That is the "drums are often muted at the
+ * start" and "drums don't play at all" report: it depends on how many times you had pressed play.
+ *
+ * Each orphan also leaked its `visibilitychange` / `statechange` listeners.
+ */
 export function primePlatformMetronomeAudio(): void {
-  const ctx = getClickContext();
-  if (!ctx) return;
-  void ensureAudioContextRunning(ctx);
-  sharedClickCtx = ctx;
+  if (!sharedClickCtx || sharedClickCtx.state === 'closed') {
+    const Ctor =
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!Ctor) return;
+    sharedClickCtx = new Ctor();
+  }
+  void ensureAudioContextRunning(sharedClickCtx);
+}
+
+/** Test seam — drops the shared context so a suite can assert the no-leak invariant. */
+export function __resetPlatformMetronomeAudioForTests(): void {
+  sharedClickCtx = null;
 }
 
 export type UsePlatformMediaMetronomeOptions = {
@@ -103,9 +119,10 @@ export function usePlatformMediaMetronome(opts: UsePlatformMediaMetronomeOptions
         try {
           if (!audioEnabled || mutedRef.current) return;
 
-          const ctx = sharedClickCtx ?? getClickContext();
-          if (ctx) {
-            sharedClickCtx = ctx;
+          // Never mint a context from inside the tick — that is how the leak compounded.
+          // `primePlatformMetronomeAudio` owns creation, on a user gesture.
+          const ctx = sharedClickCtx;
+          if (ctx && ctx.state !== 'closed') {
             const mediaTime = getMediaTime();
             const prefs = prefsRef.current as GridMetronomePlaybackPrefs;
             const legacyMetVolume = prefs.masterMuted ? 0 : prefs.masterVolume;

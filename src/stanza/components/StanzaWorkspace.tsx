@@ -2245,6 +2245,44 @@ export default function StanzaWorkspace() {
     storageKey: 'stanza-metronome-prefs',
     timeSignature: { numerator: 4, denominator: 4 },
   });
+  /**
+   * The Mix "Metronome" slider and the metronome panel's "Overall volume" are ONE control shown in
+   * two places, not two controls.
+   *
+   * They used to be independent values that `applyMetronomeBusGain` MULTIPLIED together
+   * (`mixGain × masterVolume`). Since `masterVolume` defaults to 50, a Mix slider at 100 actually
+   * played at 50%, and moving either slider changed the level by an amount neither slider showed.
+   * Both now read and write the per-song `metronomeGain`, and the gain is applied exactly once.
+   */
+  const metronomePanelPreferences = useMemo(
+    () => ({ ...stanzaMetronomePreferences, masterVolume: Math.round(metronomeUserGain * 100) }),
+    [stanzaMetronomePreferences, metronomeUserGain],
+  );
+
+  const handleMetronomePreferencesChange = useCallback(
+    (next: typeof stanzaMetronomePreferences) => {
+      const nextGain = Math.max(0, Math.min(1, next.masterVolume / 100));
+      if (selected && Math.abs(nextGain - metronomeUserGain) > 0.001) {
+        setMixMetronomeGainDraft(nextGain);
+        void persistSong({ id: selected.id, metronomeGain: nextGain });
+      }
+      // Keep every other preference (subdivisions, sounds, mutes) in its own store; only the
+      // overall level is shared with the Mix slider.
+      setStanzaMetronomePreferences({
+        ...next,
+        masterVolume: stanzaMetronomePreferences.masterVolume,
+      });
+    },
+    [
+      selected,
+      metronomeUserGain,
+      persistSong,
+      setMixMetronomeGainDraft,
+      setStanzaMetronomePreferences,
+      stanzaMetronomePreferences,
+    ],
+  );
+
   useStanzaMetronomeSync({
     enabled: Boolean(
       metronomeEnabledForPlayback && metronomeSyncSource.bpm != null && metronomeSyncSource.bpm > 0,
@@ -2254,9 +2292,11 @@ export default function StanzaWorkspace() {
     getMediaTime: getTime,
     isPlaying: playback.isPlaying,
     audioEnabled: true,
-    gain: metronomeUserGain,
+    // `metronomePanelPreferences.masterVolume` already carries the user's level, so the bus gain
+    // is identity here — applying it again is the double-multiply this replaced.
+    gain: 1,
     muted: metronomeUserMuted || stanzaTapMetronomeTapActive,
-    preferences: stanzaMetronomePreferences,
+    preferences: metronomePanelPreferences,
   });
 
   /**
@@ -2321,7 +2361,12 @@ export default function StanzaWorkspace() {
   );
 
   const stanzaDrumScheduler = useMemo(() => {
-    if (!drumsHasGrid) return undefined;
+    // No `drumsHasGrid` gate. The comment on `drumsHasGrid` above promises that without
+    // calibration we fall back to STANZA_DRUMS_DEFAULT_BPM and anchor 0 "so sounds still play" —
+    // but returning undefined here left `DrumAccompaniment` with no scheduler, so its scheduling
+    // effect bailed and nothing sounded. Enabling drums on a song that had never been calibrated
+    // did nothing at all, which is the "added drums, they don't play" report.
+    // `drumsBpm` and `drumsAnchorMediaTime` already carry the fallback.
     return createMediaTimelineDrumScheduler({
       bpm: drumsBpm,
       timeSignature: STANZA_DRUMS_DEFAULT_TIME_SIGNATURE,
@@ -2329,7 +2374,7 @@ export default function StanzaWorkspace() {
       getMediaTime: getTime,
       isPlaying: drumsActuallyPlaying,
     });
-  }, [drumsHasGrid, drumsBpm, drumsAnchorMediaTime, getTime, drumsActuallyPlaying]);
+  }, [drumsBpm, drumsAnchorMediaTime, getTime, drumsActuallyPlaying]);
 
   const analysisAudioContextRef = useRef<AudioContext | null>(null);
   const getAnalysisAudioContext = useCallback((): AudioContext | null => {
@@ -2720,8 +2765,8 @@ export default function StanzaWorkspace() {
                       getMediaTime={getTime}
                       isPlaying={playback.isPlaying}
                       needsCalibration={metronomeNeedsCalibration}
-                      preferences={stanzaMetronomePreferences}
-                      onPreferencesChange={setStanzaMetronomePreferences}
+                      preferences={metronomePanelPreferences}
+                      onPreferencesChange={handleMetronomePreferencesChange}
                       timeSignature={STANZA_DRUMS_DEFAULT_TIME_SIGNATURE}
                     />
                     {railCalibSeg ? (

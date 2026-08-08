@@ -5,6 +5,13 @@ import { tokenizeLyricLine, snapChordColumnToCharIndex, type ChartLayout, type C
 export const CHART_PLAYBACK_MEASURES_PER_LINE = 2;
 export const CHART_PLAYBACK_BEATS_PER_MEASURE = 4;
 
+/**
+ * Word count above which a lyrics-only line (no playable chords) is estimated at two
+ * measures instead of one — so a song with lyrics but no chords still gets a realistic
+ * duration from its line breakdown + tempo, not one flat measure per line.
+ */
+export const LYRIC_ONLY_TWO_MEASURE_WORD_THRESHOLD = 6;
+
 export type ChartPlaybackStep = {
   tickId: string;
   sectionId: string;
@@ -125,12 +132,21 @@ function lineHasPlayableChords(line: LyricLine): boolean {
  */
 export function estimateMeasuresForLine(line: LyricLine): number {
   if (!lineHasPlaybackContent(line)) return 0;
-  if (line.chords.length > 0 && !lineHasPlayableChords(line)) return 0;
+  const hasChordMarkers = line.chords.length > 0;
+  const playable = lineHasPlayableChords(line);
+  if (hasChordMarkers && !playable) return 0;
   const words = wordTokens(line.text);
   const anchors = distinctChordAnchors(line);
   if (words.length === 0) return anchors > 0 ? 1 : 0;
   if (words.length <= 4) return 1;
   if (anchors >= 2) return CHART_PLAYBACK_MEASURES_PER_LINE;
+  // No two-chord signal to widen the line. Chord charts keep single-chord lines at one
+  // measure; a lyrics-only line (no playable chords) instead widens by length, so a
+  // song without chords still estimates from its lyric-line breakdown, not 1 flat
+  // measure per line.
+  if (!playable && words.length > LYRIC_ONLY_TWO_MEASURE_WORD_THRESHOLD) {
+    return CHART_PLAYBACK_MEASURES_PER_LINE;
+  }
   return 1;
 }
 

@@ -235,6 +235,16 @@ describe('PERFORMANCE_MERGE_POLICY (P0-3)', () => {
     expect(PERFORMANCE_MERGE_POLICY.videos).toBe('union-by-id');
   });
 
+  it('moves the subject pointer as a unit — never preserve-filled', () => {
+    // `songId` + `subjectKind` together say WHAT was performed. The policy-driven recovery union
+    // writes `accVal ?? histVal` per key, so a `preserve-filled-*` disposition on either half could
+    // pair a stale `songId` with a newer `subjectKind` and point the row at the wrong table.
+    expect(performanceMergePolicyKeys()).toContain('subjectKind');
+    expect(PERFORMANCE_MERGE_POLICY.songId).toBe('lww');
+    expect(PERFORMANCE_MERGE_POLICY.subjectKind).toBe('lww');
+    expect(PERFORMANCE_MERGE_POLICY.subjectKind).not.toMatch(/^preserve-filled/);
+  });
+
   it('unions videos by id — a video on only one side is never dropped', () => {
     const merged = mergePerformanceVideoLists(
       [{ id: 'a', createdAt: '2025-01-01T00:00:00.000Z' }],

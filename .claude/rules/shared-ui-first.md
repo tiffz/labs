@@ -16,6 +16,25 @@ Before adding a **new** control, menu, slider, popover, or playback field:
 2. Read the matching section in [`SHARED_UI_CONVENTIONS.md`](../../src/shared/SHARED_UI_CONVENTIONS.md).
 3. Prefer **token overrides** and documented class hooks over forking markup.
 
+## Found it? Reuse it — or surface the tradeoff (never silently fork)
+
+If the search turns up a shared component for the control you are about to build, **use
+it.** A fit problem — "it's a raw button and this app is MUI", "it needs a font this app
+doesn't load", "the accent is the wrong colour", "it has settings this surface doesn't
+need" — is a **theming/config task** (add an `appearance`, load the font, override a
+token, pass a prop), **not** a reason to hand-roll a bespoke replacement.
+
+If you still believe divergence is right, **stop and put the tradeoff to the user** before
+writing bespoke code — do not decide unilaterally and reimplement.
+
+**Cautionary tale (`shared-ui-reimplementation`):** the Encore Originals metronome was
+first hand-rolled as a one-off MUI `IconButton` because the shared `MetronomeSplitControl`
+"wouldn't fit the MUI toolbar". It took three rework rounds (bespoke button → bare shared
+toggle → shared split control) before landing on the shared control themed with an
+`encore` appearance — what should have happened first. The font was already loaded; the
+"fit" was a ~20-line CSS appearance block. Every rationalisation for forking was a theming
+task in disguise.
+
 ## Must reuse (do not copy)
 
 | Need                                    | Use                                                                                  |
@@ -43,6 +62,7 @@ When introducing a new diversion: document the shared alternative + journey reas
 - Deep MUI selector overrides when a token family (`--pfs-*`, `--bpm-*`) exists.
 - App-local duplicate of logic already in `src/shared/music/**` or `src/shared/notation/**`.
 - Replacing a documented first-class control with its portable shared cousin “for consistency.”
+- Hand-rolling a bespoke control when a shared one exists, rationalised by a fit/theming/font gap — theme the shared control (appearance / token / font / prop) or surface the tradeoff; do not fork silently (`shared-ui-reimplementation`).
 
 Encore-only row primitives: [`src/encore/UI_PRIMITIVES.md`](../../src/encore/UI_PRIMITIVES.md).
 

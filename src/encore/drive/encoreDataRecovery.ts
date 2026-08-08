@@ -251,6 +251,11 @@ export function buildDataRecoveryPlan(
   for (const snap of snapshots) {
     for (const perf of snap.performances) {
       if (currentPerfIds.has(perf.id)) continue;
+      // Skip performances logged against an original. Their `songId` is an ORIGINALS id, so
+      // bucketing them here would synthesize a phantom `songs` row under that id — putting the
+      // same id in both tables and breaking the disjoint-id-space invariant `subjectKind` relies
+      // on. Worse, deleting that phantom song would cascade-delete the original's performances.
+      if (perf.subjectKind === 'original') continue;
       let bucket = recoveredPerfBySong.get(perf.songId);
       if (!bucket) {
         bucket = new Map();

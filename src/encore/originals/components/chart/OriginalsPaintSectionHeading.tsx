@@ -26,7 +26,7 @@ import { loadChordPlaybackSettings } from '../../../../shared/music/chordPlaybac
 import { sectionHasPlayableChartSteps } from '../../../../shared/music/chordPro/chartPlaybackSequence';
 import { sectionUsesCustomPlayback } from '../../../../shared/music/resolveSectionPlaybackSettings';
 import type { TimeSignature } from '../../../../shared/rhythm/types';
-import { useOptionalOriginalsChartPlayback } from '../../context/useOriginalsChartPlayback';
+import { useOptionalOriginalsChartTransport } from '../../context/useOriginalsChartTransport';
 import {
   createSectionPlaybackOverrideFromGlobal,
   type OriginalsSectionPlaybackOverride,
@@ -87,7 +87,7 @@ export function OriginalsPaintSectionHeading({
 
   usePopoverScrollAnchorSync(playbackOpen, playbackButtonRef, playbackPopoverActionRef);
 
-  const chartPlayback = useOptionalOriginalsChartPlayback();
+  const chartPlayback = useOptionalOriginalsChartTransport();
   const label = section.header?.trim() || section.type;
   const canPlaySection = sectionHasPlayableChartSteps(layout, section.sectionId);
   const sectionIsPlaying =

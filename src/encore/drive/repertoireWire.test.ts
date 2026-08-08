@@ -150,10 +150,14 @@ describe('song/performance delete tombstones (P0-1, clocked)', () => {
       ...defaultRepertoireExtrasRow(iso),
       deletedSongIds: { s1: iso, s2: iso },
       deletedPerformanceIds: { p9: iso },
+      // Originals sync through their own shard layout, but their tombstones ride the repertoire
+      // extras row — so they have to survive this round trip or a delete never reaches a peer.
+      deletedOriginalIds: { o3: iso },
     };
     const round = parseRepertoireWire(serializeRepertoireWire(buildWireFromTables([], [], extras)));
     expect(round.deletedSongIds).toEqual({ s1: iso, s2: iso });
     expect(round.deletedPerformanceIds).toEqual({ p9: iso });
+    expect(round.deletedOriginalIds).toEqual({ o3: iso });
   });
 
   it('migrates a legacy id-only array wire to the clock map (deletedAt = exportedAt)', () => {
@@ -184,6 +188,20 @@ describe('song/performance delete tombstones (P0-1, clocked)', () => {
     const merged = mergeRepertoireExtras(a, b);
     expect(Object.keys(merged.deletedSongIds ?? {}).sort()).toEqual(['s1', 's2', 'shared']);
     expect(merged.deletedSongIds?.shared).toBe('2025-09-09T00:00:00.000Z'); // latest wins
+  });
+
+  it('mergeRepertoireExtras unions ORIGINALS tombstones too (a lost one means a delete never applies)', () => {
+    const a = {
+      ...defaultRepertoireExtrasRow('2025-06-01T00:00:00.000Z'),
+      deletedOriginalIds: { o1: '2025-01-01T00:00:00.000Z', shared: '2025-01-01T00:00:00.000Z' },
+    };
+    const b = {
+      ...defaultRepertoireExtrasRow('2025-06-02T00:00:00.000Z'),
+      deletedOriginalIds: { o2: '2025-01-01T00:00:00.000Z', shared: '2025-09-09T00:00:00.000Z' },
+    };
+    const merged = mergeRepertoireExtras(a, b);
+    expect(Object.keys(merged.deletedOriginalIds ?? {}).sort()).toEqual(['o1', 'o2', 'shared']);
+    expect(merged.deletedOriginalIds?.shared).toBe('2025-09-09T00:00:00.000Z');
   });
 
   it('drops blank ids on parse', () => {

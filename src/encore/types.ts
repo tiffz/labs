@@ -248,7 +248,24 @@ export interface EncorePerformanceVideo {
 
 export interface EncorePerformance {
   id: string;
+  /**
+   * Id of the thing that was performed. A repertoire {@link EncoreSong} by default, or an
+   * `EncoreOriginalSong` when {@link EncorePerformance.subjectKind} is `'original'`.
+   *
+   * Deliberately **not** relaxed to optional, and deliberately not split into a second
+   * `originalId` field. Both id spaces are `crypto.randomUUID()` so they cannot collide, and a
+   * required single pointer keeps "neither set" and "both set" unrepresentable. Optionality would
+   * also leak into the published guest contract through {@link PublicSnapshotPerformance}'s `Pick`,
+   * and would empty the `performances.songId` Dexie index for originals — IndexedDB omits records
+   * whose index key is `undefined`, which would silently break every `where('songId')` query.
+   * Resolve it through `resolvePerformanceSubject`, never by reading this field directly.
+   */
   songId: string;
+  /**
+   * Which table {@link EncorePerformance.songId} points at. Absent means `'song'`, so every row
+   * written before originals could be performed keeps its meaning with no migration.
+   */
+  subjectKind?: 'song' | 'original';
   /** ISO date (calendar day) */
   date: string;
   venueTag: string;
@@ -398,4 +415,10 @@ export interface RepertoireWirePayload {
   deletedSongIds?: Record<string, string>;
   /** Deleted-performance tombstones (`id -> deletedAt` ISO); merge filters by clock supersede. */
   deletedPerformanceIds?: Record<string, string>;
+  /**
+   * Deleted-original tombstones (`id -> deletedAt` ISO). Originals sync through their own shard
+   * layout, but their tombstones ride here so both devices agree on what was deleted versus what
+   * simply has not been pushed yet.
+   */
+  deletedOriginalIds?: Record<string, string>;
 }

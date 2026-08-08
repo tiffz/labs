@@ -305,6 +305,56 @@
 }
 
 /*
+ * Encore (Originals chord playback) — matches the outlined meta chips (Key / Time /
+ * BPM) that sit beside it in the toolbar, so it reads as just another button in the
+ * row: 30px tall, 0.45rem radius, the same lavender-violet outline, transparent idle.
+ * On-state is a quiet fuchsia (#ad1fbf, the Encore primary) tint + glyph, not a loud
+ * fill. Keep these three in lockstep — see originals.css .encore-originals-meta-chip.
+ */
+.labs-metronome-split-control--encore,
+.labs-metronome-settings-popover--encore {
+  --metro-split-radius: 0.45rem;
+  --metro-split-min-height: 30px;
+  --metro-split-height: 30px;
+  /* 1.3rem × 0.9 ≈ 18.7px glyph in a 30px box — as large as the 1.5× icon-sizing
+     floor allows, so the timer reads as a solid icon, not a dot. */
+  --metro-icon-size: 1.3rem;
+  --metro-primary-padding: 0 0.35rem;
+  --metro-menu-padding: 0;
+  --metro-split-border: color-mix(in srgb, #7c3aed 22%, #e9d5ff);
+  --metro-split-bg: transparent;
+  --metro-split-hover-bg: color-mix(in srgb, #ad1fbf 6%, #ffffff);
+  --metro-split-divider: color-mix(in srgb, #7c3aed 18%, #e9d5ff);
+  /* On-state divider: the shared default is near-white (invisible on the fuchsia
+     tint). Use a fuchsia line so the split seam stays visible when the metronome is on. */
+  --metro-split-divider-active: color-mix(in srgb, #ad1fbf 34%, transparent);
+  --metro-accent: #ad1fbf;
+  --metro-accent-dot: #ad1fbf;
+  --metro-primary-color: #5b6675;
+  --metro-menu-color: #5b6675;
+  --metro-primary-hover-bg: color-mix(in srgb, #ad1fbf 6%, #ffffff);
+  --metro-menu-hover-bg: color-mix(in srgb, #ad1fbf 8%, #ffffff);
+  --metro-primary-active-bg: color-mix(in srgb, #ad1fbf 12%, #ffffff);
+  --metro-primary-active-color: #ad1fbf;
+  --metro-split-active-hover-bg: color-mix(in srgb, #ad1fbf 18%, #ffffff);
+  --metro-panel-bg: #ffffff;
+  --metro-panel-border: rgba(76, 29, 149, 0.1);
+  --metro-slider-color: #ad1fbf;
+}
+
+/*
+ * Compact the two segments for the 30px toolbar size. These vars are re-declared on
+ * .labs-split-action-button itself (its default 2.25rem/1.75rem are sized for taller
+ * controls), so an appearance-wrapper value is shadowed — set them directly on the
+ * inner element with higher specificity. Snug segments = balanced padding around the
+ * timer + chevron, instead of a 15px timer stranded in a 36px segment.
+ */
+.labs-metronome-split-control--encore .labs-split-action-button {
+  --metro-primary-min-width: 1.65rem;
+  --metro-menu-width: 1.4rem;
+}
+
+/*
  * Secondary selection bridge — portaled metronome popovers do not inherit app-shell
  * --theme-primary. Derive settings toggles from --metro-accent on each appearance wrapper.
  */
@@ -328,7 +378,10 @@
 .labs-metronome-settings-panel--stanza,
 .labs-metronome-split-control--midi,
 .labs-metronome-settings-popover--midi,
-.labs-metronome-settings-panel--midi {
+.labs-metronome-settings-panel--midi,
+.labs-metronome-split-control--encore,
+.labs-metronome-settings-popover--encore,
+.labs-metronome-settings-panel--encore {
   --metro-toggle-selected-bg: color-mix(
     in srgb,
     var(--metro-accent, #7c3aed) 12%,

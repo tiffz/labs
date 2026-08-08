@@ -2112,13 +2112,28 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-audio-platform-hooks-useplatformmediametronome-ts-resetplatformmetronomeaudiofortests",
+    "name": "__resetPlatformMetronomeAudioForTests",
+    "path": "src/shared/audio/platform/hooks/usePlatformMediaMetronome.ts",
+    "kind": "hook",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Test seam — drops the shared context so a suite can assert the no-leak invariant.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-audio-platform-hooks-useplatformmediametronome-ts-primeplatformmetronomeaudio",
     "name": "primePlatformMetronomeAudio",
     "path": "src/shared/audio/platform/hooks/usePlatformMediaMetronome.ts",
     "kind": "hook",
     "stability": "stable",
     "owner": "playback-core",
-    "description": "No JSDoc summary provided.",
+    "description": "Resume the one shared click context, creating it only if it does not exist yet. This used to call `new AudioContext()` **unconditionally** and overwrite `sharedClickCtx`, orphaning the previous context without closing it. Since it is called from the first line of Stanza's `playUnified` — which also re-runs on every loop wrap and on premature-end resume — practising a looped section minted one AudioContext per pass. Chrome caps contexts per document (~6) and then throws, after which the metronome and drums are silent for the rest of the session while the `<audio>` element keeps playing normally. That is the \"drums are often muted at the start\" and \"drums don't play at all\" report: it depends on how many times you had pressed play. Each orphan also leaked its `visibilitychange` / `statechange` listeners.",
     "tags": [
       "audio"
     ],
@@ -3924,6 +3939,38 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-audio-platform-scheduling-index-ts-chart-background-look-ahead-sec",
+    "name": "CHART_BACKGROUND_LOOK_AHEAD_SEC",
+    "path": "src/shared/audio/platform/scheduling/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-scheduling-index-ts-chart-look-ahead-sec",
+    "name": "CHART_LOOK_AHEAD_SEC",
+    "path": "src/shared/audio/platform/scheduling/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
     "id": "src-shared-audio-platform-scheduling-index-ts-createdrumpatternschedulercallback",
     "name": "createDrumPatternSchedulerCallback",
     "path": "src/shared/audio/platform/scheduling/index.ts",
@@ -4111,6 +4158,22 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-audio-platform-scheduling-lookaheadaudioscheduler-ts-chart-background-look-ahead-sec",
+    "name": "CHART_BACKGROUND_LOOK_AHEAD_SEC",
+    "path": "src/shared/audio/platform/scheduling/LookAheadAudioScheduler.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Look-ahead horizon while a background-capable transport is hidden. A background tab pauses rAF and throttles timers to ~1 Hz, so a hidden tick must schedule far enough ahead that audio never gaps before the next ~1 Hz wakeup. Safe now that chart playback drops any overdue backlog through the single late gate (ADR 0025) instead of clamping it to a frozen clock and blasting it on resume.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
     "id": "src-shared-audio-platform-scheduling-lookaheadaudioscheduler-ts-chart-look-ahead-sec",
     "name": "CHART_LOOK_AHEAD_SEC",
     "path": "src/shared/audio/platform/scheduling/LookAheadAudioScheduler.ts",
@@ -4290,7 +4353,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "playback-core",
-    "description": "Pause look-ahead transports when the tab is hidden and re-anchor on return. When Chrome suspends AudioContext, `currentTime` freezes while `performance.now()` keeps advancing. Hosts that map perf→audio time then clamp every overdue note to \"now\"; on resume they fire as one loud blast. Pausing scheduling + flushing voices on hide, then re-anchoring on show, prevents that.",
+    "description": "Fire host callbacks on tab hide / show. A thin dispatcher — the host decides what hide and show mean. Historically hosts PAUSED on hide: when Chrome suspends AudioContext, `currentTime` freezes while `performance.now()` keeps advancing, and a host that clamped overdue notes to \"now\" would blast a pile of voices on resume. With the single late gate (ADR 0025) an overdue backlog is dropped, not clamped, so background playback can keep scheduling while hidden and only re-anchor if the context actually suspended.",
     "tags": [
       "audio"
     ],
@@ -4305,7 +4368,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "model",
     "stability": "stable",
     "owner": "playback-core",
-    "description": "Pause look-ahead transports when the tab is hidden and re-anchor on return. When Chrome suspends AudioContext, `currentTime` freezes while `performance.now()` keeps advancing. Hosts that map perf→audio time then clamp every overdue note to \"now\"; on resume they fire as one loud blast. Pausing scheduling + flushing voices on hide, then re-anchoring on show, prevents that.",
+    "description": "Fire host callbacks on tab hide / show. A thin dispatcher — the host decides what hide and show mean. Historically hosts PAUSED on hide: when Chrome suspends AudioContext, `currentTime` freezes while `performance.now()` keeps advancing, and a host that clamped overdue notes to \"now\" would blast a pile of voices on resume. With the single late gate (ADR 0025) an overdue backlog is dropped, not clamped, so background playback can keep scheduling while hidden and only re-anchor if the context actually suspended.",
     "tags": [
       "audio",
       "api"
@@ -5136,6 +5199,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-beat-decodemediaforbeat-ts-beat-analysis-sample-rate",
+    "name": "BEAT_ANALYSIS_SAMPLE_RATE",
+    "path": "src/shared/beat/decodeMediaForBeat.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Sample rate every Essentia rhythm algorithm assumes. `RhythmExtractor2013(signal, maxTempo, method, minTempo)` has **no sample-rate parameter** — the rate is fixed at 44100 inside the algorithm. `PercivalBpmEstimator` takes one but defaults to 44100 and we never pass it. So analysis audio MUST be at 44.1 kHz.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
     "id": "src-shared-beat-decodemediaforbeat-ts-decodemediatobuffer",
     "name": "decodeMediaToBuffer",
     "path": "src/shared/beat/decodeMediaForBeat.ts",
@@ -5143,6 +5221,19 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "stability": "stable",
     "owner": "shared-core",
     "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-decodemediaforbeat-ts-tobeatanalysisbuffer",
+    "name": "toBeatAnalysisBuffer",
+    "path": "src/shared/beat/decodeMediaForBeat.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Re-render a decoded buffer to mono at . Two bugs this fixes, both of which corrupted every single analysis: 1. **Sample rate.** `decodeAudioData` resamples to the *playback* context's rate, which is the output device's rate — 48 kHz on most Macs and on every Bluetooth device. Essentia then read that 48 kHz audio as if it were 44.1 kHz, scaling every tempo by 44100/48000 = 0.91875. Measured across synthetic drum patterns: 100 BPM → 91.88, 120 → 110.25, 140 → 128.64 (ratio 0.9184–0.9191). A song at 100 BPM was reported as 92, and the beat grid drifted a full beat every ~11 beats. This is why detection failed even on bare drum loops. 2. **Channel selection.** Callers took `getChannelData(0)` — the *left channel only*, not a downmix. A hard-panned kick or a wide stereo mix lost transient energy before onset detection ever ran. Rendering through a mono `OfflineAudioContext` applies the spec's proper downmix. The repo's synthetic fixtures are all generated at exactly 44100, so the whole test suite was structurally blind to (1) — see `regression/syntheticAudioGenerator.ts`.",
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
@@ -21785,6 +21876,22 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-music-chordpro-chartplaybacksequence-ts-lyric-only-two-measure-word-threshold",
+    "name": "LYRIC_ONLY_TWO_MEASURE_WORD_THRESHOLD",
+    "path": "src/shared/music/chordPro/chartPlaybackSequence.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Word count above which a lyrics-only line (no playable chords) is estimated at two measures instead of one — so a song with lyrics but no chords still gets a realistic duration from its line breakdown + tempo, not one flat measure per line.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
     "id": "src-shared-music-chordpro-chartplaybacksequence-ts-sectionhasplayablechartsteps",
     "name": "sectionHasPlayableChartSteps",
     "path": "src/shared/music/chordPro/chartPlaybackSequence.ts",
@@ -25722,6 +25829,69 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-music-schedulechartmeasure-ts-chart-measure-late-skip-sec",
+    "name": "CHART_MEASURE_LATE_SKIP_SEC",
+    "path": "src/shared/music/scheduleChartMeasure.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "How late a measure's start may fall behind the shared clock before the whole measure is dropped. One measure being a few ms late is inaudible; beyond this we skip it wholesale rather than clamp it to \"now\" and fire it late.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-schedulechartmeasure-ts-chartmeasurescheduleresult",
+    "name": "ChartMeasureScheduleResult",
+    "path": "src/shared/music/scheduleChartMeasure.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "How late a measure's start may fall behind the shared clock before the whole measure is dropped. One measure being a few ms late is inaudible; beyond this we skip it wholesale rather than clamp it to \"now\" and fire it late.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-schedulechartmeasure-ts-schedulechartmeasure",
+    "name": "scheduleChartMeasure",
+    "path": "src/shared/music/scheduleChartMeasure.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Schedule one chart measure — chord and drums together on one clock (ADR 0025). The **single late gate**: chord and drum share one context and one decision. If the measure start is overdue past , the whole measure is SKIPPED — never clamped to `currentTime`, never fired late. This is the structural fix for the long-play crash (a suspended/backlogged clock used to clamp every overdue note to \"now\" and blast a pile of voices on resume) and what makes a wide background look-ahead safe: a frozen-clock backlog is dropped, not replayed. Replaces the old divergent handling — the chord path clamped overdue notes (so a late measure still sounded) while the drum path skipped overdue hits (so it went silent). Now both paths make the identical schedule-or-skip decision.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-schedulechartmeasure-ts-schedulechartmeasureparams",
+    "name": "ScheduleChartMeasureParams",
+    "path": "src/shared/music/scheduleChartMeasure.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "How late a measure's start may fall behind the shared clock before the whole measure is dropped. One measure being a few ms late is inaudible; beyond this we skip it wholesale rather than clamp it to \"now\" and fire it late.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
     "id": "src-shared-music-scheduledrummeasure-ts-createchartdrumaudioplayer",
     "name": "createChartDrumAudioPlayer",
     "path": "src/shared/music/scheduleDrumMeasure.ts",
@@ -29574,13 +29744,59 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "model",
     "stability": "stable",
     "owner": "playback-core",
-    "description": "Crash breadcrumb for audio playback — a rolling trail that SURVIVES an OOM tab crash. The loop-then-crash class kills the tab, taking any in-memory diagnostics with it, and even IndexedDB writes fail once memory is exhausted. So we mirror each audio-diagnostics sample into a bounded ring in `localStorage` (small strings, no structured clone). The writes just before the crash may fail, but the earlier ones — the climb that shows what leaked — persist. After a reload, `downloadAudioBreadcrumbTrail()` (also on `window.__labsDownloadAudioTrace()`) hands you the pre-crash trail as a JSON file.",
+    "description": "Crash breadcrumb for audio playback — a rolling trail that SURVIVES an OOM tab crash. The loop-then-crash class kills the tab, taking any in-memory diagnostics with it, and even IndexedDB writes fail once memory is exhausted. So we mirror each audio-diagnostics sample into a bounded ring in `localStorage` (small strings, no structured clone). The writes just before the crash may fail, but the earlier ones — the climb that shows what leaked — persist. After a reload, `downloadAudioBreadcrumbTrail()` (also on `window.__labsDownloadAudioTrace()`) hands you the pre-crash trail as a JSON file. On the dev server there is no manual step: while the audio-diagnostics overlay samples, `postAudioTraceToDevServer()` POSTs the summarized trail to the `POST /__debug_audio_trace` Vite middleware every few seconds (plus a final beacon on `pagehide`). The middleware writes `.debug-audio-traces/trace-<sessionId>.json` (gitignored, overwritten per POST, one file per tab) so an assistant can read the pre-crash trail off disk with no forwarding. The POST is strictly dev-only (`import.meta.env.DEV`) and carries only heap/voice counts + a query-stripped route url — never tokens or PII.",
     "tags": [
       "playback",
       "api"
     ],
     "appsUsing": [],
     "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-playback-audioplaybackbreadcrumb-ts-audiotracepayload",
+    "name": "AudioTracePayload",
+    "path": "src/shared/playback/audioPlaybackBreadcrumb.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Crash breadcrumb for audio playback — a rolling trail that SURVIVES an OOM tab crash. The loop-then-crash class kills the tab, taking any in-memory diagnostics with it, and even IndexedDB writes fail once memory is exhausted. So we mirror each audio-diagnostics sample into a bounded ring in `localStorage` (small strings, no structured clone). The writes just before the crash may fail, but the earlier ones — the climb that shows what leaked — persist. After a reload, `downloadAudioBreadcrumbTrail()` (also on `window.__labsDownloadAudioTrace()`) hands you the pre-crash trail as a JSON file. On the dev server there is no manual step: while the audio-diagnostics overlay samples, `postAudioTraceToDevServer()` POSTs the summarized trail to the `POST /__debug_audio_trace` Vite middleware every few seconds (plus a final beacon on `pagehide`). The middleware writes `.debug-audio-traces/trace-<sessionId>.json` (gitignored, overwritten per POST, one file per tab) so an assistant can read the pre-crash trail off disk with no forwarding. The POST is strictly dev-only (`import.meta.env.DEV`) and carries only heap/voice counts + a query-stripped route url — never tokens or PII.",
+    "tags": [
+      "playback",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-playback-audioplaybackbreadcrumb-ts-audiotracesessionid",
+    "name": "audioTraceSessionId",
+    "path": "src/shared/playback/audioPlaybackBreadcrumb.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Stable per-tab id, generated once per page load. Names the on-disk trace file so two tabs sampling at once each get their own `trace-<sessionId>.json` instead of clobbering one file. The manual download and the dev-server auto-POST both read this constant, so they agree.",
+    "tags": [
+      "playback"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-playback-audioplaybackbreadcrumb-ts-buildaudiotracepayload",
+    "name": "buildAudioTracePayload",
+    "path": "src/shared/playback/audioPlaybackBreadcrumb.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Build the JSON payload shared by the manual download and the dev-server auto-POST.",
+    "tags": [
+      "playback"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
     "demoId": null
   },
   {
@@ -29621,6 +29837,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "stability": "stable",
     "owner": "playback-core",
     "description": "Expose console helpers so a crash trail can be pulled after a reload without any UI.",
+    "tags": [
+      "playback"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-playback-audioplaybackbreadcrumb-ts-postaudiotracetodevserver",
+    "name": "postAudioTraceToDevServer",
+    "path": "src/shared/playback/audioPlaybackBreadcrumb.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Dev-only: POST the summarized crash trail to the Vite `/__debug_audio_trace` middleware so it lands on disk (`.debug-audio-traces/trace-<sessionId>.json`) even if the tab then OOM-crashes. Uses `sendBeacon` for the final unload flush, else `fetch(..., { keepalive: true })` so an in-flight POST survives the unload. Best-effort — never throws into the caller. NO-OP in a production build: the `import.meta.env.DEV` guard dead-code-eliminates the fetch, and the endpoint does not exist in prod anyway (belt and suspenders).",
     "tags": [
       "playback"
     ],

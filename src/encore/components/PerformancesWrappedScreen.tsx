@@ -20,6 +20,13 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { useEffect, useMemo, useState, type MouseEvent as ReactMouseEvent, type ReactElement, type ReactNode } from 'react';
 import type { EncorePerformance, EncoreSong } from '../types';
+import type { EncoreOriginalSong } from '../originals/types';
+import { encoreSubjectRoute, type PerformanceSubject } from '../performances/performanceSubject';
+import type { EncoreAppRoute } from '../routes/encoreAppHash';
+import {
+  performanceSubjectKey,
+  resolvePerformanceSubject,
+} from '../performances/performanceSubject';
 import { encoreAppHref, handleSpaLinkClick } from '../routes/encoreAppHash';
 import { encorePagePaddingTop, encoreScreenPaddingX } from '../theme/encoreM3Layout';
 import { encoreMaxWidthPage, encoreShadowSurface } from '../theme/encoreUiTokens';
@@ -31,24 +38,30 @@ import {
   type PerformanceDashboardStats,
 } from '../performances/performancesStatsModel';
 
-function WrappedSongInlineLink({
-  songId,
-  songTitle,
-  onOpenSong,
+function WrappedSubjectInlineLink({
+  subject,
+  onOpenSubject,
   sx,
 }: {
-  songId: string;
-  songTitle: string;
-  onOpenSong: (songId: string, e?: ReactMouseEvent) => void;
+  subject: PerformanceSubject;
+  onOpenSubject: (route: EncoreAppRoute, e?: ReactMouseEvent) => void;
   sx?: Record<string, unknown>;
 }): ReactElement {
+  const route = encoreSubjectRoute(subject);
+  if (!route) {
+    return (
+      <Box component="span" sx={{ fontWeight: 700, ...sx }}>
+        {subject.title}
+      </Box>
+    );
+  }
   return (
     <Link
-      href={encoreAppHref({ kind: 'song', id: songId })}
-      onClick={(e) => handleSpaLinkClick(e, () => onOpenSong(songId))}
+      href={encoreAppHref(route)}
+      onClick={(e) => handleSpaLinkClick(e, () => onOpenSubject(route, e))}
       sx={{ fontWeight: 700, fontSize: 'inherit', verticalAlign: 'baseline', ...sx }}
     >
-      {songTitle}
+      {subject.title}
     </Link>
   );
 }
@@ -60,8 +73,9 @@ export type PerformancesWrappedScreenProps = {
   extended: ExtendedPerformanceInsights;
   performances: EncorePerformance[];
   songById: Map<string, EncoreSong>;
+  originalById?: Map<string, EncoreOriginalSong>;
   normalizeVenue: (tag: string) => string;
-  onOpenSong: (songId: string, e?: ReactMouseEvent) => void;
+  onOpenSubject: (route: EncoreAppRoute, e?: ReactMouseEvent) => void;
   onFocusYear: (year: string) => void;
   onFocusVenue: (venue: string) => void;
   onAddPerformance: () => void;
@@ -163,10 +177,11 @@ function YearComparator(props: {
   yearsDesc: [string, number][];
   performances: EncorePerformance[];
   songById: Map<string, EncoreSong>;
+  originalById?: Map<string, EncoreOriginalSong>;
   normalizeVenue: (tag: string) => string;
   onFocusYear: (y: string) => void;
 }): ReactElement {
-  const { yearsDesc, performances, songById, normalizeVenue, onFocusYear } = props;
+  const { yearsDesc, performances, songById, originalById, normalizeVenue, onFocusYear } = props;
   const years = useMemo(() => {
     const ys = yearsDesc.map(([y]) => y).filter((y) => /^\d{4}$/.test(y));
     const cy = String(new Date().getFullYear());
@@ -183,14 +198,21 @@ function YearComparator(props: {
   const metrics = useMemo(() => {
     const countFor = (y: string) => performances.filter((p) => p.date.startsWith(y)).length;
     const topSongFor = (y: string) => {
+      // Group by subject so an original counts under its own title, not "Unknown song".
       const m = new Map<string, number>();
+      const sample = new Map<string, (typeof performances)[number]>();
       for (const p of performances) {
         if (!p.date.startsWith(y)) continue;
-        m.set(p.songId, (m.get(p.songId) ?? 0) + 1);
+        const key = performanceSubjectKey(p);
+        m.set(key, (m.get(key) ?? 0) + 1);
+        if (!sample.has(key)) sample.set(key, p);
       }
       const best = [...m.entries()].sort((x, y) => y[1] - x[1])[0];
       if (!best) return null;
-      return { song: songById.get(best[0]) ?? null, count: best[1] };
+      return {
+        subject: resolvePerformanceSubject(sample.get(best[0])!, songById, originalById),
+        count: best[1],
+      };
     };
     const topVenueFor = (y: string) => {
       const m = new Map<string, number>();
@@ -203,7 +225,7 @@ function YearComparator(props: {
       return best ? { name: best[0], count: best[1] } : null;
     };
     return { countFor, topSongFor, topVenueFor };
-  }, [performances, songById, normalizeVenue]);
+  }, [performances, songById, originalById, normalizeVenue]);
 
   const ca = metrics.countFor(a);
   const cb = metrics.countFor(b);
@@ -272,12 +294,12 @@ function YearComparator(props: {
               </Typography>
               <Button
                 variant="text"
-                disabled={!t?.song}
-                component={t?.song ? 'a' : 'button'}
-                href={t?.song ? encoreAppHref({ kind: 'song', id: t.song.id }) : undefined}
+                disabled={!t?.subject.href}
+                component={t?.subject.href ? 'a' : 'button'}
+                href={t?.subject.href ?? undefined}
                 sx={{ justifyContent: 'flex-start', textTransform: 'none', px: 0, fontWeight: 700 }}
               >
-                {t?.song?.title ?? '–'} {t ? `· ${t.count}×` : ''}
+                {t?.subject.title ?? '–'} {t ? `· ${t.count}×` : ''}
               </Button>
               <Typography variant="subtitle2" sx={{ fontWeight: 800, mt: 1.5, mb: 0.5 }}>
                 Top venue
@@ -302,8 +324,9 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
     extended: lifetimeExtended,
     performances,
     songById,
+    originalById,
     normalizeVenue,
-    onOpenSong,
+    onOpenSubject,
     onFocusYear,
     onFocusVenue,
     onAddPerformance,
@@ -341,7 +364,7 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
       };
     }
     const sp = performances.filter((p) => p.date.startsWith(yearScope));
-    const st = buildPerformanceDashboardStats(sp, songById, normalizeVenue);
+    const st = buildPerformanceDashboardStats(sp, songById, normalizeVenue, originalById);
     if (!st) {
       return {
         activeStats: lifetimeStats,
@@ -351,17 +374,17 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
     }
     const ex = buildExtendedPerformanceInsights(sp, songById, st, {
       focusCalendarYear: Number(yearScope),
-    });
+    }, originalById);
     return {
       activeStats: st,
       activeExtended: ex,
       isAllTime: false,
     };
-  }, [yearScope, performances, songById, normalizeVenue, lifetimeStats, lifetimeExtended]);
+  }, [yearScope, performances, songById, originalById, normalizeVenue, lifetimeStats, lifetimeExtended]);
 
   const topSongsAllTime = useMemo(
-    () => buildTopSongsByPerformanceCount(performances, songById, 24),
-    [performances, songById],
+    () => buildTopSongsByPerformanceCount(performances, songById, 24, originalById),
+    [performances, songById, originalById],
   );
 
   const chipSx = {
@@ -557,35 +580,32 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
                 {activeStats.total}
               </Box>{' '}
               performances all time
-              {activeStats.mostPerformed?.song ? (
+              {activeStats.mostPerformed?.subject.href ? (
                 <>
                   . You have returned to{' '}
-                  <WrappedSongInlineLink
-                    songId={activeStats.mostPerformed.song.id}
-                    songTitle={activeStats.mostPerformed.song.title}
-                    onOpenSong={onOpenSong}
+                  <WrappedSubjectInlineLink
+                    subject={activeStats.mostPerformed.subject}
+                    onOpenSubject={onOpenSubject}
                   />{' '}
                   most often ({activeStats.mostPerformed.count}×).
                 </>
               ) : null}{' '}
-              {activeStats.bestRecent?.song ? (
+              {activeStats.bestRecent?.subject.href ? (
                 <>
                   Your most recent logged show was{' '}
-                  <WrappedSongInlineLink
-                    songId={activeStats.bestRecent.song.id}
-                    songTitle={activeStats.bestRecent.song.title}
-                    onOpenSong={onOpenSong}
+                  <WrappedSubjectInlineLink
+                    subject={activeStats.bestRecent.subject}
+                    onOpenSubject={onOpenSubject}
                   />{' '}
                   on {activeStats.bestRecent.perf.date}.
                 </>
               ) : null}{' '}
-              {activeStats.leastRecentlyPerformed?.song ? (
+              {activeStats.leastRecentlyPerformed?.subject.href ? (
                 <>
                   The song you have gone longest without performing is{' '}
-                  <WrappedSongInlineLink
-                    songId={activeStats.leastRecentlyPerformed.song.id}
-                    songTitle={activeStats.leastRecentlyPerformed.song.title}
-                    onOpenSong={onOpenSong}
+                  <WrappedSubjectInlineLink
+                    subject={activeStats.leastRecentlyPerformed.subject}
+                    onOpenSubject={onOpenSubject}
                   />{' '}
                   (last {activeStats.leastRecentlyPerformed.perf.date}).
                 </>
@@ -598,13 +618,12 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
                 {activeStats.total}
               </Box>{' '}
               performances
-              {activeStats.mostPerformed?.song ? (
+              {activeStats.mostPerformed?.subject.href ? (
                 <>
                   . Most often played:{' '}
-                  <WrappedSongInlineLink
-                    songId={activeStats.mostPerformed.song.id}
-                    songTitle={activeStats.mostPerformed.song.title}
-                    onOpenSong={onOpenSong}
+                  <WrappedSubjectInlineLink
+                    subject={activeStats.mostPerformed.subject}
+                    onOpenSubject={onOpenSubject}
                   />{' '}
                   ({activeStats.mostPerformed.count}×).
                 </>
@@ -702,18 +721,19 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
               <strong>{activeExtended.onlyOnceSongCount}</strong> {isAllTime ? 'songs' : 'songs in this year'} with exactly one
               performance {isAllTime ? 'logged (your “tried it once” set).' : 'in this year.'}
             </Typography>
-            {activeStats.leastRecentlyPerformed?.song ? (
+            {activeStats.leastRecentlyPerformed?.subject.href ? (
               <Button
                 variant="outlined"
                 size="small"
                 component="a"
-                href={encoreAppHref({ kind: 'song', id: activeStats.leastRecentlyPerformed.song.id })}
-                onClick={(e) =>
-                  handleSpaLinkClick(e, () => onOpenSong(activeStats.leastRecentlyPerformed!.song!.id))
-                }
+                href={activeStats.leastRecentlyPerformed.subject.href}
+                onClick={(e) => {
+                  const route = encoreSubjectRoute(activeStats.leastRecentlyPerformed!.subject);
+                  if (route) handleSpaLinkClick(e, () => onOpenSubject(route, e));
+                }}
                 sx={{ mt: 1.5, fontWeight: 600, borderRadius: 2, textTransform: 'none' }}
               >
-                Revival pick: {activeStats.leastRecentlyPerformed.song.title}
+                Revival pick: {activeStats.leastRecentlyPerformed.subject.title}
               </Button>
             ) : null}
           </Card>
@@ -732,13 +752,13 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
               {
                 label: 'Most played',
                 icon: <StarIcon sx={{ fontSize: 32 }} />,
-                song: activeStats.mostPerformed?.song,
+                subject: activeStats.mostPerformed?.subject,
                 sub: activeStats.mostPerformed ? `${activeStats.mostPerformed.count}×` : undefined,
               },
               {
                 label: 'Latest in scope',
                 icon: <ScheduleIcon sx={{ fontSize: 32 }} />,
-                song: activeStats.bestRecent?.song,
+                subject: activeStats.bestRecent?.subject,
                 sub: activeStats.bestRecent
                   ? `${activeStats.bestRecent.perf.date} · ${normalizeVenue(activeStats.bestRecent.perf.venueTag)}`
                   : undefined,
@@ -746,7 +766,7 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
               {
                 label: 'Longest quiet',
                 icon: <MusicNoteIcon sx={{ fontSize: 32 }} />,
-                song: activeStats.leastRecentlyPerformed?.song,
+                subject: activeStats.leastRecentlyPerformed?.subject,
                 sub: activeStats.leastRecentlyPerformed
                   ? `Last ${activeStats.leastRecentlyPerformed.perf.date}`
                   : undefined,
@@ -776,17 +796,16 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
               </Typography>
               <Button
                 variant="text"
-                disabled={!block.song}
-                component={block.song ? 'a' : 'button'}
-                href={block.song ? encoreAppHref({ kind: 'song', id: block.song.id }) : undefined}
-                onClick={(e: ReactMouseEvent) =>
-                  block.song
-                    ? handleSpaLinkClick(e, () => onOpenSong(block.song!.id))
-                    : undefined
-                }
+                disabled={!block.subject?.href}
+                component={block.subject?.href ? 'a' : 'button'}
+                href={block.subject?.href ?? undefined}
+                onClick={(e: ReactMouseEvent) => {
+                  const route = block.subject ? encoreSubjectRoute(block.subject) : null;
+                  if (route) handleSpaLinkClick(e, () => onOpenSubject(route, e));
+                }}
                 sx={{ fontWeight: 700, fontSize: '1rem', textTransform: 'none', lineHeight: 1.35 }}
               >
-                {block.song?.title ?? '–'}
+                {block.subject?.title ?? '–'}
               </Button>
               {block.sub ? (
                 <Typography variant="caption" sx={{
@@ -820,7 +839,7 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
           ) : (
             (isAllTime ? topSongsAllTime : activeExtended.topSongsThisYear).map((row, i) => (
               <Card
-                key={row.song?.id ?? i}
+                key={`${row.subject.kind}:${row.subject.id}`}
                 elevation={0}
                 sx={{
                   p: 1.5,
@@ -849,15 +868,16 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
                   </Typography>
                   <Button
                     variant="text"
-                    disabled={!row.song}
-                    component={row.song ? 'a' : 'button'}
-                    href={row.song ? encoreAppHref({ kind: 'song', id: row.song.id }) : undefined}
-                    onClick={(e: ReactMouseEvent) =>
-                      row.song ? handleSpaLinkClick(e, () => onOpenSong(row.song!.id)) : undefined
-                    }
+                    disabled={!row.subject.href}
+                    component={row.subject.href ? 'a' : 'button'}
+                    href={row.subject.href ?? undefined}
+                    onClick={(e: ReactMouseEvent) => {
+                      const route = encoreSubjectRoute(row.subject);
+                      if (route) handleSpaLinkClick(e, () => onOpenSubject(route, e));
+                    }}
                     sx={{ textTransform: 'none', fontWeight: 700, fontSize: '0.95rem', minWidth: 0, flex: 1, justifyContent: 'flex-start' }}
                   >
-                    {row.song?.title ?? '–'}
+                    {row.subject.title ?? '–'}
                   </Button>
                 </Stack>
                 <Chip label={`${row.count}×`} size="small" color="primary" variant="outlined" sx={{ fontWeight: 700 }} />
@@ -1046,6 +1066,7 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
                 yearsDesc={lifetimeStats.yearsDesc}
                 performances={performances}
                 songById={songById}
+                originalById={originalById}
                 normalizeVenue={normalizeVenue}
                 onFocusYear={onFocusYear}
               />

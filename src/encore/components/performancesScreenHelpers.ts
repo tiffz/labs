@@ -1,5 +1,6 @@
 import type { MRT_ColumnDef } from 'material-react-table';
 import type { EncoreAccompanimentTag, EncorePerformance, EncoreSong } from '../types';
+import type { PerformanceSubject } from '../performances/performanceSubject';
 import {
   MRT_ROW_SELECT_COL,
   ensureEncoreMrtRowActionsInOrder,
@@ -12,7 +13,13 @@ export type PerformancesViewMode = 'table' | 'grid';
 
 export type PerfMrtRow = {
   perf: EncorePerformance;
+  /**
+   * The repertoire song, when the subject is one. `null` for originals and for subjects missing on
+   * this device — read {@link PerfMrtRow.subject} for anything user-visible.
+   */
   song: EncoreSong | null;
+  /** Resolved subject (song / original / unknown). The source of truth for title, link, and origin. */
+  subject: PerformanceSubject;
   date: string;
   songLabel: string;
   artistLabel: string;

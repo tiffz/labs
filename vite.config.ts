@@ -346,12 +346,37 @@ export default defineConfig({
       'react/jsx-runtime',
       '@emotion/react',
       '@emotion/styled',
+      // Heavy deps reachable ONLY behind React.lazy routes (Encore Originals editor:
+      // VexFlow chart render + TipTap brainstorm editor). Without listing them here the
+      // dep optimizer misses them on the initial scan and pre-bundles them on-demand at
+      // first navigation, which re-optimizes + full-reloads the tab — a multi-second
+      // "freeze" opening a song. Pre-bundle at startup instead.
+      'vexflow',
+      '@tiptap/react',
+      '@tiptap/starter-kit',
+      '@tiptap/extension-placeholder',
+      '@tiptap/extension-link',
     ],
   },
   server: {
     /** Spotify OAuth redirect URIs cannot use `localhost`; default dev URL is loopback. */
     host: '127.0.0.1',
     middlewareMode: false,
+    /**
+     * Pre-transform the heavy lazy Encore Originals chunks at dev startup so the FIRST
+     * navigation into the library/song editor isn't a cold on-demand transform waterfall.
+     * Dev-only; no prod-build effect.
+     */
+    warmup: {
+      // Relative to `root` ('src'), NOT the repo root. With a `./src/` prefix these resolved to
+      // `src/src/encore/...`, so the warmup silently did nothing and Vite logged a
+      // "Failed to load url … Does the file exist?" pre-transform error on every dev start and
+      // every Vitest run.
+      clientFiles: [
+        './encore/originals/components/OriginalSongPage.tsx',
+        './encore/originals/components/OriginalsLibraryScreen.tsx',
+      ],
+    },
     fs: {
       // A git worktree symlinks node_modules to the main checkout, which lives outside the
       // worktree root — so Vite's default fs.allow 403s every @fontsource asset. Follow the
@@ -611,6 +636,37 @@ export default defineConfig({
               res.writeHead(500, { 'Content-Type': 'application/json' });
               res.end('{"ok":false}');
             }
+          });
+          // Audio heap-breadcrumb trace receiver (dev only): the audio-diagnostics overlay auto-POSTs
+          // the summarized crash trail here so an OOM crash's trail lands on disk without manual export.
+          // One file per browser tab (`trace-<sessionId>.json`), overwritten per POST so it is always latest.
+          server.middlewares.use('/__debug_audio_trace', (req: IncomingMessage, res: ServerResponse, next: Connect.NextFunction) => {
+            if (req.method !== 'POST') return next();
+            let body = '';
+            req.on('data', (chunk: Buffer) => {
+              body += chunk.toString();
+            });
+            req.on('end', async () => {
+              try {
+                const parsed = JSON.parse(body) as { sessionId?: unknown };
+                const fs = await import('node:fs');
+                const path = await import('node:path');
+                const baseDir = path.join(process.cwd(), '.debug-audio-traces');
+                if (!fs.existsSync(baseDir)) fs.mkdirSync(baseDir, { recursive: true });
+                // Sanitize the session id before it becomes a filename (no path traversal from client input).
+                const rawId = typeof parsed.sessionId === 'string' ? parsed.sessionId : '';
+                const sessionId = rawId.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64) || 'unknown';
+                const filePath = path.join(baseDir, `trace-${sessionId}.json`);
+                fs.writeFileSync(filePath, JSON.stringify(parsed, null, 2));
+                console.log(`\n[LABS-DEBUG] Audio trace saved at ${filePath}`);
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ ok: true, path: filePath }));
+              } catch (error) {
+                console.log('\n[LABS-DEBUG] Failed to save audio trace', error);
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end('{"ok":false}');
+              }
+            });
           });
 
           // Regression inspector endpoints (local dev): expose baseline images and latest run metadata.

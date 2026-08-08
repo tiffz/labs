@@ -154,8 +154,10 @@ export function EncoreSyncProvider({ children }: { children: ReactNode }): React
         // gate and flush any edits deferred during the initial-pull window.
         markSessionReconciledRef.current?.();
         try {
-          await pullChangedOriginalsShards(token);
+          // Push BEFORE pull. A locally-created original must reach the manifest before the pull
+          // can judge it; the reverse order was half of the P0 that deleted unpushed originals.
           await pushOriginalsDirtyShards(token);
+          await pullChangedOriginalsShards(token);
         } catch {
           /* originals sync is best-effort on full sync */
         }

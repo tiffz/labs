@@ -19,6 +19,7 @@ import { CHART_PLAYBACK_BEATS_PER_MEASURE } from '../music/chordPro/chartPlaybac
 import { ChordInstrumentSession } from '../music/chordInstrumentSession';
 import {
   CHART_LOOK_AHEAD_SEC,
+  CHART_BACKGROUND_LOOK_AHEAD_SEC,
   LookAheadAudioScheduler,
 } from '../audio/platform/scheduling/LookAheadAudioScheduler';
 import { attachTransportVisibilityGuard } from '../audio/platform/scheduling/transportVisibility';
@@ -30,8 +31,16 @@ import {
 } from '../playback/measureClock';
 import type { SampledPianoLoadState } from '../music/sampledPianoLoadState';
 import { useSampledPianoPreload } from './useSampledPianoPreload';
-import { createChartDrumAudioPlayer, scheduleDrumMeasure } from '../music/scheduleDrumMeasure';
-import { scheduleStyledChordMeasure } from '../music/scheduleStyledChordMeasure';
+import { createChartDrumAudioPlayer } from '../music/scheduleDrumMeasure';
+import { scheduleChartMeasure } from '../music/scheduleChartMeasure';
+import {
+  useMetronomePreferences,
+  type MetronomePreferences,
+} from '../audio/platform/metronome';
+import {
+  GridMetronomeScheduler,
+  type GridMetronomePlaybackPrefs,
+} from '../audio/metronome/gridMetronomePlayback';
 import type { AudioPlayer } from '../audio/audioPlayer';
 import type { Instrument } from '../playback/instruments';
 
@@ -56,6 +65,9 @@ export type UseChartChordPlaybackResult = {
   playingSectionId: string | null;
   settings: ChordPlaybackSettings;
   updateSettings: (patch: Partial<ChordPlaybackSettings>) => void;
+  /** Shared metronome preferences (subdivision, voice/click/drum sources, levels). */
+  metronomePreferences: MetronomePreferences;
+  setMetronomePreferences: (next: MetronomePreferences) => void;
   start: () => void;
   startSectionLoop: (sectionId: string) => void;
   stop: () => void;
@@ -104,6 +116,21 @@ export function useChartChordPlayback({
   sectionPlaybackOverridesRef.current = sectionPlaybackOverrides;
   const lastBeatUiPerfRef = useRef(0);
 
+  // Shared metronome: same engine, appearance, and preferences as the other apps
+  // (drums/words/…). It rides the SINGLE chart transport (ADR 0025) — the grid
+  // scheduler polls the same AudioContext the chords/drums use, so clicks stay in sync
+  // and every advanced setting (subdivision / voice / click / drum) is live.
+  const { preferences: metronomePreferences, setPreferences: setMetronomePreferences } =
+    useMetronomePreferences({
+      storageKey: `${storageKey}:metronome`,
+      timeSignature: CHART_CHORD_PLAYBACK_TIME_SIGNATURE,
+    });
+  const metronomePrefsRef = useRef(metronomePreferences);
+  metronomePrefsRef.current = metronomePreferences;
+  const metronomeSchedulerRef = useRef<GridMetronomeScheduler | null>(null);
+  /** AudioContext time of beat 0 (the first measure's start) for the current play. */
+  const metronomeAnchorAudioTimeRef = useRef(0);
+
   const steps = useMemo(() => chartLayoutToPlayablePlaybackSteps(layout), [layout]);
 
   const updateSettings = useCallback(
@@ -123,6 +150,7 @@ export function useChartChordPlayback({
     stepIndexRef.current = 0;
     instrumentSessionRef.current?.stopAll();
     drumPlayerRef.current?.stopAll();
+    metronomeSchedulerRef.current?.reset();
   }, [instrumentSessionRef]);
 
   const stop = useCallback(() => {
@@ -173,7 +201,10 @@ export function useChartChordPlayback({
       drumPlayer: AudioPlayer | null,
     ) => {
       if (generation !== playbackGenerationRef.current) return;
-      if (chordCtx.state !== 'running' || document.hidden) return;
+      // A suspended context (state !== 'running') is skipped; on resume the epoch is
+      // re-anchored so we never map onto a frozen clock. Hidden alone no longer stops
+      // scheduling — background playback keeps going (ADR 0025).
+      if (chordCtx.state !== 'running') return;
 
       const currentSettings = settingsRef.current;
       const measureSettings = resolveSectionPlaybackSettings(
@@ -183,51 +214,33 @@ export function useChartChordPlayback({
       );
       const measureMs = chartPlaybackMeasureDurationMs(tempo);
       const measureDurationSec = measureMs / 1000;
+      // One clock, one measure start for chord AND drum (ADR 0025) — the drum player
+      // borrows this same context, so there is no separate drum clock and no clamp.
       const measureStartTime = measureStartAudioTimeFromEpoch(
         chordCtx,
         playbackEpochPerfRef.current,
         stepIndex,
         measureMs,
       );
-      const chordVelocity = effectiveChordPlaybackVelocity(measureSettings);
 
-      scheduleStyledChordMeasure({
-        symbol: step.chordName,
-        styleId: measureSettings.chordStyleId,
-        instrument,
+      // Metronome no longer rides the per-measure chord path — the shared grid
+      // scheduler polls the same AudioContext in the rAF tick (see the beat-UI effect),
+      // so subdivisions between measure boundaries schedule correctly.
+      scheduleChartMeasure({
+        ctx: chordCtx,
         measureStartTime,
+        instrument,
+        chordSymbol: step.chordName,
+        chordStyleId: measureSettings.chordStyleId,
+        chordVelocity: effectiveChordPlaybackVelocity(measureSettings),
         measureDurationSec,
         timeSignature: CHART_CHORD_PLAYBACK_TIME_SIGNATURE,
-        velocity: chordVelocity,
+        drumPlayer,
+        drumPattern: measureSettings.drumPattern,
+        drumVolume: effectiveDrumPlaybackVolume(measureSettings),
+        tempo,
+        shouldContinue: () => generation === playbackGenerationRef.current,
       });
-
-      if (generation !== playbackGenerationRef.current) {
-        instrument.stopAll(0);
-        return;
-      }
-
-      const drumVolume = effectiveDrumPlaybackVolume(measureSettings);
-      if (drumVolume > 0 && drumPlayer) {
-        const drumCtx = drumPlayer.getAudioContext();
-        if (!drumCtx || drumCtx.state !== 'running') return;
-        // Clamp an overdue measure start to "now" so a late measure's drums PLAY
-        // (like the chord path clamps notes) instead of being per-hit skipped ->
-        // the "chords sound, drums silent on the last looped measure" bug. The
-        // structural fix is one shared context + one late decision (ADR 0025);
-        // this keeps chord and drum audible-together until then.
-        const drumMeasureStart = Math.max(
-          measureStartAudioTimeFromEpoch(drumCtx, playbackEpochPerfRef.current, stepIndex, measureMs),
-          drumCtx.currentTime,
-        );
-        scheduleDrumMeasure({
-          drumPlayer,
-          pattern: measureSettings.drumPattern,
-          timeSignature: CHART_CHORD_PLAYBACK_TIME_SIGNATURE,
-          tempo,
-          volume: drumVolume,
-          measureStartTime: drumMeasureStart,
-        });
-      }
     },
     [tempo],
   );
@@ -278,10 +291,20 @@ export function useChartChordPlayback({
           if (generation !== playbackGenerationRef.current) return;
         }
 
-        if (ready.ctx.state !== 'running' || document.hidden) return;
+        if (ready.ctx.state !== 'running') return;
 
         playbackEpochPerfRef.current = performance.now() + CHART_SCHEDULE_LEAD_MS;
         const measureMs = chartPlaybackMeasureDurationMs(tempo);
+        // Anchor the metronome grid to beat 0 (the first measure's start) on the shared
+        // clock, then reset the scheduler so it counts from that anchor.
+        metronomeAnchorAudioTimeRef.current = measureStartAudioTimeFromEpoch(
+          ready.ctx,
+          playbackEpochPerfRef.current,
+          0,
+          measureMs,
+        );
+        if (!metronomeSchedulerRef.current) metronomeSchedulerRef.current = new GridMetronomeScheduler();
+        metronomeSchedulerRef.current.reset();
         if (!transportRef.current) transportRef.current = new LookAheadAudioScheduler();
         const transport = transportRef.current;
 
@@ -309,9 +332,11 @@ export function useChartChordPlayback({
             const currentSteps = activeStepsRef.current;
             if (currentSteps.length === 0) return;
 
-            // Bound work per tick so a huge catch-up cannot block the main thread.
+            // Bound work per tick so a huge catch-up cannot block the main thread,
+            // yet still cover the full horizon (a wide background horizon may span
+            // several passes of a short section).
             let scheduledThisTick = 0;
-            const maxPerTick = currentSteps.length + 2;
+            const maxPerTick = Math.ceil(horizonMs / measureMs) + 2;
 
             while (scheduledThisTick < maxPerTick) {
               const idx = stepIndexRef.current;
@@ -330,6 +355,18 @@ export function useChartChordPlayback({
                   }
                   return;
                 }
+                // Wrap-time voice choke (ADR 0025 step 3): cut the previous pass's
+                // still-ringing voices AT the loop boundary on the audio clock, BEFORE
+                // scheduling the next pass, so voices can't accumulate across wraps —
+                // bounded no matter how far ahead the horizon scheduled.
+                const wrapBoundaryAudioTime = measureStartAudioTimeFromEpoch(
+                  ready.ctx,
+                  playbackEpochPerfRef.current,
+                  currentSteps.length,
+                  measureMs,
+                );
+                ready.instrument.stopAllVoicesAt?.(wrapBoundaryAudioTime);
+                drumPlayer?.stopAllSounds(wrapBoundaryAudioTime);
                 // Seamless loop: slide epoch forward by one full pass.
                 playbackEpochPerfRef.current += currentSteps.length * measureMs;
                 stepIndexRef.current = 0;
@@ -341,7 +378,13 @@ export function useChartChordPlayback({
               scheduledThisTick += 1;
             }
           },
-          { lookAheadSec: CHART_LOOK_AHEAD_SEC },
+          {
+            lookAheadSec: CHART_LOOK_AHEAD_SEC,
+            // Keep scheduling while hidden with a wider horizon (rAF pauses in
+            // background tabs; a ~1 Hz timer drives it). Safe because the single late
+            // gate drops any overdue backlog instead of blasting it (ADR 0025).
+            backgroundLookAheadSec: CHART_BACKGROUND_LOOK_AHEAD_SEC,
+          },
         );
       })();
     },
@@ -388,6 +431,22 @@ export function useChartChordPlayback({
 
     const tick = () => {
       const now = performance.now();
+
+      // Metronome look-ahead poll on the SAME AudioContext as chords/drums (ADR 0025),
+      // so clicks stay locked to the chord grid and honor every live preference. The
+      // grid scheduler dedupes slots, so polling every frame is safe.
+      if (settingsRef.current.metronomeEnabled) {
+        const ctx = instrumentSessionRef.current?.getAudioContext();
+        const scheduler = metronomeSchedulerRef.current;
+        if (ctx && ctx.state === 'running' && scheduler) {
+          const prefs = metronomePrefsRef.current as GridMetronomePlaybackPrefs;
+          scheduler.configure(tempo, CHART_CHORD_PLAYBACK_TIME_SIGNATURE, prefs, 0);
+          const elapsed = ctx.currentTime - metronomeAnchorAudioTimeRef.current;
+          const masterVolume = prefs.masterMuted ? 0 : prefs.masterVolume;
+          void scheduler.pollTimeline(ctx, elapsed, prefs, masterVolume, 0.03);
+        }
+      }
+
       const elapsedSec = (now - measureStartPerfRef.current) / 1000;
       const nextBeatTime = Math.min(elapsedSec, measureDurationSec);
       // Throttle React state — drum notation highlight must not run every frame.
@@ -403,6 +462,8 @@ export function useChartChordPlayback({
       if (animFrameRef.current !== null) cancelAnimationFrame(animFrameRef.current);
       animFrameRef.current = null;
     };
+    // instrumentSessionRef/metronome refs are stable; only playing/tempo gate this effect.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- instrumentSessionRef
   }, [playing, tempo]);
 
   const playbackBeat = useMemo(() => {
@@ -424,44 +485,38 @@ export function useChartChordPlayback({
     };
   }, [instrumentSessionRef]);
 
-  /** Flush voices on tab hide; re-anchor epoch on show so overdue notes never pile up. */
+  /**
+   * Background playback (ADR 0025): hidden ≠ stop. The transport keeps scheduling
+   * while the tab is hidden, and the single late gate drops any overdue backlog if
+   * the clock froze — so there is no resume blast to flush. We only touch the epoch
+   * when the context ACTUALLY suspended, re-anchoring it to continue from the current
+   * measure (the frozen backlog was already skipped, not replayed).
+   */
   useEffect(() => {
     if (!playing) return;
 
-    const flushVoices = () => {
-      // Invalidate in-flight prepare/schedule promises before silencing.
-      playbackGenerationRef.current += 1;
-      transportRef.current?.stop();
-      instrumentSessionRef.current?.stopAll();
-      drumPlayerRef.current?.stopAll();
-    };
-
-    const resumeFromCurrentStep = () => {
-      const playSteps = activeStepsRef.current;
-      if (playSteps.length === 0) return;
-      const sectionId = playingSectionIdRef.current;
-      const loop = loopPlaybackRef.current || sectionId !== null;
-      const idx = stepIndexRef.current;
-      // Rebuild with a fresh epoch — never replay notes that piled up while suspended.
-      // When looping, keep the WHOLE section as the loop body: slicing to the
-      // current (look-ahead) step makes every later wrap restart from mid-section
-      // instead of the section start. Only the non-loop resume-to-end case slices.
-      const resumeSteps = loop
-        ? playSteps
-        : idx >= playSteps.length
-          ? playSteps
-          : playSteps.slice(Math.min(idx, playSteps.length - 1));
-      if (resumeSteps.length === 0) return;
-      beginPlayback(resumeSteps, { loop, sectionId });
+    const reanchorIfSuspended = () => {
+      const ctx = instrumentSessionRef.current?.getAudioContext();
+      if (!ctx || ctx.state === 'running') return; // seamless — clock never froze
+      void ensureAudioContextRunning(ctx).then((running) => {
+        if (!running) return;
+        const measureMs = chartPlaybackMeasureDurationMs(tempo);
+        // Continue from the current measure: set the epoch so boundary(stepIndex)
+        // lands at now + lead. Overdue measures were skipped by the late gate.
+        playbackEpochPerfRef.current =
+          performance.now() + CHART_SCHEDULE_LEAD_MS - stepIndexRef.current * measureMs;
+      });
     };
 
     return attachTransportVisibilityGuard({
-      onHidden: flushVoices,
-      onVisible: resumeFromCurrentStep,
+      onHidden: () => {
+        // Keep scheduling — background playback continues.
+      },
+      onVisible: reanchorIfSuspended,
     });
-    // Refs are stable; beginPlayback/playing gate attach + resume.
+    // Refs are stable; only playing/tempo gate the attach + re-anchor math.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- instrumentSessionRef
-  }, [playing, beginPlayback]);
+  }, [playing, tempo]);
 
   usePlaybackWakeLock(playing);
 
@@ -471,6 +526,8 @@ export function useChartChordPlayback({
     playingSectionId,
     settings,
     updateSettings,
+    metronomePreferences,
+    setMetronomePreferences,
     start,
     startSectionLoop,
     stop,

@@ -36,13 +36,18 @@ export async function uploadOriginalTakeToDrive(
   });
 }
 
-export async function buildOriginalTakeFromFile(
+/**
+ * Build a take from a local file and persist its audio blob to Dexie — the fast,
+ * local-first half of an import. Does NOT touch Drive.
+ *
+ * Split out from the Drive upload deliberately: the caller adds the returned take to
+ * the song and persists it *before* the slow resumable Drive upload, so a refresh mid-
+ * upload can never lose a take (its metadata + blob are already durable locally). The
+ * `driveFileId` is patched in later by {@link uploadOriginalTakeToDrive}.
+ */
+export async function buildLocalOriginalTake(
   file: File,
   songId: string,
-  googleAccessToken: string | null,
-  songTitle: string,
-  uploadWithDuplicateCheck: ReturnType<typeof useEncoreDriveUploadDedup>['uploadWithDuplicateCheck'],
-  registerUploadedDriveFile: ReturnType<typeof useEncoreDriveUploadDedup>['registerUploadedDriveFile'],
 ): Promise<OriginalAudioTake> {
   const take: OriginalAudioTake = {
     id: crypto.randomUUID(),
@@ -50,26 +55,8 @@ export async function buildOriginalTakeFromFile(
     timestamp: Date.now(),
     source: 'imported',
     mimeType: inferMediaMimeType(file),
+    hasLocalAudio: true,
   };
   await saveOriginalTakeBlob(songId, take.id, file);
-  take.hasLocalAudio = true;
-
-  if (googleAccessToken) {
-    try {
-      const driveFileId = await uploadOriginalTakeToDrive(
-        file,
-        take,
-        songTitle,
-        googleAccessToken,
-        uploadWithDuplicateCheck,
-        registerUploadedDriveFile,
-      );
-      if (driveFileId) {
-        take.driveFileId = driveFileId;
-      }
-    } catch {
-      /* local cache still playable */
-    }
-  }
   return take;
 }

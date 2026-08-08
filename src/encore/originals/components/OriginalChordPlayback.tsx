@@ -10,7 +10,9 @@ import Stack from '@mui/material/Stack';
 import Tooltip from '@mui/material/Tooltip';
 import { useRef, useState, type ReactElement } from 'react';
 import AnchoredPopover from '../../../shared/components/AnchoredPopover';
+import { MetronomeSplitControl } from '../../../shared/audio/platform/metronome';
 import { ChordPlaybackSettingsPanel } from '../../../shared/components/music/ChordPlaybackSettingsPanel';
+import { CHART_CHORD_PLAYBACK_TIME_SIGNATURE } from '../../../shared/music/chordPlaybackSettings';
 import { useChartChordPlayback, type UseChartChordPlaybackResult } from '../../../shared/hooks/useChartChordPlayback';
 import {
   popoverAnchorEl,
@@ -57,6 +59,8 @@ function OriginalChordPlaybackControls({
     playingSectionId,
     settings,
     updateSettings,
+    metronomePreferences,
+    setMetronomePreferences,
     start,
     stop,
     sampledPianoLoad,
@@ -76,6 +80,18 @@ function OriginalChordPlaybackControls({
       ? 'Stop section playback'
       : 'Stop chord playback'
     : 'Play chord chart';
+
+  const metronomeButton = (
+    <MetronomeSplitControl
+      enabled={settings.metronomeEnabled}
+      onToggle={() => updateSettings({ metronomeEnabled: !settings.metronomeEnabled })}
+      preferences={metronomePreferences}
+      onPreferencesChange={setMetronomePreferences}
+      timeSignature={CHART_CHORD_PLAYBACK_TIME_SIGNATURE}
+      appearance="encore"
+      ariaLabel="Metronome"
+    />
+  );
 
   const loopWholeSong = settings.loopWholeSong;
   const loopButton = (
@@ -104,9 +120,9 @@ function OriginalChordPlaybackControls({
         aria-label="Playback settings"
         aria-expanded={settingsOpen}
         onClick={() => setSettingsOpen((open) => !open)}
-        sx={{ p: 0.35, color: 'text.secondary' }}
+        sx={{ color: 'text.secondary' }}
       >
-        <SettingsOutlinedIcon sx={{ fontSize: 20 }} />
+        <SettingsOutlinedIcon sx={{ fontSize: 18 }} />
       </IconButton>
     </Tooltip>
   );
@@ -149,7 +165,7 @@ function OriginalChordPlaybackControls({
   if (compact) {
     return (
       <>
-        <Stack direction="row" spacing={0.15} sx={{
+        <Stack direction="row" spacing={0.5} className="encore-originals-transport" sx={{
           alignItems: "center"
         }}>
           <Tooltip title={playLabel}>
@@ -157,12 +173,12 @@ function OriginalChordPlaybackControls({
               size="small"
               aria-label={playLabel}
               onClick={togglePlayback}
-              sx={{ p: 0.35 }}
             >
-              {playing ? <StopIcon fontSize="small" /> : <PlayArrowIcon fontSize="small" />}
+              {playing ? <StopIcon sx={{ fontSize: 18 }} /> : <PlayArrowIcon sx={{ fontSize: 18 }} />}
             </IconButton>
           </Tooltip>
           {loopButton}
+          {metronomeButton}
           {settingsButton}
         </Stack>
         {settingsPopover}
@@ -172,19 +188,20 @@ function OriginalChordPlaybackControls({
 
   return (
     <>
-      <Stack direction="row" spacing={0.15} sx={{
+      <Stack direction="row" spacing={0.5} className="encore-originals-transport" sx={{
         alignItems: "center"
       }}>
         <Button
           size="small"
           variant="text"
-          startIcon={playing ? <StopIcon fontSize="small" /> : <PlayArrowIcon fontSize="small" />}
+          startIcon={playing ? <StopIcon sx={{ fontSize: 18 }} /> : <PlayArrowIcon sx={{ fontSize: 18 }} />}
           onClick={togglePlayback}
-          sx={{ minWidth: 0, px: 1 }}
+          sx={{ minWidth: 0 }}
         >
           {playing ? 'Stop' : 'Play'}
         </Button>
         {loopButton}
+        {metronomeButton}
         {settingsButton}
       </Stack>
       {settingsPopover}

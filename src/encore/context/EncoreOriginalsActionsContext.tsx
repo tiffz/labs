@@ -1,6 +1,10 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useCallback, useContext, useMemo, type ReactElement, type ReactNode } from 'react';
 import { encoreDb, markDirtyRow } from '../db/encoreDb';
+import {
+  clearDeletedOriginalIds,
+  recordDeletedOriginalIds,
+} from '../drive/encoreRepertoireTombstones';
 import { isOriginalSongPersistable } from '../originals/originalsWorkflowCompletion';
 import { normalizeEncoreOriginalSong, type EncoreOriginalSong } from '../originals/types';
 import { useEncoreSync } from './useEncoreSync';
@@ -70,17 +74,25 @@ export function EncoreOriginalsActionsProvider({ children }: { children: ReactNo
       if (!previous) return;
       const prevSnap = !isReplayingRef.current ? cloneRow(previous) : undefined;
       await encoreDb.originals.delete(id);
+      // Tombstone first-class: the originals pull deletes only on a tombstone, so without this an
+      // intentional delete is resurrected by any peer still holding the row.
+      await recordDeletedOriginalIds([id]);
+      // Take blobs stay put so undo can restore a playable song. `pruneOrphanedOriginalTakeBlobs`
+      // reclaims them on the next sync once the delete is settled.
       await markDirtyRow('original', id, 'delete');
       scheduleBackgroundSync();
       if (prevSnap) {
         pushUndo({
           undo: async () => {
-            await encoreDb.originals.put(prevSnap);
+            // Bump the clock so the restored row supersedes its own tombstone on every device.
+            await encoreDb.originals.put({ ...prevSnap, updatedAt: new Date().toISOString() });
+            await clearDeletedOriginalIds([id]);
             await markDirtyRow('original', id, 'upsert');
             scheduleBackgroundSync();
           },
           redo: async () => {
             await encoreDb.originals.delete(id);
+            await recordDeletedOriginalIds([id]);
             await markDirtyRow('original', id, 'delete');
             scheduleBackgroundSync();
           },

@@ -1,16 +1,18 @@
 /**
- * Pause look-ahead transports when the tab is hidden and re-anchor on return.
+ * Fire host callbacks on tab hide / show. A thin dispatcher — the host decides what
+ * hide and show mean.
  *
- * When Chrome suspends AudioContext, `currentTime` freezes while `performance.now()`
- * keeps advancing. Hosts that map perf→audio time then clamp every overdue note to
- * "now"; on resume they fire as one loud blast. Pausing scheduling + flushing voices
- * on hide, then re-anchoring on show, prevents that.
+ * Historically hosts PAUSED on hide: when Chrome suspends AudioContext, `currentTime`
+ * freezes while `performance.now()` keeps advancing, and a host that clamped overdue
+ * notes to "now" would blast a pile of voices on resume. With the single late gate
+ * (ADR 0025) an overdue backlog is dropped, not clamped, so background playback can
+ * keep scheduling while hidden and only re-anchor if the context actually suspended.
  */
 
 export type TransportVisibilityHandlers = {
-  /** Tab hidden (or page frozen) — stop scheduling and silence active voices. */
+  /** Tab hidden (or page frozen). A background-playback host keeps scheduling here. */
   onHidden: () => void;
-  /** Tab visible again — re-anchor clocks and resume if still "playing". */
+  /** Tab visible again — re-anchor the clock if it suspended while hidden. */
   onVisible: () => void;
 };
 

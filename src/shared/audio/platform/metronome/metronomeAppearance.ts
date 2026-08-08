@@ -6,7 +6,8 @@ export type MetronomeAppearance =
   | 'piano'
   | 'chords'
   | 'stanza'
-  | 'midi';
+  | 'midi'
+  | 'encore';
 
 const METRONOME_APPEARANCES: ReadonlySet<MetronomeAppearance> = new Set([
   'default',
@@ -16,6 +17,7 @@ const METRONOME_APPEARANCES: ReadonlySet<MetronomeAppearance> = new Set([
   'chords',
   'stanza',
   'midi',
+  'encore',
 ]);
 
 export function resolveMetronomeAppearance(value?: string): MetronomeAppearance {

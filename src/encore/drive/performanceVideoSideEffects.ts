@@ -68,7 +68,13 @@ export function syncSavedPerformanceVideoShortcuts(params: {
   if (entries.length === 0) return;
   void (async () => {
     try {
-      const song = (await encoreDb.songs.get(toSave.songId)) ?? null;
+      // An original is not in `songs`; resolve it so the rename keeps the artist-less filename
+      // the upload wrote rather than stamping "Untitled song - Unknown artist" over it.
+      const isOriginal = toSave.subjectKind === 'original';
+      const song = isOriginal ? null : ((await encoreDb.songs.get(toSave.songId)) ?? null);
+      const nameSubject = isOriginal
+        ? { title: (await encoreDb.originals.get(toSave.songId))?.title ?? 'Untitled song', omitArtist: true }
+        : null;
       let updatedVideos = [...videos];
       let shortcutChanged = false;
       for (const video of entries) {
@@ -78,7 +84,7 @@ export function syncSavedPerformanceVideoShortcuts(params: {
           videoTargetDriveFileId: video.videoTargetDriveFileId,
           videoShortcutDriveFileId: video.videoShortcutDriveFileId,
         };
-        const result = await syncPerformanceVideo(accessToken, pseudo, song, driveUploadFolderOverrides);
+        const result = await syncPerformanceVideo(accessToken, pseudo, song, driveUploadFolderOverrides, nameSubject);
         if (result.shortcutCreatedId && result.shortcutCreatedId !== video.videoShortcutDriveFileId) {
           shortcutChanged = true;
           if (updatedVideos.length > 0) {
