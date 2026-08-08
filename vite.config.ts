@@ -368,9 +368,13 @@ export default defineConfig({
      * Dev-only; no prod-build effect.
      */
     warmup: {
+      // Relative to `root` ('src'), NOT the repo root. With a `./src/` prefix these resolved to
+      // `src/src/encore/...`, so the warmup silently did nothing and Vite logged a
+      // "Failed to load url … Does the file exist?" pre-transform error on every dev start and
+      // every Vitest run.
       clientFiles: [
-        './src/encore/originals/components/OriginalSongPage.tsx',
-        './src/encore/originals/components/OriginalsLibraryScreen.tsx',
+        './encore/originals/components/OriginalSongPage.tsx',
+        './encore/originals/components/OriginalsLibraryScreen.tsx',
       ],
     },
     fs: {
