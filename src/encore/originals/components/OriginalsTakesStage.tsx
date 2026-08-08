@@ -17,6 +17,11 @@ export function OriginalsTakesStage({
   onOpenBrainstorm,
 }: OriginalsTakesStageProps): ReactElement {
   return (
-    <OriginalsSongFilesPanel song={song} onChange={onChange} onOpenBrainstorm={onOpenBrainstorm} />
+    <OriginalsSongFilesPanel
+      song={song}
+      onChange={onChange}
+      onOpenBrainstorm={onOpenBrainstorm}
+      takesLayout="detailed"
+    />
   );
 }
