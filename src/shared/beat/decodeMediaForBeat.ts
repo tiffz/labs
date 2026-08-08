@@ -159,8 +159,18 @@ export async function decodeMediaToBuffer(params: {
   mediaUrl: string;
   audioContext: AudioContext;
   onProgress?: (progress: AnalysisProgress) => void;
+  /**
+   * `'analysis'` re-renders to mono at 44.1 kHz for Essentia (see {@link toBeatAnalysisBuffer}).
+   *
+   * Defaults to `'playback'`, which returns the buffer untouched. This decoder also feeds playback
+   * and **audio export** (`stanzaAudioExport.ts`) — forcing the analysis format on those would
+   * silently downmix the user's exported audio to mono and resample it.
+   */
+  target?: 'analysis' | 'playback';
 }): Promise<AudioBuffer> {
-  const { file, mediaType, mediaUrl, audioContext, onProgress } = params;
+  const { file, mediaType, mediaUrl, audioContext, onProgress, target = 'playback' } = params;
+  const maybeForAnalysis = (buffer: AudioBuffer): Promise<AudioBuffer> | AudioBuffer =>
+    target === 'analysis' ? toBeatAnalysisBuffer(buffer) : buffer;
   onProgress?.({ stage: 'Loading audio', progress: 0 });
   await yieldToMainThread();
 
@@ -172,15 +182,15 @@ export async function decodeMediaToBuffer(params: {
     onProgress?.({ stage: 'Extracting audio from video...', progress: 2 });
     await yieldToMainThread();
     try {
-      return await toBeatAnalysisBuffer(await decodeMediaAsAudio(file, audioContext));
+      return await maybeForAnalysis(await decodeMediaAsAudio(file, audioContext));
     } catch {
       onProgress?.({ stage: 'Trying alternate extraction method...', progress: 3 });
       await yieldToMainThread();
-      return toBeatAnalysisBuffer(await extractAudioFromVideo(mediaUrl, audioContext));
+      return maybeForAnalysis(await extractAudioFromVideo(mediaUrl, audioContext));
     }
   }
 
   onProgress?.({ stage: 'Decoding audio...', progress: 2 });
   await yieldToMainThread();
-  return toBeatAnalysisBuffer(await decodeMediaAsAudio(file, audioContext));
+  return maybeForAnalysis(await decodeMediaAsAudio(file, audioContext));
 }

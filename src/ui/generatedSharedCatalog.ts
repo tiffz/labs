@@ -2112,13 +2112,28 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-audio-platform-hooks-useplatformmediametronome-ts-resetplatformmetronomeaudiofortests",
+    "name": "__resetPlatformMetronomeAudioForTests",
+    "path": "src/shared/audio/platform/hooks/usePlatformMediaMetronome.ts",
+    "kind": "hook",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Test seam — drops the shared context so a suite can assert the no-leak invariant.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-audio-platform-hooks-useplatformmediametronome-ts-primeplatformmetronomeaudio",
     "name": "primePlatformMetronomeAudio",
     "path": "src/shared/audio/platform/hooks/usePlatformMediaMetronome.ts",
     "kind": "hook",
     "stability": "stable",
     "owner": "playback-core",
-    "description": "No JSDoc summary provided.",
+    "description": "Resume the one shared click context, creating it only if it does not exist yet. This used to call `new AudioContext()` **unconditionally** and overwrite `sharedClickCtx`, orphaning the previous context without closing it. Since it is called from the first line of Stanza's `playUnified` — which also re-runs on every loop wrap and on premature-end resume — practising a looped section minted one AudioContext per pass. Chrome caps contexts per document (~6) and then throws, after which the metronome and drums are silent for the rest of the session while the `<audio>` element keeps playing normally. That is the \"drums are often muted at the start\" and \"drums don't play at all\" report: it depends on how many times you had pressed play. Each orphan also leaked its `visibilitychange` / `statechange` listeners.",
     "tags": [
       "audio"
     ],
