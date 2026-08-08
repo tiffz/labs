@@ -309,10 +309,13 @@ export function OriginalsTakeRow(props: OriginalsTakeRowProps): ReactElement {
           sx={{
             alignSelf: 'flex-start',
             ml: { xs: 0, sm: 7.5 },
-            p: 0.25,
+            // 24px is the hard coarse-pointer floor asserted by responsive-all-apps.spec.ts, and
+            // text.disabled sits under the WCAG AA contrast floor for an interactive label.
+            minHeight: 24,
+            px: 0.5,
             border: 0,
             bgcolor: 'transparent',
-            color: 'text.disabled',
+            color: 'text.secondary',
             font: 'inherit',
             fontSize: '0.8125rem',
             cursor: 'text',

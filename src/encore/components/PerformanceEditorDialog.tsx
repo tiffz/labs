@@ -914,7 +914,10 @@ export function PerformanceEditorDialog(props: {
                         albumArtUrl: songForPerformance.albumArtUrl,
                       }
                     : subjectTitle
-                      ? { title: subjectTitle, artist: subjectKind === 'original' ? 'Original' : '' }
+                      ? // Artist stays blank for an original — it means "who wrote/recorded this",
+                        // and filling it with the word "Original" makes the alt text read
+                        // "<Title> by Original". The dialog title already carries the kind.
+                        { title: subjectTitle, artist: '' }
                       : null
                 }
               />
