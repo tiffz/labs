@@ -121,15 +121,22 @@ Commands quick reference: root [`README.md`](README.md) and `package.json` scrip
 - Read the **nearest app README** before editing an unfamiliar app.
 - Always-on gates (full text in their rules): UX journey sketch ([`ux-journey-mandatory.md`](.agents/rules/ux-journey-mandatory.md)), feasibility assessment ([`feasibility-first.md`](.agents/rules/feasibility-first.md)), presubmit ([`pre-commit-checks.md`](.agents/rules/pre-commit-checks.md)), writing style ([`writing-style.md`](.agents/rules/writing-style.md)).
 
+### Ship by default
+
+Commit, push, and **merge to `main`** without asking, once `npm run presubmit` is green
+and you have verified the change does what you claim. These apps have a handful of users
+and breakage is cheap to revert — see [`major-change-review-gates.md`](.agents/rules/major-change-review-gates.md).
+Do not stage a change and wait for approval you could have earned with a test.
+
 ### Ask first
 
-- **Git commit**, **push**, or **open a PR** (unless the user explicitly requested it).
-- **Merge to `main`** — allowed only after the [`labs-local-review`](.agents/skills/labs-local-review/SKILL.md) gate is green (three reviewer subagents, findings verified, zero open blockers); rationale in [ADR 0023](docs/adr/0023-local-review-merge-gate.md). Without that gate, treat merge as ask-first.
-- **Major changes** also run the lifecycle gates in [`major-change-review-gates.md`](.agents/rules/major-change-review-gates.md) ([ADR 0024](docs/adr/0024-major-change-ux-qa-review-gates.md)) — PM at proposal, architecture at design, UX and QA before merge — right-sized by the app's quality tier ([`docs/APP_QUALITY_TIERS.md`](docs/APP_QUALITY_TIERS.md)). `protected` apps (e.g. Encore, despite being unlisted) get full rigor; `experimental` apps move fast.
+- **Irreversible data loss.** Destructive migrations over existing user data with no dry
+  run. (Sync/tombstone/schema work does _not_ need permission — it needs a
+  characterization test you have verified fails against the old code.)
+- **Changes you cannot verify yourself** whose blast radius is large — auth/OAuth flows
+  you cannot exercise end-to-end, or a judgment call that rests on the owner's taste.
 - **Visual baseline updates** (`e2e/visual/*-snapshots/`) — skill `labs-visual-regression`.
-- **New ADR** or material architecture change — skill `labs-write-adr`.
-- Expanding scope beyond the user’s request.
-- **Codifying process improvements** into rules/docs when the user has not agreed — except retrospective **proposals** (always deliver) and **codify-on-second-occurrence** per [`CONTINUOUS_PROCESS_IMPROVEMENT.md`](docs/CONTINUOUS_PROCESS_IMPROVEMENT.md).
+- Expanding scope well beyond the user's request.
 
 ### Never
 
