@@ -2410,6 +2410,17 @@ export default function StanzaWorkspace() {
     return analysisAudioContextRef.current;
   }, []);
 
+  // Close it on unmount. Browsers cap AudioContexts per document at ~6; leaving this one open for
+  // the life of the tab permanently spends one of them and narrows the margin for the leak class
+  // that just caused crashes.
+  useEffect(
+    () => () => {
+      void analysisAudioContextRef.current?.close();
+      analysisAudioContextRef.current = null;
+    },
+    [],
+  );
+
   const stanzaCanAnalyze = practiceSource === 'local' && Boolean(selected?.localAudioBlob && localUrl);
   const stanzaAnalysisDisabledReason =
     practiceSource !== 'local' && isYoutube

@@ -102,6 +102,17 @@ export function createMediaTimelineDrumScheduler(
         ? BACKGROUND_LOOK_AHEAD_SEC / period
         : FOREGROUND_LOOK_AHEAD_BEATS;
 
+      // A loop wrap seeks media time BACKWARDS without pausing, so the monotonic cursor would sit
+      // far ahead of the playhead and `endBeat <= startBeat` would silence the drums for the rest
+      // of the session. Previously the whole scheduler was recreated on every anchor change, which
+      // reset this by accident — making it long-lived to stop the AudioContext leak removed that
+      // accident, so the reset has to be explicit.
+      if (scheduledUpToBeat >= 0 && currentBeat < scheduledUpToBeat - 1) scheduledUpToBeat = -1;
+
+      // A forward skip must not dump the whole skipped span at once: every past-due hit clamps to
+      // `now` and fires on the same sample — a loud blast plus hundreds of tracked sources.
+      if (scheduledUpToBeat >= 0 && scheduledUpToBeat < currentBeat) scheduledUpToBeat = currentBeat;
+
       const startBeat = scheduledUpToBeat < 0 ? currentBeat : scheduledUpToBeat;
       const endBeat = currentBeat + lookAhead;
       if (endBeat <= startBeat) return;

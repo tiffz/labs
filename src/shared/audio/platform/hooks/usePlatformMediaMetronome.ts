@@ -114,6 +114,10 @@ export function usePlatformMediaMetronome(opts: UsePlatformMediaMetronomeOptions
     }
 
     let raf = 0;
+    // `poll()` really awaits (context resume polls for up to 400ms; first-use sample fetches). If
+    // cleanup runs while it is suspended, the `finally` below would schedule a frame into a dead
+    // closure that nothing can cancel — one orphaned 60Hz loop per section boundary, stacking.
+    let disposed = false;
     const poll = async (): Promise<void> => {
       if (!audioEnabled || mutedRef.current) return;
       // Never mint a context from inside the tick — that is how the leak compounded.
@@ -131,7 +135,7 @@ export function usePlatformMediaMetronome(opts: UsePlatformMediaMetronomeOptions
         try {
           await poll();
         } finally {
-          raf = window.requestAnimationFrame(tick);
+          if (!disposed) raf = window.requestAnimationFrame(tick);
         }
       });
     };
@@ -147,6 +151,7 @@ export function usePlatformMediaMetronome(opts: UsePlatformMediaMetronomeOptions
     }, 500);
 
     return () => {
+      disposed = true;
       window.cancelAnimationFrame(raf);
       window.clearInterval(backgroundTimer);
     };
