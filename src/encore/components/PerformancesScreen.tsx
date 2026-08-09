@@ -344,7 +344,13 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
   const [bulkScoreOpen, setBulkScoreOpen] = useState(false);
   const [importMenuAnchor, setImportMenuAnchor] = useState<HTMLElement | null>(null);
   const extrasRef = useRef(repertoireExtras);
-  extrasRef.current = repertoireExtras;
+  // Written in an effect, not during render: a render-phase ref write is a React Compiler
+  // correctness error (a discarded render can leave a stale write). Safe here because
+  // `extrasRef.current` is only read inside `persistPerformancesTablePrefs`, which runs from event
+  // handlers — never during render — so it has always been committed by the time it is read.
+  useEffect(() => {
+    extrasRef.current = repertoireExtras;
+  });
 
   const performancesSubTab = useSyncExternalStore(
     subscribePerformancesSubTab,
@@ -428,6 +434,20 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
     if (viewMode === 'grid') setRowSelection({});
   }, [viewMode]);
 
+  /*
+   * eslint-disable react-hooks/refs -- deliberate, and mandated by
+   * `.agents/rules/encore-list-tab-performance.md`.
+   *
+   * Performances is a keep-alive tab. Rebuilding these maps while it is hidden regresses CUJ-001,
+   * so each memo returns a cached ref when `heavyListTabActive` is false. That necessarily reads
+   * and writes a ref during render, which the React Compiler flags.
+   *
+   * It is safe here BECAUSE the staleness is the feature: when the tab is hidden nothing renders
+   * from these values, and the worst case under a discarded render is a recompute, not a wrong
+   * UI. Removing the pattern to satisfy the lint would trade a real, measured perf regression for
+   * a theoretical correctness one.
+   */
+   
   const venueOptions = useMemo(() => {
     if (!heavyListTabActive) return venueOptionsCacheRef.current;
     const s = new Set<string>();
@@ -461,6 +481,7 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
     songByIdCacheRef.current = next;
     return next;
   }, [heavyListTabActive, songs]);
+   
 
   // Gated on `heavyListTabActive` like every other heavy memo here — Performances stays mounted
   // when hidden, and rebuilding this on originals churn would regress CUJ-001 tab latency.

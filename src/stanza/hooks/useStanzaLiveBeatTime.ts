@@ -29,17 +29,19 @@ export function useStanzaLiveBeatTime(opts: {
   const { isPlaying, getTime, anchorMediaTime, bpm, fallbackTime } = opts;
   const subdivisionsPerBeat = opts.subdivisionsPerBeat ?? 4;
 
-  const [beatTime, setBeatTime] = useState(() => Math.max(0, fallbackTime - anchorMediaTime));
+  /** Only meaningful while playing; the paused value is derived below, never stored. */
+  const [sampledBeatTime, setSampledBeatTime] = useState(0);
 
-  // Mirrored so the rAF registers once and still reads fresh values.
+  // Mirrored so the rAF registers once and still reads fresh values. Written in an effect, not
+  // during render — React Compiler treats a render-phase ref write as a correctness error, and it
+  // genuinely is one under concurrent rendering (a render can be discarded, leaving a stale write).
   const ref = useRef({ getTime, anchorMediaTime, bpm, subdivisionsPerBeat });
-  ref.current = { getTime, anchorMediaTime, bpm, subdivisionsPerBeat };
+  useEffect(() => {
+    ref.current = { getTime, anchorMediaTime, bpm, subdivisionsPerBeat };
+  });
 
   useEffect(() => {
-    if (!isPlaying) {
-      setBeatTime(Math.max(0, fallbackTime - anchorMediaTime));
-      return undefined;
-    }
+    if (!isPlaying) return undefined;
     let raf = 0;
     let lastStep = Number.NaN;
     let disposed = false;
@@ -54,7 +56,7 @@ export function useStanzaLiveBeatTime(opts: {
         const step = Math.floor(t / stepDuration);
         if (step !== lastStep) {
           lastStep = step;
-          setBeatTime(t);
+          setSampledBeatTime(t);
         }
       }
       raf = window.requestAnimationFrame(tick);
@@ -65,9 +67,10 @@ export function useStanzaLiveBeatTime(opts: {
       disposed = true;
       if (raf) window.cancelAnimationFrame(raf);
     };
-    // `fallbackTime` intentionally omitted: it changes at 4 Hz and would restart the loop.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isPlaying, anchorMediaTime]);
 
-  return beatTime;
+  // Derived, not stored: while paused the React snapshot is authoritative and there is nothing to
+  // sample. Deriving here instead of writing state in the effect removes a cascading render and
+  // keeps ONE source of truth per transport state.
+  return isPlaying ? sampledBeatTime : Math.max(0, fallbackTime - anchorMediaTime);
 }

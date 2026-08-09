@@ -82,7 +82,12 @@ export function useOriginalsTakes({
   const takeFileInputRef = useRef<HTMLInputElement>(null);
 
   const songRef = useRef(song);
-  songRef.current = song;
+  // Effect, not render phase: a render-phase ref write is a React Compiler correctness error.
+  // `songRef.current` is only read inside async take mutations (never during render), and the
+  // optimistic write below still wins until the next commit, so semantics are unchanged.
+  useEffect(() => {
+    songRef.current = song;
+  });
 
   const applySong = useCallback(
     (next: EncoreOriginalSong) => {
