@@ -1014,13 +1014,36 @@ export async function detectTempoEnsemble(audioBuffer: AudioBuffer): Promise<Ens
   // Compute consensus using only valid estimates
   const { consensusBpm: rawConsensusBpm, confidence, agreement } = resolveConsensusBpm(validEstimates);
 
+  /*
+   * Trust RhythmExtractor2013 multifeature directly when it produced an estimate.
+   *
+   * Everything below this point — octave-normalized weighted consensus, `selectCorrectOctaveWithOnsets`,
+   * `fineTuneBpm`, `snapBpmToIntegerWithOnsets` — was built to improve on that estimator and
+   * measurably makes it worse. `normalizeToRange` folds every reading into 70-140 BPM before
+   * averaging, so a correct 150 BPM becomes 75, and the octave "recovery" that is supposed to undo
+   * that does not: a 150 BPM drum loop came out at 74.6.
+   *
+   * Each heuristic here was added to fix one song and never re-validated against the rest. The
+   * owner's report was that detection is "awful ... never accurate, even on pure drum loops",
+   * which is what a pipeline tuned song-by-song produces.
+   *
+   * The remaining estimators still run: they feed `agreement`/`confidence` (so the UI can say "verify
+   * this") and `bestBeats`. They no longer get to move the tempo.
+   *
+   * Octave errors that survive are now the user's one-click fix — the half/double control is
+   * available on both tempo surfaces as of the previous commit. That was the precondition for
+   * making this trade.
+   */
+  const multifeature = validEstimates.find((e) => e.algorithm === 'multifeature');
+  const trustedRawBpm = multifeature && multifeature.bpm > 0 ? multifeature.bpm : rawConsensusBpm;
+
   // Detect onsets for octave selection and fine-tuning
   const onsets = detectOnsets(audioBuffer);
 
   // Apply intelligent octave selection based on musical characteristics
   // This analyzes onset density and inter-onset intervals to determine
   // whether the song "feels" slow or fast
-  const octaveCorrectedBpm = selectCorrectOctaveWithOnsets(rawConsensusBpm, onsets, audioBuffer.duration);
+  const octaveCorrectedBpm = selectCorrectOctaveWithOnsets(trustedRawBpm, onsets, audioBuffer.duration);
   
 
   // Fine-tune the BPM using drift analysis

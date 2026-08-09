@@ -168,13 +168,35 @@ fi
 
 echo "== check:agent-docs: skills-ref validate =="
 
+# Run the per-skill validations in PARALLEL.
+#
+# `skills-ref validate` only accepts one directory per invocation, and each `npx --yes` re-resolves
+# the package (~2.4s). Serially across 27 skills that was ~65s — making `check:agent-docs` the
+# slowest static check in presubmit, ahead of lint, knip and typecheck combined, to validate
+# markdown. The work is embarrassingly parallel and each run is independent.
 if command -v npx >/dev/null 2>&1; then
+  skills_tmp=$(mktemp -d)
   for skill_dir in .agents/skills/labs-*/; do
     skill_name=$(basename "$skill_dir")
-    if ! npx --yes skills-ref validate "$skill_dir"; then
-      fail "skills-ref validate failed for ${skill_name}"
-    fi
+    (
+      if npx --yes skills-ref validate "$skill_dir" >"${skills_tmp}/${skill_name}.log" 2>&1; then
+        :
+      else
+        echo "${skill_name}" >>"${skills_tmp}/failures"
+      fi
+    ) &
   done
+  wait
+  # Emit captured output in a stable order so the log reads the same as the serial version did.
+  for log in "${skills_tmp}"/*.log; do
+    [ -e "$log" ] && cat "$log"
+  done
+  if [ -f "${skills_tmp}/failures" ]; then
+    while read -r skill_name; do
+      fail "skills-ref validate failed for ${skill_name}"
+    done <"${skills_tmp}/failures"
+  fi
+  rm -rf "${skills_tmp}"
 else
   fail "npx not available for skills-ref validate"
 fi
