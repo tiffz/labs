@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { render } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { OriginalsChartPlaybackProvider } from './OriginalsChartPlaybackContext';
@@ -46,18 +47,29 @@ function makeResult(playbackBeatTime: number): UseChartChordPlaybackResult {
   };
 }
 
-let transportRenders = 0;
-let fullRenders = 0;
+/**
+ * Counted in an effect rather than during render.
+ *
+ * Incrementing an outer variable (or mutating an outer object) from a render body trips the React
+ * Compiler rules — `globals` for a bare `let`, `immutability` for an object property. An effect
+ * with no dependency array runs once per commit, which is exactly what "did this subtree re-render"
+ * means for this test, and it keeps the assertions below unchanged.
+ */
+const renderCounts = { transport: 0, full: 0 };
 
 function TransportProbe(): null {
   useOptionalOriginalsChartTransport();
-  transportRenders += 1;
+  useEffect(() => {
+    renderCounts.transport += 1;
+  });
   return null;
 }
 
 function FullProbe(): null {
   useOptionalOriginalsChartPlayback();
-  fullRenders += 1;
+  useEffect(() => {
+    renderCounts.full += 1;
+  });
   return null;
 }
 
@@ -65,8 +77,8 @@ const layout: ChartLayout = { sections: [] };
 
 describe('OriginalsChartPlaybackProvider — beat ticks do not churn the chart', () => {
   beforeEach(() => {
-    transportRenders = 0;
-    fullRenders = 0;
+    renderCounts.transport = 0;
+    renderCounts.full = 0;
     hoisted.current = makeResult(0);
   });
 
@@ -87,8 +99,8 @@ describe('OriginalsChartPlaybackProvider — beat ticks do not churn the chart',
 
     const { rerender } = render(ui());
 
-    const transportAfterMount = transportRenders;
-    const fullAfterMount = fullRenders;
+    const transportAfterMount = renderCounts.transport;
+    const fullAfterMount = renderCounts.full;
     expect(transportAfterMount).toBeGreaterThan(0);
     expect(fullAfterMount).toBeGreaterThan(0);
 
@@ -99,9 +111,9 @@ describe('OriginalsChartPlaybackProvider — beat ticks do not churn the chart',
     }
 
     // The full-context consumer (tiny controls / drum-notation) tracks the beat...
-    expect(fullRenders - fullAfterMount).toBe(10);
+    expect(renderCounts.full - fullAfterMount).toBe(10);
     // ...but the chart subtree (transport-only) must NOT re-render on beat ticks.
     // Before the context split this incremented once per tick (20Hz full-chart churn).
-    expect(transportRenders - transportAfterMount).toBe(0);
+    expect(renderCounts.transport - transportAfterMount).toBe(0);
   });
 });

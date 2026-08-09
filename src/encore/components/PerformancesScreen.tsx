@@ -289,7 +289,6 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
   const venueOptionsCacheRef = useRef<string[]>([]);
   const perfVenueFilterOptionsCacheRef = useRef<string[]>([]);
   const songByIdCacheRef = useRef(new Map<string, EncoreSong>());
-  const originalByIdCacheRef = useRef(new Map<string, EncoreOriginalSong>());
   const perfMrtDataCacheRef = useRef<PerfMrtRow[]>([]);
   const perfFilterFieldDefsCacheRef = useRef<EncoreFilterFieldConfig[]>([]);
   const perfDashboardStatsCacheRef = useRef<PerformanceDashboardStats | null>(null);
@@ -483,14 +482,21 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
   }, [heavyListTabActive, songs]);
    
 
-  // Gated on `heavyListTabActive` like every other heavy memo here — Performances stays mounted
-  // when hidden, and rebuilding this on originals churn would regress CUJ-001 tab latency.
-  const originalById = useMemo(() => {
-    if (!heavyListTabActive) return originalByIdCacheRef.current;
-    const next = new Map(originals.map((o) => [o.id, o] as const));
-    originalByIdCacheRef.current = next;
-    return next;
-  }, [heavyListTabActive, originals]);
+  /*
+   * Same CUJ-001 protection as the neighbouring memos — Performances stays mounted when hidden and
+   * must not rebuild on originals churn — but achieved by freezing the INPUT through the shared
+   * `useEncoreTabFrozenSnapshot` rather than hand-rolling another cache ref.
+   *
+   * Freezing the input is strictly better: while the tab is hidden `frozenOriginals` keeps its
+   * identity, so `useMemo` already declines to recompute. That gets the same skip without a
+   * ref read/write during render, which the React Compiler rules (correctly) flag. The older
+   * cache-ref memos above predate this helper.
+   */
+  const frozenOriginals = useEncoreTabFrozenSnapshot(heavyListTabActive, originals);
+  const originalById = useMemo(
+    () => new Map(frozenOriginals.map((o) => [o.id, o] as const)),
+    [frozenOriginals],
+  );
 
   const hasAnyPerformanceVideoLink = useMemo(() => {
     if (!heavyListTabActive) return hasAnyPerformanceVideoLinkCacheRef.current;
