@@ -34,6 +34,8 @@ export type OriginalsPaintChordsEditorProps = {
     sectionId: string,
     override: OriginalsSectionPlaybackOverride | null,
   ) => void;
+  onApplyChordsToSameType?: (sectionId: string) => void;
+  onApplyDrumsToSameType?: (sectionId: string) => void;
 };
 
 export function OriginalsPaintChordsEditor({
@@ -53,6 +55,8 @@ export function OriginalsPaintChordsEditor({
   onDeleteSelected,
   onApplySectionProgression,
   onSectionPlaybackOverrideChange,
+  onApplyChordsToSameType,
+  onApplyDrumsToSameType,
   tempo,
   timeSignature,
   sectionPlaybackOverrides,
@@ -116,6 +120,8 @@ export function OriginalsPaintChordsEditor({
         onSelectWord={onSelectWord}
         onApplySectionProgression={onApplySectionProgression}
         onSectionPlaybackOverrideChange={onSectionPlaybackOverrideChange}
+        onApplyChordsToSameType={onApplyChordsToSameType}
+        onApplyDrumsToSameType={onApplyDrumsToSameType}
       />
     </Box>
   );

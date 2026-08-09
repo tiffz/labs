@@ -396,11 +396,21 @@ export function applyStanzaConflictChoices(params: {
   localRows: StanzaSong[];
   remoteSongs: StanzaSongDriveRow[];
   choices: Map<string, 'local' | 'remote'>;
+  /**
+   * Delete tombstones, same as the auto-pull merge. REQUIRED: without them this path resurrected
+   * every song the user had deleted the moment they resolved any row conflict — the auto-pull call
+   * site passed them and this one did not, so the two merges disagreed about what "deleted" means.
+   */
+  tombstoneFileIds?: ReadonlySet<string>;
+  youtubeTombstoneVideoIds?: ReadonlySet<string>;
 }): { nextRows: StanzaSong[]; remappedIds: Map<string, string>; report: StanzaDriveMergeReport } {
-  const { localRows, remoteSongs, choices } = params;
+  const { localRows, remoteSongs, choices, tombstoneFileIds, youtubeTombstoneVideoIds } = params;
   const localById = new Map(localRows.map((s) => [s.id, s] as const));
   const remoteForMerge = remoteSongs.filter((r) => choices.get(r.id) !== 'local');
-  const merged = mergeDriveRowsIntoLocalLibrary(localRows, remoteForMerge);
+  const merged = mergeDriveRowsIntoLocalLibrary(localRows, remoteForMerge, {
+    tombstoneFileIds,
+    youtubeTombstoneVideoIds,
+  });
   const nextRows = merged.nextRows.map((row) => {
     if (choices.get(row.id) !== 'remote') return row;
     const remote = remoteSongs.find((r) => r.id === row.id);

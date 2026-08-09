@@ -177,6 +177,52 @@ export type MiniNotationNoteheadBounds = {
   bottomY: number;
 };
 
+
+/**
+ * Nudge each drawn drum symbol onto its painted notehead's centre.
+ *
+ * Measures after both are in the DOM instead of predicting the x. Two predictions were tried and
+ * both were wrong by a constant 4.1px: `StaveNote.getSVGElement()` returns undefined here so the
+ * DOM-bounds read never fired, and VexFlow's logical notehead span sits right of the drawn glyph
+ * because of the Bravura notehead's left side bearing.
+ *
+ * Pairs by DOM order — `.vf-notehead` and `.drum-symbol` are both emitted once per non-rest note,
+ * in the same order — and bails if the counts ever diverge rather than shifting the wrong symbol.
+ */
+function centerDrumSymbolsOnPaintedNoteheads(svg: SVGSVGElement): void {
+  const noteEls = svg.querySelectorAll('.vf-stavenote');
+  if (noteEls.length === 0) return;
+
+  svg.querySelectorAll('.drum-symbol').forEach((node) => {
+    const symbolEl = node as SVGGraphicsElement;
+    const noteIndex = Number(symbolEl.getAttribute('data-note-index'));
+    if (!Number.isInteger(noteIndex)) return;
+    const head = noteEls[noteIndex]?.querySelector(NOTEHEAD_SELECTOR) as SVGGraphicsElement | null;
+    if (!head || typeof head.getBBox !== 'function' || typeof symbolEl.getBBox !== 'function') return;
+
+    const parsed = /translate\(\s*([-\d.]+)\s*,\s*([-\d.]+)\s*\)\s*scale\(\s*([-\d.]+)/.exec(
+      symbolEl.getAttribute('transform') ?? '',
+    );
+    if (!parsed) return;
+    const y = Number(parsed[2]);
+    const scale = Number(parsed[3]);
+    if (!Number.isFinite(y) || !Number.isFinite(scale) || scale === 0) return;
+
+    try {
+      const headBox = head.getBBox();
+      const symBox = symbolEl.getBBox();
+      if (headBox.width <= 0 || symBox.width <= 0) return;
+      // Painted centre = translateX + localCentre * scale. Solve for the translateX that lands it
+      // on the notehead's centre.
+      const nextX = headBox.x + headBox.width / 2 - (symBox.x + symBox.width / 2) * scale;
+      if (!Number.isFinite(nextX)) return;
+      symbolEl.setAttribute('transform', `translate(${nextX}, ${y}) scale(${scale})`);
+    } catch {
+      /* getBBox can throw on a detached node — keep the predicted position. */
+    }
+  });
+}
+
 const NOTEHEAD_SELECTOR =
   '.vf-notehead, path[class*="notehead"], ellipse[class*="notehead"], circle[class*="notehead"]';
 
@@ -738,8 +784,15 @@ const DrumNotationMini: React.FC<DrumNotationMiniProps> = ({
             // Draw drum symbol centered above the notehead. Use painted bounds for X only —
             // notehead topY from getBoundingClientRect is unreliable in real browsers.
             if (showDrumSymbols && note.sound !== 'rest') {
+              // Centre on the notehead. Prefer VexFlow's own notehead span over a DOM measurement:
+              // `readMiniNotationNoteheadBounds` reads `getBBox()` off the rendered element and
+              // returns null whenever that lookup misses, which it does here — measured in the
+              // browser, every symbol sat at `getAbsoluteX() + 6`, a consistent 4.1px right of the
+              // notehead centre. `getNoteHeadBeginX/EndX` come from the layout engine, so they
+              // cannot silently fail and they track notehead width across sizes.
               const bounds = readMiniNotationNoteheadBounds(staveNote);
-              const noteX = bounds?.centerX ?? staveNote.getAbsoluteX() + 6;
+              const headSpanCenterX = (staveNote.getNoteHeadBeginX() + staveNote.getNoteHeadEndX()) / 2;
+              const noteX = bounds?.centerX ?? headSpanCenterX;
               const symbolY = resolveMiniDrumSymbolDrawY(
                 height,
                 stave.getYForLine(0),
@@ -747,9 +800,30 @@ const DrumNotationMini: React.FC<DrumNotationMiniProps> = ({
                 symbolYOffset,
               );
               const color = isActive ? resolvedStyle.highlightColor : resolvedStyle.inkColor;
-              drawDrumSymbol(svg, noteX, symbolY, note.sound, color, symbolScale, symbolYOffset);
+              const symbolEl = drawDrumSymbol(
+                svg,
+                noteX,
+                symbolY,
+                note.sound,
+                color,
+                symbolScale,
+                symbolYOffset,
+              );
+              // Correct against the PAINTED glyph rather than trusting a predicted x.
+              // Neither candidate above lands on the visual centre: the DOM-bounds read returns
+              // null here, and VexFlow's logical notehead span sits ~4px right of the drawn glyph
+              // because of the Bravura notehead's left side bearing. Measuring both boxes after
+              // the draw is self-correcting across fonts, sizes and future VexFlow changes.
+              // Tag with the note's index so the post-draw centering pass can find the matching
+              // `.vf-stavenote` group. Pairing by raw DOM order does not work: rests emit a
+              // notehead-classed element but no symbol, so the two lists differ in length.
+              symbolEl?.setAttribute('data-note-index', String(index));
             }
           });
+
+          // Symbols are drawn from a predicted x; correct them against the painted noteheads now
+          // that everything is in the DOM.
+          if (showDrumSymbols) centerDrumSymbolsOnPaintedNoteheads(svg);
 
           // Draw metronome dots under beat positions
           if (showMetronomeDots) {

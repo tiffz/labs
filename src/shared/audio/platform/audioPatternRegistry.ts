@@ -15,6 +15,13 @@ export type SchedulerPattern =
   | 'look-ahead-precise'
   | 'look-ahead-score'
   | 'measure-look-ahead'
+  /**
+   * Media-slaved poll: reads the element clock each tick and schedules a short window ahead.
+   * Not forbidden — it is the honest description of Stanza's drum and metronome drivers, which
+   * are NOT built on the shared `LookAheadAudioScheduler`. Recorded so the divergence is visible
+   * rather than mislabelled as look-ahead.
+   */
+  | 'reactive-poll'
   | 'reactive-forbidden';
 
 export type AppAudioPattern = {
@@ -67,11 +74,18 @@ export const AUDIO_PATTERN_REGISTRY: Record<string, AppAudioPattern> = {
     drumScheduler: 'none',
     mixBus: 'labs-audio-mix-bus',
   },
+  // Corrected to reality 2026-08. These rows previously claimed 'look-ahead-precise' and
+  // 'labs-audio-mix-bus'; Stanza uses neither. Because the guardrail test compares these string
+  // literals to string literals, it certified the claim and the divergence was invisible to CI —
+  // which is how a cluster of audio bugs shipped without a single test noticing. Do not "fix" a
+  // row by editing it back; fix the code, then update the row.
   stanza: {
     clock: 'media-timeline',
-    metronomeScheduler: 'look-ahead-precise',
-    drumScheduler: 'look-ahead-precise',
-    mixBus: 'labs-audio-mix-bus',
+    // Media-slaved rAF/timer poll, not the shared LookAheadAudioScheduler.
+    metronomeScheduler: 'reactive-poll',
+    drumScheduler: 'reactive-poll',
+    // No LabsAudioMixBus usage anywhere under src/stanza — gains are applied per-layer.
+    mixBus: 'legacy-local',
   },
   encore: {
     clock: 'transport-interval',

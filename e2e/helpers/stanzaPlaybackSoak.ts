@@ -50,6 +50,58 @@ export async function waitForLocalAudioLoopWraps(
   );
 }
 
+/**
+ * Count every `AudioContext` the page constructs, from before app code runs.
+ *
+ * Heap growth is a lagging, noisy proxy: a handful of leaked contexts can hide inside GC jitter
+ * well under the 1.55x budget, which is how a context-per-loop-wrap leak survived this soak. The
+ * count is exact and fails on the FIRST extra context, so install this alongside the heap check.
+ *
+ * Must run via `page.addInitScript` — patching after load misses contexts made during startup.
+ */
+export async function installAudioContextCounter(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    const w = window as Window & { __stanzaAudioContextCount?: number };
+    w.__stanzaAudioContextCount = 0;
+    for (const key of ['AudioContext', 'webkitAudioContext'] as const) {
+      const Original = (window as unknown as Record<string, unknown>)[key] as
+        | (new (...args: unknown[]) => unknown)
+        | undefined;
+      if (typeof Original !== 'function') continue;
+      const Counted = function (this: unknown, ...args: unknown[]) {
+        w.__stanzaAudioContextCount = (w.__stanzaAudioContextCount ?? 0) + 1;
+        return new Original(...args);
+      } as unknown as new (...args: unknown[]) => unknown;
+      Counted.prototype = Original.prototype;
+      (window as unknown as Record<string, unknown>)[key] = Counted;
+    }
+  });
+}
+
+export async function readAudioContextCount(page: Page): Promise<number> {
+  return page.evaluate(
+    () => (window as Window & { __stanzaAudioContextCount?: number }).__stanzaAudioContextCount ?? 0,
+  );
+}
+
+/**
+ * Budget for NEW contexts created across the measured wraps. Zero is the real invariant — every
+ * driver allocates once per session — but allow a small margin for a lazily-created context whose
+ * first use happens to land after the baseline sample.
+ */
+export const STANZA_SOAK_MAX_NEW_AUDIO_CONTEXTS = 2;
+
+export function assertAudioContextCountStable(before: number, after: number, wraps: number): void {
+  const created = after - before;
+  if (created > STANZA_SOAK_MAX_NEW_AUDIO_CONTEXTS) {
+    throw new Error(
+      `${created} new AudioContext(s) across ${wraps} loop wraps (max ${STANZA_SOAK_MAX_NEW_AUDIO_CONTEXTS}). ` +
+        `A driver is allocating per play or per wrap instead of once per session — browsers cap ` +
+        `contexts per document and then throw.`,
+    );
+  }
+}
+
 /** Allow modest GC noise; fail on runaway heap growth during long loop playback. */
 export const STANZA_SOAK_HEAP_GROWTH_MAX_RATIO = 1.55;
 

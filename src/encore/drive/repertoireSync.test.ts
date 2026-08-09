@@ -65,6 +65,11 @@ vi.mock('../db/encoreDb', () => {
     patchSyncMeta: vi.fn(async (patch: Partial<SyncMetaRow>) => {
       syncMetaState = { ...syncMetaState, ...patch, id: 'default' };
     }),
+    // Mirrors the real scoping: originals drain through their own pusher, so the repertoire
+    // pull/merge must leave `kind: 'original'` dirty rows alone.
+    clearRepertoireDirtyRows: vi.fn(async () => {
+      dirtySyncTable.rows = dirtySyncTable.rows.filter((r) => r.kind === 'original');
+    }),
   };
 });
 
@@ -660,6 +665,23 @@ describe('P0 sync data-loss cluster', () => {
       await pullRepertoireFromDrive('tok', REPERTOIRE_FILE_ID);
 
       expect(songsTable.rows.map((s) => s.id)).toEqual(['s2']);
+    });
+
+    it('P0-4: the repertoire pull preserves pending `original` push intent', async () => {
+      // The pull used to call `dirtySync.clear()`, dropping `kind: 'original'` rows it never owned.
+      // An original created before its push landed therefore lost its only record of needing a
+      // push, and the originals pull that runs next deleted it as "absent from the manifest".
+      dirtySyncTable.rows = [
+        { kind: 'original', op: 'upsert' },
+        { kind: 'song', op: 'upsert' },
+        { kind: 'performance', op: 'delete' },
+      ];
+      (driveGetMedia as any).mockResolvedValueOnce(wireWithExtras([], []));
+      (driveGetFileMetadata as any).mockResolvedValueOnce(meta('2025-06-01T01:00:00.000Z'));
+
+      await pullRepertoireFromDrive('tok', REPERTOIRE_FILE_ID);
+
+      expect(dirtySyncTable.rows).toEqual([{ kind: 'original', op: 'upsert' }]);
     });
 
     it('a locally-deleted performance is not resurrected by a remote copy on pull', async () => {

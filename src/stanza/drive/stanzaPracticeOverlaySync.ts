@@ -82,7 +82,12 @@ const OVERLAY_FIELDS: (keyof StanzaPracticeOverlayEntry)[] = [
   'localTransposeSemitones',
   'localOriginalKey',
   'skippedBySegmentId',
-  'stems',
+  // NOT 'stems'. A stem carries a live `Blob`, and `JSON.stringify` turns a Blob into `{}`. The
+  // merge then wrote that back onto the row, and the corruption is unrecoverable by the app:
+  // `stanzaSongStemsNeedHydration` tests `!localBlob || localBlob.size === 0`, and `{}` is truthy
+  // with `size === undefined`, so the bytes are never re-downloaded — while
+  // `URL.createObjectURL({})` throws during render. Stem BYTES sync through
+  // `stanzaDriveStemSync` (`stem_audio/`); the overlay carries practice metadata only.
   'updatedAt',
 ];
 
@@ -139,6 +144,7 @@ export function mergeStanzaPracticeOverlayIntoRows(
     const overlayMarkerCount = (entry.markers ?? []).length;
     if (overlayMarkerCount < localMarkerCount) return row;
     const merged: StanzaSong = { ...row };
+    const overlayIsNewer = entry.updatedAt >= row.updatedAt;
     for (const key of OVERLAY_FIELDS) {
       if (key === 'updatedAt') {
         if (entry.updatedAt >= row.updatedAt) merged.updatedAt = entry.updatedAt;
@@ -169,6 +175,11 @@ export function mergeStanzaPracticeOverlayIntoRows(
         else delete merged.skippedBySegmentId;
         continue;
       }
+      // Every remaining field is last-write-wins, so a STALE overlay must not clobber newer local
+      // work. Without this an older entry silently reverted the drum pattern, transpose, original
+      // key and mix gains — with `updatedAt` left at the local value, so nothing downstream noticed.
+      // The fields above keep their own policies precisely because LWW is wrong for them.
+      if (!overlayIsNewer) continue;
       const value = entry[key as keyof StanzaPracticeOverlayEntry];
       if (value !== undefined) {
         (merged as unknown as Record<string, unknown>)[key as string] = value;

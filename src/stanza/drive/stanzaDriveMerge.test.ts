@@ -67,7 +67,7 @@ describe('mergeDriveRowsIntoLocalLibrary', () => {
     expect(report.keptLocalOnly).toBe(1);
   });
 
-  it('prefers local when updatedAt is newer but still takes richer remote markers', () => {
+  it('prefers local metadata when newer, and unions markers from both sides', () => {
     const local = [song({ id: '1', title: 'Local', updatedAt: 20, markers: [{ time: 1, label: 'L' }] })];
     const remote: StanzaSongDriveRow[] = [
       {
@@ -82,8 +82,9 @@ describe('mergeDriveRowsIntoLocalLibrary', () => {
     const { nextRows, report } = mergeDriveRowsIntoLocalLibrary(local, remote);
     expect(report.mergedPreferLocal).toBe(1);
     expect(nextRows[0].title).toBe('Local');
-    expect(nextRows[0].markers).toHaveLength(2);
-    expect(nextRows[0].markers[1]?.label).toBe('R2');
+    // Union: local's marker is no longer discarded just because remote had more.
+    expect(nextRows[0].markers).toHaveLength(3);
+    expect(nextRows[0].markers.map((m) => m.label)).toEqual(['L', 'R', 'R2']);
   });
 
   it('takes remote metadata when remote is newer and keeps local blobs', () => {

@@ -25,6 +25,7 @@ import {
 } from '../../drive/encoreResourceDownload';
 import { uploadOriginalSongReference } from '../originalsReferenceUpload';
 import { inferMediaMimeType } from '../../../shared/drive/inferMediaMimeType';
+import { driveFileWebUrl } from '../../drive/driveWebUrls';
 import {
   addResourceFromUrl,
   createResourceFromLocalFile,
@@ -36,7 +37,7 @@ import { encoreMediaHubAddButtonSx, practiceResourceChipFieldSx } from '../../th
 import type { EncoreMiscResource } from '../../types';
 import { useEncoreOriginalsPlayback } from '../context/EncoreOriginalsPlaybackContext';
 import {
-  buildOriginalTakeFromFile,
+  buildLocalOriginalTake,
   uploadOriginalTakeToDrive,
 } from '../originalTakeUpload';
 import {
@@ -89,7 +90,10 @@ export function useOriginalsSongFilesPanel({
   onChange,
   readOnly = false,
   onOpenBrainstorm,
-}: Pick<OriginalsSongFilesPanelProps, 'song' | 'onChange' | 'readOnly' | 'onOpenBrainstorm'>): {
+}: Pick<
+  OriginalsSongFilesPanelProps,
+  'song' | 'onChange' | 'readOnly' | 'onOpenBrainstorm'
+>): {
   panel: ReactElement;
   resourceGroups: PracticeResourceGroup[];
 } {
@@ -209,18 +213,15 @@ export function useOriginalsSongFilesPanel({
       if (files.length === 0 || readOnly) return;
       setUploading(true);
       try {
-        const newTakes = await Promise.all(
-          files.map((file) =>
-            buildOriginalTakeFromFile(
-              file,
-              songRef.current.id,
-              googleAccessToken,
-              songRef.current.title,
-              uploadWithDuplicateCheck,
-              registerUploadedDriveFile,
-            ),
-          ),
+        // Local-first: save each take's blob and persist its metadata BEFORE the slow
+        // resumable Drive upload. A refresh mid-upload can no longer lose a take — its
+        // blob + song row are already durable. Drive is a background enrichment that
+        // patches in the `driveFileId` when it lands.
+        const songId = songRef.current.id;
+        const pairs = await Promise.all(
+          files.map(async (file) => ({ file, take: await buildLocalOriginalTake(file, songId) })),
         );
+        const newTakes = pairs.map((p) => p.take);
         setLocalAudioIds((prev) => {
           const next = new Set(prev);
           for (const t of newTakes) next.add(t.id);
@@ -234,11 +235,39 @@ export function useOriginalsSongFilesPanel({
             mainTakeId: cur.mainTakeId ?? newTakes[0]?.id ?? null,
           }),
         );
+
+        if (googleAccessToken) {
+          const songTitle = songRef.current.title;
+          await Promise.all(
+            pairs.map(async ({ file, take }) => {
+              try {
+                const driveFileId = await uploadOriginalTakeToDrive(
+                  file,
+                  take,
+                  songTitle,
+                  googleAccessToken,
+                  uploadWithDuplicateCheck,
+                  registerUploadedDriveFile,
+                );
+                if (driveFileId) updateTake(take.id, { driveFileId });
+              } catch {
+                /* local cache still playable; take already persisted */
+              }
+            }),
+          );
+        }
       } finally {
         setUploading(false);
       }
     },
-    [applySong, googleAccessToken, readOnly, registerUploadedDriveFile, uploadWithDuplicateCheck],
+    [
+      applySong,
+      googleAccessToken,
+      readOnly,
+      registerUploadedDriveFile,
+      updateTake,
+      uploadWithDuplicateCheck,
+    ],
   );
 
   const replaceTakeFile = useCallback(
@@ -497,9 +526,7 @@ export function useOriginalsSongFilesPanel({
         }, (t) => practiceResourceChipFieldSx(t)]}>
         {song.takes.map((t) => {
           const playable = takeIsPlayable(t, localAudioIds);
-          const openUrl = t.driveFileId
-            ? `https://drive.google.com/file/d/${encodeURIComponent(t.driveFileId)}/view`
-            : undefined;
+          const openUrl = t.driveFileId ? driveFileWebUrl(t.driveFileId) : undefined;
           const row = (
             <EncoreMediaLinkRow
               slot="reference"
@@ -540,6 +567,7 @@ export function useOriginalsSongFilesPanel({
               key={t.id}
               title={t.label}
               subtitle="Take"
+              driveOpenUrl={openUrl}
               editNickname={readOnly ? undefined : t.label}
               onEditNicknameChange={
                 readOnly ? undefined : (value) => updateTake(t.id, { label: value.trim() || t.label })

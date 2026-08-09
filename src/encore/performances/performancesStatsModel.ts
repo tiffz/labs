@@ -1,11 +1,34 @@
 import { ENCORE_ACCOMPANIMENT_TAGS, type EncoreAccompanimentTag, type EncorePerformance, type EncoreSong } from '../types';
+import type { EncoreOriginalSong } from '../originals/types';
+import {
+  performanceSubjectKey,
+  resolvePerformanceSubject,
+  type PerformanceSubject,
+} from './performanceSubject';
+
+/**
+ * Insights group by {@link performanceSubjectKey}, not by raw `songId`, so a performance of one of
+ * the owner's originals counts under its own title instead of collapsing into "Unknown song".
+ * `song` stays alongside `subject` because tiles still want the repertoire row's album art; read
+ * `subject` for anything user-visible.
+ */
+export type PerformanceSubjectStat = { song: EncoreSong | null; subject: PerformanceSubject };
+
+function subjectFor(
+  perf: EncorePerformance,
+  songById: Map<string, EncoreSong>,
+  originalById?: Map<string, EncoreOriginalSong>,
+): PerformanceSubjectStat {
+  const subject = resolvePerformanceSubject(perf, songById, originalById);
+  return { song: subject.kind === 'song' ? (songById.get(subject.id) ?? null) : null, subject };
+}
 
 export type PerformanceDashboardStats = {
   total: number;
   topVenues: [string, number][];
-  mostPerformed: { song: EncoreSong | null; songId: string; count: number } | null;
-  bestRecent: { perf: EncorePerformance; song: EncoreSong | null } | null;
-  leastRecentlyPerformed: { perf: EncorePerformance; song: EncoreSong | null } | null;
+  mostPerformed: (PerformanceSubjectStat & { songId: string; count: number }) | null;
+  bestRecent: (PerformanceSubjectStat & { perf: EncorePerformance }) | null;
+  leastRecentlyPerformed: (PerformanceSubjectStat & { perf: EncorePerformance }) | null;
   yearsDesc: [string, number][];
   perfThisYear: number;
   perfLastYear: number;
@@ -19,9 +42,9 @@ export type ExtendedPerformanceInsights = {
   weekCounts: number[];
   maxWeek: number;
   accompanimentCounts: { tag: EncoreAccompanimentTag | 'Other'; count: number }[];
-  topSongsThisYear: { song: EncoreSong | null; count: number }[];
+  topSongsThisYear: (PerformanceSubjectStat & { count: number })[];
   topVenuesThree: [string, number][];
-  stalestThree: { song: EncoreSong | null; perf: EncorePerformance }[];
+  stalestThree: (PerformanceSubjectStat & { perf: EncorePerformance })[];
   songsTouchedLast90d: number;
   distinctSongs: number;
   onlyOnceSongCount: number;
@@ -32,13 +55,17 @@ export function buildPerformanceDashboardStats(
   performances: EncorePerformance[],
   songById: Map<string, EncoreSong>,
   normalizeVenue: (tag: string) => string,
+  originalById?: Map<string, EncoreOriginalSong>,
 ): PerformanceDashboardStats | null {
   if (performances.length === 0) return null;
   const bySong = new Map<string, number>();
+  const perfBySubjectKey = new Map<string, EncorePerformance>();
   const byVenue = new Map<string, number>();
   const byYear = new Map<string, number>();
   for (const p of performances) {
-    bySong.set(p.songId, (bySong.get(p.songId) ?? 0) + 1);
+    const key = performanceSubjectKey(p);
+    bySong.set(key, (bySong.get(key) ?? 0) + 1);
+    if (!perfBySubjectKey.has(key)) perfBySubjectKey.set(key, p);
     const v = normalizeVenue(p.venueTag);
     byVenue.set(v, (byVenue.get(v) ?? 0) + 1);
     const y = p.date.slice(0, 4);
@@ -46,24 +73,28 @@ export function buildPerformanceDashboardStats(
   }
   const topVenues = [...byVenue.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
   const rankedSongs = [...bySong.entries()]
-    .map(([songId, count]) => ({ song: songById.get(songId) ?? null, songId, count }))
+    .map(([key, count]) => {
+      const sample = perfBySubjectKey.get(key)!;
+      return { ...subjectFor(sample, songById, originalById), songId: sample.songId, count };
+    })
     .sort((a, b) => b.count - a.count);
   const mostPerformed = rankedSongs[0] ?? null;
-  let bestRecent: { perf: EncorePerformance; song: EncoreSong | null } | null = null;
+  let bestRecent: PerformanceDashboardStats['bestRecent'] = null;
   for (const p of performances) {
-    const song = songById.get(p.songId) ?? null;
-    if (!bestRecent || p.date > bestRecent.perf.date) bestRecent = { perf: p, song };
+    if (!bestRecent || p.date > bestRecent.perf.date) {
+      bestRecent = { perf: p, ...subjectFor(p, songById, originalById) };
+    }
   }
   const lastPerfBySong = new Map<string, EncorePerformance>();
   for (const p of performances) {
-    const cur = lastPerfBySong.get(p.songId);
-    if (!cur || p.date > cur.date) lastPerfBySong.set(p.songId, p);
+    const key = performanceSubjectKey(p);
+    const cur = lastPerfBySong.get(key);
+    if (!cur || p.date > cur.date) lastPerfBySong.set(key, p);
   }
-  let leastRecentlyPerformed: { perf: EncorePerformance; song: EncoreSong | null } | null = null;
+  let leastRecentlyPerformed: PerformanceDashboardStats['leastRecentlyPerformed'] = null;
   for (const p of lastPerfBySong.values()) {
-    const song = songById.get(p.songId) ?? null;
     if (!leastRecentlyPerformed || p.date < leastRecentlyPerformed.perf.date) {
-      leastRecentlyPerformed = { perf: p, song };
+      leastRecentlyPerformed = { perf: p, ...subjectFor(p, songById, originalById) };
     }
   }
   const yearsDesc = [...byYear.entries()].sort((a, b) => b[0].localeCompare(a[0]));
@@ -94,6 +125,7 @@ export function buildExtendedPerformanceInsights(
   songById: Map<string, EncoreSong>,
   stats: PerformanceDashboardStats,
   options?: BuildExtendedPerformanceInsightsOptions,
+  originalById?: Map<string, EncoreOriginalSong>,
 ): ExtendedPerformanceInsights {
   const now = new Date();
   const focusY = options?.focusCalendarYear;
@@ -104,6 +136,7 @@ export function buildExtendedPerformanceInsights(
   const weekMap = new Map<string, number>();
   const accMap = new Map<string, number>();
   const thisYearBySong = new Map<string, number>();
+  const thisYearSample = new Map<string, EncorePerformance>();
   const lastPerfBySong = new Map<string, EncorePerformance>();
 
   const addMonth = (d: Date) => {
@@ -128,10 +161,12 @@ export function buildExtendedPerformanceInsights(
     if (tags.length === 0) accMap.set('Other', (accMap.get('Other') ?? 0) + 1);
     else for (const tag of tags) accMap.set(tag, (accMap.get(tag) ?? 0) + 1);
     if (p.date.startsWith(yKey)) {
-      thisYearBySong.set(p.songId, (thisYearBySong.get(p.songId) ?? 0) + 1);
+      thisYearBySong.set(performanceSubjectKey(p), (thisYearBySong.get(performanceSubjectKey(p)) ?? 0) + 1);
+      if (!thisYearSample.has(performanceSubjectKey(p))) thisYearSample.set(performanceSubjectKey(p), p);
     }
-    const cur = lastPerfBySong.get(p.songId);
-    if (!cur || p.date > cur.date) lastPerfBySong.set(p.songId, p);
+    const key = performanceSubjectKey(p);
+    const cur = lastPerfBySong.get(key);
+    if (!cur || p.date > cur.date) lastPerfBySong.set(key, p);
   }
 
   const monthKeys: string[] = [];
@@ -187,14 +222,14 @@ export function buildExtendedPerformanceInsights(
   accompanimentCounts.sort((a, b) => b.count - a.count);
 
   const topSongsThisYear = [...thisYearBySong.entries()]
-    .map(([songId, count]) => ({ song: songById.get(songId) ?? null, count }))
+    .map(([key, count]) => ({ ...subjectFor(thisYearSample.get(key)!, songById, originalById), count }))
     .sort((a, b) => b.count - a.count)
     .slice(0, 5);
 
   const stalestThree = [...lastPerfBySong.values()]
     .sort((a, b) => a.date.localeCompare(b.date))
     .slice(0, 3)
-    .map((perf) => ({ song: songById.get(perf.songId) ?? null, perf }));
+    .map((perf) => ({ ...subjectFor(perf, songById, originalById), perf }));
 
   const ninetyAgo = new Date(now);
   ninetyAgo.setDate(ninetyAgo.getDate() - 90);
@@ -205,7 +240,10 @@ export function buildExtendedPerformanceInsights(
       : [...lastPerfBySong.values()].filter((p) => p.date >= cut).length;
 
   const bySongCount = new Map<string, number>();
-  for (const p of performances) bySongCount.set(p.songId, (bySongCount.get(p.songId) ?? 0) + 1);
+  for (const p of performances) {
+    const key = performanceSubjectKey(p);
+    bySongCount.set(key, (bySongCount.get(key) ?? 0) + 1);
+  }
   const onlyOnceSongCount = [...bySongCount.values()].filter((n) => n === 1).length;
 
   return {
@@ -231,14 +269,18 @@ export function buildTopSongsByPerformanceCount(
   performances: EncorePerformance[],
   songById: Map<string, EncoreSong>,
   limit: number,
-): { song: EncoreSong | null; count: number }[] {
+  originalById?: Map<string, EncoreOriginalSong>,
+): (PerformanceSubjectStat & { count: number })[] {
   if (performances.length === 0 || limit <= 0) return [];
   const bySong = new Map<string, number>();
+  const sample = new Map<string, EncorePerformance>();
   for (const p of performances) {
-    bySong.set(p.songId, (bySong.get(p.songId) ?? 0) + 1);
+    const key = performanceSubjectKey(p);
+    bySong.set(key, (bySong.get(key) ?? 0) + 1);
+    if (!sample.has(key)) sample.set(key, p);
   }
   return [...bySong.entries()]
-    .map(([songId, count]) => ({ song: songById.get(songId) ?? null, count }))
+    .map(([key, count]) => ({ ...subjectFor(sample.get(key)!, songById, originalById), count }))
     .sort((a, b) => b.count - a.count)
     .slice(0, limit);
 }

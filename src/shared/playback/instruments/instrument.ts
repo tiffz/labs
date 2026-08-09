@@ -28,6 +28,15 @@ export interface Instrument {
   stopAll(fadeTimeMs?: number): void;
 
   /**
+   * Schedule every currently-tracked voice to stop AT `atTime` on the audio clock.
+   * Used for the loop-wrap choke (ADR 0025 step 3): cut the previous pass's ring-out
+   * exactly at the loop boundary, before the next pass is scheduled, so voices cannot
+   * accumulate across wraps. Optional — instruments built on {@link BaseInstrument}
+   * inherit it.
+   */
+  stopAllVoicesAt?(atTime: number): void;
+
+  /**
    * Connect instrument output to a destination node
    */
   connect(destination: AudioNode): void;
@@ -69,6 +78,17 @@ export abstract class BaseInstrument implements Instrument {
   protected disposed: boolean = false;
   private activeVoices = new Set<TrackedVoice>();
   /**
+   * Hard ceiling on simultaneously-tracked voices — a crash safety net, NOT voice management.
+   * The default piano rings 6 oscillators per note, so a dense chord measure (e.g. an
+   * eighth-notes style, 5-note chords) can ring a few hundred voices, and the look-ahead may
+   * hold a measure or two at once — a legit peak near ~500. This ceiling sits far above that
+   * so it never cuts a sounding note, yet far below the tens-of-thousands an upstream
+   * scheduling desync piles up (ADR 0025 dual-clock: chord audio time bridged onto a drifted
+   * context fires many overdue measures at once) before the tab OOMs. At the ceiling we steal
+   * the oldest voice, so a desync degrades to a glitch, not a crash.
+   */
+  private static readonly MAX_ACTIVE_VOICES = 2048;
+  /**
    * Pending deferred disconnects of faded-out buses. A Set (not a single slot) so two
    * `stopAll`s within one fade window — rapid Play/Stop, fast section switches, tab
    * visibility flips — each disconnect their own old bus. A single slot let the second
@@ -101,6 +121,19 @@ export abstract class BaseInstrument implements Instrument {
    * voice's `onended` (or equivalent) so completed notes leave the set.
    */
   protected trackVoice(stop: (when?: number) => void): () => void {
+    // Voice-steal the oldest when at the ceiling — bounds memory so a scheduling desync
+    // can't OOM the tab (see MAX_ACTIVE_VOICES). Set iteration is insertion order = FIFO.
+    if (this.activeVoices.size >= BaseInstrument.MAX_ACTIVE_VOICES) {
+      const oldest = this.activeVoices.values().next().value;
+      if (oldest) {
+        this.activeVoices.delete(oldest);
+        try {
+          oldest.stop();
+        } catch {
+          /* already stopped */
+        }
+      }
+    }
     const voice: TrackedVoice = { stop };
     this.activeVoices.add(voice);
     return () => {
@@ -160,6 +193,30 @@ export abstract class BaseInstrument implements Instrument {
       }
     }, fadeMs + 20);
     this.busTeardowns.add(entry);
+  }
+
+  /**
+   * Loop-wrap voice choke (ADR 0025 step 3). Schedule each tracked voice to stop AT
+   * the loop-boundary audio time, cutting the previous pass's ring-out right where
+   * the next pass begins. Voices stay tracked — their `onended` release removes them
+   * when the stop lands — so this bounds the live-voice count across wraps regardless
+   * of how far ahead the look-ahead scheduled (a wide background horizon can queue
+   * several passes at once). Rides the audio clock, so it is immune to background
+   * timer throttling.
+   *
+   * Unlike {@link stopAll} it does NOT fade or swap the bus: at a seamless loop the
+   * previous pass's final notes are already at the tail of their envelopes by the
+   * boundary, so a hard stop there is effectively click-free.
+   */
+  stopAllVoicesAt(atTime: number): void {
+    if (this.disposed) return;
+    for (const voice of this.activeVoices) {
+      try {
+        voice.stop(atTime);
+      } catch {
+        /* already stopped */
+      }
+    }
   }
 
   connect(destination: AudioNode): void {

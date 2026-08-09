@@ -5,6 +5,11 @@ import {
   getAudioDiagnosticsSnapshot,
   type AudioDiagnosticsSnapshot,
 } from './audioDiagnostics';
+import {
+  exposeAudioBreadcrumbForDebug,
+  postAudioTraceToDevServer,
+  recordAudioBreadcrumb,
+} from './audioPlaybackBreadcrumb';
 
 /**
  * Read-only live audio-graph readout. Renders on the `diagnostics` tier and up, so
@@ -25,6 +30,9 @@ interface OverlayView {
   heapDelta: number | null;
 }
 
+// How often the dev server receives the summarized crash trail while sampling is active.
+const DEV_TRACE_POST_INTERVAL_MS = 5000;
+
 export function AudioDiagnosticsOverlay(): React.ReactElement | null {
   // Read-only telemetry, so it renders on the `diagnostics` tier too (safe in prod). Gate: ADR 0026.
   const enabled = isLabsDebugVisible();
@@ -36,10 +44,14 @@ export function AudioDiagnosticsOverlay(): React.ReactElement | null {
   useEffect(() => {
     if (!enabled) return;
     exposeAudioDiagnosticsForDebug();
+    // Console helpers to pull the crash trail after a reload: window.__labsDownloadAudioTrace().
+    exposeAudioBreadcrumbForDebug();
     let baselineHeap: number | null = null;
     let peakVoices = 0;
     const sample = () => {
       const next = getAudioDiagnosticsSnapshot();
+      // Mirror to the localStorage crash breadcrumb (survives an OOM the in-page state doesn't).
+      recordAudioBreadcrumb(next);
       if (next.heapMB !== null && baselineHeap === null) baselineHeap = next.heapMB;
       peakVoices = Math.max(peakVoices, next.voices);
       const heapDelta =
@@ -48,7 +60,25 @@ export function AudioDiagnosticsOverlay(): React.ReactElement | null {
     };
     sample();
     const id = window.setInterval(sample, 500);
-    return () => window.clearInterval(id);
+
+    // Dev only: auto-ship the crash trail to disk so an OOM crash needs no manual export.
+    // The whole block dead-code-eliminates in a prod build (`import.meta.env.DEV` is statically false).
+    if (!import.meta.env.DEV) return () => window.clearInterval(id);
+    const postTrace = (useBeacon = false) => postAudioTraceToDevServer({ useBeacon });
+    const traceId = window.setInterval(() => postTrace(false), DEV_TRACE_POST_INTERVAL_MS);
+    // A final beacon on unload/hide lands even if the tab is about to crash or close.
+    const onPageHide = () => postTrace(true);
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') postTrace(true);
+    };
+    window.addEventListener('pagehide', onPageHide);
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => {
+      window.clearInterval(id);
+      window.clearInterval(traceId);
+      window.removeEventListener('pagehide', onPageHide);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
   }, [enabled]);
 
   if (!enabled || !view) return null;

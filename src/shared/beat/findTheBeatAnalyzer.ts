@@ -17,6 +17,7 @@ import { analyzeTempoVariation } from './sectionalTempoAnalyzer';
 import { detectOnsets } from './analysis/onsets';
 import { alignBeatGridToDownbeat, resolveBeatOneAnchorTime } from '../audio/downbeatAlignment';
 import { devLog } from '../utils/devLog';
+import { BEAT_ANALYSIS_SAMPLE_RATE } from './decodeMediaForBeat';
 import { getEssentia } from './essentiaSingleton';
 
 export { getEssentia };
@@ -52,6 +53,13 @@ async function detectBpmWithEssentia(audioBuffer: AudioBuffer): Promise<{
   beats: number[];
 } | null> {
   try {
+    if (audioBuffer.sampleRate !== BEAT_ANALYSIS_SAMPLE_RATE) {
+      // Essentia's rhythm algorithms hard-code 44.1 kHz; 48 kHz audio silently scales every tempo
+      // by 0.91875 with no error and no confidence drop. Fail loudly rather than report a wrong BPM.
+      throw new Error(
+        `Beat analysis needs ${BEAT_ANALYSIS_SAMPLE_RATE} Hz audio (got ${audioBuffer.sampleRate} Hz).`,
+      );
+    }
     const essentia = await getEssentia();
     
     // Get mono audio data

@@ -31,6 +31,12 @@ export function useEncoreOriginalDraftUndo(args: UseEncoreOriginalDraftUndoArgs)
       setDraft(after);
       if (isReplayingRef.current) return;
 
+      // Persist the forward change now. Structural edits (add/delete take, remove
+      // resource, toggle stage) have no other autosave path — without this write the
+      // draft lives only in memory and a reload drops it (e.g. an uploaded take chip
+      // vanishing). Undo/redo below persist their own snapshots.
+      void persist?.(after);
+
       const snapshotBefore = structuredClone(before);
       const snapshotAfter = structuredClone(after);
       pushUndo({

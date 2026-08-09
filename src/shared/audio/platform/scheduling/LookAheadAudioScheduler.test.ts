@@ -64,6 +64,76 @@ describe('LookAheadAudioScheduler', () => {
     }
   });
 
+  it('keeps ticking with a wide horizon while hidden when backgroundLookAheadSec is set', () => {
+    Object.defineProperty(document, 'hidden', { configurable: true, get: () => true });
+    try {
+      const scheduler = new LookAheadAudioScheduler();
+      const ticks: Array<{ horizonSec: number; nowSec: number }> = [];
+      scheduler.start((horizonSec, nowSec) => ticks.push({ horizonSec, nowSec }), {
+        lookAheadSec: 1,
+        backgroundLookAheadSec: 4,
+      });
+
+      pumpFrame();
+      expect(ticks).toHaveLength(1);
+      // Hidden + background: schedule far ahead so a ~1 Hz wakeup never gaps.
+      expect(ticks[0].horizonSec - ticks[0].nowSec).toBeCloseTo(4, 5);
+      scheduler.stop();
+    } finally {
+      delete (document as unknown as Record<string, unknown>).hidden;
+    }
+  });
+
+  it('drives ticks via a timer while hidden (rAF pauses in background tabs)', () => {
+    Object.defineProperty(document, 'hidden', { configurable: true, get: () => true });
+    try {
+      const scheduler = new LookAheadAudioScheduler();
+      const tick = vi.fn();
+      scheduler.start(tick, { backgroundLookAheadSec: 4 });
+
+      // Simulate a real hidden tab: rAF never fires. The interval must still schedule.
+      rafCallbacks = [];
+      tick.mockClear();
+      vi.advanceTimersByTime(1100); // a couple of background intervals
+      expect(tick).toHaveBeenCalled();
+      scheduler.stop();
+    } finally {
+      delete (document as unknown as Record<string, unknown>).hidden;
+    }
+  });
+
+  it('clears the background timer on stop', () => {
+    Object.defineProperty(document, 'hidden', { configurable: true, get: () => true });
+    try {
+      const scheduler = new LookAheadAudioScheduler();
+      const tick = vi.fn();
+      scheduler.start(tick, { backgroundLookAheadSec: 4 });
+      scheduler.stop();
+
+      tick.mockClear();
+      vi.advanceTimersByTime(2000);
+      expect(tick).not.toHaveBeenCalled();
+    } finally {
+      delete (document as unknown as Record<string, unknown>).hidden;
+    }
+  });
+
+  it('creates no background timer for a default (non-background) transport', () => {
+    Object.defineProperty(document, 'hidden', { configurable: true, get: () => true });
+    try {
+      const scheduler = new LookAheadAudioScheduler();
+      const tick = vi.fn();
+      scheduler.start(tick); // no backgroundLookAheadSec
+
+      rafCallbacks = [];
+      vi.advanceTimersByTime(2000);
+      expect(tick).not.toHaveBeenCalled(); // still skips while hidden, no timer
+      scheduler.stop();
+    } finally {
+      delete (document as unknown as Record<string, unknown>).hidden;
+    }
+  });
+
   it('stop() halts further ticks', () => {
     const scheduler = new LookAheadAudioScheduler();
     const tick = vi.fn();

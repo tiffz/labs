@@ -1,4 +1,4 @@
-# ADR 0027: Stanza Organize — cross-source merge safety contract
+# ADR 0028: Stanza Organize — cross-source merge safety contract
 
 ## Status
 

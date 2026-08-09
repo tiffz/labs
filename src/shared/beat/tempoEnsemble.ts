@@ -5,6 +5,7 @@
  * to improve accuracy and detect/resolve octave errors (60 vs 120 vs 240 BPM).
  */
 
+import { BEAT_ANALYSIS_SAMPLE_RATE } from './decodeMediaForBeat';
 import { getEssentia } from './essentiaSingleton';
 import { detectOnsets } from './analysis/onsets';
 import { inferQuarterNoteBpmFromOnsets } from './analysis/ioiTempoHint';
@@ -707,7 +708,24 @@ function selectCorrectOctaveWithOnsets(candidateBpm: number, onsets: number[], d
  * Performance optimization: For long audio (>3min), skip redundant algorithms
  * and exit early if we get high-confidence results.
  */
+/**
+ * Fail closed if analysis audio is not at the rate Essentia assumes.
+ *
+ * Essentia's rhythm algorithms have no sample-rate parameter — 44.1 kHz is baked in. Handing them
+ * 48 kHz audio silently scales every tempo by 0.91875 with NO error and NO drop in reported
+ * confidence, which is exactly how this shipped broken. Throw instead of guessing.
+ */
+function assertBeatAnalysisRate(audioBuffer: AudioBuffer): void {
+  if (audioBuffer.sampleRate !== BEAT_ANALYSIS_SAMPLE_RATE) {
+    throw new Error(
+      `Beat analysis needs ${BEAT_ANALYSIS_SAMPLE_RATE} Hz audio (got ${audioBuffer.sampleRate} Hz). ` +
+        'Route the buffer through `toBeatAnalysisBuffer` before analysis.',
+    );
+  }
+}
+
 async function runTempoEstimators(audioBuffer: AudioBuffer): Promise<TempoEstimate[]> {
+  assertBeatAnalysisRate(audioBuffer);
   const essentia = await getEssentia();
   const channelData = audioBuffer.getChannelData(0);
   const signal = essentia.arrayToVector(channelData);

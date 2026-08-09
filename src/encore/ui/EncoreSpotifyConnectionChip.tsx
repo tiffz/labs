@@ -14,7 +14,7 @@ import { alpha, useTheme, type SxProps, type Theme } from '@mui/material/styles'
 import { useId, useState, type ReactElement, type ReactNode } from 'react';
 import { useEncore } from '../context/EncoreContext';
 import { SpotifyBrandIcon } from '../components/EncoreBrandIcon';
-import { encoreHairline } from '../theme/encoreUiTokens';
+import { encoreHairline, encoreShadowSurface } from '../theme/encoreUiTokens';
 import { EncoreStatusPill } from './EncoreStatusPill';
 
 const SPOTIFY_GREEN = '#1DB954';
@@ -65,9 +65,22 @@ export function EncoreSpotifyConnectionChip(props: EncoreSpotifyConnectionChipPr
     <EncoreStatusPill tone="idle" label="Not connected" />
   );
 
+  // Two-state colour language: connected = Spotify green, "connect me" = Encore fuchsia
+  // (parallel surfaces). The old not-connected chip used a near-invisible divider border
+  // (~1.02:1) + a barely-there bg, so it read as unstructured floating bits. Give the
+  // configured-but-unlinked state a real, on-brand pill; leave the disabled/unavailable
+  // state muted (handled by &.Mui-disabled below).
+  const connectAccent = theme.palette.primary.main;
   const surfaceBorder = spotifyLinked
     ? alpha(SPOTIFY_GREEN, 0.35)
-    : alpha(theme.palette.divider, 0.9);
+    : configured
+      ? alpha(connectAccent, 0.24)
+      : alpha(theme.palette.divider, 0.9);
+  const surfaceBg = spotifyLinked
+    ? alpha(SPOTIFY_GREEN, 0.06)
+    : configured
+      ? alpha(connectAccent, 0.05)
+      : alpha(theme.palette.action.hover, 0.35);
 
   const compact = size === 'compact';
   /** Account menu: section row already shows the Spotify mark — one status pill + menu chevron only. */
@@ -129,16 +142,25 @@ export function EncoreSpotifyConnectionChip(props: EncoreSpotifyConnectionChipPr
       sx={{
         borderRadius: 999,
         border: `1px solid ${surfaceBorder}`,
-        bgcolor: spotifyLinked ? alpha(SPOTIFY_GREEN, 0.06) : alpha(theme.palette.action.hover, 0.35),
+        bgcolor: surfaceBg,
+        boxShadow: configured ? encoreShadowSurface : 'none',
         px: 1.25,
         py: 0.625,
         textAlign: 'left',
         width: 'max-content',
         maxWidth: '100%',
+        transition: theme.transitions.create(['background-color', 'border-color'], {
+          duration: 150,
+        }),
+        '&:not(.Mui-disabled):hover': {
+          bgcolor: spotifyLinked ? alpha(SPOTIFY_GREEN, 0.1) : alpha(connectAccent, 0.09),
+          borderColor: spotifyLinked ? alpha(SPOTIFY_GREEN, 0.45) : alpha(connectAccent, 0.36),
+        },
         '&.Mui-disabled': {
           opacity: 1,
           borderColor: encoreHairline,
           bgcolor: alpha(theme.palette.action.hover, 0.2),
+          boxShadow: 'none',
         },
         '&:focus-visible': {
           outline: `2px solid ${alpha(theme.palette.primary.main, 0.45)}`,

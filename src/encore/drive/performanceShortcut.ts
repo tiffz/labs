@@ -50,6 +50,13 @@ export async function syncPerformanceVideo(
   performance: EncorePerformance,
   song: EncoreSong | null,
   driveUploadFolderOverrides?: EncoreDriveUploadFolderOverrides | null,
+  /**
+   * Naming override for subjects that are not repertoire songs. Originals have no artist, so
+   * without this the rename would stamp `Untitled song - Unknown artist` over the correct filename
+   * the upload just wrote — and Drive filenames are effectively permanent once shortcuts and the
+   * content index reference them.
+   */
+  nameSubject?: { title: string; omitArtist?: boolean } | null,
 ): Promise<PerformanceVideoSyncResult> {
   const meta = await getSyncMeta();
   const bootstrapPerf = meta.performancesFolderId?.trim();
@@ -96,7 +103,7 @@ export async function syncPerformanceVideo(
 
   if (!shortcutIdFromState && targetId && targetMeta && targetMeta.mimeType !== SHORTCUT_MIME && !targetInBootstrap) {
     try {
-      const desired = buildPerformanceVideoName(performance, song, '');
+      const desired = buildPerformanceVideoName(performance, nameSubject ? { title: nameSubject.title, artist: '' } : song, '', { omitArtist: nameSubject?.omitArtist });
       shortcutCreatedId = await createPerformanceVideoShortcut(accessToken, targetId, desired, bootstrapPerf);
     } catch {
       /* shortcut creation is best-effort */
@@ -109,7 +116,7 @@ export async function syncPerformanceVideo(
       const m = await driveGetFileMetadata(accessToken, shortcutId);
       const livesInBootstrap = (m.parents ?? []).includes(bootstrapPerf);
       if (livesInBootstrap) {
-        const desired = buildPerformanceVideoName(performance, song, '');
+        const desired = buildPerformanceVideoName(performance, nameSubject ? { title: nameSubject.title, artist: '' } : song, '', { omitArtist: nameSubject?.omitArtist });
         if ((m.name ?? '') !== desired) {
           await driveRenameFile(accessToken, shortcutId, desired);
           renamed = true;
@@ -125,7 +132,7 @@ export async function syncPerformanceVideo(
     const targetInEffective = tp.includes(effectivePerf);
     if (targetInEffective && targetId !== shortcutId) {
       const { extension } = splitFileNameExtension(targetMeta.name ?? '');
-      const desired = buildPerformanceVideoName(performance, song, extension);
+      const desired = buildPerformanceVideoName(performance, nameSubject ? { title: nameSubject.title, artist: '' } : song, extension, { omitArtist: nameSubject?.omitArtist });
       if ((targetMeta.name ?? '') !== desired) {
         try {
           await driveRenameFile(accessToken, targetId, desired);

@@ -200,7 +200,7 @@ describe('mergeStanzaRicherSongMetadata', () => {
     expect(r.song.markers).toHaveLength(1);
   });
 
-  it('takes remote when remote has more markers', () => {
+  it('unions markers from both sides instead of picking the larger one', () => {
     const local = song({
       id: '1',
       title: 'Local',
@@ -219,7 +219,10 @@ describe('mergeStanzaRicherSongMetadata', () => {
       updatedAt: 10,
     };
     const merged = mergeStanzaRicherSongMetadata(local, remote);
-    expect(merged.markers).toHaveLength(2);
+    // Union, not "the bigger side wins". This previously returned remote's 2 markers and DROPPED
+    // local's 'a' — the section-loss the owner reported. Nothing was deleted here, so all three
+    // survive; an actual delete is expressed by a tombstone (stanzaSectionSyncLoss.test.ts).
+    expect(merged.markers.map((m) => m.id)).toEqual(['a', 'b', 'c']);
     expect(merged.title).toBe('Local');
   });
 

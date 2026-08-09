@@ -46,15 +46,37 @@ export function isStageHeuristicallyComplete(song: EncoreOriginalSong, stage: Or
   }
 }
 
-export function isStageComplete(song: EncoreOriginalSong, stage: OriginalsWorkflowStage): boolean {
+/** A stage's own completion — its manual flag if set, else its content heuristic. */
+export function isStageCompleteRaw(song: EncoreOriginalSong, stage: OriginalsWorkflowStage): boolean {
   const manual = song.stageCompletion?.[stage];
   if (manual !== undefined) return manual;
   return isStageHeuristicallyComplete(song, stage);
 }
 
-/** All workflow stages complete — song has lyrics, chords, and at least one demo take. */
+export function isStageComplete(song: EncoreOriginalSong, stage: OriginalsWorkflowStage): boolean {
+  // Completion is monotonic: reaching (or marking) any later stage implies the earlier
+  // ones are done. So a stage counts complete if it — or any stage after it — is complete
+  // on its own. Without this the stepper shows "brainstorm incomplete" while you're already
+  // writing lyrics, which reads as inconsistent.
+  const startIndex = ORIGINALS_WORKFLOW_STAGES.findIndex((step) => step.id === stage);
+  if (startIndex === -1) return isStageCompleteRaw(song, stage);
+  for (let i = startIndex; i < ORIGINALS_WORKFLOW_STAGES.length; i += 1) {
+    if (isStageCompleteRaw(song, ORIGINALS_WORKFLOW_STAGES[i].id)) return true;
+  }
+  return false;
+}
+
+/**
+ * All workflow stages complete — song has lyrics, chords, and at least one demo take.
+ *
+ * Uses `isStageCompleteRaw`, NOT the monotonic `isStageComplete`. Monotonicity is a stepper
+ * *display* rule ("you're on lyrics, so brainstorm is behind you"); folding it in here makes every
+ * earlier stage true as soon as a take exists, collapsing the whole predicate to
+ * `takes.length > 0` — so importing one voice memo into a song with no lyrics would label it
+ * "Demo ready" in the library.
+ */
 export function isOriginalDemoReady(song: EncoreOriginalSong): boolean {
-  return ORIGINALS_WORKFLOW_STAGES.every((step) => isStageComplete(song, step.id));
+  return ORIGINALS_WORKFLOW_STAGES.every((step) => isStageCompleteRaw(song, step.id));
 }
 
 /** First incomplete stage, or `takes` when everything is done (use {@link isOriginalDemoReady} for display). */
@@ -69,7 +91,7 @@ export function toggleStageCompletion(
   song: EncoreOriginalSong,
   stage: OriginalsWorkflowStage,
 ): EncoreOriginalSong {
-  const current = isStageComplete(song, stage);
+  const current = isStageCompleteRaw(song, stage);
   return {
     ...song,
     stageCompletion: {

@@ -8,6 +8,14 @@ import Typography from '@mui/material/Typography';
 import { alpha, useTheme } from '@mui/material/styles';
 import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
 import type { ChartPlaybackStep } from '../../../shared/music/chordPro/chartPlaybackSequence';
+import { serializeChartLayoutToChordPro } from '../../../shared/music/chordPro/chordChartLayout';
+import {
+  applySectionChordsToSameType,
+  applySectionDrumsToSameType,
+  countSameTypeSections,
+  sectionCountLabel,
+} from '../applySectionToSameType';
+import { useLabsUndo } from '../../../shared/undo/LabsUndoContext';
 import {
   encoreSurfaceBandPadY,
   encoreSurfaceContentPad,
@@ -70,6 +78,8 @@ export function OriginalsSongWorkspace({
     () => initialWorkflowStage ?? readPersistedWorkflowStage(song.id, song),
   );
   const [chartPasteSnack, setChartPasteSnack] = useState<string | null>(null);
+  const [applySnack, setApplySnack] = useState<string | null>(null);
+  const { undo: undoLast } = useLabsUndo();
   const { notation: chordNotation, setNotation: setChordNotation } = useOriginalsChordNotation(song.id);
   const [activePlaybackStep, setActivePlaybackStep] = useState<ChartPlaybackStep | null>(null);
   const chart = useOriginalsChartLayout(song.lyricsAndChords, onChartChange, song.key);
@@ -126,6 +136,58 @@ export function OriginalsSongWorkspace({
     },
     [onSongChange, song.sectionPlaybackOverrides],
   );
+
+  // Bulk apply runs through onPersist (structural, undoable) so one Cmd+Z reverts the whole apply.
+  // The apply fully replaces the siblings, so we confirm with a snackbar that carries Undo.
+  const onApplyChordsToSameType = useCallback(
+    (sectionId: string) => {
+      const source = chart.layout.sections.find((s) => s.sectionId === sectionId);
+      if (!source) return;
+      const nextChordPro = serializeChartLayoutToChordPro(
+        applySectionChordsToSameType(chart.layout, sectionId),
+      );
+      if (nextChordPro === song.lyricsAndChords) return;
+      void onPersist({
+        ...song,
+        lyricsAndChords: nextChordPro,
+        updatedAt: new Date().toISOString(),
+      });
+      const affected = Math.max(0, countSameTypeSections(chart.layout, sectionId) - 1);
+      setApplySnack(`Chords copied to ${sectionCountLabel(source.type, affected)}.`);
+    },
+    [chart.layout, onPersist, song],
+  );
+
+  const onApplyDrumsToSameType = useCallback(
+    (sectionId: string) => {
+      const source = chart.layout.sections.find((s) => s.sectionId === sectionId);
+      if (!source) return;
+      const nextOverrides = applySectionDrumsToSameType(
+        song.sectionPlaybackOverrides,
+        chart.layout,
+        sectionId,
+      );
+      if (
+        JSON.stringify(nextOverrides ?? null) ===
+        JSON.stringify(song.sectionPlaybackOverrides ?? null)
+      ) {
+        return;
+      }
+      void onPersist({
+        ...song,
+        sectionPlaybackOverrides: nextOverrides,
+        updatedAt: new Date().toISOString(),
+      });
+      const affected = Math.max(0, countSameTypeSections(chart.layout, sectionId) - 1);
+      setApplySnack(`Drums copied to ${sectionCountLabel(source.type, affected)}.`);
+    },
+    [chart.layout, onPersist, song],
+  );
+
+  const onUndoApply = useCallback(() => {
+    setApplySnack(null);
+    void undoLast();
+  }, [undoLast]);
 
   const songTimeSignature = useMemo(() => originalSongTimeSignature(song), [song]);
 
@@ -401,6 +463,8 @@ export function OriginalsSongWorkspace({
                   onDeleteSelected={onDeleteSelectedChord}
                   onApplySectionProgression={chart.onApplySectionProgression}
                   onSectionPlaybackOverrideChange={onSectionPlaybackOverrideChange}
+                  onApplyChordsToSameType={onApplyChordsToSameType}
+                  onApplyDrumsToSameType={onApplyDrumsToSameType}
                 />
               </Box>
             </OriginalsChartPlaybackProvider>
@@ -418,6 +482,17 @@ export function OriginalsSongWorkspace({
         autoHideDuration={chartPasteSnack?.includes('left out') ? 7000 : 4500}
         message={chartPasteSnack ?? ''}
         onClose={() => setChartPasteSnack(null)}
+      />
+      <Snackbar
+        open={Boolean(applySnack)}
+        autoHideDuration={6000}
+        message={applySnack ?? ''}
+        onClose={() => setApplySnack(null)}
+        action={
+          <Button color="secondary" size="small" onClick={onUndoApply}>
+            Undo
+          </Button>
+        }
       />
     </Box>
   );

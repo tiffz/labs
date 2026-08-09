@@ -566,6 +566,9 @@ export function useStanzaDriveBackup() {
             localRows,
             remoteSongs: conflict.remoteEnvelope.songs,
             choices: bySongId,
+            // Same tombstones the auto-pull merge honours; omitting them resurrected deleted songs.
+            tombstoneFileIds: getStanzaDriveTombstoneFileIds(),
+            youtubeTombstoneVideoIds: getStanzaYoutubeTombstoneVideoIds(),
           });
           await persistMergedSongs(nextRows);
           await remapStanzaTakesForConsolidation(remappedIds);

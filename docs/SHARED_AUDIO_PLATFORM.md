@@ -92,12 +92,20 @@ while `performance.now()` keeps advancing. Mapping perf→audio then clamping ov
 to “now” causes a **loud blast on resume**. Long section loops that only mute the bus on
 `stopAll` (without stopping voices) also leak AudioNodes until the tab Aw-Snaps.
 
-**Rules:**
+Two host policies, by transport:
 
-1. `LookAheadAudioScheduler` **skips ticks while `document.hidden`** (do not extend look-ahead into a frozen clock).
-2. Chart / loop hosts use `attachTransportVisibilityGuard` — flush + invalidate generation on hide; **re-anchor epoch** on show.
-3. `BaseInstrument.stopAll` must **hard-stop tracked voices** (not only mute the output bus).
-4. Auto-`resume()` of AudioContext only when `document.visibilityState === 'visible'`.
+**A. Pause-on-hide (metronome, backing beat, non-chart look-ahead).** The default.
+
+1. `LookAheadAudioScheduler` **skips ticks while `document.hidden`** (do not extend look-ahead into a frozen clock) — this is the behavior when `start()` is called **without** `backgroundLookAheadSec`.
+2. `BaseInstrument.stopAll` must **hard-stop tracked voices** (not only mute the output bus).
+3. Auto-`resume()` of AudioContext only when `document.visibilityState === 'visible'`.
+
+**B. Background playback (chart chord playback, ADR 0025).** Keeps playing while hidden.
+
+1. The **single late gate** (`scheduleChartMeasure`) makes it safe: an overdue measure is SKIPPED, never clamped/blasted. This is the guarantee that removes the pause-on-hide requirement.
+2. `LookAheadAudioScheduler.start(..., { backgroundLookAheadSec })` keeps ticking while hidden, driven by a ~1 Hz timer (rAF pauses in background tabs) with a wide horizon (`CHART_BACKGROUND_LOOK_AHEAD_SEC`).
+3. `attachTransportVisibilityGuard` **does not flush** on hide; the host **re-anchors the epoch only if the context actually suspended** (`ctx.state !== 'running'` on return) and continues from the current measure.
+4. Loop-wrap **voice choke** (`stopAllVoicesAt` / `stopAllSounds(atTime)`) keeps voices bounded across wraps even with a wide horizon.
 
 ### Stutter / gap hardening (chart + drums)
 

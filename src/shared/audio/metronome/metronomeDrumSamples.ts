@@ -55,6 +55,13 @@ export function playMetronomeDrumSampleAt(
 
   source.connect(gain);
   gain.connect(ctx.destination);
+  // Release the nodes when the one-shot finishes. The click path (`clickService.playClickSampleAt`)
+  // and `AudioPlayer.playBuffer` both do this; these two did not, so at 120 BPM with 16th
+  // subdivisions ~8 node pairs per second stayed wired to `destination` — ~29k an hour.
+  source.onended = () => {
+    source.disconnect();
+    gain.disconnect();
+  };
   source.start(t);
   if (buffer.duration > maxPlayDur) {
     source.stop(t + maxPlayDur);

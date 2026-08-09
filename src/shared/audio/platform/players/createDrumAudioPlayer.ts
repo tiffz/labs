@@ -7,6 +7,8 @@ export type CreateDrumAudioPlayerOptions = {
   includeClick?: boolean;
   /** When true, reuse a module-level singleton (rhythmPlayer path). */
   singleton?: boolean;
+  /** Borrow an existing AudioContext (ADR 0025 single transport) instead of minting one. */
+  externalContext?: AudioContext;
 };
 
 let rhythmSingleton: DrumAudioPlayerFacade | null = null;
@@ -20,6 +22,7 @@ export class DrumAudioPlayerFacade {
       clickUrl: options.includeClick !== false ? CLICK_SAMPLE_URL : undefined,
       soundUrls: { ...DRUM_SAMPLE_URLS },
       enableReverb: options.enableReverb ?? false,
+      externalContext: options.externalContext,
     });
   }
 
@@ -33,6 +36,15 @@ export class DrumAudioPlayerFacade {
 
   getAudioContext(): AudioContext | null {
     return this.player.getAudioContext();
+  }
+
+  /**
+   * True once samples are decoded. Schedulers use this to SKIP a tick rather than schedule beats
+   * that `playNowIfReady` would silently drop — dropping them while still advancing the scheduled
+   * cursor is how the opening beats went missing.
+   */
+  isReady(): boolean {
+    return this.initialized;
   }
 
   playNowIfReady(sound: DrumSound, volume = 1, duration?: number, startTime?: number): void {

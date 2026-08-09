@@ -74,7 +74,7 @@ export interface StanzaDriveEnvelopeV1 {
   deletedYoutubeVideoIds?: StanzaYoutubeTombstone[];
   /**
    * Row ids of **keyless local** uploads removed (no `ytId` / `driveSourceFileId`; see
-   * [ADR 0027](../../../docs/adr/0027-stanza-organize-cross-source-merge-contract.md)). Other
+   * [ADR 0028](../../../docs/adr/0028-stanza-organize-cross-source-merge-contract.md)). Other
    * devices union these and skip a remote-only row whose `id` appears here, so an Organize merge
    * that dropped a pure-local duplicate does not resurrect on the next pull. Optional for back-compat.
    */

@@ -2,6 +2,7 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import StarIcon from '@mui/icons-material/Star';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
@@ -12,6 +13,8 @@ import Typography from '@mui/material/Typography';
 import { styled } from '@mui/material/styles';
 import { useCallback, useEffect, useRef, useState, type FocusEvent, type MutableRefObject, type ReactElement, type ReactNode } from 'react';
 import { LABS_POPOVER_CHROME_SX } from '../../shared/components/anchoredPopoverChrome';
+import { GoogleDriveBrandIcon } from './EncoreBrandIcon';
+import { encoreExternalToolLinkProps } from '../theme/encoreUiTokens';
 import { useSuppressEncoreHoverCardWhileDragging } from './useSuppressEncoreHoverCardWhileDragging';
 import { ensureSpotifyAccessToken } from '../spotify/pkce';
 import { fetchSpotifyTrack } from '../spotify/spotifyApi';
@@ -552,6 +555,8 @@ export type EncoreStaticResourceHoverCardProps = {
   onDownload?: () => void | Promise<void>;
   downloadDisabled?: boolean;
   downloadDisabledReason?: string;
+  /** When set (resource is stored in Drive), shows an "Open in Drive" link. */
+  driveOpenUrl?: string;
   isPrimary?: boolean;
   onMakePrimary?: () => void;
   primaryActiveLabel?: string;
@@ -577,6 +582,7 @@ export function EncoreStaticResourceHoverCard(props: EncoreStaticResourceHoverCa
     onDownload,
     downloadDisabled = false,
     downloadDisabledReason,
+    driveOpenUrl,
     isPrimary = false,
     onMakePrimary,
     primaryActiveLabel = 'Preferred',
@@ -624,7 +630,7 @@ export function EncoreStaticResourceHoverCard(props: EncoreStaticResourceHoverCa
           </Typography>
         ) : null}
       </Box>
-      {onPlay || onDownload ? (
+      {onPlay || onDownload || driveOpenUrl ? (
         <Box sx={{ mt: 1, display: 'flex', gap: 0.5, alignItems: 'center' }}>
           {onPlay ? (
             <Button
@@ -637,6 +643,22 @@ export function EncoreStaticResourceHoverCard(props: EncoreStaticResourceHoverCa
             >
               {isPlaying ? 'Playing' : 'Play'}
             </Button>
+          ) : null}
+          {driveOpenUrl ? (
+            <Tooltip title="Open in Google Drive">
+              <Button
+                component="a"
+                href={driveOpenUrl}
+                {...encoreExternalToolLinkProps}
+                size="small"
+                variant="text"
+                startIcon={<GoogleDriveBrandIcon sx={{ fontSize: 15 }} />}
+                endIcon={<OpenInNewIcon sx={{ fontSize: 13 }} />}
+                sx={{ color: 'text.secondary', '&:hover': { color: 'text.primary' } }}
+              >
+                Drive
+              </Button>
+            </Tooltip>
           ) : null}
           {onDownload ? (
             <Tooltip title={downloadDisabled ? downloadDisabledReason : 'Download file'}>

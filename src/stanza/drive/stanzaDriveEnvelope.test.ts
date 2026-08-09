@@ -70,4 +70,40 @@ describe('parseStanzaDriveEnvelope', () => {
     const env = parseStanzaDriveEnvelope(json);
     expect(env.deletedDriveSourceFileIds).toBeUndefined();
   });
+
+  it('parses deletedYoutubeVideoIds so YouTube tombstones converge on pull', () => {
+    // Regression: parse used to drop this field, so the pull path never unioned remote YouTube
+    // deletions and a removed video re-appeared cross-device.
+    const json = JSON.stringify({
+      schemaVersion: 1,
+      exportedAt: new Date().toISOString(),
+      app: STANZA_DRIVE_APP_ID,
+      songs: [],
+      deletedYoutubeVideoIds: [
+        { videoId: 'vid-1', removedAt: '2026-05-17T22:00:00.000Z' },
+        { videoId: 'vid-2', removedAt: '2026-05-18T08:00:00.000Z' },
+      ],
+    });
+    const env = parseStanzaDriveEnvelope(json);
+    expect(env.deletedYoutubeVideoIds?.map((t) => t.videoId)).toEqual(['vid-1', 'vid-2']);
+  });
+
+  it('drops malformed YouTube tombstone entries without failing the parse', () => {
+    const json = JSON.stringify({
+      schemaVersion: 1,
+      exportedAt: new Date().toISOString(),
+      app: STANZA_DRIVE_APP_ID,
+      songs: [],
+      deletedYoutubeVideoIds: [
+        { videoId: 'good', removedAt: '2026-05-17T22:00:00.000Z' },
+        { videoId: '', removedAt: '2026-05-17T22:00:00.000Z' },
+        { videoId: 'no-stamp' },
+        null,
+      ],
+    });
+    const env = parseStanzaDriveEnvelope(json);
+    expect(env.deletedYoutubeVideoIds).toEqual([
+      { videoId: 'good', removedAt: '2026-05-17T22:00:00.000Z' },
+    ]);
+  });
 });
