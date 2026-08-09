@@ -662,7 +662,10 @@ export default function StanzaSectionMetronomeRail({
             dropdownClassName="stanza-bpm-dropdown"
             sliderClassName="stanza-bpm-slider"
             presetPanelHorizontal="right"
-            showRateActions={false}
+            // Half/double is the ONLY one-click fix for an octave error, which is the dominant
+            // tempo-detection failure (Acc2 is ~100% while Acc1 is not — errors are almost always
+            // x2 or /2, not "wrong tempo"). Stanza had turned this off during a demo-polish pass.
+            showRateActions
             trailingActions={
               <AppTooltip
                 title={
@@ -846,7 +849,9 @@ export default function StanzaSectionMetronomeRail({
                     sliderClassName="stanza-bpm-slider"
                     presetPanelHorizontal="right"
                     showPresetDropdown={false}
-                    showRateActions={false}
+                    // This is the detected-tempo preview — the exact surface where an octave
+                    // error shows up and needs correcting before it is saved.
+                    showRateActions
                   />
                 </Box>
                 <Box sx={{ flex: '1 1 0', minWidth: 0, maxWidth: { sm: 220 } }}>
