@@ -54,7 +54,7 @@ export interface StanzaDriveMergeOptions {
    * local** uploads (no `ytId` / `driveSourceFileId`) that Organize merged away. Without it a
    * dropped pure-local duplicate resurrects from its Drive metadata on the next pull. See
    * [`stanzaLocalSongTombstones`](./stanzaLocalSongTombstones.ts) and
-   * [ADR 0027](../../../docs/adr/0027-stanza-organize-cross-source-merge-contract.md).
+   * [ADR 0028](../../../docs/adr/0028-stanza-organize-cross-source-merge-contract.md).
    */
   localSongTombstoneIds?: ReadonlySet<string>;
 }

@@ -1,6 +1,6 @@
 /**
  * Deletion tombstones for **keyless local** Stanza songs — uploads with no `ytId` and no
- * `driveSourceFileId`. See [ADR 0027](../../../docs/adr/0027-stanza-organize-cross-source-merge-contract.md).
+ * `driveSourceFileId`. See [ADR 0028](../../../docs/adr/0028-stanza-organize-cross-source-merge-contract.md).
  *
  * ## Why a third tombstone store
  *
