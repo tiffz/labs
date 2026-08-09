@@ -27,10 +27,12 @@ const actionsContext = read('../context/EncoreActionsContext.tsx');
 const syncContext = read('../context/EncoreSyncContext.tsx');
 const encoreDbTypes = read('../db/encoreDb.ts');
 const wireTypes = read('../types.ts');
+const originalsActionsContext = read('../context/EncoreOriginalsActionsContext.tsx');
+const originalsSharded = read('../originals/drive/originalsSharded.ts');
 
 describe('Drive sync data-loss layer presence (Encore)', () => {
   it('Layer: delete tombstones — song/performance ids exist in storage + wire types', () => {
-    for (const field of ['deletedSongIds', 'deletedPerformanceIds']) {
+    for (const field of ['deletedSongIds', 'deletedPerformanceIds', 'deletedOriginalIds']) {
       expect(encoreDbTypes, `RepertoireExtrasRow.${field}`).toContain(field);
       expect(wireTypes, `RepertoireWirePayload.${field}`).toContain(field);
     }
@@ -57,6 +59,27 @@ describe('Drive sync data-loss layer presence (Encore)', () => {
     expect(actionsContext).toContain('recordDeletedPerformanceIds');
     expect(actionsContext).toContain('clearDeletedSongIds');
     expect(actionsContext).toContain('clearDeletedPerformanceIds');
+  });
+
+  it('Layer: originals delete tombstones — recorded on delete, cleared on undo, consulted on pull', () => {
+    // Originals live in their own table and their own pusher, so they are NOT covered by the
+    // repertoire assertions above. Without this the whole originals tombstone layer could be
+    // removed with every other fitness test still green — the `single-surface-guard` class.
+    expect(originalsActionsContext).toContain('recordDeletedOriginalIds');
+    expect(originalsActionsContext).toContain('clearDeletedOriginalIds');
+    // The pull must DELETE only on a tombstone. Manifest absence cannot distinguish "deleted on a
+    // peer" from "created here and not pushed yet" — assuming it deleted the user's songwriting.
+    expect(originalsSharded).toContain('deletedOriginalIds');
+    expect(originalsSharded).not.toMatch(/if \(!manifestIds\.has\(id\)\)/);
+    // ...and must propagate the delete so the shard + manifest entry go with it.
+    expect(originalsSharded).toMatch(/markDirtyRow\('original', row\.id, 'delete'\)/);
+  });
+
+  it('Layer: the repertoire pull must NOT clear originals push intent', () => {
+    // A blanket `dirtySync.clear()` here stranded an unpushed original for the originals pull to
+    // delete. The scoped helper is the fix; a regression to the blanket call is the P0 returning.
+    expect(repertoireSync).toContain('clearRepertoireDirtyRows');
+    expect(repertoireSync).not.toMatch(/encoreDb\.dirtySync\.clear\(\)/);
   });
 
   it('Layer: tombstones merge-union across devices', () => {

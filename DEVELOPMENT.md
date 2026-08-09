@@ -73,6 +73,7 @@ Use a single URL contract for “extra diagnostics on”: either `?debug` or `?d
 - Shared debug chrome: [`src/shared/components/LabsDebugDock.tsx`](src/shared/components/LabsDebugDock.tsx) (collapse, **Copy bundle** → [`copyLabsDebugBundleToClipboard`](src/shared/debug/copyLabsDebugBundle.ts) for LLM/bug-report paste).
 - Vite middleware normalizes batched `{ logs: [...] }` and single-object bodies: [`src/shared/debug/debugLogPostBody.ts`](src/shared/debug/debugLogPostBody.ts).
 - Cats dev snapshots: `POST /__debug_snapshot` writes under `.debug-snapshots/` (gitignored). Optional Cursor hook: watch that folder to attach artifacts to a chat.
+- Audio crash traces: while the audio-diagnostics overlay samples (`?debug`), it auto-POSTs the summarized heap-breadcrumb trail to `POST /__debug_audio_trace`, which writes `.debug-audio-traces/trace-<sessionId>.json` (gitignored, one file per tab, overwritten per POST). Dev-only (`import.meta.env.DEV`); a final `sendBeacon` on `pagehide` lands the trail even through an OOM crash. An assistant reads the on-disk file directly — no manual export. Source: [`src/shared/playback/audioPlaybackBreadcrumb.ts`](src/shared/playback/audioPlaybackBreadcrumb.ts).
 
 ### Agentic debugging (recommended)
 

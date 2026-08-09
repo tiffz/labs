@@ -2,6 +2,7 @@ import 'fake-indexeddb/auto';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   clearDirtyRows,
+  clearRepertoireDirtyRows,
   dirtySyncRowKey,
   encoreDb,
   getSyncMeta,
@@ -175,6 +176,33 @@ describe('dirtySync helpers', () => {
     await markDirtyRow('song', 's1', 'upsert');
     await clearDirtyRows([]);
     expect((await takeDirtyRows()).length).toBe(1);
+  });
+
+  it('clearRepertoireDirtyRows keeps `original` intent and drops the kinds that pull owns', async () => {
+    // P0 regression: the repertoire pull used to `dirtySync.clear()` everything, stranding an
+    // unpushed original for the originals pull to delete. Exercised against real Dexie because the
+    // sync-layer tests mock this helper out.
+    await markDirtyRows([
+      { kind: 'song', rowId: 's1' },
+      { kind: 'performance', rowId: 'p1' },
+      { kind: 'extras', rowId: 'default' },
+      { kind: 'original', rowId: 'o1' },
+      { kind: 'original', rowId: 'o2', op: 'delete' },
+    ]);
+
+    await clearRepertoireDirtyRows();
+
+    const rows = await takeDirtyRows();
+    expect(rows.map((r) => r.id).sort()).toEqual(
+      [dirtySyncRowKey('original', 'o1'), dirtySyncRowKey('original', 'o2')].sort(),
+    );
+    expect(rows.every((r) => r.kind === 'original')).toBe(true);
+  });
+
+  it('clearRepertoireDirtyRows is safe when only originals are dirty', async () => {
+    await markDirtyRow('original', 'o1', 'upsert');
+    await clearRepertoireDirtyRows();
+    expect((await takeDirtyRows()).map((r) => r.id)).toEqual([dirtySyncRowKey('original', 'o1')]);
   });
 
   it('stores originals and marks dirty kind original', async () => {

@@ -28,6 +28,8 @@ export async function runWholeSongBeatAnalysis(
     mediaUrl: params.mediaUrl,
     audioContext: params.audioContext,
     onProgress: params.onProgress,
+    // Essentia hard-codes 44.1 kHz — see `toBeatAnalysisBuffer`.
+    target: 'analysis',
   });
 
   const beat = await analyzeBeat(buffer, (stage, progress) => {

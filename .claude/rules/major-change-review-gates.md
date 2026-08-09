@@ -1,51 +1,79 @@
 <!-- AUTO-GENERATED from .agents/rules/major-change-review-gates.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
 
-> Major changes pass senior-reviewer gates at the right lifecycle stage — PM (proposal), architecture (design), UX and QA (pre-merge) — right-sized by the app's quality tier
+> Ship to prod by default — automated gates decide, human review is reserved for changes that are both high-blast-radius and hard for an agent to verify
 
-# Major-change review gates (hard gate)
+# Review gates (ship-fast posture)
 
-Major work runs a senior reviewer at the stage where it pays off. Each gate is a
-read-only subagent that **finds**; you verify and fix. These sit above the per-PR
-[`labs-local-review`](../skills/labs-local-review/SKILL.md) trio (code / product /
-guidance), which still runs at every merge.
+**Default: land it.** These apps have a handful of users and the owner's stated risk
+tolerance for breakage is high. A broken screen is cheap — revert and redeploy. So the
+job of these gates is to catch what an agent **cannot verify on its own**, not to slow
+down work an agent can prove correct.
 
-## The lifecycle
+Do not ask permission to merge to `main`. Verify, then ship.
 
-| Stage                      | Gate                                                                      | Run when                                                                                                                                                |
-| -------------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Proposal                   | [`labs-pm-review`](../skills/labs-pm-review/SKILL.md)                     | A net-new app, a major feature, a new data model, or anything that overlaps an app's domain — **before** design. Judges audience, scope, portfolio fit. |
-| Technical design           | [`labs-architecture-review`](../skills/labs-architecture-review/SKILL.md) | A net-new app/subsystem, a new synced data model, a `src/shared/**` interface, or a significant refactor — after the proposal, **before** build.        |
-| Design-time journey        | [`labs-ux-journey`](../skills/labs-ux-journey/SKILL.md)                   | Non-trivial UI, before UI code (see `ux-journey-mandatory`).                                                                                            |
-| Pre-merge, major UX change | [`labs-ux-review`](../skills/labs-ux-review/SKILL.md)                     | New screen/flow/redesign, shared-UI or theming change — audits the rendered UI.                                                                         |
-| Pre-merge, major feature   | [`labs-qa-review`](../skills/labs-qa-review/SKILL.md)                     | New capability, sync/data-model, audio, undo — stress-tests the running app; bugs become regression tests.                                              |
-| Every merge                | [`labs-local-review`](../skills/labs-local-review/SKILL.md)               | The three-reviewer diff gate (ADR 0023).                                                                                                                |
+## What actually gates a merge
 
-Rationale and how these relate to the merge trio: [ADR 0024](../../docs/adr/0024-major-change-ux-qa-review-gates.md).
+Only two things:
+
+1. **`npm run presubmit` is green** — including the e2e stage.
+2. **You verified the change does what you claim**, by running it: a test that fails
+   against the old code, a browser check, a measurement. Not "it typechecks".
+
+That is the whole gate for the overwhelming majority of work: features, bug fixes,
+refactors, UI redesigns, new screens, dependency bumps, deletions.
+
+## The one thing that is not cheap: irreversible data loss
+
+Breakage is reversible. **The owner's songwriting, performance log, and practice
+history are not.** Nearly every serious incident in this repo has been that class —
+ADR 0019's empty-over-filled clobber, #99's cross-device video loss, the originals
+delete sweep. A bad deploy costs an hour; a silent sync bug costs work that does not
+exist anywhere else.
+
+So the risk tolerance is high for _behaviour_ and low for _durability_. Before merging a
+change that touches sync, merge, tombstones, delete paths, or a Drive/Dexie schema:
+
+- Write the characterization test **and verify it fails against the old code**. A test
+  that passes both ways proves nothing.
+- Run [`labs-qa-review`](../skills/labs-qa-review/SKILL.md) when the change spans more
+  than one of those surfaces at once.
+
+This is not ceremony — it is the only category where you cannot un-ship the damage.
+
+## Ask a human only when both are true
+
+**High blast radius** AND **you cannot verify it yourself**:
+
+- Auth / OAuth changes you cannot exercise end-to-end.
+- A destructive migration over existing user data with no dry run.
+- Anything where the correctness criterion is the owner's taste, and you have no way to
+  check it — a visual redesign you cannot see, copy in a voice you cannot hear.
+
+If you can verify it, verify it and ship it. "It's a big diff" is not a reason to ask.
+"It touches a `protected` app" is not a reason to ask. Uncertainty you can resolve with
+a test, a screenshot, or a measurement is uncertainty you should resolve, not escalate.
+
+## Reviewer subagents are for finding, not for permission
+
+[`labs-local-review`](../skills/labs-local-review/SKILL.md) and the specialist gates
+still earn their keep on large or unfamiliar changes — a fresh reader catches what the
+author stopped seeing, and on this repo they have caught real blockers. Run them when
+the change is big enough that a second opinion is likely to find something.
+
+But they are **advisory input to your judgment**, not an approval step. Verify each
+finding against the code, fix what is real, note what you deferred, and merge. Do not
+wait on a reviewer to bless a change you have already proven correct.
 
 ## Right-size by app quality tier
 
-Before choosing how much rigor to apply, read the touched app's tier in
-[`docs/app-quality-tiers.json`](../../docs/app-quality-tiers.json) (rubric:
-[`docs/APP_QUALITY_TIERS.md`](../../docs/APP_QUALITY_TIERS.md)). Tier is
-regression-criticality from usage + owner intent, **independent of public listing** —
-Encore is `unlisted` but `protected`.
+Tier still tells you how much a regression costs
+([`docs/app-quality-tiers.json`](../../docs/app-quality-tiers.json)):
 
-- **`protected`** (e.g. drums, encore, count) — run the applicable gates in full; treat visual/e2e as blocking; never weaken a guardrail; no sweeping rewrite without an architecture pass.
-- **`standard`** — the usual right-sizing.
-- **`experimental`** (e.g. melodia, muscle, sight) — move fast; sweeping changes are fine with minimal testing; skip the heavy gates.
+- **`protected`** (drums, encore, count) — keep e2e/visual green and never weaken a
+  guardrail. Tier raises the bar on _durability_, not on how much permission you need.
+- **`standard` / `experimental`** — move fast; sweeping changes are fine with light
+  testing.
 
-Skip all major-change gates for bug fixes, polish, docs, and clearly-in-scope small
-work. When unsure whether a change is "major", the tier decides: on a `protected`
-app, prefer running the gate.
-
-## Auto-merge waits for the QA gate (protected data-loss)
-
-Do not arm auto-merge (`gh pr merge --auto`) on a `protected`-tier PR that touches
-sync, merge, or delete/data-loss paths until
-[`labs-qa-review`](../skills/labs-qa-review/SKILL.md) has passed. Auto-merge lands the
-PR the moment CI goes green, which can beat a still-running review and ship a defect
-the gate would have caught — this is how #99's cross-device data-loss bug (B1) reached
-`main` (root cause class `qa-escaped-defect`, sequencing variant). Order: run QA, fix
-blockers, **then** arm auto-merge.
-
-Root cause classes: `product-scope-drift`, `architecture-review-gap`, `ux-design-review-gap`, `qa-escaped-defect`.
+Root cause classes: `product-scope-drift`, `architecture-review-gap`,
+`ux-design-review-gap`, `qa-escaped-defect`, `permission-theater` (asking for approval
+on a change you could have verified and shipped).

@@ -36,7 +36,7 @@ function normalizeIds(ids: readonly string[]): string[] {
   return ids.map((id) => id.trim()).filter(Boolean);
 }
 
-type RepertoireTombstoneField = 'deletedSongIds' | 'deletedPerformanceIds';
+type RepertoireTombstoneField = 'deletedSongIds' | 'deletedPerformanceIds' | 'deletedOriginalIds';
 
 async function mutateTombstones(
   field: RepertoireTombstoneField,
@@ -92,6 +92,19 @@ export async function clearDeletedSongIds(ids: readonly string[]): Promise<void>
 /** Clear performance tombstones when the rows are restored. */
 export async function clearDeletedPerformanceIds(ids: readonly string[]): Promise<void> {
   await mutateTombstones('deletedPerformanceIds', ids, 'remove', new Date().toISOString());
+}
+
+/**
+ * Record original ids the user deleted. `pullChangedOriginalsShards` deletes a local original only
+ * when it carries one of these tombstones — never merely because the remote manifest omits it.
+ */
+export async function recordDeletedOriginalIds(ids: readonly string[]): Promise<void> {
+  await mutateTombstones('deletedOriginalIds', ids, 'add', new Date().toISOString());
+}
+
+/** Clear original tombstones when the rows are restored (undo of delete). */
+export async function clearDeletedOriginalIds(ids: readonly string[]): Promise<void> {
+  await mutateTombstones('deletedOriginalIds', ids, 'remove', new Date().toISOString());
 }
 
 /** Union two tombstone maps (used by `mergeRepertoireExtras`): keep the latest `deletedAt` per id. */

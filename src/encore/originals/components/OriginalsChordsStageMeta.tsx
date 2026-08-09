@@ -62,7 +62,7 @@ export function OriginalsChordsStageMeta({
         className={META_CHIP_CLASS}
       />
       {playbackDurationLabel ? (
-        <Tooltip title="Estimated chord playback length">
+        <Tooltip title="Estimated playback length">
           <Typography
             component="span"
             variant="body2"

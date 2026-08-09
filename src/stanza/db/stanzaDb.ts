@@ -122,6 +122,13 @@ export interface StanzaSong {
    */
   skippedBySegmentId?: Record<string, true>;
   /**
+   * `markerId → deletedAt` (ms). Lets the Drive merge express section DELETION, which a per-id
+   * union cannot. Without it the merge fell back to "whichever side has more markers wins", so a
+   * delete was undone by any device that still had the section, and concurrent edits on the
+   * smaller side were discarded. See `stanzaMarkerTombstones.ts`.
+   */
+  deletedMarkerIds?: Record<string, number>;
+  /**
    * Device-local cached Find-the-Beat analysis for uploaded media (not synced to Drive).
    * See ADR 0013.
    */

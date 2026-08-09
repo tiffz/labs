@@ -205,9 +205,13 @@ export const APP_ROUTE_REGISTRY: RouteSpec[] = [
     title: /Palette Generator/i,
     visibleSelector: '[data-testid="palettegen-app"]',
     smoke: true,
-    visual: true,
-    visualId: 'palette',
-    notes: 'palette from images and links',
+    // Visual baseline lives on the deterministic `/palette/?colors=...` route
+    // (visualId 'palette-colors'). The bare `/palette/` landing generates a random
+    // palette on every load (swatches, hex labels, balanced-mix counts), so a
+    // pixel baseline here can never be stable — it was the nightly's recurring
+    // visual flake. Keep it as a smoke (shell renders) only.
+    visual: false,
+    notes: 'random landing — smoke only; deterministic visual is palette-colors',
   },
   {
     route: '/scrapboard/',

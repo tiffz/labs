@@ -7,10 +7,34 @@
  * writes just before the crash may fail, but the earlier ones — the climb that shows what
  * leaked — persist. After a reload, `downloadAudioBreadcrumbTrail()` (also on
  * `window.__labsDownloadAudioTrace()`) hands you the pre-crash trail as a JSON file.
+ *
+ * On the dev server there is no manual step: while the audio-diagnostics overlay samples,
+ * `postAudioTraceToDevServer()` POSTs the summarized trail to the `POST /__debug_audio_trace`
+ * Vite middleware every few seconds (plus a final beacon on `pagehide`). The middleware writes
+ * `.debug-audio-traces/trace-<sessionId>.json` (gitignored, overwritten per POST, one file per
+ * tab) so an assistant can read the pre-crash trail off disk with no forwarding. The POST is
+ * strictly dev-only (`import.meta.env.DEV`) and carries only heap/voice counts + a query-stripped
+ * route url — never tokens or PII.
  */
 import type { AudioDiagnosticsSnapshot } from './audioDiagnostics';
 
 const KEY = 'labs:audio-breadcrumb-v1';
+
+/**
+ * Stable per-tab id, generated once per page load. Names the on-disk trace file so two tabs
+ * sampling at once each get their own `trace-<sessionId>.json` instead of clobbering one file.
+ * The manual download and the dev-server auto-POST both read this constant, so they agree.
+ */
+export const audioTraceSessionId: string = (() => {
+  try {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+      return crypto.randomUUID();
+    }
+  } catch {
+    /* randomUUID unavailable (non-secure context) — fall through */
+  }
+  return `sess-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+})();
 /** ~2 min of history at the overlay's 500ms cadence. Tiny in localStorage; bounds growth. */
 const MAX_SAMPLES = 240;
 
@@ -95,18 +119,83 @@ export function summarizeAudioBreadcrumbTrail(trail = readAudioBreadcrumbTrail()
   };
 }
 
-/** Trigger a JSON download of the trail. Works from the console after a crash + reload. */
-export function downloadAudioBreadcrumbTrail(): boolean {
-  if (typeof document === 'undefined') return false;
-  const trail = readAudioBreadcrumbTrail();
-  const payload = {
+/**
+ * Strip query + hash-query so a shared/route url in the payload can never carry a token or
+ * secret. Mirrors `sanitizeRouteForBeacon` in `utils/labsCrashLog.ts`.
+ */
+function sanitizeTraceUrl(href: string): string {
+  try {
+    const url = new URL(href, typeof location !== 'undefined' ? location.origin : 'https://labs.local');
+    url.search = '';
+    url.hash = url.hash.split('?')[0] ?? url.hash;
+    return `${url.origin}${url.pathname}${url.hash}`;
+  } catch {
+    return href.split('?')[0]?.split('#')[0] ?? '/';
+  }
+}
+
+export interface AudioTracePayload {
+  kind: 'labs-audio-breadcrumb';
+  capturedAt: string;
+  /** Query-stripped route url — no tokens/PII. */
+  url: string | null;
+  userAgent: string | null;
+  summary: ReturnType<typeof summarizeAudioBreadcrumbTrail>;
+  trail: AudioBreadcrumbSample[];
+  /** Per-tab id; also the on-disk filename stem for the dev-server trace. */
+  sessionId: string;
+}
+
+/** Build the JSON payload shared by the manual download and the dev-server auto-POST. */
+export function buildAudioTracePayload(trail = readAudioBreadcrumbTrail()): AudioTracePayload {
+  return {
     kind: 'labs-audio-breadcrumb',
     capturedAt: new Date().toISOString(),
-    url: typeof location !== 'undefined' ? location.href : null,
+    url: typeof location !== 'undefined' ? sanitizeTraceUrl(location.href) : null,
     userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
     summary: summarizeAudioBreadcrumbTrail(trail),
     trail,
+    sessionId: audioTraceSessionId,
   };
+}
+
+const DEV_TRACE_ENDPOINT = '/__debug_audio_trace';
+
+/**
+ * Dev-only: POST the summarized crash trail to the Vite `/__debug_audio_trace` middleware so it
+ * lands on disk (`.debug-audio-traces/trace-<sessionId>.json`) even if the tab then OOM-crashes.
+ * Uses `sendBeacon` for the final unload flush, else `fetch(..., { keepalive: true })` so an
+ * in-flight POST survives the unload. Best-effort — never throws into the caller. NO-OP in a
+ * production build: the `import.meta.env.DEV` guard dead-code-eliminates the fetch, and the
+ * endpoint does not exist in prod anyway (belt and suspenders).
+ */
+export function postAudioTraceToDevServer(options?: { useBeacon?: boolean }): void {
+  if (!import.meta.env.DEV) return;
+  try {
+    const payload = JSON.stringify(buildAudioTracePayload());
+    if (options?.useBeacon && typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function') {
+      navigator.sendBeacon(DEV_TRACE_ENDPOINT, new Blob([payload], { type: 'application/json' }));
+      return;
+    }
+    if (typeof fetch === 'function') {
+      void fetch(DEV_TRACE_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: payload,
+        keepalive: true,
+      }).catch(() => {
+        /* dev server not listening / navigated away — best effort */
+      });
+    }
+  } catch {
+    /* serialization or storage failure — the on-disk file just misses this sample */
+  }
+}
+
+/** Trigger a JSON download of the trail. Works from the console after a crash + reload. */
+export function downloadAudioBreadcrumbTrail(): boolean {
+  if (typeof document === 'undefined') return false;
+  const payload = buildAudioTracePayload();
   try {
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);

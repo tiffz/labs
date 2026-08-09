@@ -44,6 +44,8 @@ export async function analyzeBeatForMediaTimeRange(
     mediaUrl,
     audioContext,
     onProgress: (p) => onProgress?.({ stage: p.stage, progress: Math.min(45, p.progress) }),
+    // Essentia hard-codes 44.1 kHz — see `toBeatAnalysisBuffer`.
+    target: 'analysis',
   });
 
   const duration = buffer.duration;

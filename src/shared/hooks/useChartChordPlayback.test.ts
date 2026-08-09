@@ -6,13 +6,16 @@ import { chartPlaybackMeasureDurationMs } from '../music/chordPro/chartPlaybackS
 
 const scheduleStyledChordMeasure = vi.fn();
 const scheduleDrumMeasure = vi.fn();
+const gridConfigure = vi.fn();
+const gridPollTimeline = vi.fn().mockResolvedValue(undefined);
+const gridReset = vi.fn();
 const ensureInstrument = vi.fn();
 const stopAll = vi.fn();
 
 // Capture the context handed to the drum-player factory so a test can assert the
 // ADR 0025 "one AudioContext" wiring: the drum player must be built on the SAME
 // ctx the chord session exposes, never a freshly minted second one.
-const createChartDrumAudioPlayer = vi.fn(() => ({
+const createChartDrumAudioPlayer = vi.fn<(...args: unknown[]) => unknown>(() => ({
   initialize: vi.fn().mockResolvedValue(undefined),
   ensureResumed: vi.fn().mockResolvedValue(true),
   getAudioContext: () => ({ currentTime: 0, state: 'running' }),
@@ -24,6 +27,21 @@ const createChartDrumAudioPlayer = vi.fn(() => ({
 // single-context invariant checks, so it must be the same object every resolve.
 const chordSessionCtx = { currentTime: 0, state: 'running' as const };
 
+// Shared, resettable preload ref (production returns a per-mount `useRef`). The hook's
+// unmount cleanup nulls `.current`, so re-seat it before each test for isolation.
+const preloadState = vi.hoisted(() => ({ ref: { current: null as unknown } }));
+function seatPreloadRef(): void {
+  preloadState.ref.current = {
+    isDisposed: () => false,
+    primeAudioContext: vi.fn(),
+    setSampleLoadListener: vi.fn(),
+    getAudioContext: () => ({ currentTime: 0, state: 'running' }),
+    ensureInstrument: (...args: unknown[]) => ensureInstrument(...args),
+    stopAll: (...args: unknown[]) => stopAll(...args),
+    dispose: vi.fn(),
+  };
+}
+
 vi.mock('../music/scheduleStyledChordMeasure', () => ({
   scheduleStyledChordMeasure: (...args: unknown[]) => scheduleStyledChordMeasure(...args),
 }));
@@ -33,11 +51,26 @@ vi.mock('../music/scheduleDrumMeasure', () => ({
   scheduleDrumMeasure: (...args: unknown[]) => scheduleDrumMeasure(...args),
 }));
 
+vi.mock('../audio/metronome/gridMetronomePlayback', () => ({
+  GridMetronomeScheduler: class {
+    configure(...args: unknown[]) {
+      gridConfigure(...args);
+    }
+    reset(...args: unknown[]) {
+      gridReset(...args);
+    }
+    pollTimeline(...args: unknown[]) {
+      return gridPollTimeline(...args);
+    }
+  },
+}));
+
 vi.mock('../music/chordInstrumentSession', () => ({
   ChordInstrumentSession: vi.fn().mockImplementation(() => ({
     isDisposed: () => false,
     primeAudioContext: vi.fn(),
     setSampleLoadListener: vi.fn(),
+    getAudioContext: () => ({ currentTime: 0, state: 'running' }),
     ensureInstrument: (...args: unknown[]) => ensureInstrument(...args),
     stopAll: (...args: unknown[]) => stopAll(...args),
     dispose: vi.fn(),
@@ -53,16 +86,10 @@ vi.mock('../audio/usePlaybackWakeLock', () => ({
 }));
 
 vi.mock('./useSampledPianoPreload', () => ({
-  useSampledPianoPreload: () => ({
-    current: {
-      isDisposed: () => false,
-      primeAudioContext: vi.fn(),
-      setSampleLoadListener: vi.fn(),
-      ensureInstrument: (...args: unknown[]) => ensureInstrument(...args),
-      stopAll: (...args: unknown[]) => stopAll(...args),
-      dispose: vi.fn(),
-    },
-  }),
+  // Stable ref across renders (production returns a `useRef`). A fresh object each
+  // render would churn the [instrumentSessionRef] cleanup effect (it calls stopAll on
+  // teardown) on any background re-render.
+  useSampledPianoPreload: () => preloadState.ref,
 }));
 
 const layout: ChartLayout = {
@@ -84,8 +111,12 @@ const layout: ChartLayout = {
 
 describe('useChartChordPlayback stop', () => {
   beforeEach(() => {
+    seatPreloadRef();
     scheduleStyledChordMeasure.mockClear();
     scheduleDrumMeasure.mockClear();
+    gridConfigure.mockClear();
+    gridPollTimeline.mockClear();
+    gridReset.mockClear();
     stopAll.mockClear();
     createChartDrumAudioPlayer.mockClear();
     ensureInstrument.mockResolvedValue({
@@ -283,7 +314,7 @@ describe('useChartChordPlayback stop', () => {
     localStorage.removeItem(storageKey);
   });
 
-  it('flushes voices when the tab is hidden while playing', async () => {
+  it('keeps playing when the tab is hidden — no flush blast (ADR 0025 background playback)', async () => {
     Object.defineProperty(document, 'hidden', { configurable: true, value: false });
     const { result } = renderHook(() =>
       useChartChordPlayback({
@@ -306,10 +337,110 @@ describe('useChartChordPlayback stop', () => {
       await Promise.resolve();
     });
 
-    expect(stopAll).toHaveBeenCalled();
+    // Hidden no longer stops or flushes — playback continues in the background.
+    expect(stopAll).not.toHaveBeenCalled();
     expect(result.current.playing).toBe(true);
 
-    Object.defineProperty(document, 'hidden', { configurable: true, value: false });
+    // Returning to visible keeps playing (re-anchors only if the clock actually froze).
+    await act(async () => {
+      Object.defineProperty(document, 'hidden', { configurable: true, value: false });
+      document.dispatchEvent(new Event('visibilitychange'));
+      await Promise.resolve();
+    });
+    expect(result.current.playing).toBe(true);
+  });
+
+  it('builds the drum player on the chord session context — one AudioContext (ADR 0025 step 1)', async () => {
+    const { result } = renderHook(() =>
+      useChartChordPlayback({
+        layout,
+        tempo: 120,
+        storageKey: 'test-chart-playback-single-context',
+      }),
+    );
+
+    // Drums off by default — enable so the drum player is actually built.
+    act(() => {
+      result.current.updateSettings({ drumsEnabled: true });
+    });
+
+    await act(async () => {
+      result.current.start();
+      // Drain ensureInstrument -> ensureAudioContextRunning -> ensureDrumPlayerReady.
+      for (let i = 0; i < 8; i += 1) await Promise.resolve();
+    });
+
+    // The invariant: the drum-player factory received the EXACT ctx object the chord
+    // session exposed — not a second minted context (the dual-clock regression).
+    // Assert object IDENTITY (`toBe`), not `toHaveBeenCalledWith` — the latter deep-
+    // equals, so a freshly minted `{currentTime,state}` would slip past.
+    expect(createChartDrumAudioPlayer).toHaveBeenCalledTimes(1);
+    expect(createChartDrumAudioPlayer.mock.calls[0]?.[0]).toBe(chordSessionCtx);
+
+    act(() => {
+      result.current.stop();
+    });
+  });
+
+  it('drives the shared metronome grid scheduler on the chart context when metronome is on', async () => {
+    vi.useFakeTimers();
+    const { result } = renderHook(() =>
+      useChartChordPlayback({
+        layout,
+        tempo: 120,
+        storageKey: 'test-chart-playback-metronome-on',
+      }),
+    );
+
+    act(() => {
+      result.current.updateSettings({ metronomeEnabled: true });
+    });
+
+    await act(async () => {
+      result.current.startSectionLoop('verse-1');
+      await Promise.resolve();
+    });
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(chartPlaybackMeasureDurationMs(120) * 2);
+    });
+
+    // The shared grid scheduler is polled on the chart's AudioContext — one transport.
+    expect(gridPollTimeline).toHaveBeenCalled();
+
+    act(() => {
+      result.current.stop();
+    });
+    vi.useRealTimers();
+  });
+
+  it('does not drive the metronome scheduler when metronome is off', async () => {
+    vi.useFakeTimers();
+    const { result } = renderHook(() =>
+      useChartChordPlayback({
+        layout,
+        tempo: 120,
+        storageKey: 'test-chart-playback-metronome-off',
+      }),
+    );
+
+    await act(async () => {
+      result.current.startSectionLoop('verse-1');
+      await Promise.resolve();
+    });
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(chartPlaybackMeasureDurationMs(120) * 2);
+    });
+
+    // Chords scheduled (ticks fired), but the metronome stayed silent while off.
+    expect(scheduleStyledChordMeasure).toHaveBeenCalled();
+    expect(gridPollTimeline).not.toHaveBeenCalled();
+
+    act(() => {
+      result.current.stop();
+    });
+    vi.useRealTimers();
   });
 
   it('builds the drum player on the chord session context — one AudioContext (ADR 0025 step 1)', async () => {

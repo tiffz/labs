@@ -1,4 +1,10 @@
-import { encoreDb, getSyncMeta, patchSyncMeta, type SyncMetaRow } from '../db/encoreDb';
+import {
+  clearRepertoireDirtyRows,
+  encoreDb,
+  getSyncMeta,
+  patchSyncMeta,
+  type SyncMetaRow,
+} from '../db/encoreDb';
 import type { EncorePerformance, EncoreSong } from '../types';
 import {
   buildWireFromTables,
@@ -149,7 +155,9 @@ export async function pullRepertoireFromDrive(
   await encoreDb.transaction('rw', encoreDb.songs, encoreDb.performances, encoreDb.repertoireExtras, encoreDb.dirtySync, async () => {
     await encoreDb.songs.clear();
     await encoreDb.performances.clear();
-    await encoreDb.dirtySync.clear();
+    // Scoped: `kind: 'original'` dirty rows belong to the originals pusher, not this merge.
+    // Clearing them here used to strand an unpushed original for the originals pull to delete.
+    await clearRepertoireDirtyRows();
     await encoreDb.songs.bulkPut(mergedSongs);
     await encoreDb.performances.bulkPut(mergedPerf);
     await encoreDb.repertoireExtras.put(mergedExtras);
@@ -566,7 +574,8 @@ export async function resolveConflictWithChoices(
     async () => {
       await encoreDb.songs.clear();
       await encoreDb.performances.clear();
-      await encoreDb.dirtySync.clear();
+      // Scoped for the same reason as the pull path — see `clearRepertoireDirtyRows`.
+      await clearRepertoireDirtyRows();
       await encoreDb.songs.bulkPut(filteredSongs);
       await encoreDb.performances.bulkPut(filteredPerf);
       await encoreDb.repertoireExtras.put(mergedExtras);

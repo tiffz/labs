@@ -57,6 +57,43 @@
   flex-shrink: 0;
 }
 
+/*
+ * Chords toolbar transport (play / metronome / settings) shares the outlined
+ * 30px language of .encore-originals-meta-chip, so the whole toolbar reads as one
+ * curated row of controls rather than a text button + a chip + a bare icon. Border
+ * token mirrors the meta chips exactly. The metronome is a nested split control
+ * (its own .labs-metronome-split-control div), so the direct-child selectors below
+ * skip it — it already carries the encore appearance.
+ */
+.encore-originals-transport > .MuiButtonBase-root {
+  height: 30px;
+  min-height: 30px;
+  border-radius: 0.45rem;
+  border: 1px solid color-mix(in srgb, #7c3aed 22%, #e9d5ff);
+  color: #4c1d95;
+}
+
+.encore-originals-transport > .MuiIconButton-root {
+  width: 30px;
+  color: #5b6675;
+}
+
+.encore-originals-transport > .MuiButton-root {
+  padding-inline: 0.6rem;
+  font-weight: 700;
+  font-size: 0.8125rem;
+}
+
+.encore-originals-transport > .MuiButton-root .MuiButton-startIcon {
+  color: #ad1fbf;
+  margin-right: 4px;
+}
+
+.encore-originals-transport > .MuiButtonBase-root:hover {
+  background: color-mix(in srgb, #ad1fbf 6%, #ffffff);
+  border-color: color-mix(in srgb, #7c3aed 42%, #c4b5fd);
+}
+
 .encore-originals-chord-badge--playing {
   background: rgba(124, 58, 237, 0.28);
   color: #5b21b6;

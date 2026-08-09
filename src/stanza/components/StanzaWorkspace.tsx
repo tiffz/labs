@@ -91,6 +91,8 @@ import {
 } from '../utils/stanzaPlaybackFocus';
 import { snapSegmentBoundaryMarkersToBeats, commitSelectionSpanToHullBoundaryMarkers } from '../utils/stanzaBeatGrid';
 import { canPlaceMarkerAtTime, markerTimesEqual } from '../utils/stanzaMarkerSpacing';
+import { recordDeletedMarkerIds } from '../utils/stanzaMarkerTombstones';
+import { useStanzaLiveBeatTime } from '../hooks/useStanzaLiveBeatTime';
 import type { StanzaMarkersChangeContext } from './StanzaTimeline';
 import { useStanzaLocalDecodedDuration } from '../hooks/useStanzaLocalDecodedDuration';
 import { useStanzaLocalPlaybackObjectUrls } from '../hooks/useStanzaLocalPlaybackObjectUrls';
@@ -1071,11 +1073,24 @@ export default function StanzaWorkspace() {
                 : durationRef.current,
             )
           : row.markers;
+      const now = Date.now();
       const next: StanzaSong = {
         ...row,
         ...patch,
         markers: nextMarkers,
-        updatedAt: touchUpdatedAt ? Date.now() : row.updatedAt,
+        // Record section deletions HERE, at the one write every delete path funnels through
+        // (per-marker delete, join-sections, the Delete key). Recording at each call site would
+        // let a future delete path silently regress sync back to the count heuristic.
+        deletedMarkerIds:
+          patch.markers != null
+            ? recordDeletedMarkerIds({
+                previousMarkers: row.markers,
+                nextMarkers,
+                existing: row.deletedMarkerIds,
+                now,
+              })
+            : row.deletedMarkerIds,
+        updatedAt: touchUpdatedAt ? now : row.updatedAt,
       };
       const markersOnlyPatch =
         patch.markers != null &&
@@ -2245,6 +2260,44 @@ export default function StanzaWorkspace() {
     storageKey: 'stanza-metronome-prefs',
     timeSignature: { numerator: 4, denominator: 4 },
   });
+  /**
+   * The Mix "Metronome" slider and the metronome panel's "Overall volume" are ONE control shown in
+   * two places, not two controls.
+   *
+   * They used to be independent values that `applyMetronomeBusGain` MULTIPLIED together
+   * (`mixGain × masterVolume`). Since `masterVolume` defaults to 50, a Mix slider at 100 actually
+   * played at 50%, and moving either slider changed the level by an amount neither slider showed.
+   * Both now read and write the per-song `metronomeGain`, and the gain is applied exactly once.
+   */
+  const metronomePanelPreferences = useMemo(
+    () => ({ ...stanzaMetronomePreferences, masterVolume: Math.round(metronomeUserGain * 100) }),
+    [stanzaMetronomePreferences, metronomeUserGain],
+  );
+
+  const handleMetronomePreferencesChange = useCallback(
+    (next: typeof stanzaMetronomePreferences) => {
+      const nextGain = Math.max(0, Math.min(1, next.masterVolume / 100));
+      if (selected && Math.abs(nextGain - metronomeUserGain) > 0.001) {
+        setMixMetronomeGainDraft(nextGain);
+        void persistSong({ id: selected.id, metronomeGain: nextGain });
+      }
+      // Keep every other preference (subdivisions, sounds, mutes) in its own store; only the
+      // overall level is shared with the Mix slider.
+      setStanzaMetronomePreferences({
+        ...next,
+        masterVolume: stanzaMetronomePreferences.masterVolume,
+      });
+    },
+    [
+      selected,
+      metronomeUserGain,
+      persistSong,
+      setMixMetronomeGainDraft,
+      setStanzaMetronomePreferences,
+      stanzaMetronomePreferences,
+    ],
+  );
+
   useStanzaMetronomeSync({
     enabled: Boolean(
       metronomeEnabledForPlayback && metronomeSyncSource.bpm != null && metronomeSyncSource.bpm > 0,
@@ -2254,9 +2307,11 @@ export default function StanzaWorkspace() {
     getMediaTime: getTime,
     isPlaying: playback.isPlaying,
     audioEnabled: true,
-    gain: metronomeUserGain,
+    // `metronomePanelPreferences.masterVolume` already carries the user's level, so the bus gain
+    // is identity here — applying it again is the double-multiply this replaced.
+    gain: 1,
     muted: metronomeUserMuted || stanzaTapMetronomeTapActive,
-    preferences: stanzaMetronomePreferences,
+    preferences: metronomePanelPreferences,
   });
 
   /**
@@ -2281,7 +2336,18 @@ export default function StanzaWorkspace() {
       ? timingGridSource.bpm
       : STANZA_DRUMS_DEFAULT_BPM;
   const drumsAnchorMediaTime = drumsHasGrid ? (timingGridSource.anchor as number) : 0;
-  const drumsCurrentBeatTime = Math.max(0, playback.currentTime - drumsAnchorMediaTime);
+  /**
+   * Read from the live transport clock — the SAME `getTime` the drum scheduler uses — not from
+   * `playback.currentTime`, which the media element only refreshes on `timeupdate` (~4 Hz). Two
+   * clocks for one playhead put the highlight up to half a beat behind the sound at 120 BPM.
+   */
+  const drumsCurrentBeatTime = useStanzaLiveBeatTime({
+    isPlaying: playback.isPlaying,
+    getTime,
+    anchorMediaTime: drumsAnchorMediaTime,
+    bpm: drumsBpm,
+    fallbackTime: playback.currentTime,
+  });
   const drumsBeatPeriod = 60 / drumsBpm;
   const drumsAbsoluteBeat = drumsHasGrid ? Math.floor(drumsCurrentBeatTime / drumsBeatPeriod) : 0;
   /** Beat index within the measure (0-based) for mini-notation metronome dots. */
@@ -2320,16 +2386,44 @@ export default function StanzaWorkspace() {
       !stanzaTapMetronomeTapActive,
   );
 
-  const stanzaDrumScheduler = useMemo(() => {
-    if (!drumsHasGrid) return undefined;
-    return createMediaTimelineDrumScheduler({
-      bpm: drumsBpm,
-      timeSignature: STANZA_DRUMS_DEFAULT_TIME_SIGNATURE,
-      anchorMediaTime: drumsAnchorMediaTime,
-      getMediaTime: getTime,
-      isPlaying: drumsActuallyPlaying,
-    });
-  }, [drumsHasGrid, drumsBpm, drumsAnchorMediaTime, getTime, drumsActuallyPlaying]);
+  /**
+   * ONE long-lived drum scheduler for the session.
+   *
+   * This used to be a `useMemo` keyed on bpm / anchor / isPlaying, with no cleanup — and
+   * `createMediaTimelineDrumScheduler` mints an `AudioPlayer` and therefore an `AudioContext`.
+   * `drumsActuallyPlaying` flips on every play and pause, and `drumsAnchorMediaTime` changes at
+   * every section boundary, so looping a section leaked one AudioContext plus a full set of
+   * decoded samples PER WRAP, none of them ever released. Browsers cap contexts per document and
+   * then throw; before that the memory climbs. That is the "crashes after a while of looping"
+   * report, and it is the same shape as the Encore playback OOM that produced ADR 0025.
+   *
+   * The options object is mutated in place instead — the scheduler reads `opts.*` at tick time —
+   * so retuning tempo or anchor never re-mints hardware.
+   */
+  const drumSchedulerOptsRef = useRef({
+    bpm: drumsBpm,
+    timeSignature: STANZA_DRUMS_DEFAULT_TIME_SIGNATURE,
+    anchorMediaTime: drumsAnchorMediaTime,
+    getMediaTime: getTime,
+    isPlaying: drumsActuallyPlaying,
+  });
+  drumSchedulerOptsRef.current.bpm = drumsBpm;
+  drumSchedulerOptsRef.current.anchorMediaTime = drumsAnchorMediaTime;
+  drumSchedulerOptsRef.current.getMediaTime = getTime;
+  drumSchedulerOptsRef.current.isPlaying = drumsActuallyPlaying;
+
+  const stanzaDrumScheduler = useMemo(
+    () => createMediaTimelineDrumScheduler(drumSchedulerOptsRef.current),
+    [],
+  );
+
+  // Start/stop the driver when playback state changes, without recreating the scheduler.
+  useEffect(() => {
+    stanzaDrumScheduler.syncPlayback();
+  }, [stanzaDrumScheduler, drumsActuallyPlaying, drumsBpm, drumsAnchorMediaTime]);
+
+  // Release the context and decoded samples when the workspace unmounts.
+  useEffect(() => () => stanzaDrumScheduler.destroy(), [stanzaDrumScheduler]);
 
   const analysisAudioContextRef = useRef<AudioContext | null>(null);
   const getAnalysisAudioContext = useCallback((): AudioContext | null => {
@@ -2341,6 +2435,17 @@ export default function StanzaWorkspace() {
     }
     return analysisAudioContextRef.current;
   }, []);
+
+  // Close it on unmount. Browsers cap AudioContexts per document at ~6; leaving this one open for
+  // the life of the tab permanently spends one of them and narrows the margin for the leak class
+  // that just caused crashes.
+  useEffect(
+    () => () => {
+      void analysisAudioContextRef.current?.close();
+      analysisAudioContextRef.current = null;
+    },
+    [],
+  );
 
   const stanzaCanAnalyze = practiceSource === 'local' && Boolean(selected?.localAudioBlob && localUrl);
   const stanzaAnalysisDisabledReason =
@@ -2720,8 +2825,8 @@ export default function StanzaWorkspace() {
                       getMediaTime={getTime}
                       isPlaying={playback.isPlaying}
                       needsCalibration={metronomeNeedsCalibration}
-                      preferences={stanzaMetronomePreferences}
-                      onPreferencesChange={setStanzaMetronomePreferences}
+                      preferences={metronomePanelPreferences}
+                      onPreferencesChange={handleMetronomePreferencesChange}
                       timeSignature={STANZA_DRUMS_DEFAULT_TIME_SIGNATURE}
                     />
                     {railCalibSeg ? (

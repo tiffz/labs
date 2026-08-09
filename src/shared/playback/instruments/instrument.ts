@@ -28,6 +28,15 @@ export interface Instrument {
   stopAll(fadeTimeMs?: number): void;
 
   /**
+   * Schedule every currently-tracked voice to stop AT `atTime` on the audio clock.
+   * Used for the loop-wrap choke (ADR 0025 step 3): cut the previous pass's ring-out
+   * exactly at the loop boundary, before the next pass is scheduled, so voices cannot
+   * accumulate across wraps. Optional — instruments built on {@link BaseInstrument}
+   * inherit it.
+   */
+  stopAllVoicesAt?(atTime: number): void;
+
+  /**
    * Connect instrument output to a destination node
    */
   connect(destination: AudioNode): void;
@@ -184,6 +193,30 @@ export abstract class BaseInstrument implements Instrument {
       }
     }, fadeMs + 20);
     this.busTeardowns.add(entry);
+  }
+
+  /**
+   * Loop-wrap voice choke (ADR 0025 step 3). Schedule each tracked voice to stop AT
+   * the loop-boundary audio time, cutting the previous pass's ring-out right where
+   * the next pass begins. Voices stay tracked — their `onended` release removes them
+   * when the stop lands — so this bounds the live-voice count across wraps regardless
+   * of how far ahead the look-ahead scheduled (a wide background horizon can queue
+   * several passes at once). Rides the audio clock, so it is immune to background
+   * timer throttling.
+   *
+   * Unlike {@link stopAll} it does NOT fade or swap the bus: at a seamless loop the
+   * previous pass's final notes are already at the tail of their envelopes by the
+   * boundary, so a hard stop there is effectively click-free.
+   */
+  stopAllVoicesAt(atTime: number): void {
+    if (this.disposed) return;
+    for (const voice of this.activeVoices) {
+      try {
+        voice.stop(atTime);
+      } catch {
+        /* already stopped */
+      }
+    }
   }
 
   connect(destination: AudioNode): void {

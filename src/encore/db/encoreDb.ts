@@ -112,6 +112,15 @@ export interface RepertoireExtrasRow {
   deletedSongIds?: Record<string, string>;
   /** Deleted-performance tombstones as `id -> deletedAt` (ISO); same clock-supersede semantics. */
   deletedPerformanceIds?: Record<string, string>;
+  /**
+   * Deleted-original tombstones as `id -> deletedAt` (ISO); same clock-supersede semantics.
+   *
+   * Originals live in their own Dexie table and their own Drive shard layout, but their tombstones
+   * ride the repertoire extras row because that is the only single-row object both sides already
+   * merge. Without them `pullChangedOriginalsShards` had to infer deletes from manifest absence,
+   * which cannot tell "deleted on a peer" from "not pushed yet" — and chose to delete.
+   */
+  deletedOriginalIds?: Record<string, string>;
   updatedAt: string;
 }
 
@@ -241,4 +250,17 @@ export async function takeDirtyRows(): Promise<DirtySyncRow[]> {
 export async function clearDirtyRows(ids: string[]): Promise<void> {
   if (ids.length === 0) return;
   await encoreDb.dirtySync.bulkDelete(ids);
+}
+
+/**
+ * Clear only the dirty rows the **repertoire** pull/merge owns (`song`, `performance`, `extras`).
+ *
+ * P0 data-loss fix: the repertoire pull used to call `dirtySync.clear()`, which also dropped
+ * `kind: 'original'` rows that merge never looked at. An original created before its push landed
+ * therefore lost its pending push intent, and the originals pull that runs next then saw it missing
+ * from the remote manifest and deleted it — silently, with no tombstone and no way back. Originals
+ * drain through their own pusher (`pushOriginalsDirtyShards`), so their intent must survive here.
+ */
+export async function clearRepertoireDirtyRows(): Promise<void> {
+  await encoreDb.dirtySync.where('kind').notEqual('original').delete();
 }

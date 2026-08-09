@@ -24,6 +24,7 @@ import {
   type ReactNode,
 } from 'react';
 import { resourceLinkOpenUrl } from '../repertoire/encoreResourceLinks';
+import { driveFileWebUrl } from '../drive/driveWebUrls';
 import { encoreMediaHubAddButtonSx, encoreRadius, practiceResourceChipFieldSx } from '../theme/encoreUiTokens';
 import type { EncoreMiscResource } from '../types';
 import { useEncoreAuth } from '../context/EncoreAuthContext';
@@ -215,6 +216,9 @@ export function EncoreResourceLinksPanel({
       onResourceNotesChange: readOnly
         ? undefined
         : (value: string) => patchResource({ notes: value.trim() || undefined }),
+      ...(resource.driveFileId?.trim()
+        ? { driveOpenUrl: driveFileWebUrl(resource.driveFileId.trim()) }
+        : {}),
       ...(downloadTarget
         ? {
             onDownload: () => triggerEncoreResourceDownload(downloadTarget, googleAccessToken),

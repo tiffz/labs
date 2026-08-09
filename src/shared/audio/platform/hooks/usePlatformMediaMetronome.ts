@@ -9,19 +9,35 @@ import {
   type GridMetronomePlaybackPrefs,
 } from '../../metronome/gridMetronomePlayback';
 
-function getClickContext(): AudioContext | null {
-  const Ctor = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-  if (!Ctor) return null;
-  return new Ctor();
-}
-
 let sharedClickCtx: AudioContext | null = null;
 
+/**
+ * Resume the one shared click context, creating it only if it does not exist yet.
+ *
+ * This used to call `new AudioContext()` **unconditionally** and overwrite `sharedClickCtx`,
+ * orphaning the previous context without closing it. Since it is called from the first line of
+ * Stanza's `playUnified` — which also re-runs on every loop wrap and on premature-end resume —
+ * practising a looped section minted one AudioContext per pass. Chrome caps contexts per document
+ * (~6) and then throws, after which the metronome and drums are silent for the rest of the session
+ * while the `<audio>` element keeps playing normally. That is the "drums are often muted at the
+ * start" and "drums don't play at all" report: it depends on how many times you had pressed play.
+ *
+ * Each orphan also leaked its `visibilitychange` / `statechange` listeners.
+ */
 export function primePlatformMetronomeAudio(): void {
-  const ctx = getClickContext();
-  if (!ctx) return;
-  void ensureAudioContextRunning(ctx);
-  sharedClickCtx = ctx;
+  if (!sharedClickCtx || sharedClickCtx.state === 'closed') {
+    const Ctor =
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!Ctor) return;
+    sharedClickCtx = new Ctor();
+  }
+  void ensureAudioContextRunning(sharedClickCtx);
+}
+
+/** Test seam — drops the shared context so a suite can assert the no-leak invariant. */
+export function __resetPlatformMetronomeAudioForTests(): void {
+  sharedClickCtx = null;
 }
 
 export type UsePlatformMediaMetronomeOptions = {
@@ -98,26 +114,46 @@ export function usePlatformMediaMetronome(opts: UsePlatformMediaMetronomeOptions
     }
 
     let raf = 0;
+    // `poll()` really awaits (context resume polls for up to 400ms; first-use sample fetches). If
+    // cleanup runs while it is suspended, the `finally` below would schedule a frame into a dead
+    // closure that nothing can cancel — one orphaned 60Hz loop per section boundary, stacking.
+    let disposed = false;
+    const poll = async (): Promise<void> => {
+      if (!audioEnabled || mutedRef.current) return;
+      // Never mint a context from inside the tick — that is how the leak compounded.
+      // `primePlatformMetronomeAudio` owns creation, on a user gesture.
+      const ctx = sharedClickCtx;
+      if (!ctx || ctx.state === 'closed') return;
+      const mediaTime = getMediaTime();
+      const prefs = prefsRef.current as GridMetronomePlaybackPrefs;
+      const legacyMetVolume = prefs.masterMuted ? 0 : prefs.masterVolume;
+      await schedulerRef.current.pollTimeline(ctx, mediaTime, prefs, legacyMetVolume, 0);
+    };
+
     const tick = () => {
       void labsPlaybackSafeCallAsync('metronome RAF tick', async () => {
         try {
-          if (!audioEnabled || mutedRef.current) return;
-
-          const ctx = sharedClickCtx ?? getClickContext();
-          if (ctx) {
-            sharedClickCtx = ctx;
-            const mediaTime = getMediaTime();
-            const prefs = prefsRef.current as GridMetronomePlaybackPrefs;
-            const legacyMetVolume = prefs.masterMuted ? 0 : prefs.masterVolume;
-            await schedulerRef.current.pollTimeline(ctx, mediaTime, prefs, legacyMetVolume, 0);
-          }
+          await poll();
         } finally {
-          raf = window.requestAnimationFrame(tick);
+          if (!disposed) raf = window.requestAnimationFrame(tick);
         }
       });
     };
 
     raf = window.requestAnimationFrame(tick);
-    return () => window.cancelAnimationFrame(raf);
+
+    // rAF pauses entirely in a hidden tab while the media element keeps playing, so without this
+    // the click drops out the moment you switch tabs and the drum layer and metronome come back
+    // out of step. Guarded to hidden so it never double-drives the foreground rAF loop.
+    const backgroundTimer = window.setInterval(() => {
+      if (typeof document === 'undefined' || !document.hidden) return;
+      void labsPlaybackSafeCallAsync('metronome background tick', poll);
+    }, 500);
+
+    return () => {
+      disposed = true;
+      window.cancelAnimationFrame(raf);
+      window.clearInterval(backgroundTimer);
+    };
   }, [enabled, bpm, anchorMediaTime, isPlaying, audioEnabled, getMediaTime, muted]);
 }

@@ -47,3 +47,37 @@ export async function hasOriginalTakeBlob(songId: string, takeId: string): Promi
 export async function deleteOriginalTakeBlob(songId: string, takeId: string): Promise<void> {
   await encoreDb.originalTakeBlobs.delete(originalTakeBlobKey(songId, takeId));
 }
+
+/**
+ * Drop every cached take blob for one original.
+ *
+ * Call this wherever an original row goes away for good. Blob rows are keyed `songId:takeId` and
+ * are only ever removed per-take otherwise, so deleting a song used to orphan its audio in
+ * IndexedDB forever — tens of MB per take, never reclaimed.
+ */
+export async function deleteOriginalTakeBlobsForSong(songId: string): Promise<void> {
+  await encoreDb.originalTakeBlobs.where('songId').equals(songId).delete();
+}
+
+/**
+ * Reclaim take blobs whose original no longer exists.
+ *
+ * A local delete deliberately leaves blobs behind so undo can restore a playable song; this sweep
+ * collects them once the delete has settled. Runs on sync, so a blob survives at least until the
+ * next pull — long enough for the session's undo stack to matter.
+ *
+ * @returns the number of blob rows removed.
+ */
+export async function pruneOrphanedOriginalTakeBlobs(): Promise<number> {
+  const [songIds, blobs] = await Promise.all([
+    encoreDb.originals.toCollection().primaryKeys(),
+    encoreDb.originalTakeBlobs.toCollection().primaryKeys(),
+  ]);
+  if (blobs.length === 0) return 0;
+  const live = new Set(songIds);
+  // Blob primary keys are `${songId}:${takeId}` and a take id never contains ':'.
+  const orphaned = blobs.filter((key) => !live.has(key.slice(0, key.lastIndexOf(':'))));
+  if (orphaned.length === 0) return 0;
+  await encoreDb.originalTakeBlobs.bulkDelete(orphaned);
+  return orphaned.length;
+}
