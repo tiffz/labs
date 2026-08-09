@@ -92,6 +92,7 @@ import {
 import { snapSegmentBoundaryMarkersToBeats, commitSelectionSpanToHullBoundaryMarkers } from '../utils/stanzaBeatGrid';
 import { canPlaceMarkerAtTime, markerTimesEqual } from '../utils/stanzaMarkerSpacing';
 import { recordDeletedMarkerIds } from '../utils/stanzaMarkerTombstones';
+import { useStanzaLiveBeatTime } from '../hooks/useStanzaLiveBeatTime';
 import type { StanzaMarkersChangeContext } from './StanzaTimeline';
 import { useStanzaLocalDecodedDuration } from '../hooks/useStanzaLocalDecodedDuration';
 import { useStanzaLocalPlaybackObjectUrls } from '../hooks/useStanzaLocalPlaybackObjectUrls';
@@ -2335,7 +2336,18 @@ export default function StanzaWorkspace() {
       ? timingGridSource.bpm
       : STANZA_DRUMS_DEFAULT_BPM;
   const drumsAnchorMediaTime = drumsHasGrid ? (timingGridSource.anchor as number) : 0;
-  const drumsCurrentBeatTime = Math.max(0, playback.currentTime - drumsAnchorMediaTime);
+  /**
+   * Read from the live transport clock — the SAME `getTime` the drum scheduler uses — not from
+   * `playback.currentTime`, which the media element only refreshes on `timeupdate` (~4 Hz). Two
+   * clocks for one playhead put the highlight up to half a beat behind the sound at 120 BPM.
+   */
+  const drumsCurrentBeatTime = useStanzaLiveBeatTime({
+    isPlaying: playback.isPlaying,
+    getTime,
+    anchorMediaTime: drumsAnchorMediaTime,
+    bpm: drumsBpm,
+    fallbackTime: playback.currentTime,
+  });
   const drumsBeatPeriod = 60 / drumsBpm;
   const drumsAbsoluteBeat = drumsHasGrid ? Math.floor(drumsCurrentBeatTime / drumsBeatPeriod) : 0;
   /** Beat index within the measure (0-based) for mini-notation metronome dots. */
