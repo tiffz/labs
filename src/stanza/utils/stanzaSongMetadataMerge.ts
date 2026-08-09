@@ -197,6 +197,17 @@ export function mergeStanzaRicherSongMetadataWithReport(
       skippedBySegmentId,
       analysisCache: local.analysisCache ?? remote.analysisCache,
       localMediaFingerprint: local.localMediaFingerprint ?? remote.localMediaFingerprint,
+      /**
+       * Adopting the remote fingerprint is what stops duplicate Drive uploads. A device that
+       * takes the remote `driveSourceFileId` (above) but keeps an empty fingerprint concludes via
+       * `mainMediaNeedsDriveUpload` that its bytes are unsynced, re-uploads them, and trashes the
+       * file the other device just wrote. Local wins when set, so a device that genuinely holds
+       * newer bytes still re-uploads.
+       */
+      driveMainMediaBytesFingerprint:
+        local.driveMainMediaBytesFingerprint ?? remote.driveMainMediaBytesFingerprint,
+      /** Encore federation link (ADR 0007) — otherwise it never reaches a second device. */
+      encoreSongId: local.encoreSongId ?? remote.encoreSongId,
       stems: mergeStanzaStemTracks(local.stems, remote.stems) ?? local.stems,
       updatedAt: Math.max(local.updatedAt, remote.updatedAt),
     },
