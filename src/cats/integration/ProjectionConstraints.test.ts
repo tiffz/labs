@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, it, expect, beforeEach } from 'vitest';
 import { catCoordinateSystem, type CatCoordinates } from '../services/CatCoordinateSystem';
 import { computeShadowLayout } from '../services/ShadowLayout';

@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
 import type { DerivedSegment } from './segments';
 import { STANZA_LOOP_WRAP_TOLERANCE_SEC } from './stanzaPlaybackLoop';

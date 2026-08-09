@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
 import { MEET_ME_AROUND_LYRIC } from './fixtures';
 import { parsePastedChartToChartLayout } from './pastedChartImport';

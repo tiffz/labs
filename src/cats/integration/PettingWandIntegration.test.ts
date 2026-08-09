@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, test, expect, vi, beforeEach } from 'vitest';
 import { CatGameStateManager, type CatGameEvents } from '../game/GameState';
 import { CatAnimationController, type AnimationEvents } from '../animation/AnimationController';

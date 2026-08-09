@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from 'vitest';
 import { CURRICULUM_SCHEMA_VERSION, MAX_LEVEL } from './levels';
 import { defaultSkillMatrix } from './progress/types';

@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { executeExport, formatDuration } from './exportService';
 import type { ExportSourceAdapter } from './exportTypes';

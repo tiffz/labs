@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, it, expect } from 'vitest';
 import { syncPlaybackHighlightState } from './playbackHighlight';
 import type { ParsedRhythm } from '../../shared/rhythm/types';

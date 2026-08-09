@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, test, expect, beforeEach, afterEach } from 'vitest';
 import { World, SystemRunner } from '../index';
 import { CatStateSystem } from './CatStateSystem';

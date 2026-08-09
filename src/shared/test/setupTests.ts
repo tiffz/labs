@@ -10,7 +10,8 @@ global.requestAnimationFrame = (callback: FrameRequestCallback): number => {
   const id = ++animationFrameId;
   
   // Use setTimeout with minimal delay to simulate animation frame
-  const timeoutId = window.setTimeout(() => {
+  // Global `setTimeout`, not `window.setTimeout`: this setup runs in the node environment too.
+  const timeoutId = setTimeout(() => {
     // Only call callback if the frame hasn't been cancelled
     if (animationFrameCallbacks.has(id)) {
       animationFrameCallbacks.delete(id);
@@ -26,7 +27,9 @@ global.requestAnimationFrame = (callback: FrameRequestCallback): number => {
   }, 1); // Faster than 16ms for tests
   
   animationFrameCallbacks.set(id, callback);
-  animationFrameTimeouts.set(id, timeoutId);
+  // Node types `setTimeout` as `Timeout`, the DOM types it as `number`; the map only ever hands
+  // the value straight back to `clearTimeout`, so the numeric coercion is safe in both.
+  animationFrameTimeouts.set(id, timeoutId as unknown as number);
   return id;
 };
 
@@ -90,12 +93,15 @@ global.DOMMatrix = class DOMMatrix {
   f = 0;
 } as typeof DOMMatrix; 
 
-// Silence GA / external network calls during tests to avoid noisy console errors
-Object.defineProperty(window, 'gtag', {
-  configurable: true,
-  writable: true,
-  value: () => undefined,
-});
+// Silence GA / external network calls during tests to avoid noisy console errors.
+// Guarded: no `window` in the node environment, and nothing there calls gtag.
+if (typeof window !== 'undefined') {
+  Object.defineProperty(window, 'gtag', {
+    configurable: true,
+    writable: true,
+    value: () => undefined,
+  });
+}
 
 /** Node's worker BroadcastChannel can dispatch MessageEvent after tests finish (Vitest flake). */
 class MockBroadcastChannel implements BroadcastChannel {
@@ -125,8 +131,12 @@ class MockBroadcastChannel implements BroadcastChannel {
 
 globalThis.BroadcastChannel = MockBroadcastChannel as typeof BroadcastChannel;
 
-// Mock HTMLCanvasElement.getContext to suppress VexFlow errors in tests
-// VexFlow tries to use canvas for text measurement, but JSDOM doesn't support it
+/*
+ * Canvas mock — jsdom only. Guarded so this same setup file can serve the `node` environment,
+ * where there is no HTMLCanvasElement and nothing renders VexFlow anyway. Most test files are
+ * pure logic and pay ~165ms each for a jsdom environment they never touch.
+ */
+if (typeof HTMLCanvasElement !== 'undefined') {
 const originalGetContext = HTMLCanvasElement.prototype.getContext;
 const mockedGetContext = function (
   this: HTMLCanvasElement,
@@ -188,3 +198,4 @@ const mockedGetContext = function (
 };
 
 HTMLCanvasElement.prototype.getContext = mockedGetContext as unknown as HTMLCanvasElement['getContext'];
+}

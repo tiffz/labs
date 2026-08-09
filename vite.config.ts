@@ -1231,7 +1231,18 @@ export default defineConfig({
   ],
   test: {
     globals: true,
-    environment: 'jsdom',
+    /*
+     * Node by default; jsdom is opt-in per file via a `// @vitest-environment jsdom` docblock.
+     *
+     * Measured: creating a jsdom environment costs ~165ms per FILE, and 700+ of this repo's ~850
+     * test files are pure logic that never touch the DOM. On a 72-file sample the same tests ran
+     * 15.13s -> 6.10s, with environment setup collapsing from 25.69s to 4ms. That cost was paid on
+     * every commit hook, every push hook, and every CI run.
+     *
+     * A test that needs the DOM says so at the top of the file, which is also better documentation
+     * than a global default nobody questions.
+     */
+    environment: 'node',
     setupFiles: ['./shared/test/setupTests.ts', './words/test/setupProsodyDictionary.ts'],
     include: ['**/*.test.{js,ts,jsx,tsx}'],
     exclude: [

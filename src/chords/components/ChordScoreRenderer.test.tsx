@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
 import { render, waitFor } from '@testing-library/react';
 import ChordScoreRenderer from './ChordScoreRenderer';

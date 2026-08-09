@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, expect, it, beforeEach, vi, type MockedFunction } from 'vitest';
 import { installServerLogger, resetServerLoggerForTesting } from '../utils/serverLogger';
 import { labsDebug } from './labsDebugLog';

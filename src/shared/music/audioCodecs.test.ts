@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 /**
  * Deterministic render-hash regression for the WAV/MP3 export encoders.
  * A fixed synthetic buffer must always encode to byte-identical output —

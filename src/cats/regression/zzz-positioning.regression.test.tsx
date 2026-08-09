@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 /**
  * Zzz Positioning Regression Tests
  * Tests for Z element positioning during cat sleep

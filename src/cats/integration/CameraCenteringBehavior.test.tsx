@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 /**
  * Camera Centering Behavior Tests
  * 

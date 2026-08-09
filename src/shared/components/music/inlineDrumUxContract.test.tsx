@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 /**
  * Contract tests: profile props → expected DOM affordances per host.
  * Catches regressions when a host hides pattern input or misplaces the Darbuka link.

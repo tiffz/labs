@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 /**
  * Pins the nuclear "no background Google refresh" policy from ADR 0010. The point of these
  * tests is to fail loudly if any future change reintroduces a silent `requestGoogleAccessToken`

@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, test, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
 import { HeartSpawningService, type HeartVisuals } from '../services/HeartSpawningService';
 

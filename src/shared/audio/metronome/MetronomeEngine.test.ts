@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { MetronomeConfig, BeatEvent } from './types';
 import { createMockAudioContext } from '../__test__/mockAudioContext';

@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, expect, it, vi } from 'vitest';
 import { parseRhythm } from '../../../rhythm/rhythmParser';
 import { scheduleDrumPatternWindow } from './scheduleDrumPatternWindow';
