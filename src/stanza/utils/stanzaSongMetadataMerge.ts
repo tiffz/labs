@@ -1,6 +1,7 @@
 import type { StanzaSong } from '../db/stanzaDb';
 import type { StanzaSongDriveRow } from '../drive/stanzaDriveEnvelope';
 import { mergeStanzaMarkers } from './stanzaMarkerMerge';
+import { mergeMarkerTombstones } from './stanzaMarkerTombstones';
 import { mergeStanzaStemTracks } from './stanzaStemMerge';
 import {
   stanzaMarkerCount,
@@ -116,23 +117,49 @@ export function mergePracticePlaybackToggle(
 function mergePracticeMarkers(local: StanzaSong, remote: MergeSide): StanzaSong['markers'] {
   const lMarkers = local.markers ?? [];
   const rMarkers = remote.markers ?? [];
-  const lCount = lMarkers.length;
-  const rCount = rMarkers.length;
 
-  if (lCount === 0 && rCount === 0) return [];
-  if (lCount === 0) return [...rMarkers];
-  if (rCount === 0) return [...lMarkers];
+  if (lMarkers.length === 0 && rMarkers.length === 0) return [];
 
   const localScore = stanzaSongPracticeCustomizationScore(local);
   const remoteScore = stanzaSongPracticeCustomizationScore(remote);
+  // A side with no practice customization at all is a bare/placeholder row, not a deletion.
+  if (lMarkers.length === 0 && localScore === 0) return [...rMarkers];
+  if (rMarkers.length === 0 && remoteScore === 0) return [...lMarkers];
   if (localScore > 0 && remoteScore === 0) return [...lMarkers];
   if (remoteScore > 0 && localScore === 0) return [...rMarkers];
 
-  if (rCount > lCount) return [...rMarkers];
-  if (lCount > rCount) return [...lMarkers];
-
+  /*
+   * Always union, then subtract explicit deletions.
+   *
+   * This used to pick a whole side by marker COUNT and only union when the counts were equal —
+   * "more markers means more recent work", a proxy for deletion that the union could not express.
+   * It lost data both ways: a rename on the smaller side was discarded wholesale, and a delete
+   * was undone by any device that still had the section. Tombstones let the union always run, so
+   * concurrent edits on BOTH sides survive. See `stanzaMarkerTombstones.ts`.
+   */
   const preferRemote = remote.updatedAt > local.updatedAt;
-  return mergeStanzaMarkers(lMarkers, rMarkers, { preferRemote });
+  const union = mergeStanzaMarkers(lMarkers, rMarkers, { preferRemote });
+
+  const tombstones = mergeMarkerTombstones(
+    local.deletedMarkerIds,
+    (remote as Partial<StanzaSong>).deletedMarkerIds,
+  );
+  if (!tombstones) return union;
+
+  // A marker survives its tombstone when the side still carrying it was touched afterwards — a
+  // genuine re-add, or an undo (both bump `updatedAt`).
+  const localIds = new Set(lMarkers.map((m) => m.id).filter(Boolean) as string[]);
+  const remoteIds = new Set(rMarkers.map((m) => m.id).filter(Boolean) as string[]);
+  return union.filter((m) => {
+    if (!m.id) return true;
+    const deletedAt = tombstones[m.id];
+    if (deletedAt == null) return true;
+    const vouchedAt = Math.max(
+      localIds.has(m.id) ? local.updatedAt : 0,
+      remoteIds.has(m.id) ? remote.updatedAt : 0,
+    );
+    return vouchedAt > deletedAt;
+  });
 }
 
 export interface StanzaRicherMergeResult {
@@ -181,6 +208,10 @@ export function mergeStanzaRicherSongMetadataWithReport(
       stats,
       metronomeBySegmentId,
       metronomeSongCalibration,
+      deletedMarkerIds: mergeMarkerTombstones(
+        local.deletedMarkerIds,
+        (remote as Partial<StanzaSong>).deletedMarkerIds,
+      ),
       metronomeTimingScope: local.metronomeTimingScope ?? remote.metronomeTimingScope,
       metronomeEnabled: mergePracticePlaybackToggle(local.metronomeEnabled, remote.metronomeEnabled),
       metronomeGain: local.metronomeGain ?? remote.metronomeGain,

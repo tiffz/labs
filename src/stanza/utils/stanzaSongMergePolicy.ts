@@ -74,6 +74,8 @@ export const STANZA_SONG_MERGE_POLICY = {
   drumsGain: 'merged',
   drumsMuted: 'merged',
   skippedBySegmentId: 'merged',
+  /** Union of both sides' maps, newest `deletedAt` per id — a delete on either device sticks. */
+  deletedMarkerIds: 'merged',
 
   // --- local-only -----------------------------------------------------------------------------
   /** Device-local Find-the-Beat cache; never synced (ADR 0013). Stripped by the envelope. */

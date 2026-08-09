@@ -91,6 +91,7 @@ import {
 } from '../utils/stanzaPlaybackFocus';
 import { snapSegmentBoundaryMarkersToBeats, commitSelectionSpanToHullBoundaryMarkers } from '../utils/stanzaBeatGrid';
 import { canPlaceMarkerAtTime, markerTimesEqual } from '../utils/stanzaMarkerSpacing';
+import { recordDeletedMarkerIds } from '../utils/stanzaMarkerTombstones';
 import type { StanzaMarkersChangeContext } from './StanzaTimeline';
 import { useStanzaLocalDecodedDuration } from '../hooks/useStanzaLocalDecodedDuration';
 import { useStanzaLocalPlaybackObjectUrls } from '../hooks/useStanzaLocalPlaybackObjectUrls';
@@ -1071,11 +1072,24 @@ export default function StanzaWorkspace() {
                 : durationRef.current,
             )
           : row.markers;
+      const now = Date.now();
       const next: StanzaSong = {
         ...row,
         ...patch,
         markers: nextMarkers,
-        updatedAt: touchUpdatedAt ? Date.now() : row.updatedAt,
+        // Record section deletions HERE, at the one write every delete path funnels through
+        // (per-marker delete, join-sections, the Delete key). Recording at each call site would
+        // let a future delete path silently regress sync back to the count heuristic.
+        deletedMarkerIds:
+          patch.markers != null
+            ? recordDeletedMarkerIds({
+                previousMarkers: row.markers,
+                nextMarkers,
+                existing: row.deletedMarkerIds,
+                now,
+              })
+            : row.deletedMarkerIds,
+        updatedAt: touchUpdatedAt ? now : row.updatedAt,
       };
       const markersOnlyPatch =
         patch.markers != null &&
