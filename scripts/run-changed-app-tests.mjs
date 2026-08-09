@@ -68,10 +68,22 @@ for (const f of files) {
 }
 
 if (beatOnly && files.length > 0) {
-  console.log('test:changed-apps: beat folder only — scoped beat tests (+ integration)');
+  console.log('test:changed-apps: beat folder only — scoped beat tests (+ integration + benchmark)');
+  /*
+   * `FAST_TESTS` is deliberately NOT set here.
+   *
+   * `vite.config.ts` computes `INCLUDE_BEAT_BENCHMARK = env === 'true' && FAST_TESTS !== 'true'`,
+   * so setting FAST_TESTS suppressed the 30-case tempo benchmark in the one situation it exists
+   * for: a diff confined to `src/shared/beat`. Combined with CI's full-mode run (which sets
+   * INCLUDE_BEAT_BENCHMARK but not RUN_INTEGRATION_TESTS), the benchmark and the short-clip
+   * integration tests could never execute in the same invocation — so no single run ever
+   * exercised the whole tempo surface.
+   *
+   * The run is already scoped to one folder, so the extra ~95s only lands on beat changes.
+   */
   execSync('npx vitest run src/shared/beat', {
     stdio: 'inherit',
-    env: { ...process.env, FAST_TESTS: 'true', RUN_INTEGRATION_TESTS: 'true' },
+    env: { ...process.env, RUN_INTEGRATION_TESTS: 'true', INCLUDE_BEAT_BENCHMARK: 'true' },
   });
   process.exit(0);
 }

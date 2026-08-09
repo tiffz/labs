@@ -25,9 +25,11 @@ Resolve to `--ours` — but **typecheck before pushing**. Git resolves by region
 (the branch's newer version plus main's pre-fix one) with no conflict marker. That was a compile
 error rather than a silent wrong value, but only because TypeScript caught what git did not.
 
-The alternative policy — **merge instead of squash** for `dev-integration → main` — avoids the
-resync entirely at the cost of a noisier `main` history. Either is fine; drifting between them is
-not.
+**Policy: keep squashing.** A merge commit per promotion would avoid the resync, but it drags
+every intermediate commit onto `main` — 60+ of them for a single promotion, most of which are
+"fix the thing I broke two commits ago". `main` stays readable as one line per shipped change,
+which is what you want when bisecting a regression or writing a changelog. The resync is
+mechanical and takes a minute; a permanently noisy history does not go away.
 
 ## When to open a PR vs push to `main`
 
