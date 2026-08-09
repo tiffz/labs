@@ -87,24 +87,3 @@ export function mergeMarkerTombstones(
   }
   return pruneMarkerTombstones(out);
 }
-
-/**
- * Drop markers whose tombstone supersedes the clock of every side still carrying them.
- *
- * `vouchedAt` is the `updatedAt` of the row the marker came from. A marker survives when some
- * side touched it after the delete — a genuine re-add, or an undo (which bumps `updatedAt`).
- */
-export function applyMarkerTombstones(opts: {
-  markers: readonly StanzaMarker[];
-  tombstones: StanzaMarkerTombstones | undefined;
-  vouchedAt: number;
-}): StanzaMarker[] {
-  const tomb = opts.tombstones;
-  if (!tomb) return [...opts.markers];
-  return opts.markers.filter((m) => {
-    if (!m.id) return true;
-    const deletedAt = tomb[m.id];
-    if (deletedAt == null) return true;
-    return opts.vouchedAt > deletedAt;
-  });
-}
