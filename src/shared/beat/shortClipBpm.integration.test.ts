@@ -30,24 +30,15 @@ describe('short clip BPM detection (drum loops)', () => {
   });
 
   it('detects 150 BPM drum loop without octave halving', async () => {
-    /*
-     * `tempoRealistic`, not `drumPattern`. The ASSERTION below is unchanged — 150 must not come
-     * back as 75 — only the input is fixed.
-     *
-     * `drumPattern` voices a hihat on every beat and every 8th unconditionally, so its
-     * onsets-per-second is exactly 2 x (bpm/60): a deterministic function of tempo. That makes
-     * "denser means faster" octave logic correct BY CONSTRUCTION, and this fixture was the main
-     * evidence that such logic works. It does not hold up:
-     *
-     *   this synthetic 150 BPM fixture   raw multifeature -> 74.64  (halved)
-     *   the owner's REAL 150 BPM loop    raw multifeature -> 150.0  (exact)
-     *
-     * `tempoRealistic` thins subdivisions as tempo rises, the way a drummer does, so density
-     * carries no tempo information and the fixture tests detection instead of a tautology.
-     */
     const buffer = generateSyntheticAudio({
       bpm: 150,
       duration: 15,
+      // `tempoRealistic`, not `drumPattern`. The ASSERTION is unchanged — 150 must not come back
+      // as 75 — only the input is fixed. `drumPattern` voices a hihat every 8th regardless of
+      // tempo, so its onsets-per-second is exactly 2 x (bpm/60) and "denser means faster" octave
+      // logic is correct there by construction. Proof the fixture misrepresents reality:
+      //   this synthetic 150 BPM fixture  -> raw multifeature reads 74.64 (halved)
+      //   the owner's REAL 150 BPM loop   -> raw multifeature reads 150.0 (exact)
       type: 'tempoRealistic',
       seed: 15001,
     });

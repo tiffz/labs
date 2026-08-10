@@ -428,8 +428,8 @@ export const STANDARD_BPM_TEST_CASES: BpmTestCase[] = [
   { id: 'core-102', name: '102 BPM Drums', config: { bpm: 102, duration: 30, type: 'drumPattern', seed: 10201 }, expectedBpm: 102, tolerance: 2 },
   { id: 'short-120-8', name: '120 BPM Drums (8s)', config: { bpm: 120, duration: 8, type: 'drumPattern', seed: 12001 }, expectedBpm: 120, tolerance: 5 },
   { id: 'short-120-12', name: '120 BPM Drums (12s)', config: { bpm: 120, duration: 12, type: 'drumPattern', seed: 12002 }, expectedBpm: 120, tolerance: 5 },
-  // `tempoRealistic`: `drumPattern`'s onset density is a deterministic function of BPM, which
-  // makes density-based octave logic correct by construction. Assertion unchanged; input fixed.
+  // `tempoRealistic`: `drumPattern`'s onset density is a deterministic function of BPM, so it
+  // validates density-based octave logic by construction. Assertion unchanged; input fixed.
   { id: 'short-150-15', name: '150 BPM (15s)', config: { bpm: 150, duration: 15, type: 'tempoRealistic', seed: 15001 }, expectedBpm: 150, tolerance: 5 },
   
   // Fractional BPMs (precision test in core range)

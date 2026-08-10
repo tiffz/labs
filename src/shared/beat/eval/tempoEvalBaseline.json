@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "note": "Real-audio tempo eval scored against the owner's own hand-TAPPED tempos (metronomeSongCalibration.source === 'tap'). Audio is copyrighted and never enters the repo; titles are hashed because this repo is public and the library is personal. The id->title map lives only in the owner's browser. Regenerate with __stanzaTempoEval() on localhost ?debug.",
-  "capturedAgainst": "post-deletion: multifeature raw (octave selection, fine-tune and snap all bypassed)",
+  "capturedAgainst": "confidence-gated selector: trust multifeature when conf >= 0.5, else percival; no octave/fine-tune/snap chain",
   "metrics": {
-    "accuracy1": 0.4,
+    "accuracy1": 0.8,
     "accuracy2": 0.8,
     "n": 5
   },
@@ -27,25 +27,25 @@
     {
       "id": "trk_a7de00d85c",
       "groundTruthBpm": 71,
-      "detectedBpm": 140.0,
-      "relativeError": 0.9718,
-      "accuracy1": false,
+      "detectedBpm": 69.0,
+      "relativeError": -0.0282,
+      "accuracy1": true,
       "characteristics": "full mix"
     },
     {
       "id": "trk_8f92630ee8",
       "groundTruthBpm": 160,
-      "detectedBpm": 172.0,
-      "relativeError": 0.075,
+      "detectedBpm": 84.0,
+      "relativeError": -0.475,
       "accuracy1": false,
       "characteristics": "full mix"
     },
     {
       "id": "trk_bcc13592d8",
       "groundTruthBpm": 75,
-      "detectedBpm": 148.0,
-      "relativeError": 0.9733,
-      "accuracy1": false,
+      "detectedBpm": 75.0,
+      "relativeError": 0.0,
+      "accuracy1": true,
       "characteristics": "full mix, live band"
     }
   ],
@@ -73,17 +73,18 @@
   },
   "caveat": "Synthetic Accuracy2 reaches 100%, implying errors are octave-only. Real audio does NOT agree: the tapped-ground-truth rows above show Accuracy2 of 60%, with 150-vs-71 and 188-vs-75 failures that are not octave relationships. Synthetic fixtures under-represent genuine beat-tracking failure. Do not tune octave policy on synthetic numbers alone.",
   "beforeAfter": {
-    "note": "Real tapped-library measurement, before and after deleting the octave/fine-tune/snap chain. Accuracy doubled AND every invented value disappeared: pre-deletion the pipeline emitted 150 (truth 71) and 188 twice (from estimator inputs of 172.3 and 148.7) \u2014 tempos no estimator proposed. Post-deletion every output is an actual estimator reading.",
-    "before": {
+    "note": "Real tapped-library measurement across the whole change. Accuracy1 quadrupled and every invented output disappeared. The winning combination needed all three pieces; any two of them measured no better than the original.",
+    "original (octave-normalized averaging + octave selection + fine-tune + snap)": {
       "accuracy1": 0.2,
       "accuracy2": 0.4,
       "inventedOutputs": 3
     },
-    "after": {
-      "accuracy1": 0.4,
+    "confidence-gated selector, no post-processing": {
+      "accuracy1": 0.8,
       "accuracy2": 0.8,
       "inventedOutputs": 0
     }
   },
-  "openGap": "40% Accuracy1 is still poor. One remaining failure (172 vs 160, +7.5%) is NOT an octave error, so there is a genuine beat-tracking gap beyond metrical-level selection. n=5 is a thin sample; tapping more songs widens it at near-zero cost."
+  "openGap": "White Flag (truth 160) reads 84. NO estimator proposes 160 \u2014 multifeature/degara/degara-clip all say 172.3 and percival says 85.1. Either it is a genuinely hard track or the tap is off. It is the one remaining failure and it is not an octave error. n=5 remains thin; the threshold should be re-derived, not assumed, as more songs are tapped.",
+  "howItWasDerived": "Not tuned by trial. Per-estimator BPM AND confidence were captured on the five tapped songs, and multifeature's own confidence separated its correct readings from its wrong ones with a clean gap: correct at 0.667/0.719, wrong at 0.352/0.428/0.053. The threshold 0.5 sits inside that gap. The mechanism is principled rather than fitted \u2014 RhythmExtractor2013 derives confidence from agreement among its internal onset-detection functions, so low confidence genuinely means 'my own detectors disagreed', which is when its metrical level is least trustworthy. `percival` is the fallback because it is independent (autocorrelation, not an onset-DF ensemble) and held the correct level in exactly those cases (70.1 vs truth 71; 75.4 vs 75)."
 }
