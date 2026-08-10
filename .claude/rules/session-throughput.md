@@ -12,23 +12,24 @@ For **multi-bug / upgrade / spot-check** sessions, optimize for wall-clock and t
    - Measure on `vite preview`, not the dev server: unbundled module loading distorts timing. CLS values themselves are geometry ratios and hold across both.
 2. **Check `cascade-layer-token-override` early** after Tailwind `@layer` or MUI shared-CSS work (unlayered shared CSS beats layered app tokens).
 3. **Timebox upgrade spot-checks** — smoke a small app set, then stop and split remaining bugs into follow-ups (`labs-split-to-prs`).
-4. **Run the cheap gates before you commit, not by failing the expensive ones.**
+4. **Validating a concurrency or caching change means reproducing the COLD path.** Your machine is warm — caches populated, packages already fetched, dev server already built. CI never is. Parallelising a step that shares a cache passed locally and failed CI's first run because 27 `npx --yes` processes raced an empty npx cache. Point the tool at an empty cache (`npm_config_cache=<tmpdir>`), or a clean clone, before believing it. Root cause class: `warm-state-optimisation`.
+5. **Run the cheap gates before you commit, not by failing the expensive ones.**
    `npm run verify:quick` (~7s: ui-copy, knip-exports ratchet, react-hooks ratchet, agent-guidance,
    typecheck) catches most of what a pre-commit or pre-push hook would, at 1/60th the cost. In one
    session three separate pushes died on gates in that list, each after a full 90-500s presubmit
    had already run. The hook is a backstop, not a discovery mechanism.
-5. **Batch commits.** `.husky/pre-commit` runs lint-staged + knip + typecheck + scoped Vitest, and
+6. **Batch commits.** `.husky/pre-commit` runs lint-staged + knip + typecheck + scoped Vitest, and
    `pre-push` runs the whole presubmit (380-520s, over its own 300s budget because
    `test:changed-apps` falls back to the full suite whenever `src/shared/**` is touched). Ten small
    commits and five pushes is roughly an hour of gate time. Group related work into one commit.
-6. **Never edit the working tree while a hook is running** — the hook reads the tree it is
+7. **Never edit the working tree while a hook is running** — the hook reads the tree it is
    validating, so a concurrent edit produces a failure that has nothing to do with your change.
    Background the commit/push and wait for it.
-7. **Verify a commit landed by checking `HEAD` moved**, not by the exit code of a backgrounded
+8. **Verify a commit landed by checking `HEAD` moved**, not by the exit code of a backgrounded
    `git commit`. A rejected pre-commit hook still leaves files staged and can look like success.
-8. **Scoped tests first** — touched-file Vitest/e2e, then one `presubmit`. Do not babysit unrelated dirty-tree failures.
-9. **Check for parallel-agent ownership before starting** — in a shared / multi-worktree setup (a coordinator running parallel sessions, a `dev-integration` trunk, sibling `.claude/worktrees/*`), run `git worktree list`, `git branch -a`, and `git log dev-integration` **first**. If a branch is already checked out in another worktree or a fix already sits on the trunk, it is owned — do not duplicate it. Duplicating owned work (a bug fix, an audit, a PR conflict-resolve) is pure waste and can collide. Root cause class: `parallel-worktree-duplication`.
-10. **A broken dev environment is a bug to fix, not to route around.** If a route freezes / errors / won't render for you, do not offload the verification to the user as "manual testing" — the same breakage hits them. Fix the dev-env issue (or spike a lighter repro path), then verify yourself. Handing a user a checklist of manual-verify tasks to work around your broken dev loop is a process failure. Root cause class: `verification-offloaded`.
-11. **Codify on second occurrence** of the same root-cause class in-session (test/doc/rule) — see [`docs/CONTINUOUS_PROCESS_IMPROVEMENT.md`](../../docs/CONTINUOUS_PROCESS_IMPROVEMENT.md) § Session throughput.
+9. **Scoped tests first** — touched-file Vitest/e2e, then one `presubmit`. Do not babysit unrelated dirty-tree failures.
+10. **Check for parallel-agent ownership before starting** — in a shared / multi-worktree setup (a coordinator running parallel sessions, a `dev-integration` trunk, sibling `.claude/worktrees/*`), run `git worktree list`, `git branch -a`, and `git log dev-integration` **first**. If a branch is already checked out in another worktree or a fix already sits on the trunk, it is owned — do not duplicate it. Duplicating owned work (a bug fix, an audit, a PR conflict-resolve) is pure waste and can collide. Root cause class: `parallel-worktree-duplication`.
+11. **A broken dev environment is a bug to fix, not to route around.** If a route freezes / errors / won't render for you, do not offload the verification to the user as "manual testing" — the same breakage hits them. Fix the dev-env issue (or spike a lighter repro path), then verify yourself. Handing a user a checklist of manual-verify tasks to work around your broken dev loop is a process failure. Root cause class: `verification-offloaded`.
+12. **Codify on second occurrence** of the same root-cause class in-session (test/doc/rule) — see [`docs/CONTINUOUS_PROCESS_IMPROVEMENT.md`](../../docs/CONTINUOUS_PROCESS_IMPROVEMENT.md) § Session throughput.
 
-Root cause classes: `local-ci-gate-drift` (a blocking CI job with no presubmit counterpart — guarded by `src/shared/ciPresubmitParity.test.ts`) · `gate-discovered-by-failing` · `session-thrash` when the same bug class is rediscovered without a spike.
+Root cause classes: `warm-state-optimisation` · `local-ci-gate-drift` (a blocking CI job with no presubmit counterpart — guarded by `src/shared/ciPresubmitParity.test.ts`) · `gate-discovered-by-failing` · `session-thrash` when the same bug class is rediscovered without a spike.
