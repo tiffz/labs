@@ -336,6 +336,42 @@ export interface BpmTestCase {
  * Note: Synthetic audio has different characteristics than real music.
  * Very slow (<70) and very fast (>120) tempos may have octave ambiguity.
  */
+/*
+ * OCTAVE-RANGE AND SAMPLE-RATE COVERAGE.
+ *
+ * The cases below this block span 70-102 BPM — a 1.46:1 range, NARROWER THAN ONE OCTAVE. Octave
+ * folding is therefore almost a no-op across them, which is why the suite could not distinguish
+ * three materially different detectors, and why the dominant real-world failure (half/double
+ * tempo) was invisible. Measured against the owner's own tapped tempos, real-world Accuracy1 is
+ * 16.7% while this synthetic suite requires >= 85% and passes.
+ *
+ * Every case was also generated at exactly 44100 Hz — the single rate at which decoding 48 kHz
+ * audio as 44.1 kHz cancels out. That bug shipped and made every reading ~8% flat while the suite
+ * stayed green.
+ *
+ * These additions widen both axes. Some are EXPECTED TO FAIL on the current detector; that is the
+ * point — see `docs/adr` and `.agents/rules/guardrails-must-be-falsifiable.md`. They are kept out
+ * of the pass-rate gate via `OCTAVE_AND_RATE_PROBE_CASES` so they report signal without turning
+ * the ratchet red on day one.
+ */
+export const OCTAVE_AND_RATE_PROBE_CASES: BpmTestCase[] = [
+  // --- above the old ceiling: where half-tempo errors actually live ---
+  { id: 'fast-140', name: '140 BPM Drums', config: { bpm: 140, duration: 30, type: 'drumPattern', seed: 14001 }, expectedBpm: 140, tolerance: 4 },
+  { id: 'fast-150', name: '150 BPM Drums', config: { bpm: 150, duration: 30, type: 'drumPattern', seed: 15002 }, expectedBpm: 150, tolerance: 4 },
+  { id: 'fast-170', name: '170 BPM Drums', config: { bpm: 170, duration: 30, type: 'drumPattern', seed: 17001 }, expectedBpm: 170, tolerance: 5 },
+  { id: 'fast-180', name: '180 BPM Mixed', config: { bpm: 180, duration: 30, type: 'mixed', seed: 18001 }, expectedBpm: 180, tolerance: 5 },
+  // --- below it: where double-tempo errors live ---
+  { id: 'slow-60', name: '60 BPM Mixed', config: { bpm: 60, duration: 30, type: 'mixed', seed: 6001 }, expectedBpm: 60, tolerance: 2 },
+  { id: 'slow-65', name: '65 BPM Drums', config: { bpm: 65, duration: 30, type: 'drumPattern', seed: 6501 }, expectedBpm: 65, tolerance: 2 },
+
+  // --- 48 kHz: the rate the decode bug was invisible at ---
+  { id: 'sr48-90', name: '90 BPM @48k', config: { bpm: 90, duration: 30, type: 'drumPattern', seed: 9002, sampleRate: 48000 }, expectedBpm: 90, tolerance: 2 },
+  { id: 'sr48-120', name: '120 BPM @48k', config: { bpm: 120, duration: 30, type: 'drumPattern', seed: 12003, sampleRate: 48000 }, expectedBpm: 120, tolerance: 3 },
+  { id: 'sr48-150', name: '150 BPM @48k', config: { bpm: 150, duration: 30, type: 'drumPattern', seed: 15003, sampleRate: 48000 }, expectedBpm: 150, tolerance: 4 },
+  // 22.05k — the other common resample target.
+  { id: 'sr22-100', name: '100 BPM @22.05k', config: { bpm: 100, duration: 30, type: 'mixed', seed: 10001, sampleRate: 22050 }, expectedBpm: 100, tolerance: 3 },
+];
+
 export const STANDARD_BPM_TEST_CASES: BpmTestCase[] = [
   // Core range (70-110 BPM) - most reliable detection
   { id: 'core-70', name: '70 BPM Drums', config: { bpm: 70, duration: 30, type: 'drumPattern', seed: 7001 }, expectedBpm: 70, tolerance: 2 },

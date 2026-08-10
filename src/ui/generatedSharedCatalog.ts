@@ -5938,13 +5938,28 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-beat-regression-syntheticaudiogenerator-ts-octave-and-rate-probe-cases",
+    "name": "OCTAVE_AND_RATE_PROBE_CASES",
+    "path": "src/shared/beat/regression/syntheticAudioGenerator.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Standard test suite covering various BPM ranges and patterns Uses 'mixed' type for most tests as it provides realistic onset density Note: Synthetic audio has different characteristics than real music. Very slow (<70) and very fast (>120) tempos may have octave ambiguity.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
     "id": "src-shared-beat-regression-syntheticaudiogenerator-ts-standard-bpm-test-cases",
     "name": "STANDARD_BPM_TEST_CASES",
     "path": "src/shared/beat/regression/syntheticAudioGenerator.ts",
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "Standard test suite covering various BPM ranges and patterns Uses 'mixed' type for most tests as it provides realistic onset density Note: Synthetic audio has different characteristics than real music. Very slow (<70) and very fast (>120) tempos may have octave ambiguity.",
+    "description": "Configuration for synthetic audio generation",
     "tags": [
       "api"
     ],

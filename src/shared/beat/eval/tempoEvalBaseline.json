@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "note": "Real-audio tempo eval scored against the owner's own hand-TAPPED tempos (metronomeSongCalibration.source === 'tap'). Audio is copyrighted and never enters the repo; titles are hashed because this repo is public and the library is personal. The id->title map lives only in the owner's browser. Regenerate with __stanzaTempoEval() on localhost ?debug.",
+  "capturedAgainst": "multifeature tempo + selectCorrectOctaveWithOnsets (post-averaging-removal)",
+  "metrics": {
+    "accuracy1": 0.2,
+    "accuracy2": 0.6,
+    "n": 5
+  },
+  "rows": [
+    {
+      "id": "trk_4606a7aba6",
+      "groundTruthBpm": 150,
+      "detectedBpm": 74.0,
+      "relativeError": -0.5067,
+      "accuracy1": false,
+      "characteristics": "drum-loop, isolated kit, short"
+    },
+    {
+      "id": "trk_4a0b3e50b0",
+      "groundTruthBpm": 100,
+      "detectedBpm": 100.0,
+      "relativeError": 0.0,
+      "accuracy1": true,
+      "characteristics": "full mix, pop"
+    },
+    {
+      "id": "trk_a7de00d85c",
+      "groundTruthBpm": 71,
+      "detectedBpm": 150.0,
+      "relativeError": 1.1127,
+      "accuracy1": false,
+      "characteristics": "full mix"
+    },
+    {
+      "id": "trk_8f92630ee8",
+      "groundTruthBpm": 160,
+      "detectedBpm": 188.0,
+      "relativeError": 0.175,
+      "accuracy1": false,
+      "characteristics": "full mix"
+    },
+    {
+      "id": "trk_bcc13592d8",
+      "groundTruthBpm": 75,
+      "detectedBpm": 188.0,
+      "relativeError": 1.5067,
+      "accuracy1": false,
+      "characteristics": "full mix, live band"
+    }
+  ]
+}
