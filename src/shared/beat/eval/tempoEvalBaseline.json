@@ -48,5 +48,27 @@
       "accuracy1": false,
       "characteristics": "full mix, live band"
     }
-  ]
+  ],
+  "syntheticComparison": {
+    "note": "Three-way comparison over the octave-widened synthetic set (23 cases, 44.1kHz). This is what settled the 'delete the tempo ensemble' question: removing the octave-normalized averaging is a real gain, but deleting the octave selector on top of it regresses by 8.7 points. Measured, not reasoned. Reproduce via the 'Algorithm Comparison' suite with RUN_INTEGRATION_TESTS=true.",
+    "cases": 23,
+    "variants": {
+      "octave-normalized-weighted-averaging (original)": {
+        "accuracy1": 0.783,
+        "accuracy2": 0.913,
+        "octaveOnly": 3
+      },
+      "multifeature-tempo-plus-octave-selection (current)": {
+        "accuracy1": 0.826,
+        "accuracy2": 1.0,
+        "octaveOnly": 4
+      },
+      "multifeature-raw-no-post-processing": {
+        "accuracy1": 0.739,
+        "accuracy2": 1.0,
+        "octaveOnly": 6
+      }
+    }
+  },
+  "caveat": "Synthetic Accuracy2 reaches 100%, implying errors are octave-only. Real audio does NOT agree: the tapped-ground-truth rows above show Accuracy2 of 60%, with 150-vs-71 and 188-vs-75 failures that are not octave relationships. Synthetic fixtures under-represent genuine beat-tracking failure. Do not tune octave policy on synthetic numbers alone."
 }
