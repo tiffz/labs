@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 /**
  * Regression tests for useStableCallback hook
  * This hook was critical for preventing infinite render loops during refactoring

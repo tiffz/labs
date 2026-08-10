@@ -82,13 +82,24 @@ export function OriginalsTakeRow(props: OriginalsTakeRowProps): ReactElement {
     if (notesOpen) notesFieldRef.current?.focus();
   }, [notesOpen]);
 
-  useEffect(() => {
+  /*
+   * Resync the drafts from props using React's "adjusting state when a prop changes" pattern
+   * rather than an effect. Setting state during render is supported here and re-runs the component
+   * before the browser paints, so it costs one less commit than the effect version did — and it is
+   * not a `set-state-in-effect` cascade, which the React Compiler flags as a correctness problem.
+   * https://react.dev/reference/react/useState#storing-information-from-previous-renders
+   */
+  const [lastDisplayName, setLastDisplayName] = useState(displayName);
+  if (displayName !== lastDisplayName) {
+    setLastDisplayName(displayName);
     if (!titleEditing) setTitleDraft(displayName);
-  }, [displayName, titleEditing]);
+  }
 
-  useEffect(() => {
+  const [lastNotes, setLastNotes] = useState(notes);
+  if (notes !== lastNotes) {
+    setLastNotes(notes);
     if (!notesOpen) setNotesDraft(notes);
-  }, [notes, notesOpen]);
+  }
 
   const commitTitle = () => {
     setTitleEditing(false);

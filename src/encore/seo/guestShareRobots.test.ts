@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { afterEach, describe, expect, it } from 'vitest';
 import {
   ENCORE_GUEST_SHARE_HASH_RE,

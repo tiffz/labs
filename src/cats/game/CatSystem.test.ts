@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 /**
  * Tests for the new clean Cat System architecture
  * 

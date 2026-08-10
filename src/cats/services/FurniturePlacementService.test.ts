@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, it, expect, beforeEach } from 'vitest';
 import { FurniturePlacementService } from './FurniturePlacementService';
 import { getFurnitureConfig } from '../data/furnitureData';

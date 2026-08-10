@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 /**
  * Pins the nuclear "no background Google refresh" policy for the **shared Labs** Google sign-in
  * layer used by Stanza and Scales (and called from Encore via the cohabitation pathway). The

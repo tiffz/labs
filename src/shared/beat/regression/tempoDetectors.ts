@@ -54,6 +54,48 @@ const essentiaEnsembleDetector: TempoDetector = {
 };
 
 // ============================================================
+// Algorithm 1b: Essentia multifeature, RAW (no post-processing)
+// ============================================================
+
+/**
+ * RhythmExtractor2013 multifeature with every downstream heuristic bypassed.
+ *
+ * This exists so the benchmark can ANSWER the question "does our post-processing help?" rather
+ * than assume it. Until this detector was registered there was nothing to compare `essentia`
+ * against, and three materially different pipelines scored identically on the fixture set — which
+ * read as "no regression" when it actually meant "the harness cannot see a difference".
+ *
+ * It reads the multifeature estimate straight off `EnsembleResult.estimates`, so it shares the
+ * exact decode and estimator path as the shipped detector; the ONLY difference is that the
+ * consensus/octave/fine-tune/snap chain never runs.
+ */
+const essentiaMultifeatureRawDetector: TempoDetector = {
+  name: 'Essentia multifeature (raw)',
+  description:
+    'RhythmExtractor2013 multifeature with no consensus, octave selection, fine-tuning or integer snapping. Baseline for measuring whether post-processing earns its keep.',
+
+  async detect(audioBuffer: MockAudioBuffer | AudioBuffer): Promise<TempoDetectionResult> {
+    const buffer = toAudioBuffer(audioBuffer as MockAudioBuffer);
+    const result = await detectTempoEnsemble(buffer);
+    const multifeature = result.estimates.find((e) => e.algorithm === 'multifeature');
+    if (!multifeature || !(multifeature.bpm > 0)) {
+      return {
+        bpm: result.consensusBpm,
+        confidence: 0,
+        beats: result.bestBeats,
+        warnings: [...result.warnings, 'multifeature estimate unavailable; fell back to consensus'],
+      };
+    }
+    return {
+      bpm: multifeature.bpm,
+      confidence: multifeature.confidence,
+      beats: multifeature.beats ?? result.bestBeats,
+      warnings: result.warnings,
+    };
+  },
+};
+
+// ============================================================
 // Algorithm 2: Autocorrelation (Pure JavaScript, Node.js compatible)
 // ============================================================
 
@@ -166,6 +208,7 @@ const ioiHistogramDetector: TempoDetector = {
 // ============================================================
 
 registerTempoDetector('essentia', essentiaEnsembleDetector);
+registerTempoDetector('essentia-multifeature-raw', essentiaMultifeatureRawDetector);
 registerTempoDetector('autocorrelation', autocorrelationDetector);
 registerTempoDetector('ioi-histogram', ioiHistogramDetector);
 

@@ -4,6 +4,33 @@ Labs has **no human code review**. PRs exist for: (1) **CI gate**, (2) **audit t
 
 Canonical merge: **squash** into `main`, **delete branch** after merge.
 
+### Long-lived branches must resync after a squash promotion
+
+Squash + delete is correct for a short-lived feature branch. **`dev-integration` is not deleted**,
+and that combination has a trap: a squash puts all the content on `main` as one new commit while
+none of the branch's commits become ancestors. The branch and `main` then hold the same changes via
+different commits, so the _next_ PR from `dev-integration` conflicts with itself — and it surfaces
+as a mysterious `CONFLICTING` / `DIRTY` state on a PR whose CI is green, long after the promotion
+that caused it.
+
+**Immediately after squash-promoting `dev-integration` to `main`:**
+
+```bash
+git fetch origin
+git merge origin/main            # resolve to OURS: main holds an older snapshot of this branch
+```
+
+Resolve to `--ours` — but **typecheck before pushing**. Git resolves by region, not meaning: after
+#151 it silently auto-merged `PerformancesScreen.tsx` into _two_ declarations of `originalById`
+(the branch's newer version plus main's pre-fix one) with no conflict marker. That was a compile
+error rather than a silent wrong value, but only because TypeScript caught what git did not.
+
+**Policy: keep squashing.** A merge commit per promotion would avoid the resync, but it drags
+every intermediate commit onto `main` — 60+ of them for a single promotion, most of which are
+"fix the thing I broke two commits ago". `main` stays readable as one line per shipped change,
+which is what you want when bisecting a regression or writing a changelog. The resync is
+mechanical and takes a minute; a permanently noisy history does not go away.
+
 ## When to open a PR vs push to `main`
 
 | Situation                              | Prefer                                                                    |

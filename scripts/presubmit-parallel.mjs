@@ -55,6 +55,9 @@ const staticChecks = [
   npmRun('ui copy', 'check:ui-copy'),
   npmRun('doc links', 'check:doc-links'),
   npmRun('agent docs', 'check:agent-docs'),
+  // Also a required CI job that presubmit was missing: fails when `.cursor/` and `.claude/` drift
+  // from `.agents/`, which happens any time a rule is edited without regenerating.
+  npmRun('agent guidance current', 'check:agent-guidance'),
   npmRun('shared theme contract', 'check:shared-theme-contract'),
   npmRun('chrome UI contract', 'check:chrome-ui'),
   npmRun('menu a11y contract', 'check:menu-a11y'),
@@ -72,6 +75,10 @@ const staticChecks = [
   npmRun('knip', 'knip'),
   npmRun('typecheck', 'typecheck'),
   npmRun('full typecheck ratchet', 'check:tsc-ratchet'),
+  // CI runs this as a required job. It was NOT in presubmit, so a local run could be fully green
+  // while the push failed minutes later on a gate the developer never saw — the single biggest
+  // source of wasted push cycles in this repo. Every blocking CI job belongs here.
+  npmRun('react-hooks ratchet', 'check:react-hooks-ratchet'),
 ];
 if (existsSync('src/muscle/main.tsx')) {
   staticChecks.push(npmRun('muscle public assets', 'muscle:validate-assets'));

@@ -11,9 +11,15 @@
  *
  * This re-runs those 14 rules as errors and fails if the total *rises* above a
  * committed baseline (monotonic ratchet, same shape as check-tsc-ratchet). It
- * does NOT run in presubmit: the compiler rules take >3 min across `src`, too
- * slow for a local pre-commit gate. Burn the baseline DOWN in tranches; when a
- * rule reaches 0, flip it to `error` in eslint.config.js and drop it here.
+ * DOES run in presubmit. It used to be excluded on the grounds that "the compiler
+ * rules take >3 min across `src`" — that stopped being true once this script
+ * started passing `--cache`; a warm run is ~6s. The stale exclusion cost far more
+ * than it saved: CI stayed red on `main` and `dev-integration` for many
+ * consecutive runs because a locally-green presubmit could not see this gate.
+ * `src/shared/ciPresubmitParity.test.ts` now fails if it drifts out again.
+ *
+ * Burn the baseline DOWN in tranches; when a rule reaches 0, flip it to `error`
+ * in eslint.config.js and drop it here.
  *
  *   node scripts/check-react-hooks-ratchet.mjs            # fail if total > baseline
  *   node scripts/check-react-hooks-ratchet.mjs --update    # lower the baseline to current (never raises)

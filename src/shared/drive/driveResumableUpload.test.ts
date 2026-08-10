@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   DRIVE_RESUMABLE_CHUNK_MULTIPLE_BYTES,

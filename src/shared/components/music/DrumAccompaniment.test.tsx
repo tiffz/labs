@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { fireEvent, render, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import DrumAccompaniment from './DrumAccompaniment';

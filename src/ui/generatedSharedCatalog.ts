@@ -5938,13 +5938,28 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-beat-regression-syntheticaudiogenerator-ts-octave-and-rate-probe-cases",
+    "name": "OCTAVE_AND_RATE_PROBE_CASES",
+    "path": "src/shared/beat/regression/syntheticAudioGenerator.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Standard test suite covering various BPM ranges and patterns Uses 'mixed' type for most tests as it provides realistic onset density Note: Synthetic audio has different characteristics than real music. Very slow (<70) and very fast (>120) tempos may have octave ambiguity.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
     "id": "src-shared-beat-regression-syntheticaudiogenerator-ts-standard-bpm-test-cases",
     "name": "STANDARD_BPM_TEST_CASES",
     "path": "src/shared/beat/regression/syntheticAudioGenerator.ts",
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "Standard test suite covering various BPM ranges and patterns Uses 'mixed' type for most tests as it provides realistic onset density Note: Synthetic audio has different characteristics than real music. Very slow (<70) and very fast (>120) tempos may have octave ambiguity.",
+    "description": "Configuration for synthetic audio generation",
     "tags": [
       "api"
     ],
@@ -6521,6 +6536,120 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [],
     "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-tempoevalmetrics-ts-formattempoevalreport",
+    "name": "formatTempoEvalReport",
+    "path": "src/shared/beat/tempoEvalMetrics.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Plain-text report for pasting back into a chat or an issue.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-tempoevalmetrics-ts-scoretempoestimate",
+    "name": "scoreTempoEstimate",
+    "path": "src/shared/beat/tempoEvalMetrics.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "MIREX Accuracy1 tolerance: within 4% of ground truth.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-tempoevalmetrics-ts-summarizetempoeval",
+    "name": "summarizeTempoEval",
+    "path": "src/shared/beat/tempoEvalMetrics.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "MIREX Accuracy1 tolerance: within 4% of ground truth.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-tempoevalmetrics-ts-tempo-accuracy-1-tolerance",
+    "name": "TEMPO_ACCURACY_1_TOLERANCE",
+    "path": "src/shared/beat/tempoEvalMetrics.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "MIREX Accuracy1 tolerance: within 4% of ground truth.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-tempoevalmetrics-ts-tempo-accuracy-2-multiples",
+    "name": "TEMPO_ACCURACY_2_MULTIPLES",
+    "path": "src/shared/beat/tempoEvalMetrics.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Octave multiples Accuracy2 forgives (MIREX uses 1/3, 1/2, 1, 2, 3).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-tempoevalmetrics-ts-tempoevalcase",
+    "name": "TempoEvalCase",
+    "path": "src/shared/beat/tempoEvalMetrics.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "MIREX Accuracy1 tolerance: within 4% of ground truth.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-tempoevalmetrics-ts-tempoevalsummary",
+    "name": "TempoEvalSummary",
+    "path": "src/shared/beat/tempoEvalMetrics.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "MIREX Accuracy1 tolerance: within 4% of ground truth.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-tempoevalmetrics-ts-tempoevalverdict",
+    "name": "TempoEvalVerdict",
+    "path": "src/shared/beat/tempoEvalMetrics.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "MIREX Accuracy1 tolerance: within 4% of ground truth.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
     "demoId": null
   },
   {

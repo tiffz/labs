@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 /**
  * Sleep System Regression Tests
  * Tests for cat sleep/wake state transitions

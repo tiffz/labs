@@ -289,7 +289,6 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
   const venueOptionsCacheRef = useRef<string[]>([]);
   const perfVenueFilterOptionsCacheRef = useRef<string[]>([]);
   const songByIdCacheRef = useRef(new Map<string, EncoreSong>());
-  const originalByIdCacheRef = useRef(new Map<string, EncoreOriginalSong>());
   const perfMrtDataCacheRef = useRef<PerfMrtRow[]>([]);
   const perfFilterFieldDefsCacheRef = useRef<EncoreFilterFieldConfig[]>([]);
   const perfDashboardStatsCacheRef = useRef<PerformanceDashboardStats | null>(null);
@@ -344,7 +343,13 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
   const [bulkScoreOpen, setBulkScoreOpen] = useState(false);
   const [importMenuAnchor, setImportMenuAnchor] = useState<HTMLElement | null>(null);
   const extrasRef = useRef(repertoireExtras);
-  extrasRef.current = repertoireExtras;
+  // Written in an effect, not during render: a render-phase ref write is a React Compiler
+  // correctness error (a discarded render can leave a stale write). Safe here because
+  // `extrasRef.current` is only read inside `persistPerformancesTablePrefs`, which runs from event
+  // handlers — never during render — so it has always been committed by the time it is read.
+  useEffect(() => {
+    extrasRef.current = repertoireExtras;
+  });
 
   const performancesSubTab = useSyncExternalStore(
     subscribePerformancesSubTab,
@@ -428,6 +433,20 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
     if (viewMode === 'grid') setRowSelection({});
   }, [viewMode]);
 
+  /*
+   * eslint-disable react-hooks/refs -- deliberate, and mandated by
+   * `.agents/rules/encore-list-tab-performance.md`.
+   *
+   * Performances is a keep-alive tab. Rebuilding these maps while it is hidden regresses CUJ-001,
+   * so each memo returns a cached ref when `heavyListTabActive` is false. That necessarily reads
+   * and writes a ref during render, which the React Compiler flags.
+   *
+   * It is safe here BECAUSE the staleness is the feature: when the tab is hidden nothing renders
+   * from these values, and the worst case under a discarded render is a recompute, not a wrong
+   * UI. Removing the pattern to satisfy the lint would trade a real, measured perf regression for
+   * a theoretical correctness one.
+   */
+   
   const venueOptions = useMemo(() => {
     if (!heavyListTabActive) return venueOptionsCacheRef.current;
     const s = new Set<string>();
@@ -461,15 +480,23 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
     songByIdCacheRef.current = next;
     return next;
   }, [heavyListTabActive, songs]);
+   
 
-  // Gated on `heavyListTabActive` like every other heavy memo here — Performances stays mounted
-  // when hidden, and rebuilding this on originals churn would regress CUJ-001 tab latency.
-  const originalById = useMemo(() => {
-    if (!heavyListTabActive) return originalByIdCacheRef.current;
-    const next = new Map(originals.map((o) => [o.id, o] as const));
-    originalByIdCacheRef.current = next;
-    return next;
-  }, [heavyListTabActive, originals]);
+  /*
+   * Same CUJ-001 protection as the neighbouring memos — Performances stays mounted when hidden and
+   * must not rebuild on originals churn — but achieved by freezing the INPUT through the shared
+   * `useEncoreTabFrozenSnapshot` rather than hand-rolling another cache ref.
+   *
+   * Freezing the input is strictly better: while the tab is hidden `frozenOriginals` keeps its
+   * identity, so `useMemo` already declines to recompute. That gets the same skip without a
+   * ref read/write during render, which the React Compiler rules (correctly) flag. The older
+   * cache-ref memos above predate this helper.
+   */
+  const frozenOriginals = useEncoreTabFrozenSnapshot(heavyListTabActive, originals);
+  const originalById = useMemo(
+    () => new Map(frozenOriginals.map((o) => [o.id, o] as const)),
+    [frozenOriginals],
+  );
 
   const hasAnyPerformanceVideoLink = useMemo(() => {
     if (!heavyListTabActive) return hasAnyPerformanceVideoLinkCacheRef.current;

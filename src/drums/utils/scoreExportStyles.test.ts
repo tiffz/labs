@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
 import { DRUMS_SCORE_EXPORT_SVG_CSS, applyDrumsExportSvgInlinePresentation } from './drumsScoreExportStyles';
 import { DRUMS_SCORE_EXPORT_STAFF_STROKE_WIDTH } from './scoreExportLayout';

@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
 
 import { DEFAULT_SCRIPT_HTML, parseScriptHtml } from './scriptHtmlParser';

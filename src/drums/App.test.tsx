@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { cancelPendingHistoryUpdates } from '../shared/utils/urlHistory';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';

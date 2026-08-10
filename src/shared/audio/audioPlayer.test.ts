@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createMockAudioContext, type MockAudioContext } from './__test__/mockAudioContext';
 import { AudioPlayer } from './audioPlayer';

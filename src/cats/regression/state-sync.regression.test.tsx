@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 /**
  * State Synchronization Regression Tests
  * Tests for state management, callbacks, and component communication

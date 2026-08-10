@@ -32,6 +32,36 @@ if (import.meta.env.DEV) {
   }
 }
 
+/**
+ * Tempo-detection accuracy check, scored against the user's OWN tapped tempos.
+ *
+ * Run from the console: `await __stanzaTempoEval()`. Full debug tier only — it reads the library
+ * and prints song titles. Lazily imported so Essentia never enters the normal bundle.
+ *
+ * This exists because the committed tempo fixtures are synthetic and all generated at 44100 Hz,
+ * so they cannot distinguish a good detector from a bad one. Songs the user tapped by hand are
+ * real, human-labelled ground truth that never has to leave the device.
+ */
+if (typeof window !== 'undefined') {
+  (window as unknown as Record<string, unknown>).__stanzaTempoEval = async (limit?: number) => {
+    const { isLabsDebugFull } = await import('../shared/debug/labsDebugAccess');
+    if (!isLabsDebugFull()) {
+      return 'Full debug tier required. Open on localhost or sign in as the owner, with ?debug.';
+    }
+    const { runStanzaTempoEval } = await import('./debug/stanzaTempoEval');
+    const result = await runStanzaTempoEval({
+      limit,
+      onProgress: (done, total, title) => {
+        // eslint-disable-next-line no-console
+        console.info(`[tempo-eval] ${done}/${total} ${title}`);
+      },
+    });
+    // eslint-disable-next-line no-console
+    console.info(result.report);
+    return result;
+  };
+}
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <LabsErrorBoundary appId="stanza">
     <StrictMode>

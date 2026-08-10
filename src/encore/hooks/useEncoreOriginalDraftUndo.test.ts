@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import 'fake-indexeddb/auto';
 import { renderHook, act } from '@testing-library/react';
 import { createElement, type ReactNode } from 'react';

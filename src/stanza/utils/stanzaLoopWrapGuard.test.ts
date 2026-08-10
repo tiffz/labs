@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
 import { createStanzaLoopWrapGuard, STANZA_LOOP_WRAP_COALESCE_MS } from './stanzaLoopWrapGuard';
 
