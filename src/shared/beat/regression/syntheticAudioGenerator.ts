@@ -23,7 +23,7 @@ export interface SyntheticAudioConfig {
   /** Sample rate (default: 44100) */
   sampleRate?: number;
   /** Type of audio to generate */
-  type: 'click' | 'kick' | 'snare' | 'hihat' | 'drumPattern' | 'mixed';
+  type: 'click' | 'kick' | 'snare' | 'hihat' | 'drumPattern' | 'mixed' | 'tempoRealistic';
   /** Time signature numerator (default: 4) */
   beatsPerMeasure?: number;
   /** Add some timing variation to simulate real music (0-1, default: 0) */
@@ -161,6 +161,49 @@ export function generateSyntheticAudio(config: SyntheticAudioConfig): MockAudioB
             const sixteenth3 = sampleIndex + Math.floor(beatInterval * 0.75 * sampleRate);
             if (sixteenth1 < numSamples) addHihat(channelData, sixteenth1, sampleRate, 0.15, random);
             if (sixteenth3 < numSamples) addHihat(channelData, sixteenth3, sampleRate, 0.15, random);
+          }
+          break;
+        }
+        case 'tempoRealistic': {
+          /*
+           * Onset density that does NOT encode the tempo.
+           *
+           * `drumPattern` and `mixed` place a hihat on every beat AND every 8th unconditionally,
+           * so onsets-per-second is exactly 2 x (bpm/60) — a deterministic linear function of
+           * tempo. Any octave heuristic of the form "denser means faster" is therefore correct BY
+           * CONSTRUCTION on those fixtures, and validating one against them proves nothing.
+           *
+           * Real drummers do the opposite: they thin out subdivisions as tempo rises, so
+           * onsets-per-second stays in a narrow band (~4-6/s) from a slow ballad to a fast rock
+           * tune. This picks the subdivision that lands closest to that band, which removes the
+           * density-to-tempo correlation while staying musically plausible.
+           *
+           * Measured consequence of the old behaviour: on the SYNTHETIC 150 BPM fixture the raw
+           * multifeature estimator returns 74.64 (halved), while on the owner's REAL 150 BPM drum
+           * loop it returns 150.0 exactly. The fixture did not behave like the thing it modelled.
+           */
+          const TARGET_ONSETS_PER_SEC = 5;
+          const beatsPerSec = bpm / 60;
+          const subdivision = [1, 2, 4].reduce((best, s) =>
+            Math.abs(beatsPerSec * s - TARGET_ONSETS_PER_SEC) <
+            Math.abs(beatsPerSec * best - TARGET_ONSETS_PER_SEC)
+              ? s
+              : best,
+          );
+
+          if (isDownbeat) {
+            addKick(channelData, sampleIndex, sampleRate, 1.0);
+          } else if (beatIndex % beatsPerMeasure === 2) {
+            addSnare(channelData, sampleIndex, sampleRate, 0.9, random);
+          } else {
+            addKick(channelData, sampleIndex, sampleRate, 0.5);
+          }
+          // Fill the beat at the chosen subdivision, skipping the downbeat slot already voiced.
+          for (let k = 1; k < subdivision; k += 1) {
+            const offset = sampleIndex + Math.floor((beatInterval * k / subdivision) * sampleRate);
+            if (offset < numSamples) {
+              addHihat(channelData, offset, sampleRate, 0.22 + random() * 0.1, random);
+            }
           }
           break;
         }
@@ -356,13 +399,14 @@ export interface BpmTestCase {
  */
 export const OCTAVE_AND_RATE_PROBE_CASES: BpmTestCase[] = [
   // --- above the old ceiling: where half-tempo errors actually live ---
-  { id: 'fast-140', name: '140 BPM Drums', config: { bpm: 140, duration: 30, type: 'drumPattern', seed: 14001 }, expectedBpm: 140, tolerance: 4 },
-  { id: 'fast-150', name: '150 BPM Drums', config: { bpm: 150, duration: 30, type: 'drumPattern', seed: 15002 }, expectedBpm: 150, tolerance: 4 },
-  { id: 'fast-170', name: '170 BPM Drums', config: { bpm: 170, duration: 30, type: 'drumPattern', seed: 17001 }, expectedBpm: 170, tolerance: 5 },
-  { id: 'fast-180', name: '180 BPM Mixed', config: { bpm: 180, duration: 30, type: 'mixed', seed: 18001 }, expectedBpm: 180, tolerance: 5 },
+  // `tempoRealistic` so onset density carries no tempo information — see the generator case.
+  { id: 'fast-140', name: '140 BPM', config: { bpm: 140, duration: 30, type: 'tempoRealistic', seed: 14001 }, expectedBpm: 140, tolerance: 4 },
+  { id: 'fast-150', name: '150 BPM', config: { bpm: 150, duration: 30, type: 'tempoRealistic', seed: 15002 }, expectedBpm: 150, tolerance: 4 },
+  { id: 'fast-170', name: '170 BPM', config: { bpm: 170, duration: 30, type: 'tempoRealistic', seed: 17001 }, expectedBpm: 170, tolerance: 5 },
+  { id: 'fast-180', name: '180 BPM', config: { bpm: 180, duration: 30, type: 'tempoRealistic', seed: 18001 }, expectedBpm: 180, tolerance: 5 },
   // --- below it: where double-tempo errors live ---
-  { id: 'slow-60', name: '60 BPM Mixed', config: { bpm: 60, duration: 30, type: 'mixed', seed: 6001 }, expectedBpm: 60, tolerance: 2 },
-  { id: 'slow-65', name: '65 BPM Drums', config: { bpm: 65, duration: 30, type: 'drumPattern', seed: 6501 }, expectedBpm: 65, tolerance: 2 },
+  { id: 'slow-60', name: '60 BPM', config: { bpm: 60, duration: 30, type: 'tempoRealistic', seed: 6001 }, expectedBpm: 60, tolerance: 2 },
+  { id: 'slow-65', name: '65 BPM', config: { bpm: 65, duration: 30, type: 'tempoRealistic', seed: 6501 }, expectedBpm: 65, tolerance: 2 },
 
   // --- 48 kHz: the rate the decode bug was invisible at ---
   { id: 'sr48-90', name: '90 BPM @48k', config: { bpm: 90, duration: 30, type: 'drumPattern', seed: 9002, sampleRate: 48000 }, expectedBpm: 90, tolerance: 2 },
@@ -384,7 +428,9 @@ export const STANDARD_BPM_TEST_CASES: BpmTestCase[] = [
   { id: 'core-102', name: '102 BPM Drums', config: { bpm: 102, duration: 30, type: 'drumPattern', seed: 10201 }, expectedBpm: 102, tolerance: 2 },
   { id: 'short-120-8', name: '120 BPM Drums (8s)', config: { bpm: 120, duration: 8, type: 'drumPattern', seed: 12001 }, expectedBpm: 120, tolerance: 5 },
   { id: 'short-120-12', name: '120 BPM Drums (12s)', config: { bpm: 120, duration: 12, type: 'drumPattern', seed: 12002 }, expectedBpm: 120, tolerance: 5 },
-  { id: 'short-150-15', name: '150 BPM Drums (15s)', config: { bpm: 150, duration: 15, type: 'drumPattern', seed: 15001 }, expectedBpm: 150, tolerance: 5 },
+  // `tempoRealistic`: `drumPattern`'s onset density is a deterministic function of BPM, which
+  // makes density-based octave logic correct by construction. Assertion unchanged; input fixed.
+  { id: 'short-150-15', name: '150 BPM (15s)', config: { bpm: 150, duration: 15, type: 'tempoRealistic', seed: 15001 }, expectedBpm: 150, tolerance: 5 },
   
   // Fractional BPMs (precision test in core range)
   { id: 'frac-72.5', name: '72.5 BPM', config: { bpm: 72.5, duration: 30, type: 'mixed', seed: 72501 }, expectedBpm: 72.5, tolerance: 1 },

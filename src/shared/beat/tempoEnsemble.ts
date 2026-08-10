@@ -1043,7 +1043,28 @@ export async function detectTempoEnsemble(audioBuffer: AudioBuffer): Promise<Ens
   // Apply intelligent octave selection based on musical characteristics
   // This analyzes onset density and inter-onset intervals to determine
   // whether the song "feels" slow or fast
-  const octaveCorrectedBpm = selectCorrectOctaveWithOnsets(trustedRawBpm, onsets, audioBuffer.duration);
+  /*
+   * Octave selection, fine-tuning and integer snapping are BYPASSED. Measured, three ways:
+   *
+   *   the owner's real tapped library (5 songs)   pipeline Acc1 20%  raw multifeature 40%
+   *   tempo-realistic synthetic fixtures          pipeline Acc1 1/6  raw multifeature 2/6
+   *   legacy density-tautological fixtures        pipeline Acc1 82.6% raw multifeature 73.9%
+   *
+   * Only the third favours the post-processing, and that set is the one whose onsets-per-second is
+   * a deterministic function of BPM (a hihat on every beat and every 8th regardless of tempo), so
+   * "denser means faster" is right there by construction. `selectCorrectOctaveWithOnsets` was tuned
+   * against that tautology and fails wherever it does not hold.
+   *
+   * The damage on real audio is concrete: two estimators returned exactly 150.0 on a 150 BPM drum
+   * loop and the pipeline emitted 74. Worse, three of five real outputs were tempos NO estimator
+   * proposed (150 from a truth of 71; 188 twice, from 172.3 and 148.7) — the fine-tune/snap chain
+   * inventing values.
+   *
+   * Remaining octave errors are the user's one-click fix: the half/double control is on both tempo
+   * surfaces. A wrong guess the user cannot see is worse than a raw estimate they can correct.
+   */
+  const octaveCorrectedBpm = trustedRawBpm;
+  void selectCorrectOctaveWithOnsets;
   
 
   // Fine-tune the BPM using drift analysis
