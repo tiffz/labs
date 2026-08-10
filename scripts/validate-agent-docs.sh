@@ -175,6 +175,15 @@ echo "== check:agent-docs: skills-ref validate =="
 # slowest static check in presubmit, ahead of lint, knip and typecheck combined, to validate
 # markdown. The work is embarrassingly parallel and each run is independent.
 if command -v npx >/dev/null 2>&1; then
+  # Warm the npx cache with ONE serial invocation before fanning out.
+  #
+  # `npx --yes` installs into a shared cache dir (~/.npm/_npx/<hash>). Firing 27 of them at once on
+  # a COLD cache makes them race to populate the same directory, and npm dies with
+  # `ENOTEMPTY: directory not empty, rmdir .../node_modules/argparse/lib`. The parallel speedup is
+  # real, but the cold-start race is invisible on a developer machine with a warm cache and hits
+  # immediately on a fresh CI runner — which is exactly how it shipped.
+  npx --yes skills-ref --help >/dev/null 2>&1 || true
+
   skills_tmp=$(mktemp -d)
   for skill_dir in .agents/skills/labs-*/; do
     skill_name=$(basename "$skill_dir")
