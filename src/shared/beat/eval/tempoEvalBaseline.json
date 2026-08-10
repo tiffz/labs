@@ -1,19 +1,19 @@
 {
   "schemaVersion": 1,
   "note": "Real-audio tempo eval scored against the owner's own hand-TAPPED tempos (metronomeSongCalibration.source === 'tap'). Audio is copyrighted and never enters the repo; titles are hashed because this repo is public and the library is personal. The id->title map lives only in the owner's browser. Regenerate with __stanzaTempoEval() on localhost ?debug.",
-  "capturedAgainst": "multifeature tempo + selectCorrectOctaveWithOnsets (post-averaging-removal)",
+  "capturedAgainst": "post-deletion: multifeature raw (octave selection, fine-tune and snap all bypassed)",
   "metrics": {
-    "accuracy1": 0.2,
-    "accuracy2": 0.6,
+    "accuracy1": 0.4,
+    "accuracy2": 0.8,
     "n": 5
   },
   "rows": [
     {
       "id": "trk_4606a7aba6",
       "groundTruthBpm": 150,
-      "detectedBpm": 74.0,
-      "relativeError": -0.5067,
-      "accuracy1": false,
+      "detectedBpm": 150.0,
+      "relativeError": 0.0,
+      "accuracy1": true,
       "characteristics": "drum-loop, isolated kit, short"
     },
     {
@@ -27,24 +27,24 @@
     {
       "id": "trk_a7de00d85c",
       "groundTruthBpm": 71,
-      "detectedBpm": 150.0,
-      "relativeError": 1.1127,
+      "detectedBpm": 140.0,
+      "relativeError": 0.9718,
       "accuracy1": false,
       "characteristics": "full mix"
     },
     {
       "id": "trk_8f92630ee8",
       "groundTruthBpm": 160,
-      "detectedBpm": 188.0,
-      "relativeError": 0.175,
+      "detectedBpm": 172.0,
+      "relativeError": 0.075,
       "accuracy1": false,
       "characteristics": "full mix"
     },
     {
       "id": "trk_bcc13592d8",
       "groundTruthBpm": 75,
-      "detectedBpm": 188.0,
-      "relativeError": 1.5067,
+      "detectedBpm": 148.0,
+      "relativeError": 0.9733,
       "accuracy1": false,
       "characteristics": "full mix, live band"
     }
@@ -68,7 +68,22 @@
         "accuracy2": 1.0,
         "octaveOnly": 6
       }
+    },
+    "warning": "These synthetic numbers were measured on `drumPattern` fixtures whose onsets-per-second is exactly 2 x (bpm/60) \u2014 a deterministic function of tempo \u2014 which makes density-based octave logic correct by construction. They are RETAINED AS A CAUTIONARY RECORD, not as evidence. On `tempoRealistic` fixtures and on real audio the ordering reverses. Do not cite the 82.6% figure."
+  },
+  "caveat": "Synthetic Accuracy2 reaches 100%, implying errors are octave-only. Real audio does NOT agree: the tapped-ground-truth rows above show Accuracy2 of 60%, with 150-vs-71 and 188-vs-75 failures that are not octave relationships. Synthetic fixtures under-represent genuine beat-tracking failure. Do not tune octave policy on synthetic numbers alone.",
+  "beforeAfter": {
+    "note": "Real tapped-library measurement, before and after deleting the octave/fine-tune/snap chain. Accuracy doubled AND every invented value disappeared: pre-deletion the pipeline emitted 150 (truth 71) and 188 twice (from estimator inputs of 172.3 and 148.7) \u2014 tempos no estimator proposed. Post-deletion every output is an actual estimator reading.",
+    "before": {
+      "accuracy1": 0.2,
+      "accuracy2": 0.4,
+      "inventedOutputs": 3
+    },
+    "after": {
+      "accuracy1": 0.4,
+      "accuracy2": 0.8,
+      "inventedOutputs": 0
     }
   },
-  "caveat": "Synthetic Accuracy2 reaches 100%, implying errors are octave-only. Real audio does NOT agree: the tapped-ground-truth rows above show Accuracy2 of 60%, with 150-vs-71 and 188-vs-75 failures that are not octave relationships. Synthetic fixtures under-represent genuine beat-tracking failure. Do not tune octave policy on synthetic numbers alone."
+  "openGap": "40% Accuracy1 is still poor. One remaining failure (172 vs 160, +7.5%) is NOT an octave error, so there is a genuine beat-tracking gap beyond metrical-level selection. n=5 is a thin sample; tapping more songs widens it at near-zero cost."
 }
