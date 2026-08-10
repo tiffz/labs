@@ -965,6 +965,7 @@ function computeConsensus(estimates: TempoEstimate[]): {
   return { consensusBpm, confidence, agreement };
 }
 
+
 /**
  * Detect tempo using ensemble of algorithms
  */
@@ -1063,8 +1064,7 @@ export async function detectTempoEnsemble(audioBuffer: AudioBuffer): Promise<Ens
    * Remaining octave errors are the user's one-click fix: the half/double control is on both tempo
    * surfaces. A wrong guess the user cannot see is worse than a raw estimate they can correct.
    */
-  const octaveCorrectedBpm = trustedRawBpm;
-  void selectCorrectOctaveWithOnsets;
+  const octaveCorrectedBpm = selectCorrectOctaveWithOnsets(trustedRawBpm, onsets, audioBuffer.duration);
   
 
   // Fine-tune the BPM using drift analysis
