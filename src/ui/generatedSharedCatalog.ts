@@ -6578,6 +6578,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-beat-tempoevalmetrics-ts-suspect-ground-truth-error",
+    "name": "SUSPECT_GROUND_TRUTH_ERROR",
+    "path": "src/shared/beat/tempoEvalMetrics.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Beyond this relative error, with no octave relation, the label is more suspect than the reading.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
     "id": "src-shared-beat-tempoevalmetrics-ts-tempo-accuracy-1-tolerance",
     "name": "TEMPO_ACCURACY_1_TOLERANCE",
     "path": "src/shared/beat/tempoEvalMetrics.ts",
