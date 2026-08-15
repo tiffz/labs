@@ -346,19 +346,35 @@ async function loadComputedFontsForVisibleNoteSymbols(page: Page): Promise<void>
   });
 }
 
-async function waitForDocumentImagesIdle(page: Page): Promise<void> {
-  await page.evaluate(async () => {
-    await Promise.all(
-      Array.from(document.images).map((img) =>
-        img.complete
-          ? Promise.resolve()
-          : new Promise<void>((resolve) => {
-              img.addEventListener('load', () => resolve(), { once: true });
-              img.addEventListener('error', () => resolve(), { once: true });
-            })
-      )
-    );
-  });
+/**
+ * Wait for images to settle — bounded, and tolerant of images that can never settle.
+ *
+ * An `<img>` with an empty or unset `src` has `complete === false` and fires NEITHER `load` NOR
+ * `error`, so the original unbounded `Promise.all` waited forever. Zinebox's library renders cover
+ * images from IndexedDB blobs and CI has an empty library, so `[zinebox-library] mobile` hung on
+ * every nightly run until the 60s test timeout killed it — no screenshot, no diff, nothing to
+ * triage. Reproduced locally before changing anything.
+ *
+ * This is a best-effort STABILISATION step, not an assertion: its job is to reduce flake before
+ * capture, so an image that cannot resolve must not be able to fail the run. Bounding it is the
+ * root-cause fix rather than a widened timeout — the unbounded wait was the defect.
+ */
+async function waitForDocumentImagesIdle(page: Page, perImageTimeoutMs = 3_000): Promise<void> {
+  await page.evaluate(async (timeoutMs) => {
+    const settled = (img: HTMLImageElement): Promise<void> => {
+      // No usable source: it will never fire load or error. Nothing to wait for.
+      if (!img.currentSrc && !img.getAttribute('src')) return Promise.resolve();
+      if (img.complete) return Promise.resolve();
+      return new Promise<void>((resolve) => {
+        const done = () => resolve();
+        img.addEventListener('load', done, { once: true });
+        img.addEventListener('error', done, { once: true });
+        // Backstop for a src that stalls (revoked blob URL, aborted request).
+        setTimeout(done, timeoutMs);
+      });
+    };
+    await Promise.all(Array.from(document.images).map(settled));
+  }, perImageTimeoutMs);
 }
 
 /**
