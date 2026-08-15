@@ -100,7 +100,7 @@ export const RHYTHM_DATABASE: Record<string, RhythmDefinition> = {
     id: 'ayoub',
     name: 'Ayoub',
     description: 'An energetic 2/4 rhythm often used in faster dance music.',
-    learnMoreLinks: [],
+    learnMoreLinks: [{ title: '30 Pieces Book 1 — Amir School of Music', url: 'https://www.amirschoolofmusic.com/store/p/pdf-30-pieces-book-1' }],
     basePattern: 'D--KD-T-',
     timeSignature: { numerator: 2, denominator: 4 },
     sixEightPattern: 'D--K--D-T---',
@@ -108,19 +108,71 @@ export const RHYTHM_DATABASE: Record<string, RhythmDefinition> = {
       { notation: 'D--KD-T-' },
       { notation: 'D-TKD-T-' },
       { notation: 'D-TKT-D-', note: 'La Bass Fe Eyne variation' },
+      { notation: 'D-KKD-T-', note: 'Variation from 30 Pieces Book 1 (Amir School of Music)' },
     ],
-    relatedRhythmIds: ['daem'],
+    relatedRhythmIds: ['daem', 'helgertin'],
   },
   daem: {
     id: 'daem',
     name: 'Da-em',
     description:
-      'A lively 2/4 Middle Eastern groove with a ka ornament before the second dum (D-TKD-TK).',
-    learnMoreLinks: [],
+      'A lively 2/4 Middle Eastern groove with a ka ornament before the second dum (D-TKD-TK). ' +
+      'Used in Persian and Kurdish dancing, chanting and zikr practice.',
+    learnMoreLinks: [{ title: '30 Pieces Book 1 — Amir School of Music', url: 'https://www.amirschoolofmusic.com/store/p/pdf-30-pieces-book-1' }],
     basePattern: 'D-TKD-TK',
     timeSignature: { numerator: 2, denominator: 4 },
     variations: [{ notation: 'D-TKD-TK' }],
-    relatedRhythmIds: ['ayoub'],
+    relatedRhythmIds: ['ayoub', 'helgertin', 'haddadi'],
+  },
+
+  /*
+   * Helgertin and Haddadi — transcribed from "30 Pieces Book 1" (Amir School of Music),
+   * https://www.amirschoolofmusic.com/store/p/pdf-30-pieces-book-1
+   *
+   * The book notates strokes as Ç / A / V above the noteheads. That maps to this app's Darbuka
+   * notation as Ç -> D (dum), A -> T (tek), V -> K (ka). The mapping is not a guess: two rhythms
+   * in the same figure decode to patterns ALREADY in this database —
+   *
+   *   book "Da-em"  Ç A V Ç A V  ->  D-TKD-TK  == the existing `daem` basePattern
+   *   book "Ayoub"  Ç V Ç A      ->  D--KD-T-  == the existing `ayoub` basePattern
+   *
+   * — so the same reading applied to Helgertin and Haddadi is corroborated rather than invented.
+   */
+  helgertin: {
+    id: 'helgertin',
+    name: 'Helgertin',
+    description:
+      'A Persian and Kurdish rhythm used in dancing, chanting and zikr, felt in 2/4 and written '
+      + 'in the source as two 2/4 measures (one full cycle here). ' +
+      'The second measure opens on two teks instead of a dum, which tilts the pulse forward. ' +
+      'Ayoub is considered a variant of Helgertin in these traditions.',
+    learnMoreLinks: [{ title: '30 Pieces Book 1 — Amir School of Music', url: 'https://www.amirschoolofmusic.com/store/p/pdf-30-pieces-book-1' }],
+    /*
+     * The book notates this as TWO 2/4 measures. The database represents a full cycle as ONE
+     * measure — two invariants require it (`presetIntegrity`: variations must be exactly one
+     * measure; `rhythmRecognition`: basePattern must appear among variations), and Maqsum already
+     * follows the same convention for its 16-sixteenth cycle. The grid is identical either way:
+     * 16 sixteenths is one 4/4 bar or two 2/4 bars. The felt pulse is still 2/4, which the
+     * description says.
+     */
+    basePattern: 'D-TKD-T-TTK-D-T-',
+    timeSignature: { numerator: 4, denominator: 4 },
+    variations: [
+      { notation: 'D-TKD-T-TTK-D-T-', note: 'Full cycle — the book writes it as two 2/4 measures' },
+    ],
+    relatedRhythmIds: ['daem', 'haddadi', 'ayoub'],
+  },
+  haddadi: {
+    id: 'haddadi',
+    name: 'Haddadi',
+    description:
+      'A 2/4 Persian and Kurdish rhythm built from two mirrored cells: two dums and a ka, ' +
+      'then two teks and a ka. The fastest of the three rhythms in this group.',
+    learnMoreLinks: [{ title: '30 Pieces Book 1 — Amir School of Music', url: 'https://www.amirschoolofmusic.com/store/p/pdf-30-pieces-book-1' }],
+    basePattern: 'DDK-TTK-',
+    timeSignature: { numerator: 2, denominator: 4 },
+    variations: [{ notation: 'DDK-TTK-' }],
+    relatedRhythmIds: ['daem', 'helgertin'],
   },
   malfuf: {
     id: 'malfuf',
@@ -387,8 +439,8 @@ const PRESET_FAMILIES: FamilySpec[] = [
     id: 'middle-eastern',
     label: 'Middle Eastern',
     meters: {
-      '4/4': ['baladi', 'maqsum', 'saeidi'],
-      '2/4': ['ayoub', 'daem'],
+      '4/4': ['baladi', 'helgertin', 'maqsum', 'saeidi'],
+      '2/4': ['ayoub', 'daem', 'haddadi'],
       '8/8': ['malfuf', 'kahleegi'],
     },
   },
