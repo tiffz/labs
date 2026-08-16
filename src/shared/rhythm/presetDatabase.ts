@@ -23,12 +23,17 @@ export interface LearnMoreLink {
  * refers to, so the copy never drifts between synonyms.
  */
 export interface AlternateRhythmName {
-  /** The alternate name in Latin script. */
+  /**
+   * The alternate name, in the Latin alphabet.
+   *
+   * ENGLISH ONLY, here and in `context`. Arabic, Persian and Kurdish script used to render
+   * alongside these names and was removed: the owner does not read those scripts, so she could not
+   * check what the app was publishing under her name. Script belongs in source comments, where it
+   * is provenance for the next editor rather than a claim made to a reader.
+   */
   name: string;
-  /** Where the name comes from: "Egyptian", "Turkish usul", "common transliteration". Keep short. */
+  /** Plain-English note on where the name comes from: "Kurdish spelling", "common spelling". */
   context?: string;
-  /** Original script, when the name is not natively Latin (مقسوم, ھەڵگرتن). */
-  script?: string;
 }
 
 export interface RhythmDefinition {
@@ -78,8 +83,8 @@ export const RHYTHM_DATABASE: Record<string, RhythmDefinition> = {
   rockAndRoll: {
     id: 'rockAndRoll',
     name: 'Rock',
-    description: 'The standard backbeat groove.',
-    usedIn: 'Western pop, rock',
+    description: 'The standard backbeat: low drum on beats 1 and 3, high on 2 and 4.',
+    usedIn: 'Western pop and rock',
     learnMoreLinks: [],
     basePattern: 'D---T---D-D-T---',
     timeSignature: { numerator: 4, denominator: 4 },
@@ -93,7 +98,7 @@ export const RHYTHM_DATABASE: Record<string, RhythmDefinition> = {
   simple: {
     id: 'simple',
     name: 'Simple',
-    description: 'Plain pulses for sketching an idea.',
+    description: 'Evenly spaced beats with no accent pattern. A blank slate for sketching an idea.',
     learnMoreLinks: [],
     basePattern: 'D---D---D---D---',
     timeSignature: { numerator: 4, denominator: 4 },
@@ -112,7 +117,7 @@ export const RHYTHM_DATABASE: Record<string, RhythmDefinition> = {
   simple68: {
     id: 'simple68',
     name: 'Simple',
-    description: 'Plain pulses for sketching in compound meter.',
+    description: 'Evenly spaced beats counted in six, felt as two groups of three.',
     learnMoreLinks: [],
     basePattern: 'D-----D-----',
     timeSignature: { numerator: 6, denominator: 8 },

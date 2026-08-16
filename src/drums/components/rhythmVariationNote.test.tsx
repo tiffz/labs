@@ -19,16 +19,27 @@ import { RHYTHM_DATABASE } from '../data/rhythmDatabase';
 describe('variation notes', () => {
   const ayoub = RHYTHM_DATABASE.ayoub;
 
+  /*
+   * Read the note out of the database rather than repeating its text. These assertions are about
+   * WHERE the note goes — accessible name yes, laid-out text no — not about how it is worded. An
+   * earlier version hard-coded the string and failed on a copy edit that broke nothing.
+   */
+  const noted = ayoub.variations.find((v) => v.note)!;
+  // Not the current variation — that one renders as a non-interactive button, not a link.
+  const unnoted = ayoub.variations.find((v) => !v.note && v.notation !== ayoub.basePattern)!;
+
   it('names every variation control, with the note when there is one', () => {
     render(
       <RhythmInfoCard rhythm={ayoub} currentNotation={ayoub.basePattern} onSelectVariation={() => {}} />
     );
     // A note-carrying variation includes its note in the accessible name.
     expect(
-      screen.getByRole('link', { name: /Variation D-TKT-D-: La Bass Fe Eyne variation/i })
+      screen.getByRole('link', { name: `Variation ${noted.notation}: ${noted.note}` })
     ).toBeInTheDocument();
     // A variation without a note is still named by its notation, never unnamed.
-    expect(screen.getByRole('link', { name: /^Variation D-TKD-T-$/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: `Variation ${unnoted.notation}` })
+    ).toBeInTheDocument();
   });
 
   it('does not render note text inline, so it cannot set the card height', () => {
@@ -36,7 +47,7 @@ describe('variation notes', () => {
       <RhythmInfoCard rhythm={ayoub} currentNotation={ayoub.basePattern} onSelectVariation={() => {}} />
     );
     // Present as an accessible name (above), absent as laid-out text.
-    expect(screen.queryByText('La Bass Fe Eyne variation')).toBeNull();
+    expect(screen.queryByText(noted.note!)).toBeNull();
   });
 
   it('marks note-carrying variations with a decorative icon', () => {

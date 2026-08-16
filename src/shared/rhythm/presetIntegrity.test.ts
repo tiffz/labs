@@ -123,6 +123,17 @@ describe('canonical names in prose', () => {
     expect(offenders).toEqual([]);
   });
 
+  it('never uses an alternate spelling in a "Used in" line', () => {
+    const offenders = Object.values(RHYTHM_DATABASE).flatMap((r) =>
+      alternates
+        .filter(({ alternate }) => mentions(r.usedIn ?? '', alternate))
+        .map(({ rhythmId, alternate }) =>
+          `${r.id}.usedIn says "${alternate}" (an alternate name for ${rhythmId})`
+        )
+    );
+    expect(offenders).toEqual([]);
+  });
+
   it('never uses an alternate spelling in a variation note', () => {
     const offenders = Object.values(RHYTHM_DATABASE).flatMap((r) =>
       r.variations.flatMap((v) =>
@@ -141,6 +152,48 @@ describe('canonical names in prose', () => {
       .flatMap((r) => (r.alternateNames ?? []).map((a) => ({ id: r.id, name: r.name, a })))
       .filter(({ name, a }) => a.name === name)
       .map(({ id, a }) => `${id} lists its own canonical name "${a.name}" as an alternate`);
+    expect(offenders).toEqual([]);
+  });
+});
+
+/**
+ * No non-Latin script in anything the reader sees.
+ *
+ * The owner does not read Arabic, Persian or Kurdish, so she cannot check what the app publishes
+ * under her name in those scripts. Original script stays in source comments, where it is provenance
+ * for the next editor and always sits beside an English gloss.
+ *
+ * Displayed fields only. URLs are exempt — Wikipedia article ids are percent-encoded and are not
+ * read as text.
+ */
+describe('English-only user-facing text', () => {
+  /** Anything outside Basic Latin, Latin-1, Latin Extended-A/B, and common punctuation. */
+  const NON_LATIN = /[^ -ɏ‐-›−]/u;
+
+  const displayed = Object.values(RHYTHM_DATABASE).flatMap((r) => [
+    { field: `${r.id}.name`, text: r.name },
+    { field: `${r.id}.description`, text: r.description },
+    { field: `${r.id}.usedIn`, text: r.usedIn ?? '' },
+    ...(r.alternateNames ?? []).flatMap((a) => [
+      { field: `${r.id}.alternateNames["${a.name}"].name`, text: a.name },
+      { field: `${r.id}.alternateNames["${a.name}"].context`, text: a.context ?? '' },
+    ]),
+    ...r.variations.map((v) => ({
+      field: `${r.id} variation ${v.notation} note`,
+      text: v.note ?? '',
+    })),
+    ...r.learnMoreLinks.map((l) => ({ field: `${r.id} link title`, text: l.title })),
+  ]);
+
+  it('has strings to check', () => {
+    // Guards the assertion below from passing on an empty set.
+    expect(displayed.length).toBeGreaterThan(50);
+  });
+
+  it('renders no Arabic, Persian or Kurdish script', () => {
+    const offenders = displayed
+      .filter(({ text }) => NON_LATIN.test(text))
+      .map(({ field, text }) => `${field}: "${text}"`);
     expect(offenders).toEqual([]);
   });
 });
