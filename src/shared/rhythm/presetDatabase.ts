@@ -95,7 +95,9 @@ export const RHYTHM_DATABASE: Record<string, RhythmDefinition> = {
     name: 'Rock',
     description: 'The standard backbeat. At its simplest, low drum on beats 1 and 3, high on 2 and 4.',
     usedIn: 'Western pop and rock',
-    learnMoreLinks: [],
+    learnMoreLinks: [
+      { title: 'Wikipedia: Backbeat', url: 'https://en.wikipedia.org/wiki/Beat_(music)#Backbeat' },
+    ],
     basePattern: 'D---T---D-D-T---',
     timeSignature: { numerator: 4, denominator: 4 },
     sixEightPattern: 'D--T--D-D-T-',
@@ -108,7 +110,7 @@ export const RHYTHM_DATABASE: Record<string, RhythmDefinition> = {
   simple: {
     id: 'simple',
     name: 'Simple',
-    description: 'Evenly spaced beats with no accents.',
+    description: 'Evenly spaced low strokes, all the same weight.',
     learnMoreLinks: [],
     basePattern: 'D---D---D---D---',
     timeSignature: { numerator: 4, denominator: 4 },
@@ -127,7 +129,7 @@ export const RHYTHM_DATABASE: Record<string, RhythmDefinition> = {
   simple68: {
     id: 'simple68',
     name: 'Simple',
-    description: 'Evenly spaced beats counted in six, in two groups of three.',
+    description: 'Counted in six, with a low stroke starting each group of three.',
     learnMoreLinks: [],
     basePattern: 'D-----D-----',
     timeSignature: { numerator: 6, denominator: 8 },
