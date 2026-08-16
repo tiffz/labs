@@ -94,6 +94,32 @@ const RhythmInfoCard: React.FC<RhythmInfoCardProps> = ({
         <>
           {/* Description */}
           <p className="rhythm-info-description">{rhythm.description}</p>
+
+      {/*
+        * "Also known as" and "Used in" sit directly under the description because both answer
+        * "what is this?", unlike "Learn more" and "Related rhythms" which are navigation. Each
+        * renders only when populated, so a rhythm with no sourced alternate name shows nothing
+        * rather than an empty row.
+        */}
+      {rhythm.alternateNames && rhythm.alternateNames.length > 0 && (
+        <p className="rhythm-info-aka">
+          <strong>Also known as:</strong>{' '}
+          {rhythm.alternateNames.map((alt, i) => (
+            <span key={alt.name} className="rhythm-info-aka-item">
+              {i > 0 && ', '}
+              <span className="rhythm-info-aka-name">{alt.name}</span>
+              {alt.script && <span className="rhythm-info-aka-script"> {alt.script}</span>}
+              {alt.context && <span className="rhythm-info-aka-context"> ({alt.context})</span>}
+            </span>
+          ))}
+        </p>
+      )}
+
+      {rhythm.usedIn && (
+        <p className="rhythm-info-used-in">
+          <strong>Used in:</strong> {rhythm.usedIn}
+        </p>
+      )}
       
       {/* Variations */}
       {rhythm.variations.length > 1 && (

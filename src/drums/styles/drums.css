@@ -4137,6 +4137,28 @@
     margin: 0 0 0.75rem 0;
   }
 
+  .rhythm-info-aka,
+  .rhythm-info-used-in {
+    margin: 0 0 0.5rem;
+    font-size: 0.875rem;
+    color: #4b5563;
+  }
+
+  .rhythm-info-aka strong,
+  .rhythm-info-used-in strong {
+    color: #374151;
+  }
+
+  /* Script and context are supporting detail; the name itself carries the weight. */
+  .rhythm-info-aka-script {
+    color: #6b7280;
+  }
+
+  .rhythm-info-aka-context {
+    color: #6b7280;
+    font-style: italic;
+  }
+
   .rhythm-variations-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));

@@ -31272,6 +31272,42 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-rhythm-middleeasternrhythms-ts-middle-eastern-rhythms",
+    "name": "MIDDLE_EASTERN_RHYTHMS",
+    "path": "src/shared/rhythm/middleEasternRhythms.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "rhythm-core",
+    "description": "Middle Eastern and Kurdish rhythms. Kept apart from the rest of the database because these entries carry the weight: transliterated alternate names in three scripts, citations to a specific printed source, and comments recording how each pattern was decoded. Editing one of these means checking a source, not just a pattern. Every `name` here is CANONICAL and matches the owner's teachers' books. Descriptions refer to rhythms by those canonical names only; other spellings belong in `alternateNames`, never in prose.",
+    "tags": [
+      "rhythm",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-rhythm-presetdatabase-ts-alternaterhythmname",
+    "name": "AlternateRhythmName",
+    "path": "src/shared/rhythm/presetDatabase.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "rhythm-core",
+    "description": "A name this rhythm also goes by. These traditions cross borders and scripts, so one pattern often carries several names — Baladi is Masmudi Saghir, Ayoub is Zar in Egypt. A learner who knows a rhythm by one name should be able to find it under the one this app uses. `name` is the alternate; the app's own `name` stays canonical and is what every description refers to, so the copy never drifts between synonyms.",
+    "tags": [
+      "rhythm",
+      "api"
+    ],
+    "appsUsing": [
+      "drums",
+      "ui",
+      "words"
+    ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
     "id": "src-shared-rhythm-presetdatabase-ts-findrhythmtemplatepresetbynotation",
     "name": "findRhythmTemplatePresetByNotation",
     "path": "src/shared/rhythm/presetDatabase.ts",
