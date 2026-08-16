@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
@@ -51,6 +51,72 @@ describe('media-slaved audio keeps playing in a hidden tab', () => {
     const tick = source.slice(source.indexOf('const runTick'), source.indexOf('const rafTick'));
     expect(tick).not.toContain('await');
     expect(source).toContain('warmAssets');
+  });
+
+  /*
+   * The list above is hand-maintained, and that is exactly how the drums app regressed: it names
+   * Stanza's two media-slaved drivers, so it passed for months while `PreciseScheduler` — the loop
+   * driver behind the drums player, the metronome engine and the look-ahead scheduler — was
+   * rAF-only. Switching tabs killed the drums, and this file said background playback was covered.
+   *
+   * This check is DERIVED instead: it finds every audio module that drives a loop with rAF and
+   * requires each to handle the hidden case. A new engine is enrolled by existing, not by someone
+   * remembering to add it here.
+   */
+  describe('every rAF-driven audio loop (derived, not listed)', () => {
+    const AUDIO_ROOTS = ['shared/audio', 'shared/rhythm'];
+
+    const walk = (dir: string, out: string[] = []): string[] => {
+      for (const entry of readdirSync(resolve(root, dir), { withFileTypes: true })) {
+        const rel = `${dir}/${entry.name}`;
+        if (entry.isDirectory()) {
+          if (entry.name === '__test__') continue;
+          walk(rel, out);
+        } else if (/\.ts$/.test(entry.name) && !/\.(test|spec)\.ts$/.test(entry.name)) {
+          out.push(rel);
+        }
+      }
+      return out;
+    };
+
+    /** Comments describe loops too ("Uses a requestAnimationFrame look-ahead loop"). Only read code. */
+    const stripComments = (src: string): string =>
+      src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+
+    /**
+     * rAF uses that are not playback loops. Exempting by name keeps the default "must handle
+     * hidden" — a new file is checked unless someone writes down why it should not be.
+     */
+    const NOT_A_PLAYBACK_LOOP: Record<string, string> = {
+      'shared/audio/latencyCalibration.ts':
+        'One-shot rAF yields inside an async measurement routine, not a self-re-arming loop. ' +
+        'Calibration only runs with the tab in front of you.',
+    };
+
+    const rafDrivers = AUDIO_ROOTS.flatMap((d) => walk(d)).filter((rel) => {
+      if (rel in NOT_A_PLAYBACK_LOOP) return false;
+      return /requestAnimationFrame\s*\(/.test(stripComments(read(rel)));
+    });
+
+    it('finds some to check', () => {
+      // Guards against the glob silently matching nothing, which would make the suite vacuous.
+      expect(rafDrivers.length).toBeGreaterThan(0);
+    });
+
+    it.each(rafDrivers)('%s survives a hidden tab', (rel) => {
+      const source = stripComments(read(rel));
+      // Delegating the loop to PreciseScheduler inherits its visible/hidden driver swap.
+      const delegatesToScheduler = /\.startLoop\s*\(/.test(source);
+      const hasOwnHiddenDriver =
+        /setInterval|setTimeout/.test(source) && source.includes('document.hidden');
+      expect(
+        delegatesToScheduler || hasOwnHiddenDriver,
+        `${rel} calls requestAnimationFrame, which does not fire in a hidden tab. Either drive ` +
+          `the loop through PreciseScheduler.startLoop (which swaps to a timer when hidden), or ` +
+          `add a timer driver gated on document.hidden. If this rAF is not a playback loop, add ` +
+          `the file to NOT_A_PLAYBACK_LOOP with a reason.`
+      ).toBe(true);
+    });
   });
 
   it('the shared metronome context is created once, not per play', () => {
