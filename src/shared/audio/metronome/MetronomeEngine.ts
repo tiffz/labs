@@ -23,6 +23,23 @@ import { buildSubdivisionGrid, type SubdivGridEntry } from './gridBuilder';
 
 const SCHEDULE_AHEAD_SEC = 0.25;
 
+/**
+ * Horizon while the tab is hidden.
+ *
+ * `PreciseScheduler` keeps the loop alive there with a timer, but browsers clamp background timers
+ * to roughly 1 Hz. A 0.25s horizon cannot survive a 1s gap between wakeups: `tick` would find
+ * itself past its own scheduled window every time and take the catch-up branch, which advances
+ * `nextSubdivIndex` over the missed beats. The metronome would not just gap, it would drop clicks
+ * and come back off the beat. Matches `RhythmPlayer.LOOK_AHEAD_HIDDEN_SEC`.
+ */
+const SCHEDULE_AHEAD_HIDDEN_SEC = 3.5;
+
+function scheduleAheadSec(): number {
+  return typeof document !== 'undefined' && document.hidden
+    ? SCHEDULE_AHEAD_HIDDEN_SEC
+    : SCHEDULE_AHEAD_SEC;
+}
+
 const DRUM_FOR_SUBDIVISION: Record<SubdivisionType, 'dum' | 'tak' | 'ka'> = {
   accent: 'dum',
   quarter: 'dum',
@@ -391,10 +408,11 @@ export class MetronomeEngine {
     if (!this.playing || !this.ctx) return;
 
     const now = this.ctx.currentTime;
-    const scheduleHorizon = now + SCHEDULE_AHEAD_SEC;
+    const lookAhead = scheduleAheadSec();
+    const scheduleHorizon = now + lookAhead;
 
     const gap = now - this.scheduledUpToTime;
-    if (gap > SCHEDULE_AHEAD_SEC * 2) {
+    if (gap > lookAhead * 2) {
       const subdivDur = this.subdivDuration(this.bpm);
       const missedSubdivs = Math.floor(gap / subdivDur);
       this.nextSubdivIndex += missedSubdivs;

@@ -167,6 +167,97 @@ describe('PreciseScheduler', () => {
     });
   });
 
+  /*
+   * A hidden tab stops firing requestAnimationFrame entirely, but keeps the AudioContext running.
+   * A rAF-only loop therefore stops scheduling, and the sound dies as soon as the already-queued
+   * look-ahead drains — which is what "switching tabs mutes the drums" was.
+   *
+   * Every engine in this repo drives its scheduling through PreciseScheduler.startLoop, so this is
+   * the one place the fallback belongs. Two of them had already grown a widened hidden-tab horizon
+   * (`RhythmPlayer.LOOK_AHEAD_HIDDEN_SEC`, `HIDDEN_TAB_LOOK_AHEAD_SEC`) which could never be
+   * reached, because the tick that reads it was the very thing that stopped running.
+   */
+  describe('hidden tab', () => {
+    /** Mimics a hidden tab: rAF is registered but never fires. */
+    const stubDeadRaf = () => {
+      vi.spyOn(globalThis, 'requestAnimationFrame').mockImplementation(() => 1);
+      vi.spyOn(globalThis, 'cancelAnimationFrame').mockImplementation(() => {});
+    };
+
+    const setHidden = (hidden: boolean) => {
+      Object.defineProperty(document, 'hidden', { value: hidden, configurable: true });
+      Object.defineProperty(document, 'visibilityState', {
+        value: hidden ? 'hidden' : 'visible',
+        configurable: true,
+      });
+      document.dispatchEvent(new Event('visibilitychange'));
+    };
+
+    afterEach(() => {
+      Object.defineProperty(document, 'hidden', { value: false, configurable: true });
+      Object.defineProperty(document, 'visibilityState', {
+        value: 'visible',
+        configurable: true,
+      });
+    });
+
+    it('keeps ticking when the tab is already hidden at start', () => {
+      stubDeadRaf();
+      Object.defineProperty(document, 'hidden', { value: true, configurable: true });
+      const tick = vi.fn();
+
+      scheduler.startLoop(tick);
+      vi.advanceTimersByTime(3000);
+
+      expect(tick.mock.calls.length).toBeGreaterThan(1);
+    });
+
+    it('keeps ticking after the tab becomes hidden mid-playback', () => {
+      stubDeadRaf();
+      const tick = vi.fn();
+
+      scheduler.startLoop(tick);
+      setHidden(true);
+      const countAtHide = tick.mock.calls.length;
+      vi.advanceTimersByTime(3000);
+
+      expect(tick.mock.calls.length).toBeGreaterThan(countAtHide);
+    });
+
+    it('stops ticking after stopLoop, even from the hidden driver', () => {
+      stubDeadRaf();
+      Object.defineProperty(document, 'hidden', { value: true, configurable: true });
+      const tick = vi.fn();
+
+      scheduler.startLoop(tick);
+      vi.advanceTimersByTime(2000);
+      scheduler.stopLoop();
+      const countAfterStop = tick.mock.calls.length;
+      vi.advanceTimersByTime(5000);
+
+      expect(tick.mock.calls.length).toBe(countAfterStop);
+    });
+
+    it('does not double-drive the loop while visible', () => {
+      // rAF drives the foreground. A timer running alongside it would tick twice per frame and
+      // schedule the same window twice.
+      const rafCbs: FrameRequestCallback[] = [];
+      vi.spyOn(globalThis, 'requestAnimationFrame').mockImplementation((cb) => {
+        rafCbs.push(cb);
+        return rafCbs.length;
+      });
+      vi.spyOn(globalThis, 'cancelAnimationFrame').mockImplementation(() => {});
+      const tick = vi.fn();
+
+      scheduler.startLoop(tick);
+      const countBefore = tick.mock.calls.length;
+      // Advance timers without pumping rAF: nothing should tick while visible.
+      vi.advanceTimersByTime(5000);
+
+      expect(tick.mock.calls.length).toBe(countBefore);
+    });
+  });
+
   // ---------------------------------------------------------------------------
   // Gain ramp-down
   // ---------------------------------------------------------------------------
