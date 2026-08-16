@@ -1,7 +1,7 @@
 import type { DrumSound, TimeSignature } from './types';
 import { getSixteenthsPerMeasure } from './timeSignatureUtils';
 import { parseRhythm } from './rhythmParser';
-import type { RhythmDefinition } from './presetDatabase';
+import type { RhythmDefinition, RhythmVariation } from './presetDatabase';
 
 /**
  * Guardrails for hand-authored rhythm presets (`RHYTHM_DATABASE`).
@@ -10,9 +10,10 @@ import type { RhythmDefinition } from './presetDatabase';
  * - Every pattern must parse cleanly for its time signature.
  * - Related rhythms with different bases must not copy/paste the same labeled variation
  *   (same `note` + time signature + notation) — catches Malfuf/Kahleegi-style mistakes.
- * - Variations whose `note` signals 8/8 ornamentation/anchors must match every **attack
- *   onset** in the reference pattern (dum/tak/ka/slap); extra ornamental attacks between
- *   those onsets are allowed.
+ * - Variations flagged `preservesReferenceBackbone` must match every **attack onset** in the
+ *   reference pattern (dum/tak/ka/slap); extra ornamental attacks between those onsets are
+ *   allowed. The flag is explicit so that rewording a variation's `note` cannot switch the
+ *   check off, which is exactly what the previous note-matching trigger allowed.
  */
 
 function timeSignaturesEqual(a: TimeSignature, b: TimeSignature): boolean {
@@ -135,13 +136,22 @@ export function referenceAttackSkeletonMatches(
   return { ok: true };
 }
 
-/** Only 8/8 (or explicit anchor) notes: avoids false positives on unrelated "ornamented" 2/4 lines. */
-const ORNAMENT_NOTE_PATTERN =
-  /(^8\/8.*(ornament|anchor))|quarter-note anchor|ka ornaments/i;
-
-function variationRequiresOrnamentBackboneCheck(note: string | undefined): boolean {
-  if (!note) return false;
-  return ORNAMENT_NOTE_PATTERN.test(note);
+/*
+ * Which variations must preserve the reference attack skeleton.
+ *
+ * This used to sniff the variation's `note` for /ka ornaments|quarter-note anchor|^8\/8.*ornament/.
+ * That tied a STRUCTURAL invariant to USER-FACING COPY: a routine rewording of the note text
+ * ("8/8 with ka ornaments" -> "With extra light strokes") silently switched the check off for
+ * every Malfuf and Kahleegi ornament line, with nothing failing to say so. The rule and the prose
+ * that happens to describe it are now separate things.
+ *
+ * The flag is opt-in rather than derived because "same meter as the base, different notation" is
+ * not the rule: Ayoub's "La Bass Fe Eyne" line deliberately swaps a dum for a tek and must stay
+ * legal. Only lines that claim to be the SAME rhythm with extra decoration are held to the
+ * skeleton.
+ */
+function variationRequiresOrnamentBackboneCheck(variation: RhythmVariation): boolean {
+  return variation.preservesReferenceBackbone === true;
 }
 
 function normalizeNotationForComparison(notation: string): string {
@@ -205,11 +215,11 @@ export function collectRhythmPresetIntegrityIssues(
         );
       }
 
-      if (variationRequiresOrnamentBackboneCheck(variation.note)) {
+      if (variationRequiresOrnamentBackboneCheck(variation)) {
         const refNotation = getPresetReferenceNotation(rhythm, vts);
         if (!refNotation) {
           issues.push(
-            `${rhythm.id}: variations[${index}] has ornament/anchor note but no reference pattern for ${vts.numerator}/${vts.denominator}`
+            `${rhythm.id}: variations[${index}] is flagged preservesReferenceBackbone but has no reference pattern for ${vts.numerator}/${vts.denominator}`
           );
           return;
         }

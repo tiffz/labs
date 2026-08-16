@@ -6,6 +6,38 @@ import {
   referenceAttackSkeletonMatches,
 } from './presetIntegrity';
 
+/*
+ * Both fixtures below plant Kahleegi's second dum inside Malfuf's ornamented line. Identify that
+ * line by its NOTATION, not by its note text: the note is user-facing copy and gets reworded, and
+ * an earlier version of these tests silently stopped planting anything when it did - the `.map`
+ * matched nothing, the fixture equalled the real database, and the assertions failed for a reason
+ * that had nothing to do with the invariant under test.
+ */
+const MALFUF_ORNAMENT_NOTATION = 'D-K-K-T-K-K-T-K-';
+const ornamentVariation = RHYTHM_DATABASE.malfuf.variations.find(
+  (v) => v.notation === MALFUF_ORNAMENT_NOTATION
+);
+if (!ornamentVariation?.note) {
+  // A bare non-null assertion here throws `Cannot read properties of undefined`, which takes the
+  // whole file down and says nothing about why. Name the missing thing instead.
+  throw new Error(
+    `presetIntegrity.test: no Malfuf variation ${MALFUF_ORNAMENT_NOTATION} with a note. ` +
+      `If that line was renumbered or removed, update MALFUF_ORNAMENT_NOTATION.`
+  );
+}
+const ORNAMENT_NOTE = ornamentVariation.note;
+
+function malfufWithKahleegiOrnamentLine() {
+  const planted = RHYTHM_DATABASE.malfuf.variations.map((v) =>
+    v.notation === MALFUF_ORNAMENT_NOTATION ? { ...v, notation: 'D-K-K-D-K-K-T-K-' } : v
+  );
+  // Fail loudly if the target line is ever renamed or removed, rather than testing nothing.
+  if (planted.every((v, i) => v.notation === RHYTHM_DATABASE.malfuf.variations[i].notation)) {
+    throw new Error(`Fixture planted nothing: no Malfuf variation ${MALFUF_ORNAMENT_NOTATION}`);
+  }
+  return { ...RHYTHM_DATABASE, malfuf: { ...RHYTHM_DATABASE.malfuf, variations: planted } };
+}
+
 describe('collectRhythmPresetIntegrityIssues', () => {
   it('reports no issues for the live rhythm database', () => {
     const issues = collectRhythmPresetIntegrityIssues(RHYTHM_DATABASE);
@@ -13,18 +45,7 @@ describe('collectRhythmPresetIntegrityIssues', () => {
   });
 
   it('flags identical labeled variations across related rhythms with different bases', () => {
-    const bad = {
-      ...RHYTHM_DATABASE,
-      malfuf: {
-        ...RHYTHM_DATABASE.malfuf,
-        variations: RHYTHM_DATABASE.malfuf.variations.map((v) =>
-          v.note === '8/8 with ka ornaments'
-            ? { ...v, notation: 'D-K-K-D-K-K-T-K-' }
-            : v
-        ),
-      },
-    };
-    const issues = collectRhythmPresetIntegrityIssues(bad);
+    const issues = collectRhythmPresetIntegrityIssues(malfufWithKahleegiOrnamentLine());
     expect(
       issues.some((m) =>
         m.includes('malfuf') && m.includes('kahleegi') && m.includes('copy/paste')
@@ -33,23 +54,12 @@ describe('collectRhythmPresetIntegrityIssues', () => {
   });
 
   it('flags ka-ornament lines that break the native backbone (Kahleegi stroke in a Malfuf slot)', () => {
-    const bad = {
-      ...RHYTHM_DATABASE,
-      malfuf: {
-        ...RHYTHM_DATABASE.malfuf,
-        variations: RHYTHM_DATABASE.malfuf.variations.map((v) =>
-          v.note === '8/8 with ka ornaments'
-            ? { ...v, notation: 'D-K-K-D-K-K-T-K-' }
-            : v
-        ),
-      },
-    };
-    const issues = collectRhythmPresetIntegrityIssues(bad);
+    const issues = collectRhythmPresetIntegrityIssues(malfufWithKahleegiOrnamentLine());
     expect(
       issues.some(
         (m) =>
           m.includes('malfuf') &&
-          m.includes('8/8 with ka ornaments') &&
+          m.includes(ORNAMENT_NOTE) &&
           m.includes('attack skeleton')
       )
     ).toBe(true);
@@ -193,6 +203,21 @@ describe('English-only user-facing text', () => {
   it('renders no Arabic, Persian or Kurdish script', () => {
     const offenders = displayed
       .filter(({ text }) => NON_LATIN.test(text))
+      .map(({ field, text }) => `${field}: "${text}"`);
+    expect(offenders).toEqual([]);
+  });
+
+  /*
+   * The repo bans em dashes in UI copy (docs/USER_COPY_STYLE.md), and `npm run check:ui-copy`
+   * enforces it — but that script walks `.tsx` files only, so this database has never been in its
+   * scope. An em dash sat in a variation note through a green presubmit.
+   *
+   * This checks the same rule where the copy actually lives. Extending check-ui-copy.mjs to `.ts`
+   * repo-wide would flag 96 pre-existing strings across 1,353 files and is the owner's call.
+   */
+  it('uses no em dashes in user-facing copy', () => {
+    const offenders = displayed
+      .filter(({ text }) => text.includes('—'))
       .map(({ field, text }) => `${field}: "${text}"`);
     expect(offenders).toEqual([]);
   });
