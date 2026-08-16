@@ -3,21 +3,31 @@ import type { RhythmDefinition } from './presetDatabase';
 /**
  * Middle Eastern and Kurdish rhythms.
  *
- * Kept apart from the rest of the database because these entries carry the weight: transliterated
- * alternate names in three scripts, citations to a specific printed source, and comments recording
- * how each pattern was decoded. Editing one of these means checking a source, not just a pattern.
+ * Kept apart from the rest of the database because these entries carry the weight: alternate names
+ * across several traditions, citations to a specific printed source, and comments recording how
+ * each pattern was decoded. Editing one of these means checking a source, not just a pattern.
  *
- * Every `name` here is CANONICAL and matches the owner's teachers' books. Descriptions refer to
- * rhythms by those canonical names only; other spellings belong in `alternateNames`, never in prose.
+ * Two rules for the user-facing text here:
+ *
+ * 1. **English only.** No Arabic, Persian or Kurdish script anywhere the reader sees it — the owner
+ *    does not read those scripts and will not publish text she cannot verify. Script belongs in
+ *    these comments, where it is provenance for the next editor, and it is glossed every time.
+ * 2. **Assume no background.** The reader has never heard of a daf, a zikr or a maqam. Any term
+ *    that is not plain English gets explained in the same sentence, or is cut.
+ *
+ * Every `name` is CANONICAL and matches the owner's teachers' books. Descriptions refer to rhythms
+ * by those names only; other spellings belong in `alternateNames`, never in prose. Where a source
+ * disagrees with the books, the books win in the copy and the disagreement is recorded here.
  */
 export const MIDDLE_EASTERN_RHYTHMS: Record<string, RhythmDefinition> = {
   maqsum: {
     id: 'maqsum',
     name: 'Maqsum',
-    description: 'One of the most common Middle Eastern rhythms.',
+    description:
+      'The most common rhythm in Arabic music. It carries most Egyptian pop songs and most belly dance.',
     alternateNames: [
-      { name: 'Maqsoum', context: 'common transliteration', script: 'مقسوم' },
-      { name: 'Maksum', context: 'common transliteration' },
+      { name: 'Maqsoum', context: 'common spelling' },
+      { name: 'Maksum', context: 'common spelling' },
     ],
     usedIn: 'Egyptian and Arabic pop, belly dance',
     learnMoreLinks: [
@@ -38,12 +48,14 @@ export const MIDDLE_EASTERN_RHYTHMS: Record<string, RhythmDefinition> = {
   saeidi: {
     id: 'saeidi',
     name: 'Saeidi',
-    description: 'An Egyptian rhythm from the Sa\'id, in Upper Egypt.',
+    description:
+      'A rhythm from Upper Egypt, the southern stretch of the Nile valley. Two low strokes in the ' +
+      'middle of the bar give it a heavier tread than Maqsum.',
     alternateNames: [
-      { name: "Sa'idi", context: 'common transliteration', script: 'صعيدي' },
-      { name: 'Saidi', context: 'common transliteration' },
+      { name: "Sa'idi", context: 'common spelling' },
+      { name: 'Saidi', context: 'common spelling' },
     ],
-    usedIn: 'Egyptian song, baladi dance',
+    usedIn: 'Egyptian folk song, belly dance',
     learnMoreLinks: [],
     basePattern: 'D-T-__D-D---T---',
     timeSignature: { numerator: 4, denominator: 4 },
@@ -60,12 +72,14 @@ export const MIDDLE_EASTERN_RHYTHMS: Record<string, RhythmDefinition> = {
   baladi: {
     id: 'baladi',
     name: 'Baladi',
-    description: 'A common Egyptian rhythm.',
+    description:
+      'An Egyptian rhythm whose name means "local", or "of the homeland". It opens with two low ' +
+      'strokes where Maqsum opens with a low and a high.',
     alternateNames: [
-      { name: 'Masmudi Saghir', context: 'the little Masmudi, vs Masmudi Kabir' },
-      { name: 'Beledi', context: 'common transliteration' },
+      { name: 'Masmudi Saghir', context: 'older, more formal name' },
+      { name: 'Beledi', context: 'common spelling' },
     ],
-    usedIn: 'Near Eastern Arabic vocal repertoire',
+    usedIn: 'Egyptian song, belly dance',
     learnMoreLinks: [{ title: 'Wikipedia: Baladi', url: 'https://en.wikipedia.org/wiki/Baladi' }],
     basePattern: 'D-D-__T-D---T---',
     timeSignature: { numerator: 4, denominator: 4 },
@@ -81,15 +95,16 @@ export const MIDDLE_EASTERN_RHYTHMS: Record<string, RhythmDefinition> = {
   ayoub: {
     id: 'ayoub',
     name: 'Ayoub',
-    description: 'Played across the Middle East.',
+    description:
+      'A short, driving two-beat rhythm played across the Middle East. Slow, it accompanies an ' +
+      'Egyptian ceremony held to heal illness. Fast, it drives the peak of a dance.',
     alternateNames: [
-      { name: 'Iqa Ayyub', context: 'Arabic iqa naming', script: 'إيقاع أيوب' },
-      { name: 'Zar', context: 'Egypt, after the healing ceremony' },
-      { name: 'Ayyub', context: 'common transliteration' },
+      { name: 'Ayyub', context: 'common spelling' },
+      { name: 'Zar', context: 'in Egypt, after the healing ceremony' },
     ],
-    usedIn: 'Sufi music, Egyptian zar ceremonies, fast dance sections',
+    usedIn: 'Sufi devotional music, Egyptian healing ceremonies, fast dance sections',
     learnMoreLinks: [
-      { title: 'Iqa Ayyub 2/4 — Maqam World', url: 'https://www.maqamworld.com/en/iqaa/ayyub.php' },
+      { title: 'Ayyub 2/4 — Maqam World', url: 'https://www.maqamworld.com/en/iqaa/ayyub.php' },
       { title: '30 Pieces For Daf and Frame Drum — Amir School of Music', url: 'https://www.amirschoolofmusic.com/store/p/pdf-30-pieces-book-1' },
     ],
     basePattern: 'D--KD-T-',
@@ -98,7 +113,7 @@ export const MIDDLE_EASTERN_RHYTHMS: Record<string, RhythmDefinition> = {
     variations: [
       { notation: 'D--KD-T-' },
       { notation: 'D-TKD-T-' },
-      { notation: 'D-TKT-D-', note: 'La Bass Fe Eyne variation' },
+      { notation: 'D-TKT-D-', note: 'From the song "La Bass Fe Eyne"' },
       { notation: 'D-KKD-T-', note: 'Variation from 30 Pieces For Daf and Frame Drum (Amir School of Music)' },
     ],
     relatedRhythmIds: ['daem', 'helgertin'],
@@ -106,15 +121,18 @@ export const MIDDLE_EASTERN_RHYTHMS: Record<string, RhythmDefinition> = {
   daem: {
     id: 'daem',
     name: 'Da-em',
-    description: 'A daf maqam. Played slow for zikr, fast for dance.',
+    description:
+      'A traditional piece for the daf, the large Kurdish frame drum strung with metal rings. ' +
+      'Played slowly it accompanies the repeated chanting of Sufi worship; played fast, dancing. ' +
+      'The name means "constant".',
     alternateNames: [
-      { name: "Da'em", context: 'Persian sources', script: 'دائم' },
-      { name: 'Dayim', context: 'Kurdish sources', script: 'دایم' },
+      { name: "Da'em", context: 'Persian spelling' },
+      { name: 'Dayim', context: 'Kurdish spelling' },
     ],
-    usedIn: 'Kurdish Sufi daf, Persian daf schools',
+    usedIn: 'Kurdish and Persian frame drumming, Sufi ceremonies',
     learnMoreLinks: [
       { title: 'Daff: A Sacred Symbol of Kurdish Culture and Spirituality — Kurdish Globe', url: 'https://kurdishglobe.krd/daff-a-sacred-symbol-of-kurdish-culture-and-spirituality/' },
-      { title: 'مقام‌های دف (Daf maqams) — Persian Wikipedia', url: 'https://fa.wikipedia.org/wiki/%D9%85%D9%82%D8%A7%D9%85%E2%80%8C%D9%87%D8%A7%DB%8C_%D8%AF%D9%81' },
+      { title: 'Daf pieces — Persian Wikipedia', url: 'https://fa.wikipedia.org/wiki/%D9%85%D9%82%D8%A7%D9%85%E2%80%8C%D9%87%D8%A7%DB%8C_%D8%AF%D9%81' },
       { title: '30 Pieces For Daf and Frame Drum — Amir School of Music', url: 'https://www.amirschoolofmusic.com/store/p/pdf-30-pieces-book-1' },
     ],
     basePattern: 'D-TKD-TK',
@@ -140,19 +158,26 @@ export const MIDDLE_EASTERN_RHYTHMS: Record<string, RhythmDefinition> = {
     id: 'helgertin',
     name: 'Helgertin',
     /*
-     * NOT a khanqah maqam, despite sitting beside them in the book. Kurdish Wikipedia lists
-     * ھەڵگرتن under ڕیتمەکانی دەف (daf RHYTHMS) rather than مەقامەکان, and says outright that
-     * calling these rhythms maqams is a mistake: "بەکارھێنانی وشەی مەقام بۆ ئەم ڕیتمانە ھەڵەیە".
-     * They go with helperkê dance and weddings, not zikr.
+     * Classification dispute, resolved in favour of the books.
+     *
+     * Kurdish Wikipedia lists this one under "daf rhythms" rather than "daf maqams" and says
+     * outright that calling these rhythms maqams is a mistake. The owner's book groups it with the
+     * other daf pieces, and the owner's rule is that her teachers' sources win a tie. So the copy
+     * calls it a daf piece, like Da-em and Haddadi.
+     *
+     * The one place the Wikipedia reading is followed is the setting: it names helperke dance and
+     * weddings rather than worship, and nothing in the book contradicts that.
      */
-    description: 'A Kurdish daf rhythm. The name means to lift.',
+    description:
+      'A daf piece played at Kurdish weddings and for helperke, a line dance in which people link ' +
+      'hands and step together. The name means "to lift".',
     alternateNames: [
-      { name: 'Helgirtin', context: 'Kurdish', script: 'ھەڵگرتن' },
-      { name: 'Hal gertan', context: 'Persian sources, written as two words', script: 'هلگرتن' },
+      { name: 'Helgirtin', context: 'Kurdish spelling' },
+      { name: 'Hal gertan', context: 'Persian spelling, written as two words' },
     ],
-    usedIn: 'Kurdish helperkê dance, weddings',
+    usedIn: 'Kurdish weddings, line dancing',
     learnMoreLinks: [
-      { title: 'مەقامەکانی دەف (Daf maqams) — Kurdish Wikipedia', url: 'https://ckb.wikipedia.org/wiki/%D9%85%DB%95%D9%82%D8%A7%D9%85%DB%95%DA%A9%D8%A7%D9%86%DB%8C_%D8%AF%DB%95%D9%81' },
+      { title: 'Daf pieces — Kurdish Wikipedia', url: 'https://ckb.wikipedia.org/wiki/%D9%85%DB%95%D9%82%D8%A7%D9%85%DB%95%DA%A9%D8%A7%D9%86%DB%8C_%D8%AF%DB%95%D9%81' },
       { title: '30 Pieces For Daf and Frame Drum — Amir School of Music', url: 'https://www.amirschoolofmusic.com/store/p/pdf-30-pieces-book-1' },
     ],
     /*
@@ -160,8 +185,7 @@ export const MIDDLE_EASTERN_RHYTHMS: Record<string, RhythmDefinition> = {
      * measure — two invariants require it (`presetIntegrity`: variations must be exactly one
      * measure; `rhythmRecognition`: basePattern must appear among variations), and Maqsum already
      * follows the same convention for its 16-sixteenth cycle. The grid is identical either way:
-     * 16 sixteenths is one 4/4 bar or two 2/4 bars. The felt pulse is still 2/4, which the
-     * description says.
+     * 16 sixteenths is one 4/4 bar or two 2/4 bars.
      */
     basePattern: 'D-TKD-T-TTK-D-T-',
     timeSignature: { numerator: 4, denominator: 4 },
@@ -174,15 +198,17 @@ export const MIDDLE_EASTERN_RHYTHMS: Record<string, RhythmDefinition> = {
     id: 'haddadi',
     name: 'Haddadi',
     /*
-     * Distinct from Ghawsi (غەوسی, 2/8), which one widely-copied cassette of Seyid Ata Salamiya
-     * mislabelled as Haddadi. Kurdish Wikipedia footnotes the error: "مەقامی غەوسی بە حەدادی ناو
-     * ھێنراوە کە ئەم دوانە جیان لەیەک".
+     * Distinct from Ghawsi (2/8), which one widely-copied cassette of Seyid Ata Salamiya
+     * mislabelled as Haddadi. Kurdish Wikipedia footnotes the error, glossing to: "the Ghawsi
+     * maqam has been called Haddadi, but the two are separate".
      */
-    description: 'A daf maqam. Its two halves answer each other, low then high.',
-    alternateNames: [{ name: 'Hedadi', context: 'Kurdish sources', script: 'حەدادی' }],
-    usedIn: 'Kurdish Sufi daf, khanqah zikr',
+    description:
+      'A daf piece in two halves that answer each other, the first low and the second high. ' +
+      'Played in the lodge where a Sufi order gathers to worship.',
+    alternateNames: [{ name: 'Hedadi', context: 'Kurdish spelling' }],
+    usedIn: 'Kurdish frame drumming, Sufi ceremonies',
     learnMoreLinks: [
-      { title: 'مەقامەکانی دەف (Daf maqams) — Kurdish Wikipedia', url: 'https://ckb.wikipedia.org/wiki/%D9%85%DB%95%D9%82%D8%A7%D9%85%DB%95%DA%A9%D8%A7%D9%86%DB%8C_%D8%AF%DB%95%D9%81' },
+      { title: 'Daf pieces — Kurdish Wikipedia', url: 'https://ckb.wikipedia.org/wiki/%D9%85%DB%95%D9%82%D8%A7%D9%85%DB%95%DA%A9%D8%A7%D9%86%DB%8C_%D8%AF%DB%95%D9%81' },
       { title: 'Daff: A Sacred Symbol of Kurdish Culture and Spirituality — Kurdish Globe', url: 'https://kurdishglobe.krd/daff-a-sacred-symbol-of-kurdish-culture-and-spirituality/' },
       { title: '30 Pieces For Daf and Frame Drum — Amir School of Music', url: 'https://www.amirschoolofmusic.com/store/p/pdf-30-pieces-book-1' },
     ],
@@ -194,14 +220,16 @@ export const MIDDLE_EASTERN_RHYTHMS: Record<string, RhythmDefinition> = {
   malfuf: {
     id: 'malfuf',
     name: 'Malfuf',
-    description: 'An additive rhythm grouped 3+3+2.',
+    description:
+      'Eight quick counts grouped 3–3–2, so the accents land unevenly. One low stroke opens each ' +
+      'cycle. Often used to walk a dancer on or off stage.',
     alternateNames: [
-      { name: 'Malfouf', context: 'common transliteration', script: 'ملفوف' },
-      { name: 'Laff', context: 'same root, to wrap', script: 'لفّ' },
+      { name: 'Malfouf', context: 'common spelling' },
+      { name: 'Laff', context: 'shorter form of the same word' },
     ],
-    usedIn: 'Entrances and exits in Arabic dance, Turkish and Balkan 3+3+2 dances',
+    usedIn: 'Entrances and exits in Arabic dance',
     learnMoreLinks: [
-      { title: 'Iqa Malfuf 2/4 — Maqam World', url: 'https://www.maqamworld.com/en/iqaa/malfuf.php' },
+      { title: 'Malfuf 2/4 — Maqam World', url: 'https://www.maqamworld.com/en/iqaa/malfuf.php' },
     ],
     basePattern: 'D-----T-----T---',
     timeSignature: { numerator: 8, denominator: 8 },
@@ -220,12 +248,14 @@ export const MIDDLE_EASTERN_RHYTHMS: Record<string, RhythmDefinition> = {
   kahleegi: {
     id: 'kahleegi',
     name: 'Kahleegi',
-    description: 'A 3+3+2 rhythm paired with Malfuf. Two dums where Malfuf has one.',
+    description:
+      'The same 3–3–2 grouping as Malfuf, but with two low strokes instead of one. Named for the ' +
+      'Persian Gulf, and played for a Gulf dance built on swinging hair and long dresses.',
     alternateNames: [
-      { name: 'Khaleeji', context: 'common transliteration, of the Gulf', script: 'خليجي' },
+      { name: 'Khaleeji', context: 'common spelling' },
       { name: 'Khaleegy', context: 'spelling used for the dance' },
     ],
-    usedIn: 'Gulf khaleegy dance and song',
+    usedIn: 'Gulf dance and song',
     learnMoreLinks: [
       { title: 'Wikipedia: Khaleegy (dance)', url: 'https://en.wikipedia.org/wiki/Khaleegy_(dance)' },
     ],

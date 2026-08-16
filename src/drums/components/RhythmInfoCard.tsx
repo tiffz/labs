@@ -108,7 +108,6 @@ const RhythmInfoCard: React.FC<RhythmInfoCardProps> = ({
             <span key={alt.name} className="rhythm-info-aka-item">
               {i > 0 && ', '}
               <span className="rhythm-info-aka-name">{alt.name}</span>
-              {alt.script && <span className="rhythm-info-aka-script"> {alt.script}</span>}
               {alt.context && <span className="rhythm-info-aka-context"> ({alt.context})</span>}
             </span>
           ))}
