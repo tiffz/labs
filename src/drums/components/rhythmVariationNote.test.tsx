@@ -5,26 +5,48 @@ import RhythmInfoCard from './RhythmInfoCard';
 import { RHYTHM_DATABASE } from '../data/rhythmDatabase';
 
 /**
- * Provenance text must not set a variation card's height.
+ * One convention for every variation note.
  *
- * Rendering `variation.note` inline made the citation
- * "Variation from 30 Pieces For Daf and Frame Drum (Amir School of Music)" wrap to three lines,
- * leaving that card visibly taller than its neighbours in the same grid row. Citations are
- * secondary information and will only get longer as sources are added.
+ * Notes were previously rendered inline inside the card, which made a long citation set the card's
+ * height and left short and long notes behaving differently. Now every note lives in a tooltip on
+ * the card itself, with a decorative Material icon advertising that it exists.
  *
- * The split is by LENGTH, not presence: short captions stay inline because they are glanceable
- * labels that cost nothing, and hiding them would be a regression in its own right.
+ * The regression this pins: the inline text was also what gave these controls their ACCESSIBLE
+ * NAME. Removing it left them unnamed for screen readers, because the notation is an SVG and the
+ * icon is aria-hidden. The name is now set explicitly and no longer depends on what happens to be
+ * rendered inside the control.
  */
-describe('variation note affordance', () => {
-  it('short captions stay inline; long citations move behind an info trigger', () => {
-    const ayoub = RHYTHM_DATABASE.ayoub;
-    render(<RhythmInfoCard rhythm={ayoub} currentNotation={ayoub.basePattern} onSelectVariation={() => {}} />);
-    // Short caption still visible as text.
-    expect(screen.getByText('La Bass Fe Eyne variation')).toBeInTheDocument();
-    // Long citation is NOT inline text...
-    expect(screen.queryByText(/Variation from 30 Pieces For Daf/)).toBeNull();
-    // ...it is reachable via a labelled trigger.
-    const info = screen.getByRole('button', { name: /About this variation: Variation from 30 Pieces For Daf/ });
-    expect(info).toBeInTheDocument();
+describe('variation notes', () => {
+  const ayoub = RHYTHM_DATABASE.ayoub;
+
+  it('names every variation control, with the note when there is one', () => {
+    render(
+      <RhythmInfoCard rhythm={ayoub} currentNotation={ayoub.basePattern} onSelectVariation={() => {}} />
+    );
+    // A note-carrying variation includes its note in the accessible name.
+    expect(
+      screen.getByRole('link', { name: /Variation D-TKT-D-: La Bass Fe Eyne variation/i })
+    ).toBeInTheDocument();
+    // A variation without a note is still named by its notation, never unnamed.
+    expect(screen.getByRole('link', { name: /^Variation D-TKD-T-$/i })).toBeInTheDocument();
+  });
+
+  it('does not render note text inline, so it cannot set the card height', () => {
+    render(
+      <RhythmInfoCard rhythm={ayoub} currentNotation={ayoub.basePattern} onSelectVariation={() => {}} />
+    );
+    // Present as an accessible name (above), absent as laid-out text.
+    expect(screen.queryByText('La Bass Fe Eyne variation')).toBeNull();
+  });
+
+  it('marks note-carrying variations with a decorative icon', () => {
+    const { container } = render(
+      <RhythmInfoCard rhythm={ayoub} currentNotation={ayoub.basePattern} onSelectVariation={() => {}} />
+    );
+    const icons = container.querySelectorAll('.rhythm-variation-info');
+    const withNotes = ayoub.variations.filter((v) => v.note).length;
+    expect(icons.length).toBe(withNotes);
+    // Decorative: the tooltip on the card carries the text, so the icon must not be announced.
+    icons.forEach((icon) => expect(icon.getAttribute('aria-hidden')).toBe('true'));
   });
 });

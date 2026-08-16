@@ -4160,29 +4160,31 @@
     flex: 1 1 auto;
   }
 
+  /*
+   * Decorative marker, not a control: the tooltip is on the card itself, so this only advertises
+   * that a note exists. It is `aria-hidden` in the markup and deliberately has no hit target of
+   * its own — a 24px button here would be a second tab stop for text already reachable by
+   * focusing the card.
+   */
   .rhythm-variation-info {
     position: absolute;
-    top: 0.25rem;
-    right: 0.25rem;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    /* 24px is the coarse-pointer floor enforced by the responsive smoke. */
-    min-width: 24px;
-    min-height: 24px;
-    padding: 0;
-    border: 0;
-    border-radius: 999px;
-    background: transparent;
-    color: #6b7280;
-    font-size: 0.9rem;
+    top: 0.375rem;
+    right: 0.375rem;
+    /* Material Symbols optical size; matches the 18dp icon in the Material spec. */
+    font-size: 18px;
     line-height: 1;
-    cursor: pointer;
+    color: #9ca3af;
+    pointer-events: none;
   }
 
-  .rhythm-variation-info:hover,
-  .rhythm-variation-info:focus-visible {
+  .rhythm-variation-cell:hover .rhythm-variation-info,
+  .rhythm-variation-cell:focus-within .rhythm-variation-info {
     color: var(--primary-purple);
+  }
+
+  /* The card is the hover target, so it needs to be the positioning context. */
+  .rhythm-variation-cell > .palette-button {
+    position: relative;
   }
 
   /* Current variation styling - uses same base as palette-button */
