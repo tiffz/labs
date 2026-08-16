@@ -14,11 +14,21 @@ import type { RhythmDefinition } from './presetDatabase';
  *    these comments, where it is provenance for the next editor, and it is glossed every time.
  * 2. **Assume no background.** The reader has never heard of a daf, a zikr or a maqam. Any term
  *    that is not plain English gets explained in the same sentence, or is cut.
- * 3. **Claim only what is checkable.** Every sentence must be either arithmetic anyone can do
- *    against the pattern above it, or a near-paraphrase of a source in `learnMoreLinks`. The owner
- *    is a student of this music, not an authority on it, and would rather the app say less than
- *    say something she cannot stand behind. When a fact is interesting but unverified, it goes in
- *    a comment here, not in the copy. Cut, do not hedge.
+ * 3. **Claim only what is checkable, and check it against the good sources.** Every sentence must
+ *    be either arithmetic anyone can do against the pattern above it, or a near-paraphrase of an
+ *    AUTHORITATIVE source: Maqam World, Wikipedia in any language, or the owner's teachers' books.
+ *    The owner is a student of this music, not an authority on it, and would rather the app say
+ *    less than say something she cannot stand behind. When a fact is interesting but unverified, it
+ *    goes in a comment here, not in the copy. Cut, do not hedge. Do not state a superlative in the
+ *    app's own voice just because one source asserts it; soften and let the link carry it.
+ *
+ *    An `alternateNames` context must EARN its space by distinguishing that name from the
+ *    others: which tradition it belongs to, or what it means. "common spelling" was true of
+ *    almost every entry, so it told the reader nothing. Omit the context instead.
+ *
+ *    `learnMoreLinks` is a READING LIST, not the evidence base. Hobbyist and vendor pages
+ *    (Darbuka Planet, Sharqi Dance, The Troupe) belong there and are often more use to a student
+ *    than an encyclopedia entry, but nothing in a description may rest on them.
  * 4. **No usage in the description.** `usedIn` carries it. The two render one under the other, so
  *    saying it twice is visible at a glance.
  *
@@ -30,16 +40,28 @@ export const MIDDLE_EASTERN_RHYTHMS: Record<string, RhythmDefinition> = {
   maqsum: {
     id: 'maqsum',
     name: 'Maqsum',
-    // Near-quote of Maqam World: "by far the most widely used iqa' in Arabic music."
-    description: 'The most widely used rhythm in Arabic music.',
+    /*
+     * Three other entries define themselves against Maqsum, so it has to say what it IS, not just
+     * that it is popular. Stroke placement verified against the pattern below: lows at ticks 0 and
+     * 8 (beats 1 and 3), highs at 2, 6 and 12.
+     *
+     * The superlative was softened. Maqam World says "by far the most widely used iqa' in Arabic
+     * music", but that is one source's claim and the app should not repeat it in its own voice.
+     * The link carries the stronger version.
+     */
+    description:
+      'One of the most common rhythms in Arabic music. Low strokes on beats 1 and 3, with high ' +
+      'strokes filling between them.',
     alternateNames: [
-      { name: 'Maqsoum', context: 'common spelling' },
-      { name: 'Maksum', context: 'common spelling' },
+      { name: 'Maqsoum' },
+      { name: 'Maksum' },
     ],
     usedIn: 'Egyptian and Arabic pop, belly dance',
     learnMoreLinks: [
       { title: 'Maqam World: Maqsum 4/4', url: 'https://www.maqamworld.com/en/iqaa/maqsum.php' },
       { title: 'Wikipedia: Maqsoum', url: 'https://en.wikipedia.org/wiki/Maqsoum' },
+      { title: 'Darbuka Planet: Maqsum rhythm', url: 'https://www.darbukaplanet.com/pages/darbuka-maqsum-rhythm' },
+      { title: 'Amir School of Music: Mastering Darbuka', url: 'https://www.amirschoolofmusic.com/store/p/pdf-mastering-darbuka-1' },
     ],
     basePattern: 'D-T-__T-D---T---',
     timeSignature: { numerator: 4, denominator: 4 },
@@ -63,15 +85,17 @@ export const MIDDLE_EASTERN_RHYTHMS: Record<string, RhythmDefinition> = {
      * then D.
      */
     description:
-      'A rhythm from Upper Egypt, the southern stretch of the Nile valley. Two low strokes in ' +
-      'the middle of the bar, where Maqsum has one.',
+      'A rhythm from Upper Egypt, the southern stretch of the Nile valley. Like Maqsum, but with ' +
+      'two low strokes running into the middle of the bar where Maqsum has one.',
     alternateNames: [
-      { name: "Sa'idi", context: 'common spelling' },
-      { name: 'Saidi', context: 'common spelling' },
+      { name: "Sa'idi" },
+      { name: 'Saidi' },
     ],
     usedIn: 'Egyptian folk song, belly dance',
     learnMoreLinks: [
       { title: "Maqam World: Sa'idi 4/4", url: 'https://www.maqamworld.com/en/iqaa/saidi.php' },
+      { title: 'Sharqi Dance: Saidi rhythm', url: 'https://www.sharqidance.com/blog/saidi-rhythm' },
+      { title: 'Amir School of Music: Mastering Darbuka', url: 'https://www.amirschoolofmusic.com/store/p/pdf-mastering-darbuka-1' },
     ],
     basePattern: 'D-T-__D-D---T---',
     timeSignature: { numerator: 4, denominator: 4 },
@@ -94,18 +118,19 @@ export const MIDDLE_EASTERN_RHYTHMS: Record<string, RhythmDefinition> = {
      * is close to the opposite register.
      */
     description:
-      'An Egyptian rhythm whose name means "local". It opens with two low strokes where Maqsum ' +
-      'opens with a low and a high.',
+      'An Egyptian rhythm whose name means roughly "folk", or "of the country". It opens with ' +
+      'two low strokes where Maqsum opens with a low and a high.',
     alternateNames: [
       // Maqam World: saghir is "little", distinguishing it from the longer Masmudi Kabir. A size
       // contrast, not an age one - no source calls this the older name.
-      { name: 'Masmudi Saghir', context: 'the small Masmudi, beside the longer Masmudi Kabir' },
-      { name: 'Beledi', context: 'common spelling' },
+      { name: 'Masmudi Saghir', context: 'traditional name, meaning the small Masmudi' },
+      { name: 'Beledi' },
     ],
     usedIn: 'Egyptian song, belly dance',
     learnMoreLinks: [
       { title: 'Maqam World: Baladi 4/4', url: 'https://www.maqamworld.com/en/iqaa/baladi.php' },
       { title: 'Wikipedia: Baladi', url: 'https://en.wikipedia.org/wiki/Baladi' },
+      { title: 'Darbuka Planet: Baladi rhythm', url: 'https://www.darbukaplanet.com/pages/baladi-rhythm' },
     ],
     basePattern: 'D-D-__T-D---T---',
     timeSignature: { numerator: 4, denominator: 4 },
@@ -139,14 +164,15 @@ export const MIDDLE_EASTERN_RHYTHMS: Record<string, RhythmDefinition> = {
      * The description now paraphrases only the Maqam World sentence on usage. The Zar connection
      * survives as what it actually is: a nickname, in `alternateNames`.
      */
-    description: 'A short two-beat rhythm that cycles quickly.',
+    description: 'A short, quick two-beat rhythm. Low on 1, low on 2, then a high just after.',
     alternateNames: [
-      { name: 'Ayyub', context: 'common spelling' },
-      { name: 'Zar', context: 'a nickname in Egypt, after a ceremony of that name' },
+      { name: 'Ayyub' },
+      { name: 'Zar', context: 'a nickname in Egypt, after a women-led spirit ceremony' },
     ],
-    usedIn: 'Sufi music, folk music, belly dance',
+    usedIn: 'Sufi devotional music, folk music, belly dance',
     learnMoreLinks: [
       { title: 'Maqam World: Ayyub 2/4', url: 'https://www.maqamworld.com/en/iqaa/ayyub.php' },
+      { title: 'Darbuka Planet: Ayoub rhythm', url: 'https://www.darbukaplanet.com/pages/ayoub-darbuka-rhythm' },
       { title: 'Amir School of Music: 30 Pieces For Daf and Frame Drum', url: 'https://www.amirschoolofmusic.com/store/p/pdf-30-pieces-book-1' },
     ],
     basePattern: 'D--KD-T-',
@@ -177,13 +203,13 @@ export const MIDDLE_EASTERN_RHYTHMS: Record<string, RhythmDefinition> = {
      * meaning that, which is exactly what is known.
      */
     description:
-      'A traditional piece for the daf, the large frame drum of Kurdish and Iranian music, ' +
-      'strung with metal rings. The name comes from a word meaning "constant".',
+      'A rhythm for the daf, a large frame drum hung with metal rings, played in Kurdish and ' +
+      'Iranian music. Two identical halves: low, high, light. The name is Arabic for "constant".',
     alternateNames: [
-      { name: "Da'em", context: 'also spelled' },
-      { name: 'Dayim', context: 'also spelled' },
+      { name: "Da'em" },
+      { name: 'Dayim' },
     ],
-    usedIn: 'Kurdish and Iranian frame drumming, Sufi gatherings',
+    usedIn: 'Kurdish and Iranian frame drumming, Sufi devotional gatherings',
     learnMoreLinks: [
       { title: 'Kurdish Globe: Daff, a sacred symbol of Kurdish culture', url: 'https://kurdishglobe.krd/daff-a-sacred-symbol-of-kurdish-culture-and-spirituality/' },
       { title: 'Persian Wikipedia: daf pieces', url: 'https://fa.wikipedia.org/wiki/%D9%85%D9%82%D8%A7%D9%85%E2%80%8C%D9%87%D8%A7%DB%8C_%D8%AF%D9%81' },
@@ -228,13 +254,13 @@ export const MIDDLE_EASTERN_RHYTHMS: Record<string, RhythmDefinition> = {
      * The etymology is solid - Kurdish Wiktionary gives hilgirtin as "to lift, to raise".
      */
     description:
-      'A daf piece whose name comes from a word meaning "to lift". Kurdish sources connect it to ' +
-      'helperke, a form of circle dancing.',
+      'A daf rhythm that opens much like Da-em, then answers with a run of high strokes. The ' +
+      'name is Kurdish for "to lift".',
     alternateNames: [
       { name: 'Helgirtin', context: 'Kurdish spelling' },
-      { name: 'Hal gerten', context: 'Persian spelling, written as two words' },
+      { name: 'Hal gerten', context: 'Persian spelling' },
     ],
-    usedIn: 'Kurdish frame drumming, circle dancing',
+    usedIn: 'Kurdish frame drumming, circle dancing at weddings',
     learnMoreLinks: [
       { title: 'Kurdish Wikipedia: daf pieces', url: 'https://ckb.wikipedia.org/wiki/%D9%85%DB%95%D9%82%D8%A7%D9%85%DB%95%DA%A9%D8%A7%D9%86%DB%8C_%D8%AF%DB%95%D9%81' },
       { title: 'Wikipedia: Kurdish dance', url: 'https://en.wikipedia.org/wiki/Kurdish_dance' },
@@ -266,9 +292,10 @@ export const MIDDLE_EASTERN_RHYTHMS: Record<string, RhythmDefinition> = {
      * No etymology is claimed. Haddad means blacksmith, but nothing found connects that to the
      * rhythm, so the copy stays quiet about it.
      */
-    description: 'A daf piece in two halves: the first led by low strokes, the second by high.',
+    description:
+      'A daf rhythm in two answering halves. Low, low, light. Then high, high, light.',
     alternateNames: [{ name: 'Hedadi', context: 'Kurdish spelling' }],
-    usedIn: 'Kurdish frame drumming, Sufi gatherings',
+    usedIn: 'Kurdish frame drumming, Sufi devotional gatherings',
     learnMoreLinks: [
       { title: 'Kurdish Wikipedia: daf pieces', url: 'https://ckb.wikipedia.org/wiki/%D9%85%DB%95%D9%82%D8%A7%D9%85%DB%95%DA%A9%D8%A7%D9%86%DB%8C_%D8%AF%DB%95%D9%81' },
       { title: 'Kurdish Globe: Daff, a sacred symbol of Kurdish culture', url: 'https://kurdishglobe.krd/daff-a-sacred-symbol-of-kurdish-culture-and-spirituality/' },
@@ -293,15 +320,16 @@ export const MIDDLE_EASTERN_RHYTHMS: Record<string, RhythmDefinition> = {
      * fix. Raised with the owner; not changed unilaterally.
      */
     description:
-      'An Arabic rhythm of eight counts grouped 3+3+2. The name comes from a word meaning ' +
-      '"wrapped".',
+      'An Arabic rhythm of eight quick counts grouped 3+3+2. Just three strokes: low, high, ' +
+      'high. The name is Arabic for "wrapped".',
     alternateNames: [
-      { name: 'Malfouf', context: 'common spelling' },
+      { name: 'Malfouf' },
       { name: 'Laff', context: 'from the same root, meaning to wrap' },
     ],
     usedIn: 'Arabic dance entrances and exits',
     learnMoreLinks: [
       { title: 'Maqam World: Malfuf 2/4', url: 'https://www.maqamworld.com/en/iqaa/malfuf.php' },
+      { title: 'The Troupe: Malfuf and Kahleegi', url: 'https://threewinds.wordpress.com/rhythm-24-the-malfuf-and-kahleegi/' },
     ],
     basePattern: 'D-----T-----T---',
     timeSignature: { numerator: 8, denominator: 8 },
@@ -312,8 +340,8 @@ export const MIDDLE_EASTERN_RHYTHMS: Record<string, RhythmDefinition> = {
       { notation: 'D-K-K-T-K-K-T-K-', note: 'With extra light strokes', preservesReferenceBackbone: true, timeSignature: { numerator: 8, denominator: 8 } },
       { notation: 'D---K-T---K-T---', note: 'On the quarter notes', preservesReferenceBackbone: true, timeSignature: { numerator: 8, denominator: 8 } },
       { notation: 'D--T--T-', note: 'In 2/4', timeSignature: { numerator: 2, denominator: 4 } },
-      { notation: 'D-KT-KT-', note: 'In 2/4, ornamented', timeSignature: { numerator: 2, denominator: 4 } },
-      { notation: 'DKKTKKTK', note: 'In 2/4, dense', timeSignature: { numerator: 2, denominator: 4 } },
+      { notation: 'D-KT-KT-', note: 'In 2/4, with extra light strokes', timeSignature: { numerator: 2, denominator: 4 } },
+      { notation: 'DKKTKKTK', note: 'In 2/4, every count filled', timeSignature: { numerator: 2, denominator: 4 } },
     ],
     relatedRhythmIds: ['kahleegi'],
   },
@@ -333,15 +361,16 @@ export const MIDDLE_EASTERN_RHYTHMS: Record<string, RhythmDefinition> = {
      * Same meter note as Malfuf - sources say 2/4; 8/8 kept because it drives behaviour.
      */
     description:
-      'One of several rhythms from the Gulf. It uses the same 3+3+2 grouping as Malfuf, with two ' +
-      'low strokes where Malfuf has one.',
+      'A rhythm from eastern Arabia, the Gulf coast of the Arabian peninsula. The same 3+3+2 ' +
+      'grouping as Malfuf, but low, low, high instead of low, high, high.',
     alternateNames: [
-      { name: 'Khaleeji', context: 'common spelling; means "of the Gulf"' },
+      { name: 'Khaleeji', context: 'means "of the Gulf"' },
       { name: 'Khaleegy', context: 'spelling used for the dance' },
     ],
     usedIn: 'Gulf dance and song',
     learnMoreLinks: [
       { title: 'Wikipedia: Khaleegy (dance)', url: 'https://en.wikipedia.org/wiki/Khaleegy_(dance)' },
+      { title: 'The Troupe: Malfuf and Kahleegi', url: 'https://threewinds.wordpress.com/rhythm-24-the-malfuf-and-kahleegi/' },
     ],
     basePattern: 'D-----D-----T---',
     timeSignature: { numerator: 8, denominator: 8 },
@@ -352,7 +381,7 @@ export const MIDDLE_EASTERN_RHYTHMS: Record<string, RhythmDefinition> = {
       { notation: 'D-K-K-D-K-K-T-K-', note: 'With extra light strokes', preservesReferenceBackbone: true, timeSignature: { numerator: 8, denominator: 8 } },
       { notation: 'D---K-D---K-T---', note: 'On the quarter notes', preservesReferenceBackbone: true, timeSignature: { numerator: 8, denominator: 8 } },
       { notation: 'D--D--T-', note: 'In 2/4', timeSignature: { numerator: 2, denominator: 4 } },
-      { notation: 'DK-D--K-', note: 'In 2/4, ornamented', timeSignature: { numerator: 2, denominator: 4 } },
+      { notation: 'DK-D--K-', note: 'In 2/4, with extra light strokes', timeSignature: { numerator: 2, denominator: 4 } },
     ],
     relatedRhythmIds: ['malfuf'],
   },
