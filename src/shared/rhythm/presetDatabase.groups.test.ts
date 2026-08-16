@@ -16,8 +16,10 @@ describe('getRhythmPresetFamilies', () => {
     const me88 = middleEastern?.meterGroups.find((group) => group.meterLabel === '6/8');
     const meEightEight = middleEastern?.meterGroups.find((group) => group.meterLabel === '8/8');
 
-    expect(me44?.presetIds.sort()).toEqual(['baladi', 'maqsum', 'saeidi'].sort());
-    expect(me24?.presetIds).toEqual(['ayoub', 'daem']);
+    // Helgertin's full cycle is 16 sixteenths, so it lives in 4/4 with Maqsum — the source writes
+    // it as two 2/4 measures, which is the same grid. See its comment in presetDatabase.
+    expect(me44?.presetIds.sort()).toEqual(['baladi', 'helgertin', 'maqsum', 'saeidi'].sort());
+    expect(me24?.presetIds).toEqual(['ayoub', 'daem', 'haddadi']);
     expect(me88).toBeUndefined();
     expect(meEightEight?.presetIds.sort()).toEqual(['kahleegi', 'malfuf'].sort());
   });

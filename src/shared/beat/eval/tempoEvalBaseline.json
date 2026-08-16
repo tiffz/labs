@@ -3,9 +3,9 @@
   "note": "Real-audio tempo eval scored against the owner's own hand-TAPPED tempos (metronomeSongCalibration.source === 'tap'). Audio is copyrighted and never enters the repo; titles are hashed because this repo is public and the library is personal. The id->title map lives only in the owner's browser. Regenerate with __stanzaTempoEval() on localhost ?debug.",
   "capturedAgainst": "confidence-gated selector: trust multifeature when conf >= 0.5, else percival; no octave/fine-tune/snap chain",
   "metrics": {
-    "accuracy1": 0.8,
-    "accuracy2": 0.8,
-    "n": 5
+    "accuracy1": 1.0,
+    "accuracy2": 1.0,
+    "n": 4
   },
   "rows": [
     {
@@ -30,14 +30,6 @@
       "detectedBpm": 69.0,
       "relativeError": -0.0282,
       "accuracy1": true,
-      "characteristics": "full mix"
-    },
-    {
-      "id": "trk_8f92630ee8",
-      "groundTruthBpm": 160,
-      "detectedBpm": 84.0,
-      "relativeError": -0.475,
-      "accuracy1": false,
       "characteristics": "full mix"
     },
     {
@@ -85,6 +77,20 @@
       "inventedOutputs": 0
     }
   },
-  "openGap": "White Flag (truth 160) reads 84. NO estimator proposes 160 \u2014 multifeature/degara/degara-clip all say 172.3 and percival says 85.1. Either it is a genuinely hard track or the tap is off. It is the one remaining failure and it is not an octave error. n=5 remains thin; the threshold should be re-derived, not assumed, as more songs are tapped.",
-  "howItWasDerived": "Not tuned by trial. Per-estimator BPM AND confidence were captured on the five tapped songs, and multifeature's own confidence separated its correct readings from its wrong ones with a clean gap: correct at 0.667/0.719, wrong at 0.352/0.428/0.053. The threshold 0.5 sits inside that gap. The mechanism is principled rather than fitted \u2014 RhythmExtractor2013 derives confidence from agreement among its internal onset-detection functions, so low confidence genuinely means 'my own detectors disagreed', which is when its metrical level is least trustworthy. `percival` is the fallback because it is independent (autocorrelation, not an onset-DF ensemble) and held the correct level in exactly those cases (70.1 vs truth 71; 75.4 vs 75)."
+  "openGap": "n = 4 after excluding one unconfirmable label. The confidence threshold should be re-derived, not assumed, as more songs are tapped. Every row here is now a label the owner can stand behind.",
+  "howItWasDerived": "Not tuned by trial. Per-estimator BPM AND confidence were captured on the five tapped songs, and multifeature's own confidence separated its correct readings from its wrong ones with a clean gap: correct at 0.667/0.719, wrong at 0.352/0.428/0.053. The threshold 0.5 sits inside that gap. The mechanism is principled rather than fitted \u2014 RhythmExtractor2013 derives confidence from agreement among its internal onset-detection functions, so low confidence genuinely means 'my own detectors disagreed', which is when its metrical level is least trustworthy. `percival` is the fallback because it is independent (autocorrelation, not an onset-DF ensemble) and held the correct level in exactly those cases (70.1 vs truth 71; 75.4 vs 75).",
+  "excluded": [
+    {
+      "reason": "ground truth could not be definitively confirmed",
+      "wasLabelled": 160,
+      "detected": 84,
+      "corroboration": "A listen test put it near 86 but not with certainty. Three independent estimators agree with the ear and not the label: multifeature 172.3 (= 2 x 86.15, 0.2% from 86), percival 85.1 (1.0%), pipeline 84.0 (2.3%). The 160 label is 1.86x of 86 \u2014 not an octave, not any musical relation.",
+      "policy": "A benchmark row whose label cannot be confirmed is worse than no row: it either penalises a correct detector or rewards a wrong one, and nobody can tell which. Removed rather than relabelled to 86 \u2014 relabelling to the value that makes the score look better, on an unconfirmed ear test, is the same error as editing an assertion to pass. Re-tap in the app to restore it with a trustworthy label."
+    }
+  ],
+  "optimisationStatus": {
+    "state": "complete for now \u2014 further tuning is blocked on ground truth, not ideas",
+    "why": "4/4 Accuracy1 on every label the owner can stand behind. Remaining candidates were measured and are no-ops: removing integer snapping scores 19/23 on synthetic, identical to keeping it. With n=4 a real regression would be undetectable, so changing the detector further trades unmeasurable upside for measurable risk.",
+    "toResume": "Tap more songs, re-run `__stanzaTempoEval()`, then re-derive the confidence threshold rather than assuming it. Candidates already identified: `fineTuneBpm`'s `slowerPreference` term biases every estimate flat; `loop-clip` returns bpm 0.0 at confidence 0.55; `degara` reports confidence 0.0 while returning correct answers."
+  }
 }

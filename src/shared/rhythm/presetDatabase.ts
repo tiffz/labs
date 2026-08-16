@@ -99,8 +99,13 @@ export const RHYTHM_DATABASE: Record<string, RhythmDefinition> = {
   ayoub: {
     id: 'ayoub',
     name: 'Ayoub',
-    description: 'An energetic 2/4 rhythm often used in faster dance music.',
-    learnMoreLinks: [],
+    description:
+      'Iqa Ayyub — a driving 2/4 rhythm played across the Middle East in Sufi music, Egyptian ' +
+      'zar ceremonies and fast dance sections. Sometimes called Zar in Egypt.',
+    learnMoreLinks: [
+      { title: 'Iqa Ayyub 2/4 — Maqam World', url: 'https://www.maqamworld.com/en/iqaa/ayyub.php' },
+      { title: '30 Pieces For Daf and Frame Drum — Amir School of Music', url: 'https://www.amirschoolofmusic.com/store/p/pdf-30-pieces-book-1' },
+    ],
     basePattern: 'D--KD-T-',
     timeSignature: { numerator: 2, denominator: 4 },
     sixEightPattern: 'D--K--D-T---',
@@ -108,19 +113,80 @@ export const RHYTHM_DATABASE: Record<string, RhythmDefinition> = {
       { notation: 'D--KD-T-' },
       { notation: 'D-TKD-T-' },
       { notation: 'D-TKT-D-', note: 'La Bass Fe Eyne variation' },
+      { notation: 'D-KKD-T-', note: 'Variation from 30 Pieces For Daf and Frame Drum (Amir School of Music)' },
     ],
-    relatedRhythmIds: ['daem'],
+    relatedRhythmIds: ['daem', 'helgertin'],
   },
   daem: {
     id: 'daem',
     name: 'Da-em',
     description:
-      'A lively 2/4 Middle Eastern groove with a ka ornament before the second dum (D-TKD-TK).',
-    learnMoreLinks: [],
+      'A 2/4 daf maqam (دائم) from the Kurdish Sufi repertoire, also taught in Persian daf ' +
+      'schools. Two identical dum-tek-ka cells; played slow for zikr and fast for dance.',
+    learnMoreLinks: [
+      { title: 'Daff: A Sacred Symbol of Kurdish Culture and Spirituality — Kurdish Globe', url: 'https://kurdishglobe.krd/daff-a-sacred-symbol-of-kurdish-culture-and-spirituality/' },
+      { title: 'مقام‌های دف (Daf maqams) — Persian Wikipedia', url: 'https://fa.wikipedia.org/wiki/%D9%85%D9%82%D8%A7%D9%85%E2%80%8C%D9%87%D8%A7%DB%8C_%D8%AF%D9%81' },
+      { title: '30 Pieces For Daf and Frame Drum — Amir School of Music', url: 'https://www.amirschoolofmusic.com/store/p/pdf-30-pieces-book-1' },
+    ],
     basePattern: 'D-TKD-TK',
     timeSignature: { numerator: 2, denominator: 4 },
     variations: [{ notation: 'D-TKD-TK' }],
-    relatedRhythmIds: ['ayoub'],
+    relatedRhythmIds: ['ayoub', 'helgertin', 'haddadi'],
+  },
+
+  /*
+   * Helgertin and Haddadi — transcribed from "30 Pieces For Daf and Frame Drum" (Amir School of Music),
+   * https://www.amirschoolofmusic.com/store/p/pdf-30-pieces-book-1
+   *
+   * The book notates strokes as Ç / A / V above the noteheads. That maps to this app's Darbuka
+   * notation as Ç -> D (dum), A -> T (tek), V -> K (ka). The mapping is not a guess: two rhythms
+   * in the same figure decode to patterns ALREADY in this database —
+   *
+   *   book "Da-em"  Ç A V Ç A V  ->  D-TKD-TK  == the existing `daem` basePattern
+   *   book "Ayoub"  Ç V Ç A      ->  D--KD-T-  == the existing `ayoub` basePattern
+   *
+   * — so the same reading applied to Helgertin and Haddadi is corroborated rather than invented.
+   */
+  helgertin: {
+    id: 'helgertin',
+    name: 'Helgertin',
+    description:
+      'A daf maqam with a Kurdish name (ھەڵگرتن, meaning to lift), listed among the traditional ' +
+      'maqams alongside Da-em. Written in the source as two 2/4 measures: the second withholds ' +
+      'the downbeat dum and opens on two teks.',
+    learnMoreLinks: [
+      { title: 'مقام‌های دف (Daf maqams) — Persian Wikipedia', url: 'https://fa.wikipedia.org/wiki/%D9%85%D9%82%D8%A7%D9%85%E2%80%8C%D9%87%D8%A7%DB%8C_%D8%AF%D9%81' },
+      { title: '30 Pieces For Daf and Frame Drum — Amir School of Music', url: 'https://www.amirschoolofmusic.com/store/p/pdf-30-pieces-book-1' },
+    ],
+    /*
+     * The book notates this as TWO 2/4 measures. The database represents a full cycle as ONE
+     * measure — two invariants require it (`presetIntegrity`: variations must be exactly one
+     * measure; `rhythmRecognition`: basePattern must appear among variations), and Maqsum already
+     * follows the same convention for its 16-sixteenth cycle. The grid is identical either way:
+     * 16 sixteenths is one 4/4 bar or two 2/4 bars. The felt pulse is still 2/4, which the
+     * description says.
+     */
+    basePattern: 'D-TKD-T-TTK-D-T-',
+    timeSignature: { numerator: 4, denominator: 4 },
+    variations: [
+      { notation: 'D-TKD-T-TTK-D-T-', note: 'Full cycle — the book writes it as two 2/4 measures' },
+    ],
+    relatedRhythmIds: ['daem', 'haddadi', 'ayoub'],
+  },
+  haddadi: {
+    id: 'haddadi',
+    name: 'Haddadi',
+    description:
+      'A daf maqam (حدادی) from the Kurdish Sufi repertoire. Two cells answer each other with ' +
+      'the same rhythm: two dums and a ka, then two teks and a ka — low answered by high.',
+    learnMoreLinks: [
+      { title: 'Daff: A Sacred Symbol of Kurdish Culture and Spirituality — Kurdish Globe', url: 'https://kurdishglobe.krd/daff-a-sacred-symbol-of-kurdish-culture-and-spirituality/' },
+      { title: '30 Pieces For Daf and Frame Drum — Amir School of Music', url: 'https://www.amirschoolofmusic.com/store/p/pdf-30-pieces-book-1' },
+    ],
+    basePattern: 'DDK-TTK-',
+    timeSignature: { numerator: 2, denominator: 4 },
+    variations: [{ notation: 'DDK-TTK-' }],
+    relatedRhythmIds: ['daem', 'helgertin'],
   },
   malfuf: {
     id: 'malfuf',
@@ -387,8 +453,8 @@ const PRESET_FAMILIES: FamilySpec[] = [
     id: 'middle-eastern',
     label: 'Middle Eastern',
     meters: {
-      '4/4': ['baladi', 'maqsum', 'saeidi'],
-      '2/4': ['ayoub', 'daem'],
+      '4/4': ['baladi', 'helgertin', 'maqsum', 'saeidi'],
+      '2/4': ['ayoub', 'daem', 'haddadi'],
       '8/8': ['malfuf', 'kahleegi'],
     },
   },

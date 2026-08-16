@@ -136,7 +136,12 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: lighthouse-nightly-reports
-          if-no-files-found: ignore
+          # `warn`, not `ignore`. The artifact has been absent from every recent nightly while this
+          # step still reported success — `ignore` turns an empty glob into silence, so a breach was
+          # never triageable. The reports ARE written locally (verified: .cache/lighthouse-_forms_.json,
+          # 418 kB) and the script mkdirs recursively, so the cause is CI-specific and still unknown.
+          # Warning makes the next run say so instead of hiding it.
+          if-no-files-found: warn
           path: |
             .cache/lighthouse-*.json
 

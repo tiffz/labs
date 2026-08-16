@@ -4141,6 +4141,48 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     gap: 0.75rem;
+    /* Cards in a row stay the same height whatever their provenance text says. */
+    align-items: stretch;
+  }
+
+  /*
+   * The grid item is the CELL, not the link, so a long-note info trigger can sit beside the link
+   * instead of inside it (nesting a button in an anchor is invalid and traps keyboard users).
+   */
+  .rhythm-variation-cell {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .rhythm-variation-cell > .palette-button {
+    flex: 1 1 auto;
+  }
+
+  .rhythm-variation-info {
+    position: absolute;
+    top: 0.25rem;
+    right: 0.25rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    /* 24px is the coarse-pointer floor enforced by the responsive smoke. */
+    min-width: 24px;
+    min-height: 24px;
+    padding: 0;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: #6b7280;
+    font-size: 0.9rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .rhythm-variation-info:hover,
+  .rhythm-variation-info:focus-visible {
+    color: var(--primary-purple);
   }
 
   /* Current variation styling - uses same base as palette-button */

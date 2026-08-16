@@ -5,6 +5,7 @@ import { RHYTHM_DATABASE } from '../data/rhythmDatabase';
 import { drumsRhythmHref } from '../routes/drumsAppUrl';
 import { handleSpaLinkClick } from '../../shared/navigation/spaLinkClick';
 import LabsDisclosureChevron from '../../shared/components/LabsDisclosureChevron';
+import AppTooltip from '../../shared/components/AppTooltip';
 import { useIsNarrowViewport } from '../../shared/layout/useViewportMatch';
 
 const SimpleVexFlowNote = lazy(() => import('./SimpleVexFlowNote'));
@@ -14,6 +15,19 @@ interface RhythmInfoCardProps {
   currentNotation: string;
   onSelectVariation: (notation: string, timeSignature: TimeSignature) => void;
 }
+
+/**
+ * Longest note that still reads as a CAPTION rather than a citation.
+ *
+ * Provenance text is secondary information, but rendering it inline made it set the card's height:
+ * "Variation from 30 Pieces For Daf and Frame Drum (Amir School of Music)" wrapped to three lines
+ * and left that card visibly taller than its neighbours in the same grid row. Every caption
+ * actually in the database is <= 25 characters ("La Bass Fe Eyne variation", "8/8 quarter-note
+ * anchors"); only the citations exceed this. So the split is by LENGTH, not by presence — hiding
+ * the short captions behind an affordance would cost a glanceable label to solve a problem they
+ * do not cause.
+ */
+const INLINE_VARIATION_NOTE_MAX_CHARS = 32;
 
 /**
  * Normalizes notation for comparison
@@ -102,6 +116,8 @@ const RhythmInfoCard: React.FC<RhythmInfoCardProps> = ({
             {rhythm.variations.map((variation, index) => {
               const variationTimeSignature = variation.timeSignature ?? rhythm.timeSignature;
               const isCurrent = isCurrentVariation(variation.notation, currentNotation);
+              const note = variation.note;
+              const noteIsInline = Boolean(note) && note!.length <= INLINE_VARIATION_NOTE_MAX_CHARS;
               const variationContent = (
                 <>
                   {vexMiniReady ? (
@@ -116,40 +132,63 @@ const RhythmInfoCard: React.FC<RhythmInfoCardProps> = ({
                   ) : (
                     <span className="palette-pattern-fallback">{variation.notation}</span>
                   )}
-                  {variation.note && (
-                    <span className="rhythm-variation-note">{variation.note}</span>
-                  )}
+                  {noteIsInline && <span className="rhythm-variation-note">{note}</span>}
                 </>
               );
 
+              /*
+               * Long notes render OUTSIDE the button/anchor, as a sibling in the cell.
+               *
+               * They cannot go inside it: an interactive info trigger nested in an `<a>` is invalid
+               * HTML and traps keyboard users. Making the cell the grid item and the link its child
+               * keeps the trigger a valid sibling and lets every card keep the same height whatever
+               * its provenance text says.
+               */
+              const noteAffordance =
+                note && !noteIsInline ? (
+                  <AppTooltip title={note} interactive placement="bottom">
+                    <button
+                      type="button"
+                      className="rhythm-variation-info"
+                      aria-label={`About this variation: ${note}`}
+                    >
+                      <span aria-hidden="true">&#9432;</span>
+                    </button>
+                  </AppTooltip>
+                ) : null;
+
               if (isCurrent) {
                 return (
-                  <button
-                    key={index}
-                    className="palette-button notation-button rhythm-variation-current"
-                    type="button"
-                    disabled
-                    aria-current="true"
-                  >
-                    {variationContent}
-                  </button>
+                  <div key={index} className="rhythm-variation-cell">
+                    <button
+                      className="palette-button notation-button rhythm-variation-current"
+                      type="button"
+                      disabled
+                      aria-current="true"
+                    >
+                      {variationContent}
+                    </button>
+                    {noteAffordance}
+                  </div>
                 );
               }
 
               const href = drumsRhythmHref(variation.notation, variationTimeSignature);
               return (
-                <a
-                  key={index}
-                  href={href}
-                  className="palette-button notation-button"
-                  onClick={(e) =>
-                    handleSpaLinkClick(e, () =>
-                      onSelectVariation(variation.notation, variationTimeSignature)
-                    )
-                  }
-                >
-                  {variationContent}
-                </a>
+                <div key={index} className="rhythm-variation-cell">
+                  <a
+                    href={href}
+                    className="palette-button notation-button"
+                    onClick={(e) =>
+                      handleSpaLinkClick(e, () =>
+                        onSelectVariation(variation.notation, variationTimeSignature)
+                      )
+                    }
+                  >
+                    {variationContent}
+                  </a>
+                  {noteAffordance}
+                </div>
               );
             })}
           </div>
