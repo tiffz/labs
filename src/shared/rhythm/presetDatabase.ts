@@ -100,7 +100,7 @@ export const RHYTHM_DATABASE: Record<string, RhythmDefinition> = {
     id: 'ayoub',
     name: 'Ayoub',
     description: 'An energetic 2/4 rhythm often used in faster dance music.',
-    learnMoreLinks: [{ title: '30 Pieces Book 1 — Amir School of Music', url: 'https://www.amirschoolofmusic.com/store/p/pdf-30-pieces-book-1' }],
+    learnMoreLinks: [{ title: '30 Pieces For Daf and Frame Drum — Amir School of Music', url: 'https://www.amirschoolofmusic.com/store/p/pdf-30-pieces-book-1' }],
     basePattern: 'D--KD-T-',
     timeSignature: { numerator: 2, denominator: 4 },
     sixEightPattern: 'D--K--D-T---',
@@ -108,7 +108,7 @@ export const RHYTHM_DATABASE: Record<string, RhythmDefinition> = {
       { notation: 'D--KD-T-' },
       { notation: 'D-TKD-T-' },
       { notation: 'D-TKT-D-', note: 'La Bass Fe Eyne variation' },
-      { notation: 'D-KKD-T-', note: 'Variation from 30 Pieces Book 1 (Amir School of Music)' },
+      { notation: 'D-KKD-T-', note: 'Variation from 30 Pieces For Daf and Frame Drum (Amir School of Music)' },
     ],
     relatedRhythmIds: ['daem', 'helgertin'],
   },
@@ -118,7 +118,7 @@ export const RHYTHM_DATABASE: Record<string, RhythmDefinition> = {
     description:
       'A lively 2/4 Middle Eastern groove with a ka ornament before the second dum (D-TKD-TK). ' +
       'Used in Persian and Kurdish dancing, chanting and zikr practice.',
-    learnMoreLinks: [{ title: '30 Pieces Book 1 — Amir School of Music', url: 'https://www.amirschoolofmusic.com/store/p/pdf-30-pieces-book-1' }],
+    learnMoreLinks: [{ title: '30 Pieces For Daf and Frame Drum — Amir School of Music', url: 'https://www.amirschoolofmusic.com/store/p/pdf-30-pieces-book-1' }],
     basePattern: 'D-TKD-TK',
     timeSignature: { numerator: 2, denominator: 4 },
     variations: [{ notation: 'D-TKD-TK' }],
@@ -126,7 +126,7 @@ export const RHYTHM_DATABASE: Record<string, RhythmDefinition> = {
   },
 
   /*
-   * Helgertin and Haddadi — transcribed from "30 Pieces Book 1" (Amir School of Music),
+   * Helgertin and Haddadi — transcribed from "30 Pieces For Daf and Frame Drum" (Amir School of Music),
    * https://www.amirschoolofmusic.com/store/p/pdf-30-pieces-book-1
    *
    * The book notates strokes as Ç / A / V above the noteheads. That maps to this app's Darbuka
@@ -146,7 +146,7 @@ export const RHYTHM_DATABASE: Record<string, RhythmDefinition> = {
       + 'in the source as two 2/4 measures (one full cycle here). ' +
       'The second measure opens on two teks instead of a dum, which tilts the pulse forward. ' +
       'Ayoub is considered a variant of Helgertin in these traditions.',
-    learnMoreLinks: [{ title: '30 Pieces Book 1 — Amir School of Music', url: 'https://www.amirschoolofmusic.com/store/p/pdf-30-pieces-book-1' }],
+    learnMoreLinks: [{ title: '30 Pieces For Daf and Frame Drum — Amir School of Music', url: 'https://www.amirschoolofmusic.com/store/p/pdf-30-pieces-book-1' }],
     /*
      * The book notates this as TWO 2/4 measures. The database represents a full cycle as ONE
      * measure — two invariants require it (`presetIntegrity`: variations must be exactly one
@@ -168,7 +168,7 @@ export const RHYTHM_DATABASE: Record<string, RhythmDefinition> = {
     description:
       'A 2/4 Persian and Kurdish rhythm built from two mirrored cells: two dums and a ka, ' +
       'then two teks and a ka. The fastest of the three rhythms in this group.',
-    learnMoreLinks: [{ title: '30 Pieces Book 1 — Amir School of Music', url: 'https://www.amirschoolofmusic.com/store/p/pdf-30-pieces-book-1' }],
+    learnMoreLinks: [{ title: '30 Pieces For Daf and Frame Drum — Amir School of Music', url: 'https://www.amirschoolofmusic.com/store/p/pdf-30-pieces-book-1' }],
     basePattern: 'DDK-TTK-',
     timeSignature: { numerator: 2, denominator: 4 },
     variations: [{ notation: 'DDK-TTK-' }],
