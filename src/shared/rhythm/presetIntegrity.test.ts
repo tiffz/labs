@@ -89,3 +89,58 @@ describe('referenceAttackSkeletonMatches', () => {
     expect(r.error).toMatch(/Tick 6/);
   });
 });
+
+/**
+ * The app picks ONE canonical name per rhythm — the spelling in the owner's teachers' books — and
+ * every description refers to rhythms by that name only. Other spellings live in `alternateNames`,
+ * where the reader can see which tradition each belongs to.
+ *
+ * Without this, prose drifts: one description says "Khaleeji", the picker says "Kahleegi", and a
+ * learner cannot tell whether those are two rhythms. The failure is silent — nothing else in the
+ * suite reads description text.
+ */
+describe('canonical names in prose', () => {
+  const alternates = Object.values(RHYTHM_DATABASE).flatMap((r) =>
+    (r.alternateNames ?? []).map((a) => ({ rhythmId: r.id, alternate: a.name }))
+  );
+
+  const mentions = (text: string, name: string) =>
+    new RegExp(`\\b${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`).test(text);
+
+  it('has alternates to check', () => {
+    // Guards the loop below from silently passing on an empty set.
+    expect(alternates.length).toBeGreaterThan(10);
+  });
+
+  it('never uses an alternate spelling in a description', () => {
+    const offenders = Object.values(RHYTHM_DATABASE).flatMap((r) =>
+      alternates
+        .filter(({ alternate }) => mentions(r.description, alternate))
+        .map(({ rhythmId, alternate }) =>
+          `${r.id}.description says "${alternate}" (an alternate name for ${rhythmId})`
+        )
+    );
+    expect(offenders).toEqual([]);
+  });
+
+  it('never uses an alternate spelling in a variation note', () => {
+    const offenders = Object.values(RHYTHM_DATABASE).flatMap((r) =>
+      r.variations.flatMap((v) =>
+        alternates
+          .filter(({ alternate }) => mentions(v.note ?? '', alternate))
+          .map(({ rhythmId, alternate }) =>
+            `${r.id} variation ${v.notation} says "${alternate}" (an alternate name for ${rhythmId})`
+          )
+      )
+    );
+    expect(offenders).toEqual([]);
+  });
+
+  it('does not list a rhythm as an alternate name of itself', () => {
+    const offenders = Object.values(RHYTHM_DATABASE)
+      .flatMap((r) => (r.alternateNames ?? []).map((a) => ({ id: r.id, name: r.name, a })))
+      .filter(({ name, a }) => a.name === name)
+      .map(({ id, a }) => `${id} lists its own canonical name "${a.name}" as an alternate`);
+    expect(offenders).toEqual([]);
+  });
+});
