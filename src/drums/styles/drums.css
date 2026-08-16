@@ -775,15 +775,20 @@
     display: inline-flex;
   }
 
+  /*
+   * A help affordance, not a call to action. Filled purple on white gave it more visual weight
+   * than the control it annotates, and more than the Play button beside it. Outlined keeps it
+   * findable without competing (`ux-visual-weight`).
+   */
   .help-button {
     width: 1.5rem;
     height: 1.5rem;
     border-radius: 50%;
-    background-color: var(--primary-purple);
-    color: white;
-    border: none;
+    background-color: transparent;
+    color: var(--primary-purple);
+    border: 1px solid color-mix(in srgb, var(--primary-purple) 40%, transparent);
     font-size: 0.8125rem;
-    font-weight: 700;
+    font-weight: 600;
     line-height: 1;
     padding: 0;
     overflow: visible;
@@ -796,8 +801,12 @@
   }
 
   .help-button:hover {
-    background-color: var(--primary-purple-dark);
-    transform: scale(1.1);
+    background-color: color-mix(
+      in srgb,
+      var(--primary-purple) 10%,
+      transparent
+    );
+    border-color: var(--primary-purple);
   }
 
   .help-button-outlined {
@@ -1203,7 +1212,7 @@
     width: min(100%, 228px);
     min-width: 152px;
     --bpm-shell-height: var(--drums-playback-control-height);
-    --bpm-shell-radius: 0.375rem;
+    --bpm-shell-radius: 0.5rem;
     --bpm-stepper-min-width: 4.5rem;
     --bpm-value-padding: 0 0.22rem;
     --bpm-bg: #ffffff;
@@ -1240,7 +1249,7 @@
     padding: 0 0.38rem;
     min-height: var(--drums-playback-control-height);
     height: var(--drums-playback-control-height);
-    border-radius: 0.375rem;
+    border-radius: 0.5rem;
     box-shadow: none;
   }
 
@@ -1289,12 +1298,24 @@
     --bpm-value-text-align: center;
   }
 
+  /*
+   * `.shared-bpm-shell` RE-DECLARES `--bpm-shell-height: var(--control-height, 38px)` on itself
+   * (bpmInput.css), so a value set on the wrapper never reaches it. Setting `--control-height` is
+   * what actually moves that control. Three earlier attempts to size this field by other means
+   * looked like no-ops for exactly this reason.
+   */
+  .drums-shared-bpm-input,
+  .drums-shared-time-sig-input {
+    --control-height: var(--drums-playback-control-height);
+    --control-radius: 0.5rem;
+  }
+
   .drums-shared-time-sig-input {
     flex-shrink: 0;
     --time-sig-trigger-border-width: var(--labs-control-border-width);
     --border-subtle: var(--labs-chip-border-color);
     --bpm-shell-height: var(--drums-playback-control-height);
-    --bpm-shell-radius: 0.375rem;
+    --bpm-shell-radius: 0.5rem;
   }
 
   .drums-shared-time-sig-input .shared-time-sig-trigger {
@@ -1921,22 +1942,8 @@
 
   /* Rich help tooltip surface (shared AppTooltip via popperClassName) —
      keeps the white card + purple border look the portal tooltip had. */
-  .drums-help-tooltip .MuiTooltip-tooltip {
-    background-color: white;
-    color: var(--text-color);
-    border: 2px solid var(--primary-purple);
-    border-radius: 0.5rem;
-    padding: 1rem 1.125rem;
-    box-shadow: var(--shadow-purple);
-    max-width: min(360px, calc(100vw - 24px));
-    font-size: 0.875rem;
-    line-height: 1.55;
-    white-space: normal;
-  }
-
-  .drums-help-tooltip .MuiTooltip-arrow {
-    color: var(--primary-purple);
-  }
+  /* Tooltip surface styling lives unlayered at the end of this file. MUI's emotion styles are
+     unlayered and beat `@layer components`, so these rules never applied from in here. */
 
   /* Tooltip content and link styling */
   .tooltip-content {
@@ -5102,8 +5109,11 @@
   }
 
   /* Match the shared coarse-pointer stepper floor (bpmInput.css) — the
-     drums-density overrides above would otherwise win on specificity. */
-  .drums-shared-bpm-input .shared-bpm-shell {
+     drums-density overrides above would otherwise win on specificity.
+     The time signature trigger sits in the same row and gets the same floor; it was left out
+     when this block was written, so on touch it stayed 4px shorter than the field beside it. */
+  .drums-shared-bpm-input .shared-bpm-shell,
+  .drums-shared-time-sig-input .shared-time-sig-trigger {
     height: auto;
     min-height: 44px;
   }
@@ -5212,4 +5222,58 @@
     'wght' 400,
     'GRAD' 0,
     'opsz' 20;
+}
+
+/*
+ * ===== Overrides that must stay UNLAYERED =====
+ *
+ * MUI's emotion styles and Google's Material Symbols stylesheet are both injected without a
+ * cascade layer, and an unlayered rule beats a layered one no matter how specific the layered one
+ * is. Anything in this file that has to win against them belongs here, not in `@layer components`.
+ *
+ * Once unlayered, our rule and MUI's have EQUAL specificity, and MUI injects its <style> at
+ * runtime so source order is not ours to control. The class is repeated (.MuiTooltip-tooltip
+ * twice) purely to win on specificity. Do not 'tidy' the duplicate away.
+ *
+ * This has now bitten three times: the Material Symbols sizing above, the variation note icon, and
+ * the beat-grouping tooltip below, which was authored white-on-purple in July and has rendered as
+ * MUI's default near-black ever since because the rule sat inside the layer.
+ */
+
+.drums-help-tooltip .MuiTooltip-tooltip.MuiTooltip-tooltip {
+  background-color: #ffffff;
+  color: var(--text-color, #1f2937);
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 0.5rem;
+  padding: 0.875rem 1rem;
+  box-shadow: 0 8px 24px rgba(17, 24, 39, 0.12);
+  max-width: min(360px, calc(100vw - 24px));
+  font-size: 0.875rem;
+  line-height: 1.55;
+  white-space: normal;
+}
+
+.drums-help-tooltip .MuiTooltip-arrow.MuiTooltip-arrow {
+  color: #ffffff;
+}
+
+.drums-help-tooltip .MuiTooltip-arrow.MuiTooltip-arrow::before {
+  border: 1px solid var(--border-color, #e5e7eb);
+}
+
+.drums-help-tooltip .tooltip-title {
+  color: var(--text-color, #1f2937);
+  font-weight: 600;
+  font-size: 0.9375rem;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-color, #e5e7eb);
+  padding-bottom: 0.5rem;
+}
+
+/*
+ * The time signature trigger read a step smaller than the BPM field beside it (0.875rem vs 1rem)
+ * because `--music-timing-value-font-size` resolves from unlayered shared CSS. Pin it to match.
+ */
+.drums-shared-time-sig-input .shared-time-sig-trigger {
+  font-size: 1rem;
 }
