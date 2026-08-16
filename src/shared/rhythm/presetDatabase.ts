@@ -5,6 +5,16 @@ export interface RhythmVariation {
   notation: string;
   note?: string;
   timeSignature?: TimeSignature;
+  /**
+   * This line is the base rhythm with extra decoration, so it must hit every attack the base
+   * pattern hits, with the same stroke. `presetIntegrity` enforces it.
+   *
+   * Set it on ornament and anchor lines. Do NOT set it on variations that deliberately change a
+   * stroke (Ayoub's "La Bass Fe Eyne" swaps a dum for a tek). Structural, not descriptive: the
+   * check used to be triggered by matching words in `note`, which meant rewording the copy turned
+   * the guardrail off silently.
+   */
+  preservesReferenceBackbone?: boolean;
 }
 
 export interface LearnMoreLink {
@@ -83,7 +93,7 @@ export const RHYTHM_DATABASE: Record<string, RhythmDefinition> = {
   rockAndRoll: {
     id: 'rockAndRoll',
     name: 'Rock',
-    description: 'The standard backbeat: low drum on beats 1 and 3, high on 2 and 4.',
+    description: 'The standard backbeat. At its simplest, low drum on beats 1 and 3, high on 2 and 4.',
     usedIn: 'Western pop and rock',
     learnMoreLinks: [],
     basePattern: 'D---T---D-D-T---',
@@ -98,7 +108,7 @@ export const RHYTHM_DATABASE: Record<string, RhythmDefinition> = {
   simple: {
     id: 'simple',
     name: 'Simple',
-    description: 'Evenly spaced beats with no accent pattern. A blank slate for sketching an idea.',
+    description: 'Evenly spaced beats with no accents.',
     learnMoreLinks: [],
     basePattern: 'D---D---D---D---',
     timeSignature: { numerator: 4, denominator: 4 },
@@ -117,7 +127,7 @@ export const RHYTHM_DATABASE: Record<string, RhythmDefinition> = {
   simple68: {
     id: 'simple68',
     name: 'Simple',
-    description: 'Evenly spaced beats counted in six, felt as two groups of three.',
+    description: 'Evenly spaced beats counted in six, in two groups of three.',
     learnMoreLinks: [],
     basePattern: 'D-----D-----',
     timeSignature: { numerator: 6, denominator: 8 },
