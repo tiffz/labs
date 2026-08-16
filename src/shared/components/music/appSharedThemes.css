@@ -1519,8 +1519,16 @@
   .ui-drums-bpm-input {
     width: min(100%, 228px);
     min-width: 176px;
-    --bpm-shell-height: 44px;
-    --bpm-shell-radius: 0.375rem;
+    /*
+     * 2.5rem matches every other control in the drums playback bar (play button, time signature
+     * trigger, metronome split, settings). This was 44px, which made the BPM field the only
+     * control in the row a different height. The 44px touch target is still enforced, by the
+     * `@media (pointer: coarse)` block in drums.css where it belongs.
+     */
+    --bpm-shell-height: 2.5rem;
+    /* 0.5rem matches the 8px radius used by every button in this app; the timing fields were the
+       only controls at 6px. */
+    --bpm-shell-radius: 0.5rem;
     --bpm-stepper-min-width: 5.2rem;
     --bpm-value-padding: 0 0.3rem 0 0.5rem;
     --bpm-bg: #ffffff;
@@ -1545,10 +1553,15 @@
     border-width: 2px;
     border-color: var(--border-color, #d1d5db);
     padding: 0 0.38rem;
-    min-height: 44px;
+    /*
+     * Defer to `--bpm-shell-height` above rather than restating the number. A hardcoded 44px here
+     * silently outranked the token, so changing the token appeared to do nothing and the field
+     * stayed 4px taller than every other control in the playback bar.
+     */
+    min-height: var(--bpm-shell-height, 2.5rem);
     font-size: 1rem;
     font-weight: 500;
-    border-radius: 0.375rem;
+    border-radius: 0.5rem;
     box-shadow: none;
   }
 

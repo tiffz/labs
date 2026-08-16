@@ -7,7 +7,7 @@ import type { RhythmDefinition } from './presetDatabase';
  * across several traditions, citations to a specific printed source, and comments recording how
  * each pattern was decoded. Editing one of these means checking a source, not just a pattern.
  *
- * Four rules for the user-facing text here:
+ * Five rules for the user-facing text here:
  *
  * 1. **English only.** No Arabic, Persian or Kurdish script anywhere the reader sees it — the owner
  *    does not read those scripts and will not publish text she cannot verify. Script belongs in
@@ -29,7 +29,9 @@ import type { RhythmDefinition } from './presetDatabase';
  *    `learnMoreLinks` is a READING LIST, not the evidence base. Hobbyist and vendor pages
  *    (Darbuka Planet, Sharqi Dance, The Troupe) belong there and are often more use to a student
  *    than an encyclopedia entry, but nothing in a description may rest on them.
- * 4. **No usage in the description.** `usedIn` carries it. The two render one under the other, so
+ * 4. **No tempo.** The owner decided against tempo guidance rather than ship ranges no source
+ *    backs. A naive-reader pass asked for it; the answer is a deliberate no, not an omission.
+ * 5. **No usage in the description.** `usedIn` carries it. The two render one under the other, so
  *    saying it twice is visible at a glance.
  *
  * Every `name` is CANONICAL and matches the owner's teachers' books. Descriptions refer to rhythms
@@ -203,8 +205,8 @@ export const MIDDLE_EASTERN_RHYTHMS: Record<string, RhythmDefinition> = {
      * meaning that, which is exactly what is known.
      */
     description:
-      'A rhythm for the daf, a large frame drum hung with metal rings, played in Kurdish and ' +
-      'Iranian music. Two identical halves: low, high, light. The name is Arabic for "constant".',
+      'Usually played on the daf, a large frame drum hung with metal rings, but it works on a ' +
+      'darbuka too. Two identical halves: low, high, light. The name is Arabic for "constant".',
     alternateNames: [
       { name: "Da'em" },
       { name: 'Dayim' },
@@ -254,8 +256,8 @@ export const MIDDLE_EASTERN_RHYTHMS: Record<string, RhythmDefinition> = {
      * The etymology is solid - Kurdish Wiktionary gives hilgirtin as "to lift, to raise".
      */
     description:
-      'A daf rhythm that opens much like Da-em, then answers with a run of high strokes. The ' +
-      'name is Kurdish for "to lift".',
+      'A daf rhythm, though a darbuka works too. It opens much like Da-em, then answers with a ' +
+      'run of high strokes. The name is Kurdish for "to lift".',
     alternateNames: [
       { name: 'Helgirtin', context: 'Kurdish spelling' },
       { name: 'Hal gerten', context: 'Persian spelling' },
@@ -293,7 +295,8 @@ export const MIDDLE_EASTERN_RHYTHMS: Record<string, RhythmDefinition> = {
      * rhythm, so the copy stays quiet about it.
      */
     description:
-      'A daf rhythm in two answering halves. Low, low, light. Then high, high, light.',
+      'A daf rhythm that also works on a darbuka. Two answering halves: low, low, light. Then ' +
+      'high, high, light.',
     alternateNames: [{ name: 'Hedadi', context: 'Kurdish spelling' }],
     usedIn: 'Kurdish frame drumming, Sufi devotional gatherings',
     learnMoreLinks: [
@@ -313,11 +316,9 @@ export const MIDDLE_EASTERN_RHYTHMS: Record<string, RhythmDefinition> = {
      * Etymology is Tier-1: Wiktionary derives malfuf from the passive participle of laffa, "to
      * wrap". Not folk etymology.
      *
-     * NOTE ON METER: every source consulted labels Malfuf 2/4, not 8/8 - Maqam World, taqs.im,
-     * oudforguitarists and three others. The 3+3+2 is a subdivision inside an even duple meter,
-     * not an additive meter. This entry keeps 8/8 because `timeSignature` drives playback,
-     * variation filtering and the picker, so changing it is a behaviour change rather than a copy
-     * fix. Raised with the owner; not changed unilaterally.
+     * NOTE ON METER: online sources label Malfuf 2/4, not 8/8 - Maqam World, taqs.im,
+     * oudforguitarists and three others. The owner keeps 8/8 on her teacher's guidance, and her
+     * teachers' sources win a tie. DECIDED, not outstanding: do not "fix" this to 2/4.
      */
     description:
       'An Arabic rhythm of eight quick counts grouped 3+3+2. Just three strokes: low, high, ' +
@@ -358,7 +359,8 @@ export const MIDDLE_EASTERN_RHYTHMS: Record<string, RhythmDefinition> = {
      * sources say each Gulf region has its own. Claiming a single canonical Kahleegi rhythm would
      * be more than is known.
      *
-     * Same meter note as Malfuf - sources say 2/4; 8/8 kept because it drives behaviour.
+     * Same meter note as Malfuf: online sources say 2/4, the owner keeps 8/8 on her teacher's
+     * guidance. Decided, not outstanding.
      */
     description:
       'A rhythm from eastern Arabia, the Gulf coast of the Arabian peninsula. The same 3+3+2 ' +
