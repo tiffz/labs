@@ -74,7 +74,7 @@ describe('backfillSongMarkerIds', () => {
     const extras = {
       ytId: 'abc123',
       skippedBySegmentId: { 'stanzaSeg:x:y': true as const },
-      deletedMarkerIds: ['gone-1'],
+      deletedMarkerIds: { 'gone-1': 1700000000000 },
     };
     const result = backfillSongMarkerIds(song([{ time: 10, label: 'A' }], extras));
     expect(result!.song.ytId).toBe(extras.ytId);
