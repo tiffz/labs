@@ -441,7 +441,7 @@ export type DriveFileContentFingerprint = {
 export async function driveGetFileMetadata(
   accessToken: string,
   fileId: string,
-  fields = 'id,createdTime,modifiedTime,mimeType,name,parents,shortcutDetails',
+  fields = 'id,createdTime,modifiedTime,mimeType,name,parents,shortcutDetails,ownedByMe',
 ): Promise<{
   id: string;
   /** When the file was created in Drive (first upload / insert). Prefer for “performance happened near”. */
@@ -457,6 +457,12 @@ export async function driveGetFileMetadata(
   shortcutDetails?: { targetId?: string; targetMimeType?: string };
   /** Shared drive id when the file lives on a shared drive. */
   driveId?: string;
+  /**
+   * False when the signed-in user can read the file but someone else owns it — a link a friend
+   * shared. Linking straight to it would rot when their sharing or account changes, so Encore
+   * offers to take a copy instead.
+   */
+  ownedByMe?: boolean;
   /** When true, the file or folder is in the user's Drive trash. */
   trashed?: boolean;
 }> {

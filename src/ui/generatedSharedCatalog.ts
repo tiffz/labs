@@ -15994,6 +15994,90 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-drive-copydrivefiletomydrive-ts-classifydrivecopyfailure",
+    "name": "classifyDriveCopyFailure",
+    "path": "src/shared/drive/copyDriveFileToMyDrive.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Classify a Drive failure into something the UI can act on. 403 and 404 are permanent for this user and must NOT be retried: Drive returns 404 (not 403) for a file that exists but was never shared with you, so \"not found\" usually means \"not yours\".",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-copydrivefiletomydrive-ts-copydrivefiletomydrive",
+    "name": "copyDriveFileToMyDrive",
+    "path": "src/shared/drive/copyDriveFileToMyDrive.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Copy a Drive file you can READ into a folder you OWN, by downloading its bytes and re-uploading. The case this exists for: a friend sends a Drive link to a performance video. Linking straight to their file id looks like it works and then rots — it depends on their sharing settings, their retention, and their account continuing to exist. Taking a copy is what the user meant by \"upload\", so do that. Download-and-reupload rather than Drive's own `files/copy` because copy still writes into a quota-and-ownership context that depends on the source, and because the byte path is already hardened here: `driveUploadFileResumable` chunks, resumes after a network drop, and refuses to start while offline. Google-native documents (Docs/Sheets/Slides) have no downloadable bytes and are rejected rather than silently producing a broken file.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-copydrivefiletomydrive-ts-drivecopyerror",
+    "name": "DriveCopyError",
+    "path": "src/shared/drive/copyDriveFileToMyDrive.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Copy a Drive file you can READ into a folder you OWN, by downloading its bytes and re-uploading. The case this exists for: a friend sends a Drive link to a performance video. Linking straight to their file id looks like it works and then rots — it depends on their sharing settings, their retention, and their account continuing to exist. Taking a copy is what the user meant by \"upload\", so do that. Download-and-reupload rather than Drive's own `files/copy` because copy still writes into a quota-and-ownership context that depends on the source, and because the byte path is already hardened here: `driveUploadFileResumable` chunks, resumes after a network drop, and refuses to start while offline. Google-native documents (Docs/Sheets/Slides) have no downloadable bytes and are rejected rather than silently producing a broken file.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "class",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-copydrivefiletomydrive-ts-drivecopyfailurereason",
+    "name": "DriveCopyFailureReason",
+    "path": "src/shared/drive/copyDriveFileToMyDrive.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Copy a Drive file you can READ into a folder you OWN, by downloading its bytes and re-uploading. The case this exists for: a friend sends a Drive link to a performance video. Linking straight to their file id looks like it works and then rots — it depends on their sharing settings, their retention, and their account continuing to exist. Taking a copy is what the user meant by \"upload\", so do that. Download-and-reupload rather than Drive's own `files/copy` because copy still writes into a quota-and-ownership context that depends on the source, and because the byte path is already hardened here: `driveUploadFileResumable` chunks, resumes after a network drop, and refuses to start while offline. Google-native documents (Docs/Sheets/Slides) have no downloadable bytes and are rejected rather than silently producing a broken file.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-copydrivefiletomydrive-ts-drivecopyresult",
+    "name": "DriveCopyResult",
+    "path": "src/shared/drive/copyDriveFileToMyDrive.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Copy a Drive file you can READ into a folder you OWN, by downloading its bytes and re-uploading. The case this exists for: a friend sends a Drive link to a performance video. Linking straight to their file id looks like it works and then rots — it depends on their sharing settings, their retention, and their account continuing to exist. Taking a copy is what the user meant by \"upload\", so do that. Download-and-reupload rather than Drive's own `files/copy` because copy still writes into a quota-and-ownership context that depends on the source, and because the byte path is already hardened here: `driveUploadFileResumable` chunks, resumes after a network drop, and refuses to start while offline. Google-native documents (Docs/Sheets/Slides) have no downloadable bytes and are rejected rather than silently producing a broken file.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-copydrivefiletomydrive-ts-isgooglenativemimetype",
+    "name": "isGoogleNativeMimeType",
+    "path": "src/shared/drive/copyDriveFileToMyDrive.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Google-native types export rather than download; there are no bytes to copy.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-drive-createlabsportfoliodrivebackup-ts-createlabsportfoliodrivebackup",
     "name": "createLabsPortfolioDriveBackup",
     "path": "src/shared/drive/createLabsPortfolioDriveBackup.ts",
