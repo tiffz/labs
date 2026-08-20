@@ -171,6 +171,7 @@ import { mergeStanzaPlaybackSnapshot } from '../utils/stanzaPlaybackStateMerge';
 import { labsPlaybackSafeCall } from '../../shared/utils/labsPlaybackSafeCall';
 import { applyStanzaYoutubeControllerMix } from '../utils/stanzaYoutubeMixVolume';
 import { useBeatLibraryMigration } from '../hooks/useBeatLibraryMigration';
+import { backfillStanzaMarkerIds } from '../db/stanzaMarkerIdBackfill';
 import { useStanzaDriveDeepLink } from '../hooks/useStanzaDriveDeepLink';
 import StanzaSuggestSectionsDialog from './StanzaSuggestSectionsDialog';
 import {
@@ -215,6 +216,22 @@ export default function StanzaWorkspace() {
   const [selectedId, setSelectedId] = useState<string | null>(initialViewerIntent.initialSelectedId);
   const [viewerShellPending, setViewerShellPending] = useState(initialViewerIntent.expectViewerShell);
   const { notice: beatLibraryNotice, dismissNotice: dismissBeatLibraryNotice } = useBeatLibraryMigration();
+
+  /*
+   * One-shot: give every stored marker a permanent id.
+   *
+   * Markers were allowed to exist without ids, and each subsystem invented its own, so skip flags
+   * were pruned away, boundaries would not drag, and two devices disagreed about which marker was
+   * which. `ensureMarkerIds` now derives a deterministic id so a session is self-consistent; this
+   * persists a real one so identity survives a drag and a sync. Lossless by construction and
+   * covered by stanzaMarkerIdBackfill.test.ts — it only fills a missing id, and leaves `updatedAt`
+   * alone so it cannot outrank a real edit from another device.
+   */
+  useEffect(() => {
+    void backfillStanzaMarkerIds().catch(() => {
+      /* best-effort: derived ids keep the session correct until this succeeds */
+    });
+  }, []);
   const selectedIdRef = useRef<string | null>(null);
   selectedIdRef.current = selectedId;
   const [ytPaste, setYtPaste] = useState('');

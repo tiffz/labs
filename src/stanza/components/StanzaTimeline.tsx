@@ -172,11 +172,19 @@ export default function StanzaTimeline({
 }: StanzaTimelineProps) {
   const [dragMarkers, setDragMarkers] = useState<StanzaMarker[] | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
-  const workingMarkers = dragMarkers ?? markers;
-  const segments = useMemo(
-    () => deriveSegments(ensureMarkerIds(workingMarkers), duration),
-    [workingMarkers, duration],
+  /*
+   * Id-ensure ONCE, here, so every consumer below sees the same ids.
+   *
+   * Callers used to id-ensure independently — the segment memo, the sorted list, the drag baseline
+   * — while the rendered marker handles used the RAW `markers`. A marker with no persisted id was
+   * therefore `undefined` at the handle and something else everywhere else, so its drag handler hit
+   * `if (!m.id) return` and the boundary simply would not move.
+   */
+  const workingMarkers = useMemo(
+    () => ensureMarkerIds(dragMarkers ?? markers),
+    [dragMarkers, markers],
   );
+  const segments = useMemo(() => deriveSegments(workingMarkers, duration), [workingMarkers, duration]);
 
   const markerSelectionHull = useMemo(
     () => computeLoopHull(segments, selectedSegmentIndices),
@@ -223,7 +231,7 @@ export default function StanzaTimeline({
   );
 
   const sortedMarkers = useMemo(
-    () => [...ensureMarkerIds(workingMarkers)].sort((a, b) => a.time - b.time),
+    () => [...workingMarkers].sort((a, b) => a.time - b.time),
     [workingMarkers],
   );
 
@@ -273,6 +281,62 @@ export default function StanzaTimeline({
 
   const SCRUB_MOVE_PX = 5;
 
+  /*
+   * Optimistic scrub position.
+   *
+   * The playhead used to paint from the media element's reported time even while the user was
+   * dragging it, so the knob could not move faster than the media could seek. Worse,
+   * `resolveStanzaTimelineTransport` only trusts a pending seek within
+   * STANZA_TIMELINE_PENDING_DRIFT_SEC (0.35s) of live time — so any deliberate drag, which is by
+   * definition further than that, was discarded and the knob sat at the OLD position until the
+   * media caught up. That is the reported "I try to move it but it doesn't move until later".
+   *
+   * While a drag is in flight the pointer owns the position, full stop. Seeks are issued at most
+   * once per frame so a YouTube iframe or a large local file is not asked to seek per pointermove,
+   * and the exact final seek is committed on release.
+   */
+  const [scrubTimeSec, setScrubTimeSec] = useState<number | null>(null);
+  const pendingSeekRef = useRef<number | null>(null);
+  const seekRafRef = useRef<number | null>(null);
+
+  const flushPendingSeek = useCallback(() => {
+    seekRafRef.current = null;
+    const t = pendingSeekRef.current;
+    pendingSeekRef.current = null;
+    if (t != null) onSeek(t);
+  }, [onSeek]);
+
+  const queueScrubSeek = useCallback(
+    (time: number) => {
+      setScrubTimeSec(time);
+      pendingSeekRef.current = time;
+      if (seekRafRef.current == null) {
+        seekRafRef.current = requestAnimationFrame(flushPendingSeek);
+      }
+    },
+    [flushPendingSeek],
+  );
+
+  const endScrubSeek = useCallback(
+    (time: number) => {
+      if (seekRafRef.current != null) {
+        cancelAnimationFrame(seekRafRef.current);
+        seekRafRef.current = null;
+      }
+      pendingSeekRef.current = null;
+      setScrubTimeSec(null);
+      onSeek(time, { flushPlaybackState: true });
+    },
+    [onSeek],
+  );
+
+  useEffect(
+    () => () => {
+      if (seekRafRef.current != null) cancelAnimationFrame(seekRafRef.current);
+    },
+    [],
+  );
+
   const beginTrackScrub = useCallback(
     (e: Pick<React.PointerEvent<Element>, 'pointerId' | 'clientX'>) => {
       const el = trackRef.current;
@@ -284,9 +348,9 @@ export default function StanzaTimeline({
       } catch {
         /* ignore */
       }
-      onSeek(getTimeFromClientX(e.clientX));
+      queueScrubSeek(getTimeFromClientX(e.clientX));
     },
-    [getTimeFromClientX, onSeek],
+    [getTimeFromClientX, queueScrubSeek],
   );
 
   const armDeferredSegmentScrub = useCallback(
@@ -337,9 +401,9 @@ export default function StanzaTimeline({
   const onTrackPointerMove = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
       if (!scrubbingRef.current) return;
-      onSeek(getTimeFromClientX(e.clientX));
+      queueScrubSeek(getTimeFromClientX(e.clientX));
     },
-    [getTimeFromClientX, onSeek],
+    [getTimeFromClientX, queueScrubSeek],
   );
 
   const onTrackPointerUp = useCallback(
@@ -347,14 +411,14 @@ export default function StanzaTimeline({
       if (!scrubbingRef.current) return;
       scrubbingRef.current = false;
       setTrackScrubActive(false);
-      onSeek(getTimeFromClientX(e.clientX), { flushPlaybackState: true });
+      endScrubSeek(getTimeFromClientX(e.clientX));
       try {
         e.currentTarget.releasePointerCapture(e.pointerId);
       } catch {
         /* ignore */
       }
     },
-    [getTimeFromClientX, onSeek],
+    [getTimeFromClientX, endScrubSeek],
   );
 
   const onPlayheadPointerDown = useCallback(
@@ -520,7 +584,7 @@ export default function StanzaTimeline({
   }
 
   /** While repeating the selection span, keep the playhead from painting past the span end between wrap and the next state tick. */
-  const playheadTransportSec = transportTime ?? currentTime;
+  const playheadTransportSec = scrubTimeSec ?? transportTime ?? currentTime;
   const playheadDisplaySec = stanzaPlayheadDisplayTime(
     playheadTransportSec,
     duration,
@@ -1005,8 +1069,10 @@ export default function StanzaTimeline({
                   e.stopPropagation();
                   e.preventDefault();
                   if (!m.id) return;
-                  markerDragBaselineRef.current = ensureMarkerIds(markers);
-                  setDragMarkers(markerDragBaselineRef.current);
+                  // Baseline must be the SAME id-ensured list `m` came from, or `dragId` will not
+                  // match anything in it.
+                  markerDragBaselineRef.current = workingMarkers;
+                  setDragMarkers(workingMarkers);
                   setDragId(m.id);
                 }}
                 role="separator"
