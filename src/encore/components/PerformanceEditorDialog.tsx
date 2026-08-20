@@ -10,6 +10,10 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { useCallback, useEffect, useMemo, useRef, useState, Fragment, type ReactElement } from 'react';
 import { driveGetFileMetadata, driveUploadFileResumable } from '../drive/driveFetch';
+import {
+  classifyDriveCopyFailure,
+  copyDriveFileToMyDrive,
+} from '../../shared/drive/copyDriveFileToMyDrive';
 import { useEncoreDriveUploadDedup } from '../context/EncoreDriveUploadDedupContext';
 import { ensureEncoreDriveLayout } from '../drive/bootstrapFolders';
 import { resolveDriveUploadFolderId } from '../drive/resolveDriveUploadFolder';
@@ -100,7 +104,8 @@ type PerfDriveLinkFeedback =
   | { kind: 'ok'; name: string }
   | { kind: 'folder' }
   | { kind: 'error'; message: string }
-  | { kind: 'needs_signin' };
+  | { kind: 'needs_signin' }
+  | { kind: 'not_mine'; name: string; copying: boolean };
 
 function isDriveFolderMetadata(meta: {
   mimeType?: string;
@@ -166,6 +171,27 @@ export function PerformanceEditorDialog(props: {
     [songs, songId, subjectKind],
   );
   const [draft, setDraft] = useState<EncorePerformance>(newPerformance(songId, subjectKind));
+
+  /*
+   * `syncVideoLinkInput` needs the current video count, but must NOT depend on `draft`.
+   *
+   * It used to close over `draft` directly. `applyLinkedVideo` calls `setDraft` and every branch
+   * returns a freshly spread object, so the identity changed on every call even when the value did
+   * not. That fed a cycle: setDraft -> new draft -> new syncVideoLinkInput -> new syncVideoFromInput
+   * -> the debounce effect below re-runs -> another 200ms timer -> syncVideoLinkInput again. The
+   * only thing that broke the cycle was `clearAddPanelLink()`, which lives on the SUCCESS path
+   * only, so a Drive link the user cannot read span forever, re-hitting Drive every 200ms and
+   * appending another video row to the draft each pass.
+   *
+   * Reading through a ref keeps the callback identity stable across draft edits. The 200ms debounce
+   * means the effect below has long since committed this ref before any read.
+   */
+  /** Source file for a pending "Save a copy" — set when Drive says the file is not ours. */
+  const notMineSourceRef = useRef<{ fileId: string; name: string } | null>(null);
+  const draftRef = useRef(draft);
+  useEffect(() => {
+    draftRef.current = draft;
+  }, [draft]);
   const [videoInput, setVideoInput] = useState('');
   const [shortcutMsg, setShortcutMsg] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -300,7 +326,7 @@ export function PerformanceEditorDialog(props: {
 
   const syncVideoLinkInput = useCallback(
     async (input: string, opts?: SyncVideoLinkOpts) => {
-      const existingVideoCount = normalizeEncorePerformance(draft).videos?.length ?? 0;
+      const existingVideoCount = normalizeEncorePerformance(draftRef.current).videos?.length ?? 0;
       const linkApplyOpts = metadataLocked
         ? ({ appendNew: true } as const)
         : opts?.targetVideoId
@@ -392,6 +418,7 @@ export function PerformanceEditorDialog(props: {
 
         applyFeedback({ kind: 'loading' });
         try {
+          const resolvedDriveFileId = fileIdForMeta;
           const meta = await driveGetFileMetadata(googleAccessToken, fileIdForMeta);
           if (gen !== driveLookupGen.current) return;
           if (isDriveFolderMetadata(meta)) {
@@ -399,6 +426,21 @@ export function PerformanceEditorDialog(props: {
             return;
           }
           const displayName = meta.name?.trim() || 'Untitled';
+          /*
+           * Readable, but someone else's. Linking to their file id looks like it works and then
+           * rots: it depends on their sharing settings, their retention, and their account still
+           * existing. Offer to take a copy — the owner's expectation is that pasting a friend's
+           * link behaves like uploading the file.
+           *
+           * Deliberately an explicit action rather than an automatic copy: this runs on a 200ms
+           * debounce as the field changes, and silently pulling a multi-gigabyte video into the
+           * user's Drive (and quota) is not something to do on a keystroke.
+           */
+          if (meta.ownedByMe === false) {
+            notMineSourceRef.current = { fileId: resolvedDriveFileId, name: displayName };
+            applyFeedback({ kind: 'not_mine', name: displayName, copying: false });
+            return;
+          }
           applyFeedback({ kind: 'ok', name: displayName });
           if (metadataLocked) {
             setPendingLinkVideo({
@@ -455,7 +497,7 @@ export function PerformanceEditorDialog(props: {
         );
       }
     },
-    [googleAccessToken, performance, venueList, applyLinkedVideo, metadataLocked, draft],
+    [googleAccessToken, performance, venueList, applyLinkedVideo, metadataLocked],
   );
 
   const syncVideoFromInput = useCallback(
@@ -709,6 +751,66 @@ export function PerformanceEditorDialog(props: {
   const isEditingSavedPerformance = Boolean(performance && !metadataLocked);
   const primaryVideoIdInDraft = draft.primaryVideoId ?? draftVideos[0]?.id;
 
+  /**
+   * Take a copy of a Drive file the user can read but does not own, into their own performances
+   * folder, and attach the COPY.
+   *
+   * This is what "upload a link a friend sent me" has to mean. Attaching their file id keeps the
+   * performance log pointing at storage the user does not control: it breaks when they unshare it,
+   * move it, or close the account, and it does not come along in the user's own Drive backup.
+   */
+  const handleCopyToMyDrive = useCallback(async () => {
+    const source = notMineSourceRef.current;
+    if (!source || !googleAccessToken) return;
+    setDriveLinkFeedback({ kind: 'not_mine', name: source.name, copying: true });
+    try {
+      await withBlockingJob('Saving a copy to your Drive…', async (setProgress) => {
+        setProgress(0);
+        const layout = await ensureEncoreDriveLayout(googleAccessToken);
+        const parent =
+          resolveDriveUploadFolderId('performances', layout, repertoireExtras.driveUploadFolderOverrides) ??
+          layout.performancesFolderId;
+        if (!parent?.trim()) throw new Error('Performances folder is not ready yet.');
+
+        const copied = await copyDriveFileToMyDrive({
+          accessToken: googleAccessToken,
+          sourceFileId: source.fileId,
+          parentFolderId: parent.trim(),
+          onProgress: ({ bytesSent, bytesTotal }) =>
+            setProgress(bytesTotal > 0 ? bytesSent / bytesTotal : 0),
+        });
+
+        applyLinkedVideo(
+          {
+            videoTargetDriveFileId: copied.fileId,
+            externalVideoUrl: undefined,
+            videoShortcutDriveFileId: undefined,
+          },
+          { appendNew: true },
+        );
+        notMineSourceRef.current = null;
+        setVideoInput('');
+        setDriveLinkFeedback({ kind: 'ok', name: copied.name });
+      });
+    } catch (error) {
+      const reason = classifyDriveCopyFailure(error);
+      setDriveLinkFeedback({
+        kind: 'error',
+        message:
+          reason === 'no-access' || reason === 'not-found'
+            ? 'You do not have access to that file. Ask whoever shared it to give you access, then try again.'
+            : reason === 'not-a-file'
+              ? 'That link is a Google Doc, not a video file.'
+              : 'Could not save a copy. Check your connection and Drive storage, then try again.',
+      });
+    }
+  }, [
+    googleAccessToken,
+    withBlockingJob,
+    repertoireExtras.driveUploadFolderOverrides,
+    applyLinkedVideo,
+  ]);
+
   const addVideoSourceStrip: PerformanceAddVideoSourceStripProps = useMemo(
     () => ({
       videoInput,
@@ -716,6 +818,7 @@ export function PerformanceEditorDialog(props: {
       onVideoInputBlur: () => void syncVideoFromInput(),
       driveLinkFeedback,
       browseDriveVideoFileId,
+      onCopyToMyDrive: () => void handleCopyToMyDrive(),
       onPickFiles: routeDroppedVideoFiles,
       pickerDisabled: !googleAccessToken || uploading,
       uploading,
@@ -728,6 +831,7 @@ export function PerformanceEditorDialog(props: {
       driveLinkFeedback,
       browseDriveVideoFileId,
       routeDroppedVideoFiles,
+    handleCopyToMyDrive,
       googleAccessToken,
       uploading,
       draftVideos.length,

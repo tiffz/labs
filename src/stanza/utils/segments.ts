@@ -41,9 +41,65 @@ function markerLabelAt(markers: StanzaMarker[], time: number): string {
   return m?.label?.trim() || '';
 }
 
-/** Assigns a random `id` to markers that are missing one (IndexedDB / migration). */
+/**
+ * Prefix marking an id this module derived rather than one that was persisted.
+ * `migrateStanzaMarkerIds` upgrades these to real UUIDs at the DB boundary.
+ */
+export const DERIVED_MARKER_ID_PREFIX = 'stanzaMarkerAt:';
+
+/**
+ * Fill in a *deterministic* `id` for markers that are missing one.
+ *
+ * This used to mint `crypto.randomUUID()`, which made every caller disagree with every other
+ * caller — and made `deriveSegments` impure, so the same markers yielded different segment ids on
+ * consecutive calls. Five subsystems call this (`deriveSegments`, `stanzaBeatGrid`,
+ * `stanzaMarkerSpacing`, `stanzaMarkerMerge`, the timeline's drag baseline), so one id-less marker
+ * was simultaneously five different markers:
+ *
+ * - `skippedBySegmentId` is keyed by segment id, and `pruneStanzaSkippedBySegmentId` drops keys
+ *   that are not in the live set — so "skip during playback" quietly forgot itself.
+ * - `mergeStanzaMarkers` matched by id first, so two devices minted different ids for the same
+ *   marker and produced duplicates; `deletedMarkerIds` tombstones keyed on those ids stopped
+ *   matching, so deleted markers came back.
+ * - The timeline set `dragId` from the ORIGINAL marker (`undefined`) while the drag baseline had a
+ *   fresh id, so dragging an id-less boundary did nothing.
+ *
+ * Deriving from time keeps every caller in agreement without touching stored data. Two markers at
+ * the same instant collapse to one id, which is correct: the boundary dedupe below already treats
+ * them as a single boundary.
+ */
 export function ensureMarkerIds(markers: StanzaMarker[]): StanzaMarker[] {
-  return markers.map((m) => (m.id ? m : { ...m, id: crypto.randomUUID() }));
+  return markers.map((m) =>
+    m.id ? m : { ...m, id: `${DERIVED_MARKER_ID_PREFIX}${m.time.toFixed(4)}` }
+  );
+}
+
+/** True when this id was derived on the fly and should be replaced with a persisted one. */
+export function isDerivedMarkerId(id: string | undefined): boolean {
+  return typeof id === 'string' && id.startsWith(DERIVED_MARKER_ID_PREFIX);
+}
+
+/**
+ * Give every marker a permanent random id, for use at the persistence boundary only.
+ *
+ * A time-derived id changes when the marker moves, which is fine for keeping one render
+ * self-consistent but wrong to store: the whole point of the id is to survive a move and to mean
+ * the same thing on another device. Call this when loading or saving a song, then write the result
+ * back, so a marker acquires its identity exactly once.
+ *
+ * Returns the same array instance when nothing needs changing, so callers can skip a write.
+ */
+export function migrateStanzaMarkerIds(markers: readonly StanzaMarker[]): {
+  markers: StanzaMarker[];
+  changed: boolean;
+} {
+  let changed = false;
+  const next = markers.map((m) => {
+    if (m.id && !isDerivedMarkerId(m.id)) return m;
+    changed = true;
+    return { ...m, id: crypto.randomUUID() };
+  });
+  return { markers: changed ? next : (markers as StanzaMarker[]), changed };
 }
 
 function boundaryKeyAtTime(t: number, duration: number, sortedWithIds: StanzaMarker[]): string {

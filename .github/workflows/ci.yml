@@ -376,10 +376,20 @@ jobs:
           npx tsx scripts/run-scoped-visual.mts "${{ github.event.before }}"
         fi
 
-    # Full-matrix advisory visual regression moved to nightly-portfolio-audit.yml
-    # (it added ~4 min to every cross-cutting PR and was advisory-only here).
-    # Scoped diffs keep the BLOCKING per-app visual step above; nightly stays
-    # the canonical full-matrix visual signal.
+    - name: Run visual regression screenshots (full matrix, blocking)
+      # Broad diffs (src/shared/**, tooling, config) previously got NO visual coverage at PR time:
+      # the scoped step above only runs when e2e_mode == 'scoped', so the riskiest changes for
+      # appearance — shared CSS and design tokens, which every app inherits — were the one category
+      # with nothing checking them until the nightly ran hours later.
+      #
+      # That is how #163 landed a deliberate drums toolbar restyle without refreshing its baseline:
+      # it touched src/shared/components/music/appSharedThemes.css, so the diff class was 'full',
+      # the scoped visual step was skipped, CI was green, and the nightly went red that evening.
+      #
+      # The full matrix is 66 screenshots in ~2.8 min on CI, which is worth paying on the minority
+      # of PRs that are broad. Judge unexpected diffs per docs/VISUAL_JUDGE_RUBRIC.md.
+      if: needs.scope.outputs.e2e_mode == 'full'
+      run: npm run test:e2e:visual
 
     - name: Upload visual regression artifacts
       if: always()

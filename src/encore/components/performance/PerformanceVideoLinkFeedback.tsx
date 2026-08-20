@@ -1,6 +1,7 @@
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutlined';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import Alert from '@mui/material/Alert';
+import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
 import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
@@ -15,14 +16,37 @@ export type PerformanceVideoLinkFeedbackState =
   | { kind: 'ok'; name: string }
   | { kind: 'folder' }
   | { kind: 'error'; message: string }
-  | { kind: 'needs_signin' };
+  | { kind: 'needs_signin' }
+  /** Readable, but owned by someone else: offer to take a copy rather than link to their file. */
+  | { kind: 'not_mine'; name: string; copying: boolean };
 
 export function PerformanceVideoLinkFeedback(props: {
   feedback: PerformanceVideoLinkFeedbackState;
   browseDriveVideoFileId: string | null;
+  onCopyToMyDrive?: () => void;
 }): ReactElement | null {
-  const { feedback, browseDriveVideoFileId } = props;
+  const { feedback, browseDriveVideoFileId, onCopyToMyDrive } = props;
   if (!feedback) return null;
+
+  if (feedback.kind === 'not_mine') {
+    return (
+      <Alert severity="info" sx={{ py: 0.25 }}>
+        <Stack direction="row" sx={{ alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+          <Typography variant="body2">
+            {feedback.name} is in someone else&apos;s Drive. Save a copy so it stays with your log.
+          </Typography>
+          <Button
+            size="small"
+            variant="outlined"
+            disabled={feedback.copying}
+            onClick={onCopyToMyDrive}
+          >
+            {feedback.copying ? 'Saving a copy…' : 'Save a copy'}
+          </Button>
+        </Stack>
+      </Alert>
+    );
+  }
 
   if (feedback.kind === 'loading') {
     return (

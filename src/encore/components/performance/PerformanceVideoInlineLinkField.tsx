@@ -17,7 +17,8 @@ export type PerformanceVideoInlineLinkFeedback =
   | { kind: 'ok'; name: string }
   | { kind: 'folder' }
   | { kind: 'error'; message: string }
-  | { kind: 'needs_signin' };
+  | { kind: 'needs_signin' }
+  | { kind: 'not_mine'; name: string; copying: boolean };
 
 export type PerformanceVideoInlineLinkFieldProps = {
   value: string;

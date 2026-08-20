@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { StanzaMarker } from '../db/stanzaDb';
 import {
   areContiguousSegmentIndices,
   deletableBoundaryMarkerAtTime,
@@ -120,5 +121,55 @@ describe('areContiguousSegmentIndices', () => {
   it('rejects gaps', () => {
     expect(areContiguousSegmentIndices([0, 2])).toBe(false);
     expect(areContiguousSegmentIndices([0, 1, 3])).toBe(false);
+  });
+});
+
+/*
+ * `deriveSegments` must be PURE.
+ *
+ * It used to call `ensureMarkerIds`, which minted `crypto.randomUUID()` for any marker lacking an
+ * id, so the same markers produced different segment ids on every call. Everything keyed by segment
+ * id then fell apart: `pruneStanzaSkippedBySegmentId` drops flags whose ids are no longer "live",
+ * so "skip during playback" silently forgot itself; React keys churned; and selection by segment id
+ * could not survive a render.
+ *
+ * The docstring claimed "Segment ids are stable across marker moves" the whole time. They were not
+ * even stable across two consecutive calls with identical input.
+ */
+describe('deriveSegments purity', () => {
+  const idless = [
+    { time: 10, label: 'A' },
+    { time: 20, label: 'B' },
+  ] as StanzaMarker[];
+
+  it('returns identical segment ids for identical input', () => {
+    const first = deriveSegments(idless, 30).map((s) => s.id);
+    const second = deriveSegments(idless, 30).map((s) => s.id);
+    expect(first).toEqual(second);
+  });
+
+  it('does not mutate or invent ids on the caller-supplied markers', () => {
+    const input = [{ time: 5, label: 'A' }] as StanzaMarker[];
+    deriveSegments(input, 10);
+    expect(input[0]!.id).toBeUndefined();
+  });
+
+  it('keeps segment ids stable when an unrelated marker moves', () => {
+    const before = deriveSegments(
+      [
+        { time: 10, label: 'A', id: 'm1' },
+        { time: 20, label: 'B', id: 'm2' },
+      ] as StanzaMarker[],
+      30
+    );
+    const after = deriveSegments(
+      [
+        { time: 10, label: 'A', id: 'm1' },
+        { time: 22, label: 'B', id: 'm2' },
+      ] as StanzaMarker[],
+      30
+    );
+    // The m1|m2 segment necessarily changes span, but its identity must not.
+    expect(after.map((s) => s.id)).toEqual(before.map((s) => s.id));
   });
 });
