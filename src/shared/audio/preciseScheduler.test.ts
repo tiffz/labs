@@ -177,6 +177,55 @@ describe('PreciseScheduler', () => {
    * (`RhythmPlayer.LOOK_AHEAD_HIDDEN_SEC`, `HIDDEN_TAB_LOOK_AHEAD_SEC`) which could never be
    * reached, because the tick that reads it was the very thing that stopped running.
    */
+
+  /*
+   * A tick may stop — or restart — its own loop. `RhythmPlayer.tick` calls `scheduler.stop()` at
+   * end of playback, and the naive `tick(); requestAnimationFrame(loop)` re-armed immediately
+   * afterwards with a closure `stopLoop` could no longer reach. Measured before the fix: 4 ticks at
+   * stop, 35 and still climbing, so every finished non-looping playback left a 60Hz loop spinning
+   * until the next play/stop.
+   */
+  describe('a tick that stops its own loop', () => {
+    const stubRaf = () => {
+      vi.spyOn(globalThis, 'requestAnimationFrame').mockImplementation(
+        (cb) => window.setTimeout(() => cb(0), 16) as unknown as number
+      );
+      vi.spyOn(globalThis, 'cancelAnimationFrame').mockImplementation((id) =>
+        clearTimeout(id as unknown as number)
+      );
+    };
+
+    it('really stops', () => {
+      stubRaf();
+      let ticks = 0;
+      scheduler.startLoop(() => {
+        ticks += 1;
+        if (ticks === 3) scheduler.stop();
+      });
+      vi.advanceTimersByTime(64);
+      const atStop = ticks;
+      vi.advanceTimersByTime(500);
+      expect(ticks, `kept ticking after stop(): ${atStop} -> ${ticks}`).toBe(atStop);
+    });
+
+    it('does not leave an orphan chain when a tick restarts the loop', () => {
+      stubRaf();
+      let first = 0;
+      let second = 0;
+      scheduler.startLoop(() => {
+        first += 1;
+        if (first === 2) scheduler.startLoop(() => { second += 1; });
+      });
+      vi.advanceTimersByTime(80);
+      scheduler.stopLoop();
+      const a = first;
+      const b = second;
+      vi.advanceTimersByTime(500);
+      expect(first, 'old chain kept running after stopLoop').toBe(a);
+      expect(second, 'new chain kept running after stopLoop').toBe(b);
+    });
+  });
+
   describe('hidden tab', () => {
     /** Mimics a hidden tab: rAF is registered but never fires. */
     const stubDeadRaf = () => {
