@@ -1,4 +1,5 @@
 import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
 import IconButton from '@mui/material/IconButton';
 import InputBase from '@mui/material/InputBase';
@@ -21,6 +22,8 @@ import type { OriginalAudioTake } from '../types';
 const STORAGE_STATUS_COPY: Record<TakeStorageStatus, string> = {
   drive: 'Backed up',
   local: 'On this device',
+  // The specific reason replaces this line when we have one; this is the fallback.
+  'backup-failed': 'On this device. Backup failed',
   missing: 'Choose the file again to play it here',
 };
 
@@ -31,6 +34,10 @@ export type OriginalsTakeRowProps = {
   playable: boolean;
   storageStatus: TakeStorageStatus;
   driveOpenUrl?: string;
+  /** Plain-English reason the last Drive backup failed, shown in place of the status line. */
+  backupFailureMessage?: string;
+  /** Offered only when retrying could actually work (not for a full Drive or a signed-out user). */
+  onRetryBackup?: () => void;
   readOnly?: boolean;
   onPlay: () => void;
   onMakePreferred?: () => void;
@@ -58,6 +65,8 @@ export function OriginalsTakeRow(props: OriginalsTakeRowProps): ReactElement {
     playable,
     storageStatus,
     driveOpenUrl,
+    backupFailureMessage,
+    onRetryBackup,
     readOnly = false,
     onPlay,
     onMakePreferred,
@@ -201,11 +210,23 @@ export function OriginalsTakeRow(props: OriginalsTakeRowProps): ReactElement {
           )}
           <Typography
             variant="caption"
-            sx={{ color: storageStatus === 'missing' ? 'warning.main' : 'text.secondary' }}
+            sx={{
+              color:
+                storageStatus === 'missing' || storageStatus === 'backup-failed'
+                  ? 'warning.main'
+                  : 'text.secondary',
+            }}
           >
             {isPreferred ? 'Preferred take · ' : ''}
-            {STORAGE_STATUS_COPY[storageStatus]}
+            {storageStatus === 'backup-failed' && backupFailureMessage
+              ? backupFailureMessage
+              : STORAGE_STATUS_COPY[storageStatus]}
           </Typography>
+          {storageStatus === 'backup-failed' && onRetryBackup ? (
+            <Button size="small" onClick={onRetryBackup} sx={{ alignSelf: 'flex-start', px: 0.5 }}>
+              Back up now
+            </Button>
+          ) : null}
         </Box>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25, flexShrink: 0, ml: 'auto' }}>

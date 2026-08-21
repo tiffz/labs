@@ -128,6 +128,14 @@ export function OriginalsTakesWorkspace({
                 isPlaying={takes.isPlaying(take.id)}
                 playable={takes.isPlayable(take)}
                 storageStatus={takes.storageStatus(take)}
+                backupFailureMessage={takes.backupFailure(take)?.message}
+                onRetryBackup={
+                  // Only when a retry could actually succeed: a full Drive or an expired sign-in
+                  // needs the user to act first, and a button that cannot work teaches distrust.
+                  takes.backupFailure(take)?.retryable
+                    ? () => void takes.retryBackup(take.id)
+                    : undefined
+                }
                 driveOpenUrl={takes.driveOpenUrl(take)}
                 readOnly={readOnly}
                 onPlay={() => takes.play(take)}
