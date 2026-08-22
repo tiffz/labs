@@ -83,7 +83,10 @@ function buildGrid(
 }
 
 export class GridMetronomeScheduler {
+  /** Highest slot already scheduled. With look-ahead this runs AHEAD of the playhead. */
   private lastGlobalSlot = -1;
+  /** Slot the playhead was in on the previous poll; used to spot a real backwards seek. */
+  private lastSeenSlot = -1;
   private voicePack = new VoicePackLoader();
   private voiceLoaded = false;
   private clickSample: LoadedClickSample | null = null;
@@ -129,6 +132,7 @@ export class GridMetronomeScheduler {
 
   reset(): void {
     this.lastGlobalSlot = -1;
+    this.lastSeenSlot = -1;
   }
 
   private async ensureAudio(ctx: AudioContext, prefs: GridMetronomePlaybackPrefs): Promise<void> {
@@ -157,13 +161,26 @@ export class GridMetronomeScheduler {
     }
   }
 
-  /** Schedule clicks/voice for grid slots crossed since the last poll. */
+  /**
+   * Schedule clicks/voice for grid slots up to `timelineSec + lookAheadSec`.
+   *
+   * This used to schedule only slots ALREADY CROSSED, so every click landed at or before
+   * `ctx.currentTime` and the 50ms late-gate below discarded the rest — an effective horizon of
+   * zero. Invisible at 60Hz, fatal at the ~1Hz a browser clamps a hidden tab to: a whole second of
+   * slots collapsed to whichever fell in the last 50ms, so the click dropped to about one tick a
+   * second and returned on an arbitrary beat, while the drum layer (which schedules 4s ahead) kept
+   * perfect time.
+   *
+   * `lookAheadSec` defaults to 0 to preserve the exact previous behaviour for callers that have not
+   * opted in; pass the gap between polls, doubled.
+   */
   async pollTimeline(
     ctx: AudioContext,
     timelineSec: number,
     prefs: GridMetronomePlaybackPrefs,
     legacyMetVolume: number,
     audioLeadSec: number,
+    lookAheadSec = 0,
   ): Promise<void> {
     if (this.pollInFlight) return;
     if (this.slotsPerMeasure <= 0 || this.slotDurationSec <= 0) return;
@@ -174,20 +191,29 @@ export class GridMetronomeScheduler {
       const globalSlot = Math.floor(adjusted / this.slotDurationSec + 1e-9);
       if (globalSlot < 0) return;
 
+      const horizonSlot = Math.floor(
+        (adjusted + Math.max(0, lookAheadSec)) / this.slotDurationSec + 1e-9,
+      );
+
       if (this.lastGlobalSlot < 0) {
         this.lastGlobalSlot = globalSlot - 1;
       }
 
-      if (globalSlot < this.lastGlobalSlot) {
-        this.lastGlobalSlot = globalSlot;
-        return;
+      /*
+       * Backwards seek or loop wrap. Compare against where the PLAYHEAD was, not against what we
+       * have scheduled — with a look-ahead horizon `lastGlobalSlot` is legitimately ahead of the
+       * playhead, so the old `globalSlot < lastGlobalSlot` test would fire on every poll.
+       */
+      if (this.lastSeenSlot >= 0 && globalSlot < this.lastSeenSlot) {
+        this.lastGlobalSlot = globalSlot - 1;
       }
+      this.lastSeenSlot = globalSlot;
 
-      if (globalSlot === this.lastGlobalSlot) return;
+      if (horizonSlot <= this.lastGlobalSlot) return;
 
       await this.ensureAudio(ctx, prefs);
 
-      for (let slot = this.lastGlobalSlot + 1; slot <= globalSlot; slot++) {
+      for (let slot = this.lastGlobalSlot + 1; slot <= horizonSlot; slot++) {
         const entry = this.grid[slot % this.slotsPerMeasure];
         if (!entry) continue;
 
@@ -233,7 +259,9 @@ export class GridMetronomeScheduler {
         }
       }
 
-      this.lastGlobalSlot = globalSlot;
+      // Advance to what we SCHEDULED, not to where the playhead is, or the next poll re-emits
+      // every slot inside the horizon.
+      this.lastGlobalSlot = horizonSlot;
     } finally {
       this.pollInFlight = false;
     }

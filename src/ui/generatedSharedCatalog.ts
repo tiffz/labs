@@ -2179,7 +2179,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "hook",
     "stability": "stable",
     "owner": "playback-core",
-    "description": "No JSDoc summary provided.",
+    "description": "Foreground horizon: one rAF frame is ~16ms, so this is generous headroom.",
     "tags": [
       "audio",
       "api"
@@ -16113,6 +16113,49 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "stability": "stable",
     "owner": "shared-core",
     "description": "Shared portfolio Drive backup hook factory — auto pull/push, merge, conflict, optional undo. App hooks supply envelope/merge/sync-meta callbacks via .",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-describedrivewritefailure-ts-describedrivewritefailure",
+    "name": "describeDriveWriteFailure",
+    "path": "src/shared/drive/describeDriveWriteFailure.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Turn a thrown Drive write error into something a person can act on. Every Encore upload path used to end in a bare `catch {}`. Quota exceeded, a revoked token, a zero-byte file and \"you are offline\" all looked identical to success, because the local row saved either way — so a demo take read as safe while living on exactly one device. Silence is the worst possible answer here: the whole point of the Drive copy is that it survives losing the device. `formatDriveRequestFailure` already exists but produces operator text (\"Drive POST upload/resumable (init) (403): storageQuotaExceeded…\"). That belongs in a log, not under a take in the UI. This produces one plain sentence plus the two facts a caller needs: whether retrying unaided could work, and whether the user has to do something first.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-describedrivewritefailure-ts-drivewritefailure",
+    "name": "DriveWriteFailure",
+    "path": "src/shared/drive/describeDriveWriteFailure.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Turn a thrown Drive write error into something a person can act on. Every Encore upload path used to end in a bare `catch {}`. Quota exceeded, a revoked token, a zero-byte file and \"you are offline\" all looked identical to success, because the local row saved either way — so a demo take read as safe while living on exactly one device. Silence is the worst possible answer here: the whole point of the Drive copy is that it survives losing the device. `formatDriveRequestFailure` already exists but produces operator text (\"Drive POST upload/resumable (init) (403): storageQuotaExceeded…\"). That belongs in a log, not under a take in the UI. This produces one plain sentence plus the two facts a caller needs: whether retrying unaided could work, and whether the user has to do something first.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-describedrivewritefailure-ts-drivewritefailurereason",
+    "name": "DriveWriteFailureReason",
+    "path": "src/shared/drive/describeDriveWriteFailure.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Turn a thrown Drive write error into something a person can act on. Every Encore upload path used to end in a bare `catch {}`. Quota exceeded, a revoked token, a zero-byte file and \"you are offline\" all looked identical to success, because the local row saved either way — so a demo take read as safe while living on exactly one device. Silence is the worst possible answer here: the whole point of the Drive copy is that it survives losing the device. `formatDriveRequestFailure` already exists but produces operator text (\"Drive POST upload/resumable (init) (403): storageQuotaExceeded…\"). That belongs in a log, not under a take in the UI. This produces one plain sentence plus the two facts a caller needs: whether retrying unaided could work, and whether the user has to do something first.",
     "tags": [
       "api"
     ],

@@ -74,8 +74,20 @@ export class PreciseScheduler {
       return;
     }
 
+    /*
+     * Re-arm only while this closure is still the active tick.
+     *
+     * `tick()` can stop the loop from inside itself — `RhythmPlayer.tick` calls `scheduler.stop()`
+     * at end of playback — and the naive `tick(); requestAnimationFrame(loop)` re-armed immediately
+     * afterwards, with a closure `stopLoop` could no longer reach. Measured: 4 ticks at stop, 35 and
+     * climbing, so a finished non-looping playback left a 60Hz loop spinning until the next
+     * play/stop. The same hazard applies if a tick RESTARTS the loop: without this guard the old
+     * chain clobbers the new chain's `rafId`, and the next `stopLoop` cancels neither.
+     */
     const loop = () => {
+      if (this.tickFn !== tick) return;
       tick();
+      if (this.tickFn !== tick) return;
       this.rafId = requestAnimationFrame(loop);
     };
     this.rafId = requestAnimationFrame(loop);

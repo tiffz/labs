@@ -114,7 +114,12 @@ export function mergePracticePlaybackToggle(
   return undefined;
 }
 
-function mergePracticeMarkers(local: StanzaSong, remote: MergeSide): StanzaSong['markers'] {
+/**
+ * The ONE marker-merge policy. Exported so the practice-overlay channel resolves markers the same
+ * way `progress.json` does — it used to run its own marker-count heuristic, which is the exact
+ * algorithm this function was written to replace.
+ */
+export function mergePracticeMarkers(local: StanzaSong, remote: MergeSide): StanzaSong['markers'] {
   const lMarkers = local.markers ?? [];
   const rMarkers = remote.markers ?? [];
 

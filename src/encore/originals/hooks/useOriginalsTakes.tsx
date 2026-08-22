@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
+import type { DriveWriteFailure } from '../../../shared/drive/describeDriveWriteFailure';
+import { useDriveBackupFailures } from './useDriveBackupFailures';
 import { useEncoreAuth } from '../../context/EncoreAuthContext';
 import { useEncoreDriveUploadDedup } from '../../context/EncoreDriveUploadDedupContext';
 import {
@@ -13,14 +15,22 @@ import { buildLocalOriginalTake, uploadOriginalTakeToDrive } from '../originalTa
 import {
   deleteOriginalTakeBlob,
   hasOriginalTakeBlob,
+  loadOriginalTakeBlob,
   originalTakeBlobKey,
   saveOriginalTakeBlob,
 } from '../originalTakeLocalAudio';
 import { ORIGINALS_DEMO_TAKE_AUDIO_ACCEPT } from '../originalsSongFileSlots';
 import { preferredOriginalTake, type EncoreOriginalSong, type OriginalAudioTake } from '../types';
 
-/** Where a take's audio currently lives. Drives the one-line status under each take. */
-export type TakeStorageStatus = 'drive' | 'local' | 'missing';
+/**
+ * Where a take's audio currently lives. Drives the one-line status under each take.
+ *
+ * `backup-failed` exists because the other three could not say the thing that mattered. A failed
+ * Drive upload was caught and discarded, leaving the take as `local` — true, and indistinguishable
+ * from "you are signed out, so of course it is only here". The take read as fine while sitting on
+ * exactly one device, which is the one loss this app cannot undo.
+ */
+export type TakeStorageStatus = 'drive' | 'local' | 'backup-failed' | 'missing';
 
 export type TakeDownloadProps = {
   onDownload: () => void | Promise<void>;
@@ -44,6 +54,10 @@ export type OriginalsTakesController = {
   isPlaying: (takeId: string) => boolean;
   isPlayable: (take: OriginalAudioTake) => boolean;
   storageStatus: (take: OriginalAudioTake) => TakeStorageStatus;
+  /** Why the last Drive backup attempt failed this session, or null. */
+  backupFailure: (take: OriginalAudioTake) => DriveWriteFailure | null;
+  /** Re-upload from the local copy. No-op unless signed in and not already backed up. */
+  retryBackup: (takeId: string) => Promise<void>;
   driveOpenUrl: (take: OriginalAudioTake) => string | undefined;
   downloadProps: (take: OriginalAudioTake) => TakeDownloadProps | null;
   /** Play, or re-pick the file when the audio is not on this device. */
@@ -77,6 +91,8 @@ export function useOriginalsTakes({
 
   const [uploading, setUploading] = useState(false);
   const [localAudioIds, setLocalAudioIds] = useState<Set<string>>(() => new Set());
+  const backupFailures = useDriveBackupFailures();
+  const { record: recordBackupFailure, clear: clearBackupFailure } = backupFailures;
   const replaceInputRef = useRef<HTMLInputElement>(null);
   const replaceTakeIdRef = useRef<string | null>(null);
   const takeFileInputRef = useRef<HTMLInputElement>(null);
@@ -166,9 +182,13 @@ export function useOriginalsTakes({
                   uploadWithDuplicateCheck,
                   registerUploadedDriveFile,
                 );
-                if (driveFileId) updateTake(take.id, { driveFileId });
-              } catch {
-                /* local cache still playable; take already persisted */
+                if (driveFileId) {
+                  updateTake(take.id, { driveFileId });
+                  clearBackupFailure(take.id);
+                }
+              } catch (error) {
+                // Safe locally, but "safe on one device" is not what backup means.
+                recordBackupFailure(take.id, error);
               }
             }),
           );
@@ -184,6 +204,8 @@ export function useOriginalsTakes({
       registerUploadedDriveFile,
       updateTake,
       uploadWithDuplicateCheck,
+      recordBackupFailure,
+      clearBackupFailure,
     ],
   );
 
@@ -211,9 +233,12 @@ export function useOriginalsTakes({
                 uploadWithDuplicateCheck,
                 registerUploadedDriveFile,
               );
-              if (driveFileId) patch.driveFileId = driveFileId;
-            } catch {
-              /* keep local playback */
+              if (driveFileId) {
+                patch.driveFileId = driveFileId;
+                clearBackupFailure(takeId);
+              }
+            } catch (error) {
+              recordBackupFailure(takeId, error);
             }
           }
         }
@@ -222,7 +247,15 @@ export function useOriginalsTakes({
         setUploading(false);
       }
     },
-    [googleAccessToken, readOnly, registerUploadedDriveFile, updateTake, uploadWithDuplicateCheck],
+    [
+      googleAccessToken,
+      readOnly,
+      registerUploadedDriveFile,
+      updateTake,
+      uploadWithDuplicateCheck,
+      recordBackupFailure,
+      clearBackupFailure,
+    ],
   );
 
   const isPlayable = useCallback(
@@ -234,10 +267,71 @@ export function useOriginalsTakes({
   const storageStatus = useCallback(
     (take: OriginalAudioTake): TakeStorageStatus => {
       if (take.driveFileId?.trim()) return 'drive';
-      if (take.hasLocalAudio || localAudioIds.has(take.id)) return 'local';
-      return 'missing';
+      const here = take.hasLocalAudio || localAudioIds.has(take.id);
+      if (here && backupFailures.get(take.id)) return 'backup-failed';
+      return here ? 'local' : 'missing';
     },
-    [localAudioIds],
+    [localAudioIds, backupFailures],
+  );
+
+  const backupFailure = useCallback(
+    (take: OriginalAudioTake): DriveWriteFailure | null => backupFailures.get(take.id),
+    [backupFailures],
+  );
+
+  /**
+   * Re-attempt one take's Drive backup from the copy already on this device.
+   *
+   * No re-picking the file: the bytes are in `originalTakeBlobs`, which is precisely why the take
+   * stayed playable after the upload failed. Offered only when `describeDriveWriteFailure` says a
+   * retry could plausibly succeed — a full Drive or an expired sign-in needs the user to act first,
+   * and a button that cannot work just teaches them the button does not work.
+   */
+  const retryBackup = useCallback(
+    async (takeId: string) => {
+      if (!googleAccessToken || readOnly) return;
+      const song = songRef.current;
+      const take = song.takes.find((t) => t.id === takeId);
+      if (!take || take.driveFileId?.trim()) return;
+
+      const stored = await loadOriginalTakeBlob(originalTakeBlobKey(song.id, takeId));
+      if (!stored) {
+        recordBackupFailure(
+          takeId,
+          new Error('The audio for this take is no longer on this device.'),
+        );
+        return;
+      }
+
+      const file = new File([stored.blob], take.label?.trim() || 'Take', {
+        type: stored.mimeType || 'audio/mpeg',
+      });
+      try {
+        const driveFileId = await uploadOriginalTakeToDrive(
+          file,
+          take,
+          song.title,
+          googleAccessToken,
+          uploadWithDuplicateCheck,
+          registerUploadedDriveFile,
+        );
+        if (driveFileId) {
+          updateTake(takeId, { driveFileId });
+          clearBackupFailure(takeId);
+        }
+      } catch (error) {
+        recordBackupFailure(takeId, error);
+      }
+    },
+    [
+      googleAccessToken,
+      readOnly,
+      uploadWithDuplicateCheck,
+      registerUploadedDriveFile,
+      updateTake,
+      recordBackupFailure,
+      clearBackupFailure,
+    ],
   );
 
   const play = useCallback(
@@ -377,6 +471,8 @@ export function useOriginalsTakes({
     isPlaying,
     isPlayable,
     storageStatus,
+    backupFailure,
+    retryBackup,
     driveOpenUrl,
     downloadProps,
     play,

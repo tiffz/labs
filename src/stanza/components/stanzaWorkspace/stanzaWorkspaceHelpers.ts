@@ -1,6 +1,6 @@
 import type { Theme } from '@mui/material/styles';
 import { describeYoutubePlayerError as describeYoutubePlayerErrorShared } from '../../../shared/youtube/describeYoutubePlayerError';
-import type { StanzaSong, StanzaStemTrack } from '../../db/stanzaDb';
+import type { StanzaStemTrack } from '../../db/stanzaDb';
 
 /** Drag-reorder stem rows (not OS file drops). */
 export const STANZA_STEM_REORDER_MIME = 'text/x-stanza-stem-reorder';
@@ -38,9 +38,6 @@ export function stanzaMixTrackLabelSurfaceSx(theme: Theme) {
   };
 }
 
-export function songHasPractice(s: StanzaSong): boolean {
-  return (s.markers?.length ?? 0) > 0 || Object.keys(s.stats ?? {}).length > 0;
-}
 
 export function describeYoutubePlayerError(code: number): string {
   return describeYoutubePlayerErrorShared(code, { embedBlockedContext: 'inside Stanza' });

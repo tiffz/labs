@@ -35,6 +35,7 @@ export type StanzaPracticeOverlayEntry = Pick<
   | 'localTransposeSemitones'
   | 'localOriginalKey'
   | 'skippedBySegmentId'
+  | 'deletedMarkerIds'
   | 'stems'
   | 'updatedAt'
 > & {

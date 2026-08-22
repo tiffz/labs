@@ -4,6 +4,8 @@
  */
 
 import type { StanzaSong } from '../db/stanzaDb';
+import type { StanzaSongDriveRow } from './stanzaDriveEnvelope';
+import { mergePracticeMarkers } from '../utils/stanzaSongMetadataMerge';
 import {
   mergePracticePlaybackToggle,
   mergePracticeSkippedBySegmentId,
@@ -82,6 +84,7 @@ const OVERLAY_FIELDS: (keyof StanzaPracticeOverlayEntry)[] = [
   'localTransposeSemitones',
   'localOriginalKey',
   'skippedBySegmentId',
+  'deletedMarkerIds',
   // NOT 'stems'. A stem carries a live `Blob`, and `JSON.stringify` turns a Blob into `{}`. The
   // merge then wrote that back onto the row, and the corruption is unrecoverable by the app:
   // `stanzaSongStemsNeedHydration` tests `!localBlob || localBlob.size === 0`, and `{}` is truthy
@@ -140,12 +143,25 @@ export function mergeStanzaPracticeOverlayIntoRows(
   return rows.map((row) => {
     const entry = byKey.get(overlayKeyForStanzaSong(row));
     if (!entry) return row;
-    const localMarkerCount = (row.markers ?? []).length;
-    const overlayMarkerCount = (entry.markers ?? []).length;
-    if (overlayMarkerCount < localMarkerCount) return row;
     const merged: StanzaSong = { ...row };
+
+    /*
+     * Markers resolve through the SAME policy as `progress.json`, never by marker count.
+     *
+     * This channel used to keep the heuristic that `mergePracticeMarkers` was written to replace:
+     * "if the overlay has fewer markers, ignore it", then assign `markers` wholesale. That lost
+     * data both ways — a rename on the smaller side was discarded, and a delete was undone by any
+     * device that still listed the section. Since `useStanzaDriveBackup` applies the overlay AFTER
+     * the fixed merge on the same rows, the overlay could quietly overwrite the correct result.
+     *
+     * Proven before fixing: a locally deleted marker with a recorded tombstone came back as soon
+     * as an overlay entry still listed it.
+     */
+    merged.markers = mergePracticeMarkers(row, entry as unknown as StanzaSongDriveRow);
     const overlayIsNewer = entry.updatedAt >= row.updatedAt;
     for (const key of OVERLAY_FIELDS) {
+      // markers are resolved above by the shared policy.
+      if (key === 'markers') continue;
       if (key === 'updatedAt') {
         if (entry.updatedAt >= row.updatedAt) merged.updatedAt = entry.updatedAt;
         continue;

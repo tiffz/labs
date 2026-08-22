@@ -7,12 +7,10 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import AppTooltip from '../../shared/components/AppTooltip';
-import type { SegmentStat } from '../db/stanzaDb';
 import type { DerivedSegment } from '../utils/segments';
 
 export interface StanzaSectionHoverCardProps {
   segment: DerivedSegment;
-  stats: SegmentStat | undefined;
   /** `x` = horizontal center of the card in viewport px; `segmentTop` = top edge of the hovered section (card sits above it). */
   position: { x: number; segmentTop: number };
   draftLabel: string;
@@ -46,11 +44,10 @@ function formatDuration(sec: number): string {
 }
 
 /**
- * Hover card for a Stanza timeline section: label, timing, practice stats.
+ * Hover card for a Stanza timeline section: label and timing.
  */
 export default function StanzaSectionHoverCard({
   segment,
-  stats,
   position,
   draftLabel,
   onDraftLabelChange,
@@ -67,7 +64,6 @@ export default function StanzaSectionHoverCard({
   onSkippedChange,
 }: StanzaSectionHoverCardProps) {
   const dur = segment.end - segment.start;
-  const practicedMin = ((stats?.totalMs ?? 0) / 60_000).toFixed(1);
   const cardW = 200;
   const half = cardW / 2;
   const leftPx = Math.min(Math.max(position.x - half, 8), window.innerWidth - cardW - 8);
@@ -211,14 +207,6 @@ export default function StanzaSectionHoverCard({
         {formatDuration(segment.start)} → {formatDuration(segment.end)}
         <br />
         Length: {formatDuration(dur)}
-        <br />
-        Focus time: {practicedMin} min
-        {stats?.lastPracticed ? (
-          <>
-            <br />
-            Last practiced: {new Date(stats.lastPracticed).toLocaleDateString()}
-          </>
-        ) : null}
       </Typography>
     </Box>
   );

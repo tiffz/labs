@@ -16,6 +16,7 @@ import type { PracticeResourceGroup } from '../../components/song/practiceResour
 import { EncoreResourceLinksPanel } from '../../components/EncoreResourceLinksPanel';
 import { EncoreMediaLinkRow } from '../../ui/EncoreMediaLinkRow';
 import { EncoreStaticResourceHoverCard } from '../../components/EncoreStreamingHoverCard';
+import { useDriveBackupFailures } from './useDriveBackupFailures';
 import { useEncoreAuth } from '../../context/EncoreAuthContext';
 import { useEncoreDriveUploadDedup } from '../../context/EncoreDriveUploadDedupContext';
 import {
@@ -102,6 +103,8 @@ export function useOriginalsSongFilesPanel({
   const { playTake, isPlayingTake, stopPlayback } = useEncoreOriginalsPlayback();
 
   const [uploading, setUploading] = useState(false);
+
+  const backupFailures = useDriveBackupFailures();
   const [refsUploading, setRefsUploading] = useState(false);
   const [localAudioIds, setLocalAudioIds] = useState<Set<string>>(() => new Set());
   const [fileDragActive, setFileDragActive] = useState(false);
@@ -249,9 +252,13 @@ export function useOriginalsSongFilesPanel({
                   uploadWithDuplicateCheck,
                   registerUploadedDriveFile,
                 );
-                if (driveFileId) updateTake(take.id, { driveFileId });
-              } catch {
-                /* local cache still playable; take already persisted */
+                if (driveFileId) {
+                  updateTake(take.id, { driveFileId });
+                  backupFailures.clear(take.id);
+                }
+              } catch (error) {
+                // Same durability rule as the Record-takes workspace: never fail silently.
+                backupFailures.record(take.id, error);
               }
             }),
           );
@@ -267,6 +274,7 @@ export function useOriginalsSongFilesPanel({
       registerUploadedDriveFile,
       updateTake,
       uploadWithDuplicateCheck,
+      backupFailures,
     ],
   );
 
@@ -294,9 +302,12 @@ export function useOriginalsSongFilesPanel({
                 uploadWithDuplicateCheck,
                 registerUploadedDriveFile,
               );
-              if (driveFileId) patch.driveFileId = driveFileId;
-            } catch {
-              /* keep local playback */
+              if (driveFileId) {
+                patch.driveFileId = driveFileId;
+                backupFailures.clear(takeId);
+              }
+            } catch (error) {
+              backupFailures.record(takeId, error);
             }
           }
         }
@@ -305,7 +316,9 @@ export function useOriginalsSongFilesPanel({
         setUploading(false);
       }
     },
-    [googleAccessToken, readOnly, registerUploadedDriveFile, updateTake, uploadWithDuplicateCheck],
+    [googleAccessToken, readOnly, registerUploadedDriveFile, updateTake, uploadWithDuplicateCheck,
+      backupFailures,
+    ],
   );
 
   const uploadReferenceFile = useCallback(

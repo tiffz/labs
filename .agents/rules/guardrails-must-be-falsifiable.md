@@ -51,10 +51,37 @@ while real bugs shipped underneath them:
 Step 3 is the whole rule. A test that passes both ways proves nothing, and you will not find out
 until a user does.
 
+## A fourth shape: coverage that cannot see the code
+
+A guardrail can be falsifiable, assert the right invariant, and still be worthless because **the set
+of things it looks at is not the set of things it governs**. This is harder to spot than a vacuous
+assertion, because the test genuinely fails when you break what it covers — it just never covers the
+thing that breaks. Three in one week:
+
+| Guard                          | Governed                 | Actually looked at                                   |
+| ------------------------------ | ------------------------ | ---------------------------------------------------- |
+| `check:ui-copy`                | all user-facing copy     | `.tsx` only — the rhythm copy lives in `.ts`         |
+| `backgroundPlaybackGuardrails` | every rAF audio driver   | a hardcoded list of 2 files, neither the shared one  |
+| `verify:quick`                 | "is this safe to commit" | `typecheck` (app), not `typecheck:full` (tests, e2e) |
+
+Each was green while the bug it existed to prevent shipped, and each read as reassurance.
+
+**Derive the set; do not enumerate it.** Walk the tree and select by a property of the code — "calls
+`requestAnimationFrame`", "calls a Drive upload helper", "is a displayed string" — so a new file is
+enrolled by existing rather than by someone remembering. Then:
+
+- **Assert the set is non-empty.** A glob that matches nothing passes every assertion in the suite.
+- **Fail loudly when an anchor moves.** If the guard locates code by a symbol name, a rename must
+  break the test, not silently empty it.
+- **Exempt by name, with a written reason.** An allowlist of exceptions keeps the default at "must
+  comply"; an allowlist of _inclusions_ inverts it.
+
+When a guard must stay a list, say in a comment what would have to be true to derive it instead.
+
 ## When you cannot make it fail
 
 Say so, and prefer the weaker-but-honest assertion over the stronger-but-vacuous one. A source scan
 that admits it is a source scan beats a "behavioural" test that silently checks nothing — and note
 in a comment what a real behavioural check would need.
 
-Root cause classes: `guardrail-cannot-fail`, `fixture-shares-the-bug`.
+Root cause classes: `guardrail-cannot-fail`, `fixture-shares-the-bug`, `guardrail-coverage-gap`.
