@@ -22,8 +22,32 @@ const originalsDir = resolve(__dirname, '.');
 /** Calls that write bytes to Drive. A file containing one is an upload path. */
 const UPLOAD_CALL = /uploadOriginalTakeToDrive\s*\(|uploadWithDuplicateCheck\s*\(|driveUploadFileResumable\s*\(/;
 
-/** `catch {` or `catch (e) {` whose body holds nothing but whitespace and comments. */
-const SILENT_CATCH = /catch\s*(?:\([^)]*\))?\s*\{(?:\s|\/\/[^\n]*\n|\/\*[\s\S]*?\*\/)*\}/g;
+/**
+ * `catch {` or `catch (e) {` and its body, when that body contains no braces.
+ *
+ * Deliberately NOT a single regex that also proves the body is comment-only. The first version was
+ *
+ *   /catch\s*(?:\([^)]*\))?\s*\{(?:\s|\/\/[^\n]*\n|\/\*[\s\S]*?\*\/)*\}/g
+ *
+ * and CodeQL flagged it high-severity `js/redos`: the alternation branches overlap (`\s` matches a
+ * newline, and so does `//[^\n]*\n`) underneath a `*`, so a near-miss input backtracks
+ * catastrophically. A guardrail that can hang the run it guards is not a guardrail.
+ *
+ * `[^{}]*` is one character class under one quantifier — linear, nothing to backtrack. It cannot
+ * match a body containing braces, which is fine: such a body is not empty, and empty is all we are
+ * looking for. Emptiness is then decided in plain code below.
+ */
+const CATCH_BLOCK = /catch\s*(?:\([^)]*\))?\s*\{([^{}]*)\}/g;
+
+/** True when a catch body is only whitespace and comments — i.e. the error is discarded. */
+function catchBodyIsSilent(body: string): boolean {
+  const withoutComments = body
+    .split('\n')
+    .map((line) => line.replace(/\/\/.*$/, ''))
+    .join('\n')
+    .replace(/\/\*[^*]*\*+(?:[^/*][^*]*\*+)*\//g, '');
+  return withoutComments.trim() === '';
+}
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -52,7 +76,9 @@ describe('Drive backup failures are visible', () => {
     '%s does not swallow a Drive error',
     (_label, file) => {
       const source = readFileSync(file as string, 'utf8');
-      const silent = source.match(SILENT_CATCH) ?? [];
+      const silent = [...source.matchAll(CATCH_BLOCK)]
+        .filter(([, body]) => catchBodyIsSilent(body ?? ''))
+        .map(([whole]) => whole);
       expect(
         silent,
         `${_label} uploads to Drive and has a catch block with an empty body. A failed backup must ` +
