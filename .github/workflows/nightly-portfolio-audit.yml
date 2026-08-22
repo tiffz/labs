@@ -83,10 +83,17 @@ jobs:
       - name: Run e2e smoke
         run: npm run test:e2e:smoke
 
+      # Each category runs even when an earlier one failed. The nightly exists to give a
+      # portfolio-wide picture, and sequential fail-fast turned it into "the first thing that
+      # broke": on 2026-08-21 a Muscle Memory soak timeout skipped the visual step entirely, so two
+      # known-bad baselines went unreported for a day. The job still fails overall — it just no
+      # longer hides the rest of the evidence while doing so.
       - name: Run soak specs (excluded from PR CI)
+        if: '!cancelled()'
         run: npm run test:e2e:soak
 
       - name: Run visual regression baselines
+        if: '!cancelled()'
         run: npm run test:e2e:visual
 
       - name: Upload Playwright report on failure
