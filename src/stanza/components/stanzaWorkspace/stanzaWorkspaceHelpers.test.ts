@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { StanzaSong, StanzaStemTrack } from '../../db/stanzaDb';
-import { describeYoutubePlayerError, reorderStemsById, songHasPractice } from './stanzaWorkspaceHelpers';
+import type { StanzaStemTrack } from '../../db/stanzaDb';
+import { describeYoutubePlayerError, reorderStemsById } from './stanzaWorkspaceHelpers';
 
 describe('reorderStemsById', () => {
   const stems: StanzaStemTrack[] = [
@@ -19,21 +19,6 @@ describe('reorderStemsById', () => {
   });
 });
 
-describe('songHasPractice', () => {
-  it('is false for a fresh song row', () => {
-    const song = { id: '1', title: 'T', updatedAt: 0 } as StanzaSong;
-    expect(songHasPractice(song)).toBe(false);
-  });
-
-  it('is true when markers or stats exist', () => {
-    expect(songHasPractice({ id: '1', title: 'T', updatedAt: 0, markers: [{ id: 'm', time: 0 }] } as StanzaSong)).toBe(
-      true,
-    );
-    expect(songHasPractice({ id: '1', ytId: null, title: 'T', markers: [], updatedAt: 0, stats: { seg: { totalMs: 1, lastPracticed: 0 } } })).toBe(
-      true,
-    );
-  });
-});
 
 describe('describeYoutubePlayerError', () => {
   it('maps known embed errors', () => {

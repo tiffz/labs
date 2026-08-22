@@ -166,7 +166,6 @@ import {
 } from '../utils/stanzaLocalAudiblePath';
 import { resolvePracticeSourceSwitchSeek } from '../utils/stanzaPracticeSourceSwitch';
 import { useStanzaPlaybackWakeLock } from '../hooks/useStanzaPlaybackWakeLock';
-import { useStanzaPracticeStatsTracker } from '../hooks/useStanzaPracticeStatsTracker';
 import { mergeStanzaPlaybackSnapshot } from '../utils/stanzaPlaybackStateMerge';
 import { labsPlaybackSafeCall } from '../../shared/utils/labsPlaybackSafeCall';
 import { applyStanzaYoutubeControllerMix } from '../utils/stanzaYoutubeMixVolume';
@@ -205,7 +204,6 @@ import {
 import {
   describeYoutubePlayerError,
   reorderStemsById,
-  songHasPractice,
 } from './stanzaWorkspace/stanzaWorkspaceHelpers';
 
 const STANZA_EMPTY_STEMS: StanzaStemTrack[] = [];
@@ -437,12 +435,9 @@ export default function StanzaWorkspace() {
   const sortedLibrarySongs = useMemo(() => {
     if (!songs?.length) return [];
     const copy = [...songs];
-    copy.sort((a, b) => {
-      const pa = songHasPractice(a) ? 1 : 0;
-      const pb = songHasPractice(b) ? 1 : 0;
-      if (pb !== pa) return pb - pa;
-      return b.updatedAt - a.updatedAt;
-    });
+    // Most-recently-touched first. This used to float "practiced" songs above unpractised ones,
+    // which was the library half of the unvetted progress-tracking feature.
+    copy.sort((a, b) => b.updatedAt - a.updatedAt);
     return copy;
   }, [songs]);
 
@@ -1834,14 +1829,17 @@ export default function StanzaWorkspace() {
 
   useStanzaPlaybackWakeLock(playback.isPlaying);
 
-  useStanzaPracticeStatsTracker({
-    songId: selected?.id,
-    isPlaying: playback.isPlaying,
-    segmentsRef,
-    playingRef,
-    timeRef,
-    persistSong,
-  });
+  /*
+   * Practice-time accumulation is OFF.
+   *
+   * The progress-tracking feature (per-section focus time, "last practiced", the "Not started"
+   * library caption) was never vetted and never used, but the tracker still wrote to Dexie every
+   * 15s and synced the result to Drive, where `stats` is union-merged and never pruned — so it grew
+   * without bound in `progress.json` and orphaned a key on every section split.
+   *
+   * The stored `stats` field is deliberately LEFT IN PLACE and simply unread: removing the data
+   * would be irreversible, and nothing now writes to it. Re-enable by restoring this call.
+   */
 
   const addMarkerAtCurrentTime = useCallback(() => {
     if (!selected) return;
@@ -2750,7 +2748,6 @@ export default function StanzaWorkspace() {
                     seekDisplayPendingRef.current,
                   )}
                   markers={selected.markers ?? []}
-                  segmentMs={selected.stats}
                   selectedSegmentIndices={selectedSegmentIndices}
                   loopMode={loopMode}
                   onLoopModeChange={onLoopModeChange}

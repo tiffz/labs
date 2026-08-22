@@ -39,7 +39,7 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
-import type { SegmentStat, StanzaMarker, StanzaSegmentMetronomeCalibration } from '../db/stanzaDb';
+import type { StanzaMarker, StanzaSegmentMetronomeCalibration } from '../db/stanzaDb';
 import {
   deletableBoundaryMarkerAtTime,
   deriveSegments,
@@ -73,7 +73,6 @@ export interface StanzaTimelineProps {
   duration: number;
   currentTime: number;
   markers: StanzaMarker[];
-  segmentMs: Record<string, SegmentStat | undefined>;
   selectedSegmentIndices: number[];
   loopMode: StanzaPlaybackLoopMode;
   onLoopModeChange: (mode: StanzaPlaybackLoopMode) => void;
@@ -132,7 +131,6 @@ export default function StanzaTimeline({
   currentTime,
   transportTime,
   markers,
-  segmentMs,
   selectedSegmentIndices,
   loopMode,
   onLoopModeChange,
@@ -955,9 +953,7 @@ export default function StanzaTimeline({
             >
             {segments.map((seg) => {
               const widthPct = ((seg.end - seg.start) / duration) * 100;
-              const ms = segmentMs[seg.id]?.totalMs ?? 0;
               const isSelected = selectedSegmentIndices.includes(seg.index);
-              const practiced = ms > 0;
               const isSkipped = Boolean(skippedBySegmentId?.[seg.id]);
               const classes = [
                 'stanza-playback-seg',
@@ -985,7 +981,7 @@ export default function StanzaTimeline({
                   }}
                   onPointerEnter={(e) => handleSectionPointerEnter(seg.id, e)}
                   onPointerLeave={scheduleHoverClose}
-                  aria-label={`Section ${seg.label}, ${formatStanzaTimelineClock(seg.start)} to ${formatStanzaTimelineClock(seg.end)}${practiced ? ', has practice time logged' : ''}${isSkipped ? ', skipped during playback' : ''}`}
+                  aria-label={`Section ${seg.label}, ${formatStanzaTimelineClock(seg.start)} to ${formatStanzaTimelineClock(seg.end)}${isSkipped ? ', skipped during playback' : ''}`}
                   aria-pressed={isSelected}
                   style={{ width: `${widthPct}%` }}
                 >
@@ -1188,7 +1184,6 @@ export default function StanzaTimeline({
       {hoverSegment != null && hoverCard != null ? (
         <StanzaSectionHoverCard
           segment={hoverSegment}
-          stats={segmentMs[hoverSegment.id]}
           position={{ x: hoverCard.anchorCenterX, segmentTop: hoverCard.segmentTop }}
           draftLabel={draftSectionLabel}
           onDraftLabelChange={setDraftSectionLabel}

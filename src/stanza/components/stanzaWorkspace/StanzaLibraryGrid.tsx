@@ -10,7 +10,6 @@ import { youtubeMqThumbnailUrl } from '../../utils/stanzaYoutubeMeta';
 import StanzaLibrarySourceBadge from '../StanzaLibrarySourceBadge';
 import { stanzaLibrarySourceKind } from '../stanzaLibrarySourceKind';
 import StanzaLibraryThumb from '../StanzaLibraryThumb';
-import { songHasPractice } from './stanzaWorkspaceHelpers';
 
 export interface StanzaLibraryGridProps {
   songs: StanzaSong[];
@@ -76,17 +75,6 @@ export default function StanzaLibraryGrid({
                 >
                   {s.title}
                 </Typography>
-                {!songHasPractice(s) ? (
-                  <Typography
-                    variant="caption"
-                    className="stanza-library-card-caption-slot"
-                    sx={{
-                      color: "text.secondary",
-                      display: 'block'
-                    }}>
-                    Not started
-                  </Typography>
-                ) : null}
               </div>
             </a>
             <IconButton
