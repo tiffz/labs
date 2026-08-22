@@ -2179,7 +2179,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "hook",
     "stability": "stable",
     "owner": "playback-core",
-    "description": "No JSDoc summary provided.",
+    "description": "Foreground horizon: one rAF frame is ~16ms, so this is generous headroom.",
     "tags": [
       "audio",
       "api"

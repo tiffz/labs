@@ -9,6 +9,15 @@ import {
   type GridMetronomePlaybackPrefs,
 } from '../../metronome/gridMetronomePlayback';
 
+/** Foreground horizon: one rAF frame is ~16ms, so this is generous headroom. */
+const METRONOME_LOOK_AHEAD_SEC = 0.25;
+/**
+ * Hidden-tab horizon. Browsers clamp background timers to ~1Hz; this must cover that gap with
+ * room to spare. Matches BACKGROUND_LOOK_AHEAD_SEC in useMediaTimelineDrumScheduler so the click
+ * and the drums schedule the same window.
+ */
+const METRONOME_BACKGROUND_LOOK_AHEAD_SEC = 4.0;
+
 let sharedClickCtx: AudioContext | null = null;
 
 /**
@@ -127,7 +136,23 @@ export function usePlatformMediaMetronome(opts: UsePlatformMediaMetronomeOptions
       const mediaTime = getMediaTime();
       const prefs = prefsRef.current as GridMetronomePlaybackPrefs;
       const legacyMetVolume = prefs.masterMuted ? 0 : prefs.masterVolume;
-      await schedulerRef.current.pollTimeline(ctx, mediaTime, prefs, legacyMetVolume, 0);
+      /*
+       * Schedule ahead far enough to survive the gap between polls. A hidden tab clamps the timer
+       * below to roughly 1Hz, so without a horizon that covers a whole second the click drops to
+       * about one tick a second and returns on an arbitrary beat — while the drum layer, which
+       * already schedules BACKGROUND_LOOK_AHEAD_SEC ahead, keeps perfect time. Matching horizons is
+       * what keeps the two aux layers on the same beat.
+       */
+      const hidden = typeof document !== 'undefined' && document.hidden;
+      const lookAheadSec = hidden ? METRONOME_BACKGROUND_LOOK_AHEAD_SEC : METRONOME_LOOK_AHEAD_SEC;
+      await schedulerRef.current.pollTimeline(
+        ctx,
+        mediaTime,
+        prefs,
+        legacyMetVolume,
+        0,
+        lookAheadSec,
+      );
     };
 
     const tick = () => {
