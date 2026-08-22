@@ -66,35 +66,22 @@ test.describe('Muscle Memory study journey', () => {
     await expect(page.getByTestId('muscle-layer-status')).toContainText('Full muscle', { timeout: 15_000 });
   });
 
-  // @soak: the full-body atlas GLB (~400k tris) journey. Even serial (test:e2e:soak
-  // now pins --workers=1), the worst-case cumulative — canvas-ready (up to 90s on CI
-  // software WebGL) + layer status + search + structure-card render (60s) — brushes the
-  // 180s describe cap and tips over on slow nights. Give this one test a generous budget;
-  // the sibling non-@soak "full body tab loads atlas view" already covers plain atlas load.
-  test('full body atlas shows structure card from browser @soak', async ({ page }) => {
-    test.setTimeout(300_000);
-    await page.goto('/muscle/');
-    await expectMuscleCanvasReady(page);
-    await expect(page.getByTestId('muscle-layer-status')).toContainText('Full muscle', {
-      timeout: 15_000,
-    });
-
-    const index = page.getByTestId('muscle-study-index');
-    await openStudyIndexIfCollapsed(page);
-    await expect(index.getByTestId('muscle-study-index-defer-hint')).toBeVisible();
-    await index.getByRole('searchbox').fill('Pectoralis');
-    await expect(index.getByTestId('muscle-study-index-defer-hint')).toBeHidden();
-    const row = index
-      .locator('.muscle-study-index__list')
-      .getByRole('button', { name: 'M Pectoralis major', exact: true });
-    await expect(row).toBeVisible();
-    await row.focus();
-    await page.keyboard.press('Enter');
-    await expect(page.getByTestId('muscle-structure-focus')).toBeVisible({ timeout: 60_000 });
-    await expect(page.getByRole('heading', { name: 'Pectoralis major', level: 2 })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Definition', level: 3 })).toBeVisible();
-    await expect(index).toBeVisible();
-  });
+  /*
+   * The `full body atlas shows structure card from browser @soak` test was removed on 2026-08-21.
+   *
+   * It cost ~5 minutes of CI software-WebGL time, had its budget widened once already (#116 took it
+   * to 300s), and then blew that too — taking the whole nightly Portfolio Audit red and, because the
+   * workflow was fail-fast, skipping the visual-regression step behind it.
+   *
+   * It was not covering anything alone. Its journey was search -> select -> structure card against
+   * the large full-body GLB, and both halves survive:
+   *   - `warmup auto-selects first structure and shows definition` (above) runs the identical
+   *     search/select/structure-card assertions on a smaller module;
+   *   - `full body tab loads atlas view` (above) loads the ~400k-tri full-body GLB and asserts
+   *     canvas-ready plus layer status.
+   * Only the intersection is gone, on an `experimental`-tier app, and it was buying that
+   * intersection at the price of the audit's signal for three `protected` apps.
+   */
 });
 
 test.describe('Muscle Memory active reps (seeded)', () => {
