@@ -73,8 +73,13 @@ const staticChecks = [
   npmRun('registry drift', 'check:registry-drift'),
   npmRun('lint', 'lint'),
   npmRun('knip', 'knip'),
-  npmRun('typecheck', 'typecheck'),
-  npmRun('full typecheck ratchet', 'check:tsc-ratchet'),
+  // One compile, not two. `typecheck` (tsconfig.app.json) is a strict subset of `typecheck:full`
+  // (tsconfig.json): every override in the app config — noUnusedLocals/Parameters false, wider
+  // lib, extra types — relaxes it. Running both cost a second full tsc pass and caught nothing
+  // the first did not. The former `check:tsc-ratchet` wrapper reached its baseline of 0, which is
+  // the endgame docs/QUALITY_TOURNAMENT_2026-07.md prescribed for it; a ratchet at zero is a plain
+  // gate, so it is now one. CI runs this same script.
+  npmRun('typecheck (full: src + tests + e2e)', 'typecheck:full'),
   // CI runs this as a required job. It was NOT in presubmit, so a local run could be fully green
   // while the push failed minutes later on a gate the developer never saw — the single biggest
   // source of wasted push cycles in this repo. Every blocking CI job belongs here.

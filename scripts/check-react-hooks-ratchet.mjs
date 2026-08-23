@@ -10,7 +10,7 @@
  * class the tournament kept rediscovering.
  *
  * This re-runs those 14 rules as errors and fails if the total *rises* above a
- * committed baseline (monotonic ratchet, same shape as check-tsc-ratchet). It
+ * committed baseline (monotonic ratchet). It
  * DOES run in presubmit. It used to be excluded on the grounds that "the compiler
  * rules take >3 min across `src`" — that stopped being true once this script
  * started passing `--cache`; a warm run is ~6s. The stale exclusion cost far more

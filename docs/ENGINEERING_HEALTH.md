@@ -61,6 +61,15 @@ _(Record pruned tests, removed duplicate patterns, retired flaky quarantines eac
 
 - Encore app-local Snackbar toasts for blocking-adjacent flows → `LabsFeedbackToast`
 - StrictMode opt-out list (all apps migrated)
+- **`check:tsc-ratchet` + `scripts/tsc-error-baseline.json`** (2026-08-21). Burned down from 172
+  full-typecheck errors to 0, which is the endgame [`QUALITY_TOURNAMENT_2026-07.md`](QUALITY_TOURNAMENT_2026-07.md)
+  prescribed for it. **Class now covered by:** `typecheck:full` as a plain gate, in both presubmit
+  and CI. Nothing is uncovered — the ratchet at zero was a gate in costume, and presubmit was
+  running `typecheck` (app config) beside it for a second full compile that could not fail
+  independently.
+
+Decide keep-vs-delete with [`CI_CHECK_VALUE.md`](CI_CHECK_VALUE.md), and record every deletion here
+with the defect class it leaves uncovered.
 
 ## Session metrics (agents)
 

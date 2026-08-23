@@ -205,6 +205,15 @@ jobs:
     - name: Registry drift (build inputs ↔ route registry)
       run: npm run check:registry-drift
 
+    - name: Shared theme contract
+      run: npm run check:shared-theme-contract
+
+    # Must run BEFORE the generate step below: it asserts the *committed* catalog matches its
+    # sources, and regenerating first would make it pass unconditionally. Both this and the theme
+    # contract ran only in presubmit until now, so skipping presubmit bypassed them outright.
+    - name: Shared catalog is current (committed vs sources)
+      run: npm run check:shared-catalog
+
     - name: Generate shared catalog
       run: npm run generate:shared-catalog
 
@@ -232,8 +241,14 @@ jobs:
     - name: Run linter
       run: npm run lint
 
-    - name: Run app typecheck
-      run: npm run typecheck
+    # Full config (tsconfig.json), not tsconfig.app.json. The app config excludes *.test.ts,
+    # *.spec.*, e2e/** and audits/**, so an app-only typecheck cannot fail on a type error in a
+    # test file — and this job was the only typecheck CI ran. Five such errors reached a push
+    # before this was noticed. The full config is strictly stronger: every difference in
+    # tsconfig.app.json (relaxed noUnusedLocals/Parameters, wider lib, extra types) makes it more
+    # permissive, so full passing implies app passing.
+    - name: Run full typecheck (includes tests and e2e)
+      run: npm run typecheck:full
 
     - name: Check for dead code
       run: npm run knip

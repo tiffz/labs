@@ -1,0 +1,75 @@
+---
+description: Before adding, keeping, or deleting a CI check — decide its placement deliberately, and give every non-blocking check a way to write itself down
+alwaysApply: true
+---
+
+# Does this check earn its place?
+
+Full rule, with sources and the four hard cases: [`docs/CI_CHECK_VALUE.md`](../../docs/CI_CHECK_VALUE.md).
+
+A check costs **runtime × frequency** plus **attention when it fails**. In this repo attention is
+the scarce resource: one developer, no reviewer. A check that fires into a log nobody reads has
+cost and no value.
+
+## Before adding a check
+
+1. **Name the defect class**, and name what else already covers it.
+2. **Falsify it** — break the thing it guards and watch it go red. A CI job nobody can make fail is
+   the same defect as a test that cannot fail
+   ([`guardrails-must-be-falsifiable.md`](guardrails-must-be-falsifiable.md)), and this repo has
+   shipped four of those.
+3. **Pick a placement**, not "blocking" by default:
+
+| Placement     | Requires                                                                                                   |
+| ------------- | ---------------------------------------------------------------------------------------------------------- |
+| **Blocking**  | Unique · irreversible-or-high-consequence · ≥95% accurate · actionable in the PR · inside 10 min¹          |
+| **Advisory**  | Real class, but noisy / slow / not in-PR actionable. **Must open a GitHub issue** — see below.             |
+| **Scheduled** | Slow · unique · not per-change. Needs a notification path and a wall-clock cap.                            |
+| **Deleted**   | Never caught anything, class is reversible, something else overlaps. Or <50% accurate with no repair plan. |
+
+¹ Parallel jobs are free — a 3-minute check beside a 9-minute one costs no wall clock.
+
+4. **If advisory or scheduled, wire the notification in the same PR.**
+
+## The solo rule
+
+**Advisory means off, unless it writes something down.** No reviewer exists to notice a yellow
+warning. An advisory check must open or update a GitHub issue on failure and close it on success.
+An advisory check whose only output is a workflow log is deleted — it just has not been removed yet.
+
+Copy the pattern in [`weekly-engineering-health.yml`](../../.github/workflows/weekly-engineering-health.yml):
+dedupe on a label, file the issue, then fail visibly.
+
+## Three-strike rule
+
+A scheduled check red for **3 consecutive runs** is demoted to advisory, and a repair issue opens
+with a two-week deadline. Miss the deadline and the check is deleted on purpose, recording in the
+commit which defect class is now uncovered.
+
+Sustained red trains you to ignore _all_ red. **Red and tolerated is worse than either red or
+deleted.**
+
+## Ratchets
+
+- **At 0** → delete it; replace with a plain gate. A ratchet at zero is a gate in costume.
+- **Trending down** → healthy, keep blocking.
+- **Flat 90 days** → it is a baseline, not a ratchet. Commit to a number and a date, or delete it.
+
+Prefer **per-file** baselines over one total — per-file localises debt, lets files drop out at zero,
+and makes progress legible in a diff.
+
+## Parity runs both ways
+
+Every blocking CI job needs a presubmit counterpart **and** every presubmit gate needs a CI
+counterpart, both enforced by
+[`src/shared/ciPresubmitParity.test.ts`](../../src/shared/ciPresubmitParity.test.ts). The one-way
+version of that check was green for months while CI's only typecheck used `tsconfig.app.json`,
+which excludes every test and e2e file — so a type error in a test could not fail CI.
+
+## When you delete a check
+
+Record it in [`docs/ENGINEERING_HEALTH.md`](../../docs/ENGINEERING_HEALTH.md) § What we stopped
+doing, naming **the defect class now uncovered**. An unrecorded deletion is indistinguishable from a
+check that broke and got quietly dropped.
+
+Root cause classes: `check-with-no-teeth` · `advisory-into-the-void` · `ratchet-as-permission`.

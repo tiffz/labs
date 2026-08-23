@@ -1,0 +1,47 @@
+name: Labs CodeQL config
+
+# Scope: code that ships to a browser.
+#
+# The default `security-and-quality` pack bundles maintainability queries that have nothing to do
+# with security, and it ran across build scripts and test files as if they were production code.
+# The result was six open alerts — four "high" — that sat untriaged for a month. Every one was a
+# non-issue on inspection: two regex/sanitization findings inside guardrail tests, three
+# command-line-injection and file-race findings in build scripts that run on a laptop against the
+# repo's own input, and one insecure-randomness finding in dev-only debug code that already prefers
+# `crypto.randomUUID()`.
+#
+# That is the failure Google's static-analysis guidance warns about: below roughly 90% useful
+# findings, people stop reading the tool. A permanently-nonzero alert count is furniture, not a
+# signal — and it is what made a genuine high-severity ReDoS unremarkable enough to merge.
+#
+# Narrowing here is what lets the alert count mean something, which is the precondition for
+# treating CodeQL as a merge gate at all. See docs/CI_CHECK_VALUE.md.
+
+queries:
+  # Security queries only. Code quality is already covered, and enforced, by ESLint, knip, the
+  # complexity/duplication ratchets, and the full typecheck.
+  - uses: security-extended
+
+paths-ignore:
+  # Build and tooling scripts. They run locally or on a trusted runner, take the repo's own files
+  # as input, and never touch untrusted data. Command-injection and file-race queries model an
+  # attacker who does not exist here.
+  - scripts/**
+  - tools/**
+  - '**/*.config.js'
+  - '**/*.config.ts'
+  - '**/*.config.mjs'
+
+  # Tests, e2e specs, and audits. Never shipped. Guardrail tests in particular use deliberately
+  # loose regexes to scan source text, which trips the regex-hygiene queries by design.
+  - '**/*.test.ts'
+  - '**/*.test.tsx'
+  - '**/*.spec.ts'
+  - '**/*.spec.tsx'
+  - e2e/**
+  - '**/audits/**'
+  - src/shared/test/**
+
+  # Generated.
+  - src/ui/generatedSharedCatalog.ts
+  - dist/**
