@@ -12,6 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       actions: read
+      issues: write
     steps:
       - uses: actions/checkout@v7
 
@@ -22,10 +23,30 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: node scripts/ci-health-report.mjs --days 7 --fail-below 90
 
-      - name: Warn when below target
+      # This used to emit only `::warning`, which meant the CI health monitor was warning into a
+      # log during the same ten days the nightly audit sat red — the monitor and the thing it was
+      # meant to catch failed silently together. Same pattern as the dependency-audit job below:
+      # write it down, then fail visibly. docs/CI_CHECK_VALUE.md § The solo rule.
+      - name: File a health issue when below target
+        if: steps.ci_health.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          existing=$(gh issue list --label ci-health --state open --json number --jq 'length')
+          if [ "$existing" = "0" ]; then
+            gh issue create \
+              --title "CI success rate below 90%" \
+              --label ci-health \
+              --body "$(printf 'The weekly gate measured CI success below the 90%% target.\n\nPer docs/ENGINEERING_HEALTH.md, flake triage is the first task of the next working session, before feature work:\n\n1. `npm run report:ci-health` to list failed run ids.\n2. `npm run report:ci-failure -- <run-id>` per failure; bucket each (e2e / vitest / build / infra).\n3. Fix the top recurring bucket at root cause per docs/FLAKY_TESTS.md — no retries, no quarantine-and-forget.\n\nRun: %s/%s/actions/runs/%s' "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID")"
+          else
+            echo "Open ci-health issue already exists; skipping duplicate."
+          fi
+
+      - name: Fail the job so the advisory is visible
         if: steps.ci_health.outcome == 'failure'
         run: |
-          echo "::warning title=CI success rate below 90%::Weekly advisory gate — triage with npm run report:ci-health and docs/ENGINEERING_HEALTH.md"
+          echo "::error title=CI success rate below 90%::See the filed ci-health issue. Triage with npm run report:ci-health and docs/ENGINEERING_HEALTH.md."
+          exit 1
 
   dependency-audit:
     name: npm audit (security fast lane)

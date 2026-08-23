@@ -36,6 +36,15 @@ const INTENTIONALLY_NOT_IN_PRESUBMIT: Record<string, string> = {
   knip: 'run by presubmit under a different label',
 };
 
+/**
+ * Gates presubmit runs that CI deliberately does not. Same contract as the map above: an
+ * unexplained entry is how the gap reopens.
+ */
+const INTENTIONALLY_NOT_IN_CI: Record<string, string> = {
+  // Nothing yet. When this map gains an entry, the reason must say why a developer skipping
+  // presubmit is allowed to bypass that gate entirely.
+};
+
 function ciScripts(): Set<string> {
   const yml = read('.github/workflows/ci.yml');
   const found = new Set<string>();
@@ -84,6 +93,49 @@ describe('CI / presubmit parity', () => {
     const pre = presubmitScripts();
     expect(pre.has('check:react-hooks-ratchet')).toBe(true);
     expect(pre.has('check:agent-guidance')).toBe(true);
+  });
+
+  /**
+   * The other direction, which went unchecked for months and hid a real gap.
+   *
+   * Parity was only ever asserted CI → presubmit, so a gate could live in presubmit and never run
+   * in CI. That is what happened to the full typecheck: CI ran `typecheck` (tsconfig.app.json,
+   * which excludes *.test.ts, *.spec.*, e2e/** and audits/**) while the full-config compile ran
+   * only in presubmit, on a laptop. A type error in any test file therefore could not fail CI —
+   * and five of them reached a push before anyone noticed.
+   *
+   * A one-directional parity check is the `guardrail-coverage-gap` class applied to CI itself: it
+   * was green the whole time, and it read as proof the two were in sync.
+   */
+  it('every gate presubmit enforces also runs in CI', () => {
+    const ci = ciScripts();
+    const pre = presubmitScripts();
+
+    // Only the static gates; presubmit's scoped test/build stages have CI equivalents under
+    // different names by design (docs/CI_PATH_SCOPING.md).
+    const presubmitOnly = [...pre]
+      .filter((s) => s.startsWith('check:'))
+      .filter((s) => !ci.has(s))
+      .filter((s) => !(s in INTENTIONALLY_NOT_IN_CI));
+
+    expect(
+      presubmitOnly,
+      'Gates that run in presubmit but not in CI. A developer who skips presubmit bypasses these ' +
+        'entirely, and CI reports green. Add them to .github/workflows/ci.yml, or record why not ' +
+        'in INTENTIONALLY_NOT_IN_CI with a reason.',
+    ).toEqual([]);
+  });
+
+  it('CI typechecks test files, not just app sources', () => {
+    // The specific regression above, pinned. tsconfig.app.json excludes tests; if CI ever drops
+    // back to the app-only config, a broken test file stops being a CI failure.
+    const yml = read('.github/workflows/ci.yml');
+    expect(
+      yml.includes('npm run typecheck:full'),
+      'CI must run typecheck:full (tsconfig.json). tsconfig.app.json excludes *.test.ts, ' +
+        '*.spec.*, e2e/** and audits/**, so an app-only typecheck cannot fail on a test-file ' +
+        'type error.',
+    ).toBe(true);
   });
 
   it('every exemption states a reason', () => {
