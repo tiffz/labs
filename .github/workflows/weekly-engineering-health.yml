@@ -32,6 +32,13 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # `gh issue create --label` fails outright when the label does not exist, and the REST
+          # API's auto-create behaviour does not apply to the CLI. That is exactly how this step
+          # shipped broken: the job went red as designed but filed nothing, because `ci-health` had
+          # never been created. Make the label a precondition the workflow satisfies itself.
+          gh label create ci-health --force \
+            --color FBCA04 \
+            --description "CI success rate below the 90% target (weekly gate)"
           existing=$(gh issue list --label ci-health --state open --json number --jq 'length')
           if [ "$existing" = "0" ]; then
             gh issue create \
@@ -73,6 +80,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # Same precondition as the ci-health job above — the label must exist before --label works.
+          gh label create security-audit --force \
+            --color D93F0B \
+            --description "High/critical npm advisories in production dependencies"
           existing=$(gh issue list --label security-audit --state open --json number --jq 'length')
           if [ "$existing" = "0" ]; then
             gh issue create \

@@ -52,6 +52,31 @@ Pattern documented in [`STYLE_GUIDE.md`](../STYLE_GUIDE.md). Reference implement
 2. **`it(..., timeoutMs)`** — Vitest test timeout ≥ expected async work
 3. **`findBy*` timeout** — ≤ test timeout, with headroom for assertions after
 
+### Check the library default against your own timeout
+
+The suite-wide async budget is set once, in
+[`src/shared/test/setupTests.ts`](../src/shared/test/setupTests.ts):
+`configure({ asyncUtilTimeout: 4000 })`, guarded by `asyncUtilTimeout.test.ts`.
+
+It is there because Testing Library defaults to **1000ms** while this suite allows
+`testTimeout: 10000` — a 10x gap nobody picked, just two defaults meeting. Every async assertion
+was giving up nine seconds before its own test was out of time, and the margin only ran out where
+CPU was scarcest: the nightly's coverage run, 852 files across 6 workers. Two nights failed on a
+`<Suspense fallback={null}>` boundary that resolves in ~60ms locally — 16x inside the old limit.
+
+Two lessons worth more than the fix:
+
+- **Preloading is not always the answer.** Step 1 above is the usual cure, and here it was measured
+  and did almost nothing: 64ms cold → 56ms warm. The cost was React's Suspense re-render and the
+  poll interval, not module loading. Measure which one you have before applying the remedy.
+- **"Fails only under coverage" means contention, not instrumentation.** The same test passed in
+  `test:fast` in the same job, and passed locally under `--coverage` in isolation. Reproducing it
+  needs the whole suite's parallelism, so do not conclude the instrumentation is broken.
+
+This is distinct from widening a timeout to hide a real race. Ask which you have: if the element
+appears in tens of milliseconds and the code is deliberately async, the margin is the bug. If the
+element appears only sometimes, the code is.
+
 ## Slow tests vs fast presubmit
 
 | Tier                                    | Filename convention             | When it runs                       |
