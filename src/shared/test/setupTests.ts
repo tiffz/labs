@@ -1,5 +1,32 @@
 import '@testing-library/jest-dom';
+import { configure } from '@testing-library/dom';
 import { afterEach } from 'vitest';
+
+/**
+ * Give `findBy*` / `waitFor` a timeout proportional to this suite's actual budget.
+ *
+ * Testing Library defaults `asyncUtilTimeout` to 1000ms. Vitest here allows `testTimeout: 10000`.
+ * Nobody chose that 10x gap — it is a library default meeting a config default — and it made every
+ * async assertion in the suite fail 9 seconds before its own test was out of time.
+ *
+ * It surfaced as two nightly failures (2026-09-03, 2026-09-04) in
+ * `ChordPlaybackSettingsPanel.test.tsx`, which awaits a button behind
+ * `lazy(() => import('./DrumAccompaniment'))` inside `<Suspense fallback={null}>`. Measured, that
+ * boundary resolves in ~60ms — 16x under the old limit. It only failed on the nightly's coverage
+ * run: 852 files across 6 CI workers with instrumentation, where ~60ms of work does not get ~60ms
+ * of CPU. The empty `drums-panel` div in the failure DOM is the `fallback={null}` still showing.
+ *
+ * Note what this is NOT: widening a timeout to hide a real async bug, which
+ * `.agents/rules/flaky-tests.md` rightly forbids. The lazy boundary is correct and deliberate, the
+ * test awaits it correctly, and nothing is racing that should not be. The only broken thing was the
+ * margin. Preloading the dynamic import — that rule's first suggested fix — was measured here and
+ * moved resolution only 64ms → 56ms, because module loading was never the cost.
+ *
+ * 4000ms keeps two full timeouts inside `testTimeout`, so a genuinely missing element still fails
+ * with Testing Library's DOM dump rather than a bare Vitest timeout. Raise `testTimeout` first if
+ * you ever raise this.
+ */
+configure({ asyncUtilTimeout: 4000 });
 
 // Mock requestAnimationFrame and cancelAnimationFrame for test environment
 let animationFrameId = 0;
