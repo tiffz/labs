@@ -1,6 +1,8 @@
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import Checkbox from '@mui/material/Checkbox';
+import FormControlLabel from '@mui/material/FormControlLabel';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { useTheme } from '@mui/material/styles';
@@ -25,6 +27,15 @@ export type PerformanceEditorVideoCardProps = {
   uploading?: boolean;
   /** When false, pause inline previews (modal closing). */
   playbackActive?: boolean;
+  /**
+   * Set when this video points at a Drive file the user does not own. Renders the copy checkbox
+   * here, on the card, rather than as a notice under the whole list — `PERFORMANCE_UX.md` requires
+   * source controls to sit with the one video they describe.
+   */
+  foreignCopy?: {
+    copyRequested: boolean;
+    onCopyRequestedChange: (next: boolean) => void;
+  };
 };
 
 /** Saved performance video in the editor — list card with left preview and editable source fields. */
@@ -39,6 +50,7 @@ export function PerformanceEditorVideoCard(props: PerformanceEditorVideoCardProp
     onRemove,
     uploading,
     playbackActive = true,
+    foreignCopy,
   } = props;
   const theme = useTheme();
   const pseudo: EncorePerformance = {
@@ -81,6 +93,31 @@ export function PerformanceEditorVideoCard(props: PerformanceEditorVideoCardProp
             </Typography>
           </Stack>
           <PerformanceVideoInlineLinkField {...inlineLink} />
+          {foreignCopy ? (
+            <FormControlLabel
+              sx={{ mt: 0.75, ml: 0, alignItems: 'flex-start' }}
+              control={
+                <Checkbox
+                  size="small"
+                  checked={foreignCopy.copyRequested}
+                  disabled={uploading}
+                  onChange={(e) => foreignCopy.onCopyRequestedChange(e.target.checked)}
+                  sx={{ py: 0, pl: 0, pr: 1 }}
+                />
+              }
+              label={
+                <Box>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    Save a copy to my Drive
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
+                    This video is in someone else&apos;s Drive. A copy keeps it with your log if the
+                    original is unshared or deleted.
+                  </Typography>
+                </Box>
+              }
+            />
+          ) : null}
           <Stack
             direction="row"
             useFlexGap

@@ -25,7 +25,6 @@ export type PerformanceAddVideoSourceStripProps = {
   onVideoInputBlur: () => void;
   driveLinkFeedback: PerformanceVideoLinkFeedbackState;
   browseDriveVideoFileId: string | null;
-  onCopyToMyDrive?: () => void;
   onPickFiles: (files: File[]) => void;
   pickerDisabled?: boolean;
   uploading?: boolean;
@@ -41,7 +40,6 @@ export function PerformanceAddVideoSourceStrip(props: PerformanceAddVideoSourceS
     onVideoInputBlur,
     driveLinkFeedback,
     browseDriveVideoFileId,
-    onCopyToMyDrive,
     onPickFiles,
     pickerDisabled,
     uploading,
@@ -151,7 +149,6 @@ export function PerformanceAddVideoSourceStrip(props: PerformanceAddVideoSourceS
       <PerformanceVideoLinkFeedback
         feedback={driveLinkFeedback}
         browseDriveVideoFileId={browseDriveVideoFileId}
-        onCopyToMyDrive={onCopyToMyDrive}
       />
     </Stack>
   );

@@ -14,6 +14,14 @@ import {
   classifyDriveCopyFailure,
   copyDriveFileToMyDrive,
 } from '../../shared/drive/copyDriveFileToMyDrive';
+import {
+  applyForeignVideoCopies,
+  foreignSourceForVideo,
+  planForeignVideoCopies,
+  setForeignVideoCopyRequested,
+  upsertForeignVideoSource,
+  type ForeignVideoSource,
+} from '../performance/foreignDriveVideoCopy';
 import { useEncoreDriveUploadDedup } from '../context/EncoreDriveUploadDedupContext';
 import { ensureEncoreDriveLayout } from '../drive/bootstrapFolders';
 import { resolveDriveUploadFolderId } from '../drive/resolveDriveUploadFolder';
@@ -104,8 +112,7 @@ type PerfDriveLinkFeedback =
   | { kind: 'ok'; name: string }
   | { kind: 'folder' }
   | { kind: 'error'; message: string }
-  | { kind: 'needs_signin' }
-  | { kind: 'not_mine'; name: string; copying: boolean };
+  | { kind: 'needs_signin' };
 
 function isDriveFolderMetadata(meta: {
   mimeType?: string;
@@ -186,8 +193,15 @@ export function PerformanceEditorDialog(props: {
    * Reading through a ref keeps the callback identity stable across draft edits. The 200ms debounce
    * means the effect below has long since committed this ref before any read.
    */
-  /** Source file for a pending "Save a copy" — set when Drive says the file is not ours. */
-  const notMineSourceRef = useRef<{ fileId: string; name: string } | null>(null);
+  /**
+   * Videos pointing at a Drive file the user does not own, keyed by video id.
+   *
+   * Each renders a checked-by-default "Save a copy to my Drive" box on its own card, and the copy
+   * runs inside the ordinary save alongside device uploads. See
+   * {@link file://./../performance/foreignDriveVideoCopy.ts} for why this replaced a separate
+   * copy button, and what broke when it was one.
+   */
+  const [foreignVideoSources, setForeignVideoSources] = useState<ForeignVideoSource[]>([]);
   const draftRef = useRef(draft);
   useEffect(() => {
     draftRef.current = draft;
@@ -429,17 +443,27 @@ export function PerformanceEditorDialog(props: {
           /*
            * Readable, but someone else's. Linking to their file id looks like it works and then
            * rots: it depends on their sharing settings, their retention, and their account still
-           * existing. Offer to take a copy — the owner's expectation is that pasting a friend's
-           * link behaves like uploading the file.
+           * existing, and it never enters her own Drive backup.
            *
-           * Deliberately an explicit action rather than an automatic copy: this runs on a 200ms
-           * debounce as the field changes, and silently pulling a multi-gigabyte video into the
-           * user's Drive (and quota) is not something to do on a keystroke.
+           * The video is already attached at this point, so it stays attached and gains a
+           * checked-by-default "save a copy" box on its own card. The copy itself waits for save —
+           * this runs on a 200ms debounce as the field changes, and pulling a multi-gigabyte video
+           * into someone's Drive on a keystroke is not on. Staging it is also what device uploads
+           * already do, so both video sources now behave the same way.
            */
           if (meta.ownedByMe === false) {
-            notMineSourceRef.current = { fileId: resolvedDriveFileId, name: displayName };
-            applyFeedback({ kind: 'not_mine', name: displayName, copying: false });
-            return;
+            const attached = normalizeEncorePerformance(draftRef.current).videos ?? [];
+            const target = attached.find((v) => v.videoTargetDriveFileId === resolvedDriveFileId);
+            if (target) {
+              setForeignVideoSources((sources) =>
+                upsertForeignVideoSource(sources, {
+                  videoId: target.id,
+                  fileId: resolvedDriveFileId,
+                  name: displayName,
+                  copyRequested: true,
+                }),
+              );
+            }
           }
           applyFeedback({ kind: 'ok', name: displayName });
           if (metadataLocked) {
@@ -609,6 +633,67 @@ export function PerformanceEditorDialog(props: {
       primaryVideoId = primaryVideoId ?? videos[0]?.id;
     }
 
+    /*
+     * Take copies of any videos still pointing at someone else's Drive, in the same save the user
+     * just started — not a second workflow they have to notice and run themselves.
+     *
+     * Runs after the device-upload stage so both kinds of pending video resolve before the row is
+     * written, and rewrites in place, so one pasted link stays one video.
+     */
+    const copyTasks = planForeignVideoCopies(videos, foreignVideoSources);
+    if (copyTasks.length > 0) {
+      if (!googleAccessToken) {
+        setShortcutMsg('Sign in with Google to save a copy of this video to your Drive.');
+        return;
+      }
+      setUploading(true);
+      setShortcutMsg(null);
+      try {
+        await withBlockingJob(
+          copyTasks.length === 1
+            ? 'Saving a copy to your Drive…'
+            : `Saving ${copyTasks.length} copies to your Drive…`,
+          async (setProgress) => {
+            setProgress(0);
+            const layout = await ensureEncoreDriveLayout(googleAccessToken);
+            const parent =
+              resolveDriveUploadFolderId('performances', layout, repertoireExtras.driveUploadFolderOverrides) ??
+              layout.performancesFolderId;
+            if (!parent?.trim()) throw new Error('Performances folder is not ready yet.');
+
+            const copied: { videoId: string; copiedFileId: string }[] = [];
+            for (let index = 0; index < copyTasks.length; index += 1) {
+              const task = copyTasks[index]!;
+              const result = await copyDriveFileToMyDrive({
+                accessToken: googleAccessToken,
+                sourceFileId: task.sourceFileId,
+                parentFolderId: parent.trim(),
+                onProgress: ({ bytesSent, bytesTotal }) => {
+                  const fileFrac = bytesTotal > 0 ? bytesSent / bytesTotal : 0;
+                  setProgress((index + fileFrac) / copyTasks.length);
+                },
+              });
+              copied.push({ videoId: task.videoId, copiedFileId: result.fileId });
+            }
+            videos = applyForeignVideoCopies(videos, copied);
+            setProgress(1);
+          },
+        );
+      } catch (error) {
+        const reason = classifyDriveCopyFailure(error);
+        setShortcutMsg(
+          reason === 'no-access' || reason === 'not-found'
+            ? 'You do not have access to that video. Ask whoever shared it to give you access, then try again.'
+            : reason === 'not-a-file'
+              ? 'That link is a Google Doc, not a video file.'
+              : 'Could not save a copy to your Drive. Check your connection and Drive storage, then try again.',
+        );
+        setUploading(false);
+        return;
+      }
+      setUploading(false);
+    }
+
     const withVideos: EncorePerformance = syncPerformanceLegacyVideoFields({
       ...draft,
       venueTag: draft.venueTag.trim() || 'Venue',
@@ -751,66 +836,6 @@ export function PerformanceEditorDialog(props: {
   const isEditingSavedPerformance = Boolean(performance && !metadataLocked);
   const primaryVideoIdInDraft = draft.primaryVideoId ?? draftVideos[0]?.id;
 
-  /**
-   * Take a copy of a Drive file the user can read but does not own, into their own performances
-   * folder, and attach the COPY.
-   *
-   * This is what "upload a link a friend sent me" has to mean. Attaching their file id keeps the
-   * performance log pointing at storage the user does not control: it breaks when they unshare it,
-   * move it, or close the account, and it does not come along in the user's own Drive backup.
-   */
-  const handleCopyToMyDrive = useCallback(async () => {
-    const source = notMineSourceRef.current;
-    if (!source || !googleAccessToken) return;
-    setDriveLinkFeedback({ kind: 'not_mine', name: source.name, copying: true });
-    try {
-      await withBlockingJob('Saving a copy to your Drive…', async (setProgress) => {
-        setProgress(0);
-        const layout = await ensureEncoreDriveLayout(googleAccessToken);
-        const parent =
-          resolveDriveUploadFolderId('performances', layout, repertoireExtras.driveUploadFolderOverrides) ??
-          layout.performancesFolderId;
-        if (!parent?.trim()) throw new Error('Performances folder is not ready yet.');
-
-        const copied = await copyDriveFileToMyDrive({
-          accessToken: googleAccessToken,
-          sourceFileId: source.fileId,
-          parentFolderId: parent.trim(),
-          onProgress: ({ bytesSent, bytesTotal }) =>
-            setProgress(bytesTotal > 0 ? bytesSent / bytesTotal : 0),
-        });
-
-        applyLinkedVideo(
-          {
-            videoTargetDriveFileId: copied.fileId,
-            externalVideoUrl: undefined,
-            videoShortcutDriveFileId: undefined,
-          },
-          { appendNew: true },
-        );
-        notMineSourceRef.current = null;
-        setVideoInput('');
-        setDriveLinkFeedback({ kind: 'ok', name: copied.name });
-      });
-    } catch (error) {
-      const reason = classifyDriveCopyFailure(error);
-      setDriveLinkFeedback({
-        kind: 'error',
-        message:
-          reason === 'no-access' || reason === 'not-found'
-            ? 'You do not have access to that file. Ask whoever shared it to give you access, then try again.'
-            : reason === 'not-a-file'
-              ? 'That link is a Google Doc, not a video file.'
-              : 'Could not save a copy. Check your connection and Drive storage, then try again.',
-      });
-    }
-  }, [
-    googleAccessToken,
-    withBlockingJob,
-    repertoireExtras.driveUploadFolderOverrides,
-    applyLinkedVideo,
-  ]);
-
   const addVideoSourceStrip: PerformanceAddVideoSourceStripProps = useMemo(
     () => ({
       videoInput,
@@ -818,7 +843,6 @@ export function PerformanceEditorDialog(props: {
       onVideoInputBlur: () => void syncVideoFromInput(),
       driveLinkFeedback,
       browseDriveVideoFileId,
-      onCopyToMyDrive: () => void handleCopyToMyDrive(),
       onPickFiles: routeDroppedVideoFiles,
       pickerDisabled: !googleAccessToken || uploading,
       uploading,
@@ -831,7 +855,6 @@ export function PerformanceEditorDialog(props: {
       driveLinkFeedback,
       browseDriveVideoFileId,
       routeDroppedVideoFiles,
-    handleCopyToMyDrive,
       googleAccessToken,
       uploading,
       draftVideos.length,
@@ -921,6 +944,17 @@ export function PerformanceEditorDialog(props: {
                 inlineLink={buildInlineLinkProps(video)}
                 uploading={uploading}
                 playbackActive={open}
+                foreignCopy={(() => {
+                  const source = foreignSourceForVideo(foreignVideoSources, video.id);
+                  if (!source) return undefined;
+                  return {
+                    copyRequested: source.copyRequested,
+                    onCopyRequestedChange: (next: boolean) =>
+                      setForeignVideoSources((sources) =>
+                        setForeignVideoCopyRequested(sources, video.id, next),
+                      ),
+                  };
+                })()}
                 onSetPrimary={
                   draftVideos.length > 1
                     ? () => setDraft((d) => syncPerformanceLegacyVideoFields({ ...d, primaryVideoId: video.id }))
