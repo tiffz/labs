@@ -45,6 +45,36 @@ function maybeBeaconCrash(entry: LabsCrashLogEntry): void {
   }
 }
 
+/**
+ * Dev-only mirror of the crash log to disk, via the `POST /__debug_crash` Vite middleware
+ * (`.debug-crash-logs/crash-<appId>.json`, gitignored).
+ *
+ * `maybeBeaconCrash` above deliberately skips DEV and needs a beacon URL, so in local development a
+ * crash was recorded to IndexedDB and then sat there — retrievable only by opening the debug dock
+ * and copying a bundle by hand. In practice that meant crash evidence never arrived, and Stanza's
+ * repeat crashes had to be root-caused from source instead of from the actual stack.
+ *
+ * `keepalive` so the POST survives the tab dying right after — which is the case that matters.
+ * Carries the full entry including the stack: this is the developer's own machine, on disk, in dev.
+ * The route is sanitized the same way the production beacon sanitizes it, so a token in a query
+ * string cannot land in a file.
+ */
+function maybeWriteCrashToDevServer(entry: LabsCrashLogEntry): void {
+  if (!import.meta.env.DEV || typeof fetch === 'undefined') return;
+  try {
+    void fetch('/__debug_crash', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      keepalive: true,
+      body: JSON.stringify({ ...entry, route: sanitizeRouteForBeacon(entry.route) }),
+    }).catch(() => {
+      /* dev pipe absent (production build, or preview server) */
+    });
+  } catch {
+    /* never let crash reporting throw from inside crash handling */
+  }
+}
+
 let dbPromise: Promise<IDBDatabase | null> | null = null;
 
 function openDb(): Promise<IDBDatabase | null> {
@@ -155,6 +185,7 @@ export async function appendLabsCrashLogEntry(
   });
   await trimEntries(db);
   maybeBeaconCrash(entry);
+  maybeWriteCrashToDevServer(entry);
 }
 
 export async function readLabsCrashLogEntries(): Promise<LabsCrashLogEntry[]> {

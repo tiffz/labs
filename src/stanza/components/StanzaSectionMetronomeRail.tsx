@@ -386,6 +386,27 @@ export default function StanzaSectionMetronomeRail({
     return audioContextRef.current;
   }, []);
 
+  /*
+   * Close it on unmount, or this crashes Stanza.
+   *
+   * This rail is rendered conditionally (`{railCalibSeg ? <StanzaSectionMetronomeRail … /> : null}`
+   * in StanzaWorkspace), so it unmounts and remounts on every section, song, and timing-scope
+   * change. Each mount that runs analysis built a fresh context and left it open. Browsers cap
+   * AudioContexts per document — Chrome at 6 — and past the cap the **constructor throws**, so the
+   * failure is not quiet degradation: the throw escapes `runAnalyze` and lands in the error
+   * boundary as a crash. Analyse in a handful of sections and the app dies.
+   *
+   * Same fix and the same reasoning as the analysis context in StanzaWorkspace. `f626fabe` fixed a
+   * different instance of this class; `audioContextsAreClosed.test.ts` now watches for the next one.
+   */
+  useEffect(
+    () => () => {
+      void audioContextRef.current?.close();
+      audioContextRef.current = null;
+    },
+    [],
+  );
+
   const analysisRangeStart = timingScope === 'song' ? 0 : segment.start;
   const analysisRangeEnd = timingScope === 'song' ? songDurationSec : segment.end;
   const analysisDuration = Math.max(0, analysisRangeEnd - analysisRangeStart);

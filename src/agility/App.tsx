@@ -81,6 +81,18 @@ export default function App(): ReactElement {
   const ctxRef = useRef<AudioContext | null>(null);
   const sessionTrackStartRef = useRef(0);
 
+  // Close on unmount. Browsers cap AudioContexts per document (Chrome: 6) and the constructor
+  // THROWS past the cap, so a leaked context is a latent crash, not a quiet degradation. This root
+  // mounts once per page load so it leaks at most one — unlike the Stanza rail, which remounted and
+  // did crash. Guarded by src/shared/audio/audioContextsAreClosed.test.ts.
+  useEffect(
+    () => () => {
+      void ctxRef.current?.close();
+      ctxRef.current = null;
+    },
+    [],
+  );
+
   const refreshDevices = useCallback(async () => {
     const list = await MicrophonePitchInput.listDevices();
     setDevices(list);
