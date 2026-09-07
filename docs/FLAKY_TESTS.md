@@ -77,6 +77,30 @@ This is distinct from widening a timeout to hide a real race. Ask which you have
 appears in tens of milliseconds and the code is deliberately async, the margin is the bug. If the
 element appears only sometimes, the code is.
 
+### The nightly coverage run is the slowest environment you have
+
+Two nightly failures in three days, different tests, same shape: **a test with too little margin,
+failing only under `test:coverage`.**
+
+| Test                              | Budget                     | Actual           | Failed because                          |
+| --------------------------------- | -------------------------- | ---------------- | --------------------------------------- |
+| `ChordPlaybackSettingsPanel`      | 1000ms (`findBy*` default) | ~60ms            | 852 files × 6 workers starved it of CPU |
+| `scoreGenerator.contentIntegrity` | 10000ms (`testTimeout`)    | **8346ms — 83%** | instrumentation ate the last 17%        |
+
+Coverage instrumentation slows everything, and the nightly runs it on a cold cache across the whole
+suite. A test that passes locally at 83% of its budget has no margin left for that.
+
+Two rules follow:
+
+- **`test:coverage` runs with `--testTimeout=30000`.** The slowdown is global and known, so
+  compensate globally rather than tuning tests one nightly failure at a time.
+- **An exhaustive matrix declares its own budget.** `it(..., 30_000)` with a comment saying why.
+  A long test sitting just under the global default is a nightly failure waiting for any slowdown —
+  and you will diagnose it as flakiness rather than as the arithmetic it is.
+
+When a test fails **only** in the coverage run, check its duration against its budget before
+looking for a race. If it is above ~50%, the margin is the bug.
+
 ## Slow tests vs fast presubmit
 
 | Tier                                    | Filename convention             | When it runs                       |

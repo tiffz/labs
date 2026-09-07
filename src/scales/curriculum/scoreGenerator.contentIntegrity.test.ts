@@ -172,6 +172,12 @@ describe('scoreGenerator content integrity (exhaustive)', () => {
     expect(blank, `blank exercises: ${blank.join(', ')}`).toEqual([]);
   });
 
+  /*
+   * Explicit timeout: this walks every exercise × every stage and takes ~8.3s, which is 83% of
+   * the 10s default — it passed only until coverage instrumentation slowed it the last 17%.
+   * An exhaustive matrix should declare the budget it needs rather than sit just under the
+   * global one, where any slowdown turns it into a nightly failure.
+   */
   it('every exercise × every stage produces complete, key-correct spellings', () => {
     for (const { ex } of all) {
       for (const stage of ex.stages) {
@@ -214,7 +220,7 @@ describe('scoreGenerator content integrity (exhaustive)', () => {
         }
       }
     }
-  });
+  }, 30_000);
 
   it('each ascending octave uses consecutive letters — no doubled or skipped letters', () => {
     for (const { ex } of all) {

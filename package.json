@@ -55,7 +55,7 @@
     "test": "vitest run",
     "test:fast": "FAST_TESTS=true vitest run",
     "test:full": "INCLUDE_BEAT_BENCHMARK=true vitest run",
-    "test:coverage": "vitest run --coverage",
+    "test:coverage": "vitest run --coverage --testTimeout=30000",
     "test:e2e": "playwright test",
     "test:changed-apps": "node scripts/run-changed-app-tests.mjs",
     "test:session-bff": "vitest run --root workers/labs-session-bff --config vitest.config.ts",
