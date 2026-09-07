@@ -1,4 +1,5 @@
 import type { EncoreMilestoneDefinition, EncorePerformance, EncoreSong } from '../types';
+import { isMainPerformance } from '../performances/performanceRole';
 import { ENCORE_FILTER_SENTINEL } from '../utils/encoreFilterSentinels';
 import {
   encoreDateInRange,
@@ -101,6 +102,13 @@ export function filterSongsByRepertoireSavedSearchBundle(
   const perfPresence =
     performedSel === 'with' ? 'with' : performedSel === 'none' ? 'none' : 'all';
   const practicingSel = repertoireFilterValues.practicing[0];
+  /*
+   * Absent means no filtering, so every saved search written before roles existed keeps returning
+   * exactly what it did. That matters more here than elsewhere: this function also drives Spotify
+   * playlist sync, so a predicate that changed meaning for an existing saved search would quietly
+   * change the contents of a synced playlist.
+   */
+  const songRoleSel = repertoireFilterValues.songRole?.[0];
   const practicingFilter =
     practicingSel === 'practicing' ? 'practicing' : practicingSel === 'not_practicing' ? 'not_practicing' : 'all';
   const template = milestoneTemplate;
@@ -110,6 +118,17 @@ export function filterSongsByRepertoireSavedSearchBundle(
     list = list.filter((s) => (perfBySong.get(s.id) ?? []).length > 0);
   } else if (perfPresence === 'none') {
     list = list.filter((s) => (perfBySong.get(s.id) ?? []).length === 0);
+  }
+  if (songRoleSel === 'led' || songRoleSel === 'supported') {
+    // "Led" = she was the main performer on at least one performance of this song. "Supported"
+    // is its complement among songs she HAS performed: never led, but performed at least once —
+    // a song with no performances at all is neither, and is excluded from both.
+    list = list.filter((s) => {
+      const songPerfs = perfBySong.get(s.id) ?? [];
+      if (songPerfs.length === 0) return false;
+      const led = songPerfs.some((perf) => isMainPerformance(perf));
+      return songRoleSel === 'led' ? led : !led;
+    });
   }
   if (venueFilters.length > 0) {
     const blankVenue = venueFilters.includes(ENCORE_FILTER_SENTINEL.repertoireNoPerformances);

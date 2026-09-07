@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePlayback } from '../shared/rhythm/usePlayback';
 import { usePlaybackWakeLock } from '../shared/audio/usePlaybackWakeLock';
 import { useMetronomePreferences } from '../shared/audio/platform/metronome';
@@ -136,6 +136,17 @@ const App: React.FC = () => {
   const notationScrollRef = useRef<HTMLElement | null>(null);
   const notationSectionRefs = useRef<Map<string, HTMLElement>>(new Map());
   const chordAudioContextRef = useRef<AudioContext | null>(null);
+
+  // This ref is the owner: useWordsPlaybackRailProps only fills it. Close on unmount — browsers cap
+  // AudioContexts per document (Chrome: 6) and the constructor throws past the cap.
+  // Guarded by src/shared/audio/audioContextsAreClosed.test.ts.
+  useEffect(
+    () => () => {
+      void chordAudioContextRef.current?.close();
+      chordAudioContextRef.current = null;
+    },
+    [],
+  );
   const chordSampledPianoRef = useRef<SampledPiano | null>(null);
   const chordInstrumentRef = useRef<Instrument | null>(null);
   const chordInstrumentTypeRef = useRef<SoundType | null>(null);

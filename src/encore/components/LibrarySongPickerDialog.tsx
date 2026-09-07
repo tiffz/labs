@@ -13,7 +13,13 @@ import ListSubheader from '@mui/material/ListSubheader';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import MusicNoteIcon from '@mui/icons-material/MusicNote';
+import AddIcon from '@mui/icons-material/Add';
+import CircularProgress from '@mui/material/CircularProgress';
 import { useMemo, type ReactElement } from 'react';
+import { useDebouncedSpotifyTrackSearch } from '../hooks/useDebouncedSpotifyTrackSearch';
+import { EncoreSpotifyTrackListRow } from '../ui/EncoreSpotifyTrackListRow';
+import { encoreSongStubFromSpotifySearchTrack } from '../spotify/encoreSpotifyPlaylistSync';
+import { encoreSongFromManualTitleArtist } from '../import/bulkPerformanceSong';
 import { encoreDialogActionsSx, encoreDialogContentSx, encoreDialogTitleSx } from '../theme/encoreUiTokens';
 import type { EncoreSong } from '../types';
 import type { EncoreOriginalSong } from '../originals/types';
@@ -37,11 +43,27 @@ export type LibrarySongPickerDialogProps = {
   /**
    * Songwriting originals offered below the repertoire songs. Omit to keep the picker songs-only —
    * the bulk import flows deliberately do, because title-matching an import row against an original
-   * would silently file a gig video under the wrong subject.
+   * would silently file a performance video under the wrong subject.
    */
   originals?: EncoreOriginalSong[];
   /** Required to make {@link LibrarySongPickerDialogProps.originals} selectable. */
   onSelectOriginal?: (original: EncoreOriginalSong) => void;
+  /**
+   * Opt in to creating a song that is not in the library yet, from Spotify or by hand.
+   *
+   * Deliberately opt-in. The three bulk flows (performance import, score import, playlist import)
+   * also use this dialog and each has its own row-level resolution machinery — a create path
+   * appearing there would compete with it. Only the "log a performance" flow passes this.
+   *
+   * The created song is handed back unsaved; the caller persists it (and knows whether to mark it
+   * `practicing`). Songs created here are NOT practicing: they belong in the library, not in the
+   * practice rotation, which is the existing line between "in my catalogue" and "working on it".
+   */
+  onCreateSong?: (song: EncoreSong) => void;
+  /** Spotify client id, required for the search half of the create path. */
+  spotifyClientId?: string;
+  /** Whether Spotify is connected; when false only manual creation is offered. */
+  spotifyLinked?: boolean;
 };
 
 /**
@@ -61,7 +83,25 @@ export function LibrarySongPickerDialog(props: LibrarySongPickerDialogProps): Re
     emptySearchHint = 'No songs match that search.',
     originals,
     onSelectOriginal,
+    onCreateSong,
+    spotifyClientId,
+    spotifyLinked = false,
   } = props;
+
+  const canCreate = Boolean(onCreateSong);
+  const trimmedQuery = pickQuery.trim();
+  const { results: spotifyResults, loading: spotifyLoading } = useDebouncedSpotifyTrackSearch({
+    query: trimmedQuery,
+    clientId: spotifyClientId ?? '',
+    // Only search once there is something to search for, and only when creating is on offer.
+    enabled: canCreate && spotifyLinked && trimmedQuery.length >= 2,
+  });
+
+  /** Spotify hits already in the library would be duplicates — the library rows above cover them. */
+  const newSpotifyResults = useMemo(() => {
+    const known = new Set(existingSongs.map((s) => s.spotifyTrackId).filter(Boolean));
+    return spotifyResults.filter((t) => !known.has(t.id));
+  }, [spotifyResults, existingSongs]);
 
   const { preferred, rest } = useMemo(() => {
     const q = pickQuery.trim().toLowerCase();
@@ -94,7 +134,7 @@ export function LibrarySongPickerDialog(props: LibrarySongPickerDialogProps): Re
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth aria-labelledby="library-song-picker-title">
       <DialogTitle id="library-song-picker-title" sx={encoreDialogTitleSx}>
-        Pick from library
+        {canCreate ? 'Choose a song' : 'Pick from library'}
       </DialogTitle>
       <DialogContent
         sx={{
@@ -107,7 +147,7 @@ export function LibrarySongPickerDialog(props: LibrarySongPickerDialogProps): Re
       >
         <TextField
           size="small"
-          label="Search library"
+          label={canCreate && spotifyLinked ? 'Search your library or Spotify' : 'Search library'}
           placeholder="Title or artist"
           value={pickQuery}
           onChange={(e) => onPickQueryChange(e.target.value)}
@@ -122,9 +162,13 @@ export function LibrarySongPickerDialog(props: LibrarySongPickerDialogProps): Re
               <Typography variant="body2" sx={{
                 color: "text.secondary"
               }}>
-                {existingSongs.length === 0 && (originals?.length ?? 0) === 0
-                  ? emptyLibraryHint
-                  : emptySearchHint}
+                {canCreate
+                  ? trimmedQuery
+                    ? 'Nothing in your library matches. Add it from Spotify or by hand below.'
+                    : 'Search for a song, or add one that is not in your library yet.'
+                  : existingSongs.length === 0 && (originals?.length ?? 0) === 0
+                    ? emptyLibraryHint
+                    : emptySearchHint}
               </Typography>
             </Box>
           ) : (
@@ -194,6 +238,63 @@ export function LibrarySongPickerDialog(props: LibrarySongPickerDialogProps): Re
             </>
           )}
         </List>
+        {canCreate ? (
+          <List
+            dense
+            sx={{ maxHeight: 260, overflow: 'auto', border: 1, borderColor: 'divider', borderRadius: 1 }}
+          >
+            <ListSubheader
+              sx={{ typography: 'caption', fontWeight: 700, bgcolor: 'background.paper', lineHeight: 2.5 }}
+            >
+              Not in your library
+            </ListSubheader>
+            {spotifyLinked && trimmedQuery.length >= 2 ? (
+              <>
+                {spotifyLoading ? (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2, py: 1.5 }}>
+                    <CircularProgress size={16} />
+                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                      Searching Spotify…
+                    </Typography>
+                  </Box>
+                ) : null}
+                {newSpotifyResults.map((track) => (
+                  <ListItemButton
+                    key={track.id}
+                    alignItems="flex-start"
+                    onClick={() => {
+                      // Practicing stays off: this belongs in the library, not the practice rotation.
+                      onCreateSong?.(encoreSongStubFromSpotifySearchTrack(track, { practicing: false }));
+                    }}
+                  >
+                    <EncoreSpotifyTrackListRow track={track} />
+                  </ListItemButton>
+                ))}
+              </>
+            ) : null}
+            {trimmedQuery ? (
+              <ListItemButton
+                alignItems="flex-start"
+                onClick={() => {
+                  // Manual fallback: no Spotify match, or Spotify not connected. Artist is left
+                  // blank rather than guessed — the builder fills its own default.
+                  onCreateSong?.(encoreSongFromManualTitleArtist(trimmedQuery, '', new Date().toISOString()));
+                }}
+              >
+                <ListItemAvatar sx={{ minWidth: 56 }}>
+                  <Avatar variant="rounded" alt="" sx={{ width: 44, height: 44 }}>
+                    <AddIcon fontSize="small" />
+                  </Avatar>
+                </ListItemAvatar>
+                <ListItemText
+                  primary={`Add "${trimmedQuery}"`}
+                  secondary={spotifyLinked ? 'Without Spotify details' : 'Connect Spotify for artist and artwork'}
+                  slotProps={{ primary: { noWrap: true }, secondary: { noWrap: true } }}
+                />
+              </ListItemButton>
+            ) : null}
+          </List>
+        ) : null}
       </DialogContent>
       <DialogActions sx={encoreDialogActionsSx}>
         <Button onClick={onClose}>Cancel</Button>

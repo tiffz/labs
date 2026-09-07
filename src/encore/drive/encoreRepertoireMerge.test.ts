@@ -245,6 +245,18 @@ describe('PERFORMANCE_MERGE_POLICY (P0-3)', () => {
     expect(PERFORMANCE_MERGE_POLICY.subjectKind).not.toMatch(/^preserve-filled/);
   });
 
+  it('resolves role last-write-wins, never preserve-filled', () => {
+    // Absent legitimately means 'Lead vocal', so `preserve-filled-*` would let a stale explicit
+    // role beat a deliberate reset back to the default — and the default is the common case. A
+    // union is wrong too: a performance has one role, and 'Lead vocal' ∪ 'Accompanist' describes
+    // no real show. This disposition also gates what the public snapshot publishes, so a wrong
+    // merge here silently changes who can see what.
+    expect(performanceMergePolicyKeys()).toContain('role');
+    expect(PERFORMANCE_MERGE_POLICY.role).toBe('lww');
+    expect(PERFORMANCE_MERGE_POLICY.role).not.toMatch(/^preserve-filled/);
+    expect(PERFORMANCE_MERGE_POLICY.role).not.toMatch(/^union/);
+  });
+
   it('unions videos by id — a video on only one side is never dropped', () => {
     const merged = mergePerformanceVideoLists(
       [{ id: 'a', createdAt: '2025-01-01T00:00:00.000Z' }],

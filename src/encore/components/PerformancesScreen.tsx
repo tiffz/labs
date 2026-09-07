@@ -1,4 +1,11 @@
-/* eslint-disable react/prop-types -- MRT Cell render props are typed via MRT_ColumnDef, not PropTypes */
+ 
+import {
+  filterPerformancesByScope,
+  parsePerformanceScope,
+  performanceRole,
+  type PerformanceScope,
+} from '../performances/performanceRole';
+import { applyTemplateProgressToSong } from '../repertoire/repertoireMilestones';
 import AddIcon from '@mui/icons-material/Add';
 import Alert from '@mui/material/Alert';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
@@ -39,7 +46,6 @@ import { alpha, useTheme } from '@mui/material/styles';
 import {
   memo,
   useCallback,
-  useContext,
   useEffect,
   useMemo,
   useRef,
@@ -49,8 +55,6 @@ import {
 } from 'react';
 import {
   useMaterialReactTable,
-  type MRT_ColumnDef,
-  type MRT_Row,
   type MRT_RowSelectionState,
   type MRT_TableInstance,
 } from 'material-react-table';
@@ -59,8 +63,7 @@ import {
   type EncoreAccompanimentTag,
   type EncoreMrtTablePrefs,
   type EncorePerformance,
-  type EncoreSong,
-} from '../types';
+  type EncoreSong, ENCORE_PERFORMANCE_ROLES } from '../types';
 import {
   encoreAppHref,
   isModifiedOrNonPrimaryClick,
@@ -90,7 +93,6 @@ import {
 } from '../theme/encoreUiTokens';
 import { encoreListPageHeaderMb, encoreListPagePaddingTop, encorePagePaddingTop, encoreScreenPaddingX } from '../theme/encoreM3Layout';
 import { EncorePageHeader } from '../ui/EncorePageHeader';
-import { performanceVideoOpenUrl } from '../utils/performanceVideoUrl';
 import { performanceVideoPlaybackTarget } from '../utils/performancePlaybackTarget';
 import { LibrarySongPickerDialog } from './LibrarySongPickerDialog';
 import { BulkPerformanceImportDialog } from './BulkPerformanceImportDialog';
@@ -99,7 +101,6 @@ import { PlaylistImportDialog } from './PlaylistImportDialog';
 import { PerformanceEditorDialog } from './PerformanceEditorDialog';
 import { PerformancesWrappedScreen } from './PerformancesWrappedScreen';
 import { SpotifyBrandIcon, YouTubeBrandIcon } from './EncoreBrandIcon';
-import { PerformanceVideoThumb } from './PerformanceVideoThumb';
 import {
   LEGACY_MRT_ACTIONS_DATA_COL,
   ensureEncoreMrtRowActionsInOrder,
@@ -112,15 +113,12 @@ import {
 import {
   type PerformancesViewMode,
   type PerfMrtRow,
-  formatPerformanceNotesLine,
   normalizePerformancesTableSorting,
   normalizePerfVenueLabel,
   perfMrtColumnId,
   performancesColumnOrderForMrt,
 } from './performancesScreenHelpers';
-import { InlineChipDate, InlineChipMultiSelect, InlineChipSelect } from '../ui/InlineEditChip';
 import { type EncoreFilterChipBarHandle, type EncoreFilterFieldConfig } from '../ui/EncoreFilterChipBar';
-import { EncoreMrtColumnHeader } from '../ui/EncoreMrtColumnHeader';
 import { ENCORE_FILTER_SENTINEL } from '../utils/encoreFilterSentinels';
 import {
   encoreDateInRange,
@@ -138,16 +136,19 @@ import {
   encoreTabBodyPropsAreEqual,
   useEncoreTabFrozenSnapshot,
 } from '../utils/useEncoreTabFrozenSnapshot';
-import { HighlightedText } from '../ui/HighlightedText';
 import {
   buildExtendedPerformanceInsights,
   buildPerformanceDashboardStats,
   type ExtendedPerformanceInsights,
   type PerformanceDashboardStats,
 } from '../performances/performancesStatsModel';
-import AppTooltip from '../../shared/components/AppTooltip';
-import { EncoreMrtSearchHighlightContext } from './encoreMrtSearchHighlightContext';
 import { PerformancesBulkSelectionBar } from './performancesScreen/PerformancesBulkSelectionBar';
+import { performanceVideoOpenUrl } from '../utils/performanceVideoUrl';
+import { eventSeedFromPerformance } from '../performances/performanceEvents';
+import LibraryAddIcon from '@mui/icons-material/LibraryAdd';
+import { PerformanceVideoThumb } from './PerformanceVideoThumb';
+import { usePerformancesColumns } from './performancesScreen/usePerformancesColumns';
+import { usePerformanceEventGroups } from './performancesScreen/usePerformanceEventGroups';
 import { PerformancesMrtTableView } from './performancesScreen/PerformancesMrtTableView';
 import { PerformancesListToolbar } from './performancesScreen/PerformancesListToolbar';
 import {
@@ -156,82 +157,10 @@ import {
 } from './performancesScreen/performancesSubTabSubscription';
 
 const VIEW_STORAGE_KEY = 'encore.performances.view';
+const SCOPE_STORAGE_KEY = 'encore.performances.scope';
 
 const PERFORMANCES_FILTER_PINNED = ['venue', 'accompaniment', 'perfDate'] as const;
 
-function PerfSongColumnCell({ row }: { row: MRT_Row<PerfMrtRow> }): ReactElement {
-  const highlight = useContext(EncoreMrtSearchHighlightContext);
-  const { subject, artistLabel, perf } = row.original;
-  // Route by subject, so an original opens its songwriting page rather than dead-ending.
-  const href = subject.href ?? undefined;
-  return (
-    <Box>
-      <Button
-        variant="text"
-        size="small"
-        disabled={!href}
-        component={href ? 'a' : 'button'}
-        href={href}
-        sx={{
-          textAlign: 'left',
-          justifyContent: 'flex-start',
-          fontWeight: 600,
-          textTransform: 'none',
-          p: 0,
-          minWidth: 0,
-          maxWidth: '100%',
-          color: 'text.primary',
-          '&:hover': { bgcolor: 'transparent', color: 'primary.main' },
-        }}
-      >
-        <AppTooltip title={row.original.songLabel}>
-          <Box component="span" sx={{ display: 'block', minWidth: 0, maxWidth: '100%' }}>
-            <HighlightedText
-              text={row.original.songLabel}
-              highlight={highlight}
-              variant="body2"
-              sx={{
-                fontWeight: 600,
-                display: 'block',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-              }}
-            />
-          </Box>
-        </AppTooltip>
-      </Button>
-      {artistLabel ? (
-        <AppTooltip title={artistLabel}>
-          <Box component="span" sx={{ display: 'block', minWidth: 0, maxWidth: '100%' }}>
-            <HighlightedText
-              text={artistLabel}
-              highlight={highlight}
-              variant="caption"
-              sx={{
-                color: 'text.secondary',
-                display: 'block',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-              }}
-            />
-          </Box>
-        </AppTooltip>
-      ) : null}
-      {perf.notes ? (
-        <AppTooltip title={perf.notes}>
-          <Box component="span" sx={{ display: 'block', minWidth: 0, maxWidth: '100%', mt: 0.25 }}>
-            <HighlightedText
-              text={formatPerformanceNotesLine(perf.notes)}
-              highlight={highlight}
-              variant="caption"
-              sx={{ color: 'text.secondary', lineHeight: 1.4, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis' }}
-            />
-          </Box>
-        </AppTooltip>
-      ) : null}
-    </Box>
-  );
-}
 
 export type PerformancesScreenProps = {
   heavyListTabActive?: boolean;
@@ -293,13 +222,13 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
   const perfFilterFieldDefsCacheRef = useRef<EncoreFilterFieldConfig[]>([]);
   const perfDashboardStatsCacheRef = useRef<PerformanceDashboardStats | null>(null);
   const perfExtendedInsightsCacheRef = useRef<ExtendedPerformanceInsights | null>(null);
-  const perfColumnsCacheRef = useRef<MRT_ColumnDef<PerfMrtRow>[]>([]);
   const hasAnyPerformanceVideoLinkCacheRef = useRef(false);
 
   const [query, setQuery] = useState('');
   const debouncedQuery = useDebouncedString(query, 220);
   const [perfFilterValues, setPerfFilterValues] = useState<Record<string, string[]>>(() => ({
     venue: [],
+    role: [],
     accompaniment: [],
     perfDateAfter: [],
     perfDateBefore: [],
@@ -313,11 +242,25 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
   const [pickQuery, setPickQuery] = useState('');
   const [perfOpen, setPerfOpen] = useState(false);
   const [perfEditing, setPerfEditing] = useState<EncorePerformance | null>(null);
+  /*
+   * A ref, not state: the seed is only READ when the editor opens, and it is always set in the
+   * same handler that opens it, so the value is in place before the resulting render.
+   */
+  const eventSeedRef = useRef<Pick<EncorePerformance, 'date' | 'venueTag' | 'accompanimentTags'> | null>(null);
   const [perfSongId, setPerfSongId] = useState<string | null>(null);
   const [perfSubjectKind, setPerfSubjectKind] = useState<'song' | 'original'>('song');
   const [viewMode, setViewMode] = useState<PerformancesViewMode>(() => {
     if (typeof window === 'undefined') return 'table';
     return window.localStorage.getItem(VIEW_STORAGE_KEY) === 'grid' ? 'grid' : 'table';
+  });
+  /*
+   * Which slice of the log is showing. Defaults to her own performances, so accompaniment work
+   * does not dilute the singing archive — but it is a VISIBLE, labelled control, never a silent
+   * filter. A default that quietly hides rows reads as data loss.
+   */
+  const [scope, setScope] = useState<PerformanceScope>(() => {
+    if (typeof window === 'undefined') return 'main';
+    return parsePerformanceScope(window.localStorage.getItem(SCOPE_STORAGE_KEY)) ?? 'main';
   });
   const [perfMrtTable, setPerfMrtTable] = useState<MRT_TableInstance<PerfMrtRow> | null>(null);
   const handlePerfMrtTableReady = useCallback((next: MRT_TableInstance<PerfMrtRow>) => {
@@ -430,6 +373,10 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
   }, [viewMode]);
 
   useEffect(() => {
+    window.localStorage.setItem(SCOPE_STORAGE_KEY, scope);
+  }, [scope]);
+
+  useEffect(() => {
     if (viewMode === 'grid') setRowSelection({});
   }, [viewMode]);
 
@@ -509,6 +456,8 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
     if (!heavyListTabActive) return perfMrtDataCacheRef.current;
     const venueChipFilters = perfFilterValues.venue ?? [];
     const accompanimentChipFilters = perfFilterValues.accompaniment ?? [];
+    const roleChipFilters = perfFilterValues.role ?? [];
+    // Scope first: it decides which log you are looking at, the chip filters then narrow within it.
     const songChipFilters = perfFilterValues.song ?? [];
     const originChipFilters = perfFilterValues.origin ?? [];
     const perfDateRange = encoreDateRangeFromFilterRecord(perfFilterValues, 'perfDate');
@@ -523,10 +472,11 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
         songLabel: subject.title,
         artistLabel: subject.artist,
         venue: normalizePerfVenueLabel(p.venueTag),
+        role: performanceRole(p),
         accompaniment: p.accompanimentTags ?? [],
       };
     });
-    let rows = all;
+    let rows = filterPerformancesByScope(all, scope);
     if (originChipFilters.length > 0) {
       // Read the stored discriminant, NOT the resolved subject: an original that has not synced
       // to this device yet resolves to `unknown`, and classifying that as a cover would silently
@@ -568,6 +518,11 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
         return matchConcrete;
       });
     }
+    if (roleChipFilters.length > 0) {
+      // No "not set" sentinel here, unlike accompaniment: absent means 'Lead vocal', so every
+      // row resolves to exactly one role and a blank bucket would always be empty.
+      rows = rows.filter((r) => roleChipFilters.includes(r.role));
+    }
     if (isEncoreDateRangeActive(perfDateRange)) {
       rows = rows.filter((r) => encoreDateInRange(r.date, perfDateRange));
     }
@@ -584,6 +539,7 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
   }, [
     heavyListTabActive,
     performances,
+    scope,
     songById,
     originalById,
     debouncedQuery,
@@ -603,6 +559,11 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
     const next: EncoreFilterFieldConfig[] = [
       { id: 'venue', label: 'Venue', options: venueOpts },
       { id: 'accompaniment', label: 'Accompaniment', options: accOpts },
+      {
+        id: 'role',
+        label: 'Your role',
+        options: ENCORE_PERFORMANCE_ROLES.map((r) => ({ value: r, label: r })),
+      },
       encoreDateRangeFilterField('perfDate', 'Date'),
       {
         id: 'song',
@@ -635,13 +596,14 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
   const hasPerfChipFilters = Boolean(
     (perfFilterValues.venue ?? []).length > 0 ||
       (perfFilterValues.accompaniment ?? []).length > 0 ||
+      (perfFilterValues.role ?? []).length > 0 ||
       isEncoreDateRangeActive(perfDateRange) ||
       (perfFilterValues.song ?? []).length > 0 ||
       (perfFilterValues.origin ?? []).length > 0,
   );
 
   const clearPerfFilters = useCallback(() => {
-    setPerfFilterValues({ venue: [], accompaniment: [], perfDateAfter: [], perfDateBefore: [], song: [], origin: [] });
+    setPerfFilterValues({ venue: [], accompaniment: [], role: [], perfDateAfter: [], perfDateBefore: [], song: [], origin: [] });
     setVisiblePerfFilterIds([...PERFORMANCES_FILTER_PINNED]);
   }, []);
 
@@ -754,158 +716,69 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
     [savePerformance],
   );
 
+  /*
+   * Add another song to an existing event. Seeds date, venue and accompaniment from a performance
+   * already logged there, then opens the song picker (which can create a song from Spotify) before
+   * the editor. Deliberately does NOT carry the role forward — see eventSeedFromPerformance.
+   */
+  // A plain function, not a useCallback: it is only ever called from an inline arrow in the
+  // event header below, never passed to a memoized child, so memoizing it buys nothing — and
+  // measured at 2 `preserve-manual-memoization` violations in this already-tight component.
+  function addSongFromEvent(p: EncorePerformance): void {
+    eventSeedRef.current = eventSeedFromPerformance(p);
+    setPerfEditing(null);
+    setPickQuery('');
+    setPickSongOpen(true);
+  }
+
   const openEdit = useCallback((p: EncorePerformance) => {
+    eventSeedRef.current = null;
     setPerfEditing(p);
     setPerfSongId(p.songId);
     setPerfSubjectKind(p.subjectKind ?? 'song');
     setPerfOpen(true);
   }, []);
 
+  /*
+   * Insights counts the slice you are looking at, so its numbers match the list. Scoped once here
+   * rather than threading a scope parameter through the stats model's seven grouping sites — those
+   * functions stay pure and take pre-filtered input.
+   *
+   * Deliberately NOT cache-ref gated, unlike the stats memos below. This is one linear filter over
+   * an array already in memory; the keep-alive rule exists for memos that rebuild MRT columns or
+   * recompute aggregates, and each cache ref costs a `react-hooks/refs` violation (ref access
+   * during render) that the ratchet counts. Not worth it for an O(n) filter.
+   */
+  const scopedPerformances = useMemo(
+    () => filterPerformancesByScope(performances, scope),
+    [performances, scope],
+  );
+
   const performanceDashboardStats = useMemo(() => {
     if (!heavyListTabActive) return perfDashboardStatsCacheRef.current;
-    const next = buildPerformanceDashboardStats(performances, songById, normalizePerfVenueLabel, originalById);
+    const next = buildPerformanceDashboardStats(scopedPerformances, songById, normalizePerfVenueLabel, originalById);
     perfDashboardStatsCacheRef.current = next;
     return next;
-  }, [heavyListTabActive, performances, songById, originalById]);
+  }, [heavyListTabActive, scopedPerformances, songById, originalById]);
 
   const extendedPerformanceInsights = useMemo(() => {
     if (!heavyListTabActive) return perfExtendedInsightsCacheRef.current;
     const next = performanceDashboardStats
-      ? buildExtendedPerformanceInsights(performances, songById, performanceDashboardStats, undefined, originalById)
+      ? buildExtendedPerformanceInsights(scopedPerformances, songById, performanceDashboardStats, undefined, originalById)
       : null;
     perfExtendedInsightsCacheRef.current = next;
     return next;
-  }, [heavyListTabActive, performances, songById, originalById, performanceDashboardStats]);
+  }, [heavyListTabActive, scopedPerformances, songById, originalById, performanceDashboardStats]);
 
-  const columns = useMemo<MRT_ColumnDef<PerfMrtRow>[]>(() => {
-    if (!heavyListTabActive) return perfColumnsCacheRef.current;
-    const next: MRT_ColumnDef<PerfMrtRow>[] = [
-    {
-      id: 'video',
-      header: 'Video',
-      Header: ({ column }) => <EncoreMrtColumnHeader label="Video" column={column} />,
-      size: 120,
-      enableColumnFilter: false,
-      enableSorting: false,
-      Cell: ({ row }) => {
-        const url = performanceVideoOpenUrl(row.original.perf);
-        const thumb = (
-          <PerformanceVideoThumb performance={row.original.perf} width={100} alt="" googleAccessToken={googleAccessToken} />
-        );
-        if (url) {
-          return (
-            <Box
-              component="a"
-              href={url}
-              target="_blank"
-              rel="noreferrer"
-              aria-label="Open performance video"
-              onClick={(e) => e.stopPropagation()}
-              sx={{
-                display: 'inline-flex',
-                borderRadius: 1,
-                lineHeight: 0,
-                textDecoration: 'none',
-                color: 'inherit',
-                '&:focus-visible': {
-                  outline: '2px solid',
-                  outlineColor: 'primary.main',
-                  outlineOffset: 2,
-                },
-              }}
-            >
-              {thumb}
-            </Box>
-          );
-        }
-        return (
-          <Box sx={{ lineHeight: 0 }} aria-label="No video link">
-            {thumb}
-          </Box>
-        );
-      },
-    },
-    {
-      accessorKey: 'date',
-      header: 'Date',
-      meta: { encoreFilterFieldId: 'perfDate' },
-      Header: ({ column }) => (
-        <EncoreMrtColumnHeader label="Date" column={column} filterBarRef={perfFilterBarRef} />
-      ),
-      size: 160,
-      enableColumnFilter: false,
-      Cell: ({ row }) => (
-        <InlineChipDate
-          value={row.original.date}
-          placeholder="Set date"
-          onChange={(d) => {
-            if (!d) return;
-            void updatePerformance({ ...row.original.perf, date: d });
-          }}
-        />
-      ),
-    },
-    {
-      accessorKey: 'songLabel',
-      header: 'Song',
-      meta: { encoreFilterFieldId: 'song' },
-      Header: ({ column }) => (
-        <EncoreMrtColumnHeader label="Song" column={column} filterBarRef={perfFilterBarRef} />
-      ),
-      size: 240,
-      minSize: 180,
-      enableColumnFilter: false,
-      Cell: ({ row }) => <PerfSongColumnCell row={row} />,
-    },
-    {
-      accessorKey: 'venue',
-      header: 'Venue',
-      meta: { encoreFilterFieldId: 'venue' },
-      Header: ({ column }) => (
-        <EncoreMrtColumnHeader label="Venue" column={column} filterBarRef={perfFilterBarRef} />
-      ),
-      size: 140,
-      minSize: 120,
-      Cell: ({ row }) => (
-        <InlineChipSelect<string>
-          value={row.original.venue}
-          options={venueOptions}
-          freeSolo
-          placeholder="Venue"
-          onChange={(v) => {
-            if (v == null) return;
-            void updatePerformance({ ...row.original.perf, venueTag: v });
-          }}
-        />
-      ),
-    },
-    {
-      accessorKey: 'accompaniment',
-      header: 'Accompaniment',
-      meta: { encoreFilterFieldId: 'accompaniment' },
-      Header: ({ column }) => (
-        <EncoreMrtColumnHeader label="Accompaniment" column={column} filterBarRef={perfFilterBarRef} />
-      ),
-      size: 160,
-      minSize: 140,
-      Cell: ({ row }) => (
-        <InlineChipMultiSelect<EncoreAccompanimentTag>
-          values={row.original.accompaniment}
-          options={ENCORE_ACCOMPANIMENT_TAGS}
-          placeholder="Add tags"
-          onChange={(arr) => {
-            void updatePerformance({
-              ...row.original.perf,
-              accompanimentTags: arr.length ? arr : undefined,
-            });
-          }}
-        />
-      ),
-    },
-  ];
-    perfColumnsCacheRef.current = next;
-    return next;
-  }, [heavyListTabActive, googleAccessToken, venueOptions, updatePerformance]);
+  const columns = usePerformancesColumns({
+    heavyListTabActive,
+    googleAccessToken,
+    venueOptions,
+    updatePerformance,
+    perfFilterBarRef,
+  });
+
+  const gridEventGroups = usePerformanceEventGroups(data);
 
   const perfTableBodyRowSx = useMemo(
     () => ({
@@ -1283,6 +1156,8 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
               hasActivePerfFilters={hasActivePerfFilters}
               viewMode={viewMode}
               onViewModeChange={setViewMode}
+              scope={scope}
+              onScopeChange={setScope}
               table={perfMrtTable}
               onResetTableLayout={resetPerformancesTableLayout}
               perfFilterBarRef={perfFilterBarRef}
@@ -1434,20 +1309,51 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
             pb: { xs: 2, md: 1 },
           }}
         >
-          <Box
-            sx={{
-              mt: 2,
-              display: 'grid',
-              gridTemplateColumns: {
-                xs: 'repeat(1, minmax(0, 1fr))',
-                sm: 'repeat(2, minmax(0, 1fr))',
-                md: 'repeat(3, minmax(0, 1fr))',
-                lg: 'repeat(4, minmax(0, 1fr))',
-              },
-              gap: 2,
-            }}
-          >
-          {data.map(({ perf, song, date, venue }) => {
+          {gridEventGroups.map((event) => (
+            <Box key={event.key} sx={{ mt: 2 }}>
+              {/*
+                The event as a visible object: one date at one venue, the songs performed there, and
+                the action that adds another. Previously an event existed only in the data model and
+                as an icon buried in a table row — you could not see that three songs belonged to one
+                night.
+              */}
+              <Stack
+                direction="row"
+                sx={{ alignItems: 'baseline', gap: 1, flexWrap: 'wrap', mb: 1 }}
+              >
+                <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                  {encoreFormatDateLabel(event.date)}
+                </Typography>
+                <Typography variant="subtitle2" sx={{ color: 'text.secondary' }}>
+                  {event.venue}
+                </Typography>
+                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                  {event.rows.length === 1 ? '1 song' : `${event.rows.length} songs`}
+                </Typography>
+                <Box sx={{ flex: 1 }} />
+                <Button
+                  size="small"
+                  variant="text"
+                  startIcon={<LibraryAddIcon sx={{ fontSize: 16 }} />}
+                  sx={{ textTransform: 'none', fontWeight: 600 }}
+                  onClick={() => addSongFromEvent(event.rows[0]!.perf)}
+                >
+                  Add another song
+                </Button>
+              </Stack>
+              <Box
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: {
+                    xs: 'repeat(1, minmax(0, 1fr))',
+                    sm: 'repeat(2, minmax(0, 1fr))',
+                    md: 'repeat(3, minmax(0, 1fr))',
+                    lg: 'repeat(4, minmax(0, 1fr))',
+                  },
+                  gap: 2,
+                }}
+              >
+          {event.rows.map(({ perf, song, date, venue }) => {
             const url = performanceVideoOpenUrl(perf);
             return (
               <Card
@@ -1568,7 +1474,9 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
               </Card>
             );
           })}
-          </Box>
+              </Box>
+            </Box>
+          ))}
         </Box>
       )}
         </Box>
@@ -1608,7 +1516,9 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
           performerDisplayName={effectiveDisplayName ?? ''}
           stats={performanceDashboardStats}
           extended={extendedPerformanceInsights}
-          performances={performances}
+          performances={scopedPerformances}
+          scope={scope}
+          onScopeChange={setScope}
           songById={songById}
           originalById={originalById}
           normalizeVenue={normalizePerfVenueLabel}
@@ -1642,6 +1552,28 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
           setPerfSubjectKind('song');
           setPerfOpen(true);
         }}
+        /*
+         * The only caller that opts into creating a song. Logging an event regularly means logging a
+         * song that is not in the library yet — especially when accompanying, where the piece is
+         * often someone else's. Before this, the picker dead-ended with "Add a song from Repertoire
+         * first", which meant leaving the flow.
+         *
+         * The bulk import flows deliberately do NOT pass this; they resolve unmatched rows with
+         * their own per-row machinery.
+         */
+        onCreateSong={(song) => {
+          // Seed milestones, as AddSongDialog and AddToPracticeDialog do. A song created here is
+          // a normal library song and its song page should not look half-built.
+          void saveSong(applyTemplateProgressToSong(song, repertoireExtras.milestoneTemplate));
+          setPickSongOpen(false);
+          setPickQuery('');
+          setPerfEditing(null);
+          setPerfSongId(song.id);
+          setPerfSubjectKind('song');
+          setPerfOpen(true);
+        }}
+        spotifyClientId={import.meta.env.VITE_SPOTIFY_CLIENT_ID}
+        spotifyLinked={spotifyLinked}
         originals={originals}
         onSelectOriginal={(o) => {
           setPickSongOpen(false);
@@ -1685,6 +1617,7 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
         <PerformanceEditorDialog
           open={perfOpen}
           performance={perfEditing}
+          initialSeed={eventSeedRef.current}
           songId={perfSongId}
           subjectKind={perfSubjectKind}
           subjectTitle={
@@ -1697,6 +1630,7 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
             setPerfSongId(null);
             setPerfSubjectKind('song');
             setPerfEditing(null);
+            eventSeedRef.current = null;
           }}
           onSave={async (perf) => {
             await savePerformance(perf);
@@ -1841,6 +1775,18 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
     </>
   );
 }, encoreTabBodyPropsAreEqual);
+
+/** Event header date, e.g. "Sat 4 May 2026". Parsed as a local calendar day, not a UTC instant. */
+function encoreFormatDateLabel(isoDay: string): string {
+  const [y, m, d] = isoDay.split('-').map(Number);
+  if (!y || !m || !d) return isoDay;
+  return new Date(y, m - 1, d).toLocaleDateString(undefined, {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+}
 
 export function PerformancesScreen(props?: PerformancesScreenProps): ReactElement {
   const tabActive = props?.heavyListTabActive ?? true;

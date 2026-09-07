@@ -669,6 +669,46 @@ export default defineConfig({
             });
           });
 
+          /*
+           * Crash log → disk, so a crash reports itself.
+           *
+           * Crashes are recorded to IndexedDB by `LabsErrorBoundary` (`shared/utils/labsCrashLog.ts`),
+           * but there was no way to get them off the machine without asking the owner to open a dock
+           * and copy a bundle — which `.agents/rules/dev-debug-artifact-pipe.md` says not to do, and
+           * which in practice meant the evidence never arrived. Stanza's repeat crashes were
+           * diagnosed from source instead of from the actual entry.
+           *
+           * Dev server only, same shape as the audio-trace pipe above.
+           */
+          server.middlewares.use('/__debug_crash', (req: IncomingMessage, res: ServerResponse, next: Connect.NextFunction) => {
+            if (req.method !== 'POST') return next();
+            let body = '';
+            req.on('data', (chunk: Buffer) => {
+              body += chunk.toString();
+            });
+            req.on('end', async () => {
+              try {
+                const parsed = JSON.parse(body) as { appId?: unknown };
+                const fs = await import('node:fs');
+                const path = await import('node:path');
+                const baseDir = path.join(process.cwd(), '.debug-crash-logs');
+                if (!fs.existsSync(baseDir)) fs.mkdirSync(baseDir, { recursive: true });
+                // Sanitize before it becomes a filename (no path traversal from client input).
+                const rawId = typeof parsed.appId === 'string' ? parsed.appId : '';
+                const appId = rawId.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64) || 'unknown';
+                const filePath = path.join(baseDir, `crash-${appId}.json`);
+                fs.writeFileSync(filePath, JSON.stringify(parsed, null, 2));
+                console.log(`\n[LABS-DEBUG] Crash log saved at ${filePath}`);
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ ok: true, path: filePath }));
+              } catch (error) {
+                console.log('\n[LABS-DEBUG] Failed to save crash log', error);
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end('{"ok":false}');
+              }
+            });
+          });
+
           // Regression inspector endpoints (local dev): expose baseline images and latest run metadata.
           server.middlewares.use('/__regression/summary', async (_req: IncomingMessage, res: ServerResponse) => {
             try {

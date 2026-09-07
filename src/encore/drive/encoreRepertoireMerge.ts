@@ -308,6 +308,13 @@ export const PERFORMANCE_MERGE_POLICY = {
   videos: 'union-by-id',
   primaryVideoId: 'preserve-filled-scalar',
   notes: 'preserve-filled-text',
+  // A single value describing one fact about the show, so last-write-wins is right.
+  //
+  // NOT `preserve-filled-scalar`: absent legitimately means 'Lead vocal', so "preserve the filled
+  // side" would let a stale explicit role beat a deliberate reset back to the default, and the
+  // default is the common case. NOT a union either — a performance has one role, and unioning
+  // 'Lead vocal' with 'Accompanist' describes no real show.
+  role: 'lww',
   accompanimentTags: 'union-scalar-set',
   createdAt: 'lww',
   updatedAt: 'lww',

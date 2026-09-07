@@ -145,6 +145,21 @@ export function buildLibraryRepertoireFilterFieldDefs(opts: {
       ],
     },
     {
+      /*
+       * Songs she has only ever supported on — accompanied, or sung backing vocal — are still real
+       * library songs, but they are not her repertoire in the sense that matters when she is looking
+       * for something to sing. Derived from the song's performances, so there is no stored flag to
+       * drift out of sync with the roles themselves.
+       */
+      id: 'songRole',
+      label: 'Your role',
+      exclusive: true,
+      options: [
+        { value: 'led', label: 'Songs you have led' },
+        { value: 'supported', label: 'Only supported on' },
+      ],
+    },
+    {
       id: 'practicing',
       label: 'Status',
       exclusive: true,

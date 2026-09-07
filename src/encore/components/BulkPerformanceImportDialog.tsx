@@ -31,6 +31,7 @@ import { MaterialReactTable, useMaterialReactTable, type MRT_ColumnDef } from 'm
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import { useLabsUndo } from '../../shared/undo/LabsUndoContext';
 import { useEncoreBlockingJobs } from '../context/EncoreBlockingJobContext';
+import { applyTemplateProgressToSong } from '../repertoire/repertoireMilestones';
 import { useEncore } from '../context/EncoreContext';
 import { ensureEncoreDriveLayout } from '../drive/bootstrapFolders';
 import { resolveDriveUploadFolderId, type DriveUploadFolderLayout } from '../drive/resolveDriveUploadFolder';
@@ -606,7 +607,9 @@ export function BulkPerformanceImportDialog(props: {
               ...(folderMeta.performanceKey?.trim() ? { performanceKey: folderMeta.performanceKey.trim() } : {}),
               ...(folderMeta.tags?.length ? { tags: folderMeta.tags } : {}),
             };
-            await onSaveSong(song);
+            // Seed milestones like every other create path; this one hand-rolls its literal to fold in
+        // folder-derived metadata and silently skipped the template.
+        await onSaveSong(applyTemplateProgressToSong(song, repertoireExtras.milestoneTemplate));
             songId = song.id;
           } else if (r.newSongManual) {
             const song = encoreSongFromManualTitleArtist(
@@ -619,7 +622,7 @@ export function BulkPerformanceImportDialog(props: {
               ...(folderMeta.performanceKey?.trim() ? { performanceKey: folderMeta.performanceKey.trim() } : {}),
               ...(folderMeta.tags?.length ? { tags: folderMeta.tags } : {}),
             };
-            await onSaveSong(withFolder);
+            await onSaveSong(applyTemplateProgressToSong(withFolder, repertoireExtras.milestoneTemplate));
             songId = withFolder.id;
           }
           if (!songId && r.linkedPerformanceId) {
@@ -722,6 +725,7 @@ export function BulkPerformanceImportDialog(props: {
   }, [
     rows,
     performances,
+    repertoireExtras.milestoneTemplate,
     onSavePerformances,
     onSaveSong,
     handleClose,

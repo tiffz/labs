@@ -15,7 +15,26 @@ export interface EncoreMiscResource {
   createdAt: string;
 }
 
-/** How the performer accompanied themselves at this show. Free-form multi-select. */
+/**
+ * What the performer did at this show — her own part, not the backing behind her.
+ *
+ * Deliberately distinct from {@link ENCORE_ACCOMPANIMENT_TAGS}, which answers the opposite
+ * question ("who/what accompanied me"). The two are easy to conflate and must not be merged: a
+ * show can be `'Instrumental'` (she played rather than sang lead) while its accompaniment tags say
+ * `'Band'` (who was behind them). UI labels them "My role" and "Accompanied by" for this reason.
+ *
+ * "Main performer" is **derived** from this list, never stored — see
+ * {@link file://./performances/performanceRole.ts}. A stored flag alongside the role would be a
+ * second source of truth that can drift out of sync with it.
+ */
+export const ENCORE_PERFORMANCE_ROLES = [
+  'Lead vocal',
+  'Backing vocal',
+  'Instrumental',
+] as const;
+export type EncorePerformanceRole = (typeof ENCORE_PERFORMANCE_ROLES)[number];
+
+/** How the performer was accompanied at this show — NOT her own part (see ENCORE_PERFORMANCE_ROLES). */
 export const ENCORE_ACCOMPANIMENT_TAGS = [
   'Guitar',
   'Violin',
@@ -280,7 +299,20 @@ export interface EncorePerformance {
   /** Id of {@link EncorePerformanceVideo} used for list thumbnails and default playback. */
   primaryVideoId?: string;
   notes?: string;
-  /** Multi-select accompaniment chips (e.g. ["Piano", "Self-accompany"]). */
+  /**
+   * Her part at this show. Absent means `'Lead vocal'`, so every row written before roles existed
+   * keeps its meaning with no migration — the same trick as {@link EncorePerformance.subjectKind}.
+   *
+   * Read it through `performanceRole()` rather than directly, so the absent-means-lead default
+   * lives in exactly one place. Whether a role counts as "main performer" (which drives the default
+   * list scope and what the public snapshot publishes) is derived by `isMainPerformance()`, never
+   * stored.
+   */
+  role?: EncorePerformanceRole;
+  /**
+   * Multi-select accompaniment chips (e.g. ["Piano", "Self-accompany"]) — who/what accompanied
+   * HER. Not her own part; that is {@link EncorePerformance.role}.
+   */
   accompanimentTags?: EncoreAccompanimentTag[];
   createdAt: string;
   updatedAt: string;
@@ -379,7 +411,7 @@ export interface RepertoireWirePayload {
   exportedAt: string;
   songs: EncoreSong[];
   performances: EncorePerformance[];
-  /** Saved venue names for autocomplete and bulk import matching (singer gig locations). */
+  /** Saved venue names for autocomplete and bulk import matching (performance locations). */
   venueCatalog?: string[];
   /** Global milestone definitions applied to every song (checklist template). */
   milestoneTemplate?: EncoreMilestoneDefinition[];

@@ -1,5 +1,6 @@
 .debug-snapshots/
 .debug-audio-traces/
+.debug-crash-logs/
 # Logs
 logs
 *.log

@@ -14,6 +14,7 @@ function perfRow(partial: Partial<PerfMrtRow> & Pick<PerfMrtRow, 'perf' | 'song'
   return {
     perf: partial.perf,
     song: partial.song,
+    role: partial.role ?? 'Lead vocal',
     subject: partial.subject ?? {
       kind: 'song',
       id: partial.perf.songId,
@@ -113,7 +114,8 @@ describe('getPerfRowId', () => {
           songLabel: '',
           artistLabel: '',
           venue: '',
-          accompaniment: [],
+          role: 'Lead vocal',
+  accompaniment: [],
         }),
       ),
     ).toBe('pid');

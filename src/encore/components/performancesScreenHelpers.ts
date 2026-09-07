@@ -1,5 +1,5 @@
 import type { MRT_ColumnDef } from 'material-react-table';
-import type { EncoreAccompanimentTag, EncorePerformance, EncoreSong } from '../types';
+import type { EncoreAccompanimentTag, EncorePerformance, EncoreSong, EncorePerformanceRole } from '../types';
 import type { PerformanceSubject } from '../performances/performanceSubject';
 import {
   MRT_ROW_SELECT_COL,
@@ -21,6 +21,8 @@ export type PerfMrtRow = {
   /** Resolved subject (song / original / unknown). The source of truth for title, link, and origin. */
   subject: PerformanceSubject;
   date: string;
+  /** Resolved role, with the absent-means-lead default already applied. */
+  role: EncorePerformanceRole;
   songLabel: string;
   artistLabel: string;
   venue: string;

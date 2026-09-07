@@ -71,3 +71,48 @@ describe('filterSnapshotSource', () => {
     expect(outPerfs).toEqual([]);
   });
 });
+
+describe('supporting roles stay off the guest page', () => {
+  const songs = [song('1', 'One')];
+
+  it('omits a performance where she was the accompanist', () => {
+    const performances = [{ ...perf('p1', '1'), role: 'Instrumental' as const }];
+    expect(filterSnapshotSource(songs, performances).performances).toHaveLength(0);
+  });
+
+  it('omits a performance where she sang backing vocal', () => {
+    const performances = [{ ...perf('p1', '1'), role: 'Backing vocal' as const }];
+    expect(filterSnapshotSource(songs, performances).performances).toHaveLength(0);
+  });
+
+  it('publishes lead vocal but not instrumental', () => {
+    // Instrumental covers playing rather than singing lead, solo or for someone else. The guest
+    // page is the singing archive, so it stays off.
+    const performances = [
+      { ...perf('p1', '1'), role: 'Lead vocal' as const },
+      { ...perf('p2', '1'), role: 'Instrumental' as const },
+    ];
+    expect(filterSnapshotSource(songs, performances).performances.map((p) => p.id)).toEqual(['p1']);
+  });
+
+  it('omits a legacy Accompanist row', () => {
+    // Merged into Instrumental. If the alias were missing this would fall back to Lead vocal and
+    // publish accompaniment work to the guest page.
+    const performances = [{ ...perf('p1', '1'), role: 'Accompanist' as unknown as undefined }];
+    expect(filterSnapshotSource(songs, performances).performances).toHaveLength(0);
+  });
+
+  it('publishes a performance with no role at all', () => {
+    // Absent means Lead vocal. Every performance logged before roles existed has no role, so a
+    // filter that dropped them would silently empty the guest page of her entire back catalogue.
+    expect(filterSnapshotSource(songs, [perf('p1', '1')]).performances).toHaveLength(1);
+  });
+
+  it('drops supporting roles on the onlyPerformedSongs path too', () => {
+    // The role filter runs before the intersection, so it cannot be bypassed by the option.
+    const performances = [{ ...perf('p1', '1'), role: 'Instrumental' as const }];
+    const out = filterSnapshotSource(songs, performances, { onlyPerformedSongs: true });
+    expect(out.performances).toHaveLength(0);
+    expect(out.songs).toHaveLength(0);
+  });
+});

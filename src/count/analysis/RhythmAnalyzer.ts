@@ -56,6 +56,10 @@ export class RhythmAnalyzer {
   async startMicListening(): Promise<void> {
     if (this.listening) return;
 
+    // Close the previous one before replacing it. `listening` is false again after stop(), so a
+    // stop/start cycle used to orphan a live context every time; browsers cap them per document
+    // (Chrome: 6) and the constructor THROWS past the cap, turning this into a crash.
+    void this.audioCtx?.close();
     this.audioCtx = new AudioContext();
     this.perfToAudioOffset = this.audioCtx.currentTime - performance.now() / 1000;
 

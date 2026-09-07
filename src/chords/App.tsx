@@ -135,6 +135,18 @@ const App: React.FC = () => {
   const metronomePrefsRef = useRef(metronomePreferences);
   const metronomeCtxRef = useRef<AudioContext | null>(null);
   const tempoRef = useRef(state.tempo);
+
+  // Close on unmount. Browsers cap AudioContexts per document (Chrome: 6) and the constructor
+  // THROWS past the cap, so a leaked context is a latent crash, not a quiet degradation. This root
+  // mounts once per page load so it leaks at most one — unlike the Stanza rail, which remounted and
+  // did crash. Guarded by src/shared/audio/audioContextsAreClosed.test.ts.
+  useEffect(
+    () => () => {
+      void metronomeCtxRef.current?.close();
+      metronomeCtxRef.current = null;
+    },
+    [],
+  );
   const [exportOpen, setExportOpen] = useState(false);
 
   // Helper function to generate styled chords
