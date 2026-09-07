@@ -1,5 +1,6 @@
 /* eslint-disable react/prop-types -- MRT Cell render props are typed via MRT_ColumnDef, not PropTypes */
 import { performanceRole } from '../performances/performanceRole';
+import { applyTemplateProgressToSong } from '../repertoire/repertoireMilestones';
 import AddIcon from '@mui/icons-material/Add';
 import Alert from '@mui/material/Alert';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
@@ -1682,6 +1683,28 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
           setPerfSubjectKind('song');
           setPerfOpen(true);
         }}
+        /*
+         * The only caller that opts into creating a song. Logging a gig regularly means logging a
+         * song that is not in the library yet — especially when accompanying, where the piece is
+         * often someone else's. Before this, the picker dead-ended with "Add a song from Repertoire
+         * first", which meant leaving the flow.
+         *
+         * The bulk import flows deliberately do NOT pass this; they resolve unmatched rows with
+         * their own per-row machinery.
+         */
+        onCreateSong={(song) => {
+          // Seed milestones, as AddSongDialog and AddToPracticeDialog do. A song created here is
+          // a normal library song and its song page should not look half-built.
+          void saveSong(applyTemplateProgressToSong(song, repertoireExtras.milestoneTemplate));
+          setPickSongOpen(false);
+          setPickQuery('');
+          setPerfEditing(null);
+          setPerfSongId(song.id);
+          setPerfSubjectKind('song');
+          setPerfOpen(true);
+        }}
+        spotifyClientId={import.meta.env.VITE_SPOTIFY_CLIENT_ID}
+        spotifyLinked={spotifyLinked}
         originals={originals}
         onSelectOriginal={(o) => {
           setPickSongOpen(false);
