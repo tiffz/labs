@@ -14,6 +14,7 @@ import {
   classifyDriveCopyFailure,
   copyDriveFileToMyDrive,
 } from '../../shared/drive/copyDriveFileToMyDrive';
+import { ensureDriveCopyAccessToken } from '../drive/driveReadonlyAccess';
 import {
   applyForeignVideoCopies,
   foreignSourceForVideo,
@@ -681,17 +682,47 @@ export function PerformanceEditorDialog(props: {
             if (!parent?.trim()) throw new Error('Performances folder is not ready yet.');
 
             const copied: { videoId: string; copiedFileId: string }[] = [];
+            /*
+             * Encore's session token holds `drive.file` + `drive.metadata.readonly`. That reads the
+             * NAME of a file a friend shared — which is why pasting their link resolves — but
+             * `drive.file` is per-file access to files this app created, so downloading the bytes
+             * is refused. Drive answers 403/404 and the old code reported "you do not have access",
+             * when the truth was that the app had never asked for it.
+             *
+             * So: try the session token, and on a permission failure ask for `drive.readonly` once
+             * and retry. Broad read access is not in the sign-in scopes on purpose — requesting it
+             * up front, to serve an occasional case, is how consent screens get clicked past.
+             */
+            let copyToken = googleAccessToken;
+            let broadenedScope = false;
             for (let index = 0; index < copyTasks.length; index += 1) {
               const task = copyTasks[index]!;
-              const result = await copyDriveFileToMyDrive({
-                accessToken: googleAccessToken,
-                sourceFileId: task.sourceFileId,
-                parentFolderId: parent.trim(),
-                onProgress: ({ bytesSent, bytesTotal }) => {
-                  const fileFrac = bytesTotal > 0 ? bytesSent / bytesTotal : 0;
-                  setProgress((index + fileFrac) / copyTasks.length);
-                },
-              });
+              const onProgress = ({ bytesSent, bytesTotal }: { bytesSent: number; bytesTotal: number }) => {
+                const fileFrac = bytesTotal > 0 ? bytesSent / bytesTotal : 0;
+                setProgress((index + fileFrac) / copyTasks.length);
+              };
+              let result;
+              try {
+                result = await copyDriveFileToMyDrive({
+                  accessToken: copyToken,
+                  sourceFileId: task.sourceFileId,
+                  parentFolderId: parent.trim(),
+                  onProgress,
+                });
+              } catch (error) {
+                const reason = classifyDriveCopyFailure(error);
+                const permissionDenied = reason === 'no-access' || reason === 'not-found';
+                if (!permissionDenied || broadenedScope) throw error;
+                // One consent prompt, then reuse the broadened token for the rest of the batch.
+                broadenedScope = true;
+                copyToken = await ensureDriveCopyAccessToken();
+                result = await copyDriveFileToMyDrive({
+                  accessToken: copyToken,
+                  sourceFileId: task.sourceFileId,
+                  parentFolderId: parent.trim(),
+                  onProgress,
+                });
+              }
               copied.push({ videoId: task.videoId, copiedFileId: result.fileId });
             }
             videos = applyForeignVideoCopies(videos, copied);
@@ -702,7 +733,7 @@ export function PerformanceEditorDialog(props: {
         const reason = classifyDriveCopyFailure(error);
         setShortcutMsg(
           reason === 'no-access' || reason === 'not-found'
-            ? 'You do not have access to that video. Ask whoever shared it to give you access, then try again.'
+            ? 'Could not read that video from Drive. If a permission prompt appeared, accept it and save again; otherwise check that this Google account can open the link.'
             : reason === 'not-a-file'
               ? 'That link is a Google Doc, not a video file.'
               : 'Could not save a copy to your Drive. Check your connection and Drive storage, then try again.',

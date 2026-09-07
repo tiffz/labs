@@ -21,20 +21,36 @@ import { ENCORE_PERFORMANCE_ROLES, type EncorePerformance, type EncorePerformanc
 /**
  * Roles where she is the performer the audience came for.
  *
- * `'Instrumental'` counts: a solo piano piece is her performance, not support for someone else's.
- * The line is *featured vs supporting*, not *voice vs instrument* — which is why one role field
- * answers the question and a separate instrument field is not needed to.
+ * Only lead vocal. `'Instrumental'` covers playing rather than singing lead — whether solo or for
+ * someone else, a distinction the owner said does not matter for her purposes — so it sits on the
+ * supporting side, which is what keeps the singing archive and the public page clean.
  */
-export const MAIN_PERFORMER_ROLES: readonly EncorePerformanceRole[] = ['Lead vocal', 'Instrumental'];
+export const MAIN_PERFORMER_ROLES: readonly EncorePerformanceRole[] = ['Lead vocal'];
 
 /** Roles where she is supporting someone else's performance. */
 export const SUPPORTING_ROLES: readonly EncorePerformanceRole[] = ENCORE_PERFORMANCE_ROLES.filter(
   (role) => !MAIN_PERFORMER_ROLES.includes(role),
 );
 
-/** The role of a performance, resolving the absent-means-lead default. */
+/**
+ * Roles that existed before and now map onto a current one.
+ *
+ * `'Accompanist'` and `'Instrumental'` were separate; the owner merged them. Without this map a
+ * stored `'Accompanist'` would fail the enum check, fall through to the absent-means-lead default,
+ * and silently reclassify her accompaniment work as lead vocal — which would put it back in the
+ * singing archive AND publish it to the guest page. A rename that quietly re-labels existing rows
+ * is worse than the rename being rejected.
+ */
+const LEGACY_ROLE_ALIASES: Readonly<Record<string, EncorePerformanceRole>> = {
+  Accompanist: 'Instrumental',
+};
+
+/** The role of a performance: legacy aliases mapped, then the absent-means-lead default. */
 export function performanceRole(performance: Pick<EncorePerformance, 'role'>): EncorePerformanceRole {
-  return performance.role ?? 'Lead vocal';
+  const raw = performance.role;
+  if (raw == null) return 'Lead vocal';
+  if ((ENCORE_PERFORMANCE_ROLES as readonly string[]).includes(raw)) return raw;
+  return LEGACY_ROLE_ALIASES[raw as string] ?? 'Lead vocal';
 }
 
 /** Whether a role makes her the featured performer. */
@@ -78,9 +94,11 @@ export function filterPerformancesByScope<T extends Pick<EncorePerformance, 'rol
 
 /** Narrow an unknown string to a role, for persisted prefs and wire data that may predate a rename. */
 export function parsePerformanceRole(value: unknown): EncorePerformanceRole | undefined {
-  return typeof value === 'string' && (ENCORE_PERFORMANCE_ROLES as readonly string[]).includes(value)
-    ? (value as EncorePerformanceRole)
-    : undefined;
+  if (typeof value !== 'string') return undefined;
+  if ((ENCORE_PERFORMANCE_ROLES as readonly string[]).includes(value)) {
+    return value as EncorePerformanceRole;
+  }
+  return LEGACY_ROLE_ALIASES[value];
 }
 
 /** Narrow an unknown string to a scope, for the persisted list preference. */

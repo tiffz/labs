@@ -157,7 +157,7 @@ describe('songRole filter', () => {
   const songs = [led, supported, never];
   const performances = [
     perf({ id: 'p1', songId: 'led', venueTag: 'V' }),
-    { ...perf({ id: 'p2', songId: 'supported', venueTag: 'V' }), role: 'Accompanist' as const },
+    { ...perf({ id: 'p2', songId: 'supported', venueTag: 'V' }), role: 'Instrumental' as const },
   ];
   const perfBySong = buildPerfBySong(performances);
 
@@ -199,7 +199,7 @@ describe('songRole filter', () => {
   it('counts a song as led when any one performance was led', () => {
     const mixed = [
       perf({ id: 'm1', songId: 'supported', venueTag: 'V' }),
-      { ...perf({ id: 'm2', songId: 'supported', venueTag: 'V' }), role: 'Accompanist' as const },
+      { ...perf({ id: 'm2', songId: 'supported', venueTag: 'V' }), role: 'Instrumental' as const },
     ];
     const out = filterSongsByRepertoireSavedSearchBundle(
       [supported], mixed, buildPerfBySong(mixed), [], '', fv({ songRole: ['led'] }),

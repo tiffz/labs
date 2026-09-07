@@ -20,7 +20,7 @@ export interface EncoreMiscResource {
  *
  * Deliberately distinct from {@link ENCORE_ACCOMPANIMENT_TAGS}, which answers the opposite
  * question ("who/what accompanied me"). The two are easy to conflate and must not be merged: a
- * show can be `'Accompanist'` (she played for someone else) while its accompaniment tags say
+ * show can be `'Instrumental'` (she played rather than sang lead) while its accompaniment tags say
  * `'Band'` (who was behind them). UI labels them "My role" and "Accompanied by" for this reason.
  *
  * "Main performer" is **derived** from this list, never stored — see
@@ -30,7 +30,6 @@ export interface EncoreMiscResource {
 export const ENCORE_PERFORMANCE_ROLES = [
   'Lead vocal',
   'Backing vocal',
-  'Accompanist',
   'Instrumental',
 ] as const;
 export type EncorePerformanceRole = (typeof ENCORE_PERFORMANCE_ROLES)[number];

@@ -157,7 +157,7 @@ describe('eventSeedFromPerformance', () => {
     // Singing lead on one number and accompanying on the next is exactly the case this exists for,
     // so the role resets to the default rather than carrying a wrong answer into the new row.
     const seed = eventSeedFromPerformance(
-      perf('1', '2026-05-04', 'Blue Room', { role: 'Accompanist' }),
+      perf('1', '2026-05-04', 'Blue Room', { role: 'Instrumental' }),
     );
     expect(seed).not.toHaveProperty('role');
   });

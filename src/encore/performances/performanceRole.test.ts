@@ -29,26 +29,46 @@ describe('performanceRole', () => {
       expect(performanceRole(perf(role))).toBe(role);
     }
   });
+
+  it('maps the retired Accompanist role onto Instrumental', () => {
+    // The two were merged. Without the alias a stored 'Accompanist' fails the enum check, falls
+    // through to the absent-means-lead default, and silently reclassifies accompaniment work as
+    // lead vocal — putting it back in the singing archive AND publishing it to the guest page.
+    expect(performanceRole({ role: 'Accompanist' as unknown as EncorePerformanceRole })).toBe(
+      'Instrumental',
+    );
+  });
+
+  it('falls back to Lead vocal for a role it does not recognise at all', () => {
+    expect(performanceRole({ role: 'Kazoo' as unknown as EncorePerformanceRole })).toBe('Lead vocal');
+  });
 });
 
 describe('main performer is derived', () => {
-  it('counts lead vocal and instrumental', () => {
+  it('counts lead vocal only', () => {
     expect(isMainPerformerRole('Lead vocal')).toBe(true);
-    expect(isMainPerformerRole('Instrumental')).toBe(true);
   });
 
-  it('does not count backing vocal or accompanist', () => {
+  it('does not count backing vocal or instrumental', () => {
+    // Instrumental now covers playing rather than singing lead, solo or for someone else — the
+    // owner said that distinction does not matter for her. Keeping it on the supporting side is
+    // what keeps the singing archive and the public page clean.
     expect(isMainPerformerRole('Backing vocal')).toBe(false);
-    expect(isMainPerformerRole('Accompanist')).toBe(false);
+    expect(isMainPerformerRole('Instrumental')).toBe(false);
   });
 
   it('treats a performance with no role as a main performance', () => {
     expect(isMainPerformance(perf())).toBe(true);
   });
 
+  it('treats a legacy Accompanist row as supporting, not main', () => {
+    // The regression that would matter most: accompaniment reappearing on the public page.
+    expect(isMainPerformance({ role: 'Accompanist' as unknown as EncorePerformanceRole })).toBe(false);
+  });
+
   it('partitions every role into exactly one of main or supporting', () => {
-    // Guards the derivation against a future role being added to the enum and silently landing in
-    // neither bucket — which would make it invisible in every scope including 'all'.
+    // Guards against a future role landing in neither bucket, which would make it invisible in
+    // every scope including 'all'.
     const partitioned = [...MAIN_PERFORMER_ROLES, ...SUPPORTING_ROLES].sort();
     expect(partitioned).toEqual([...ENCORE_PERFORMANCE_ROLES].sort());
     expect(new Set(partitioned).size).toBe(ENCORE_PERFORMANCE_ROLES.length);
@@ -56,10 +76,10 @@ describe('main performer is derived', () => {
 });
 
 describe('scopes', () => {
-  it('main includes lead and instrumental, excludes supporting', () => {
+  it('main is lead vocal and roleless rows only', () => {
     expect(performanceMatchesScope(perf('Lead vocal'), 'main')).toBe(true);
-    expect(performanceMatchesScope(perf('Instrumental'), 'main')).toBe(true);
-    expect(performanceMatchesScope(perf('Accompanist'), 'main')).toBe(false);
+    expect(performanceMatchesScope(perf(), 'main')).toBe(true);
+    expect(performanceMatchesScope(perf('Instrumental'), 'main')).toBe(false);
     expect(performanceMatchesScope(perf('Backing vocal'), 'main')).toBe(false);
   });
 
@@ -80,16 +100,10 @@ describe('scopes', () => {
 });
 
 describe('filterPerformancesByScope', () => {
-  const rows = [
-    perf(),
-    perf('Lead vocal'),
-    perf('Backing vocal'),
-    perf('Accompanist'),
-    perf('Instrumental'),
-  ];
+  const rows = [perf(), perf('Lead vocal'), perf('Backing vocal'), perf('Instrumental')];
 
   it('keeps main performances, including the roleless default', () => {
-    expect(filterPerformancesByScope(rows, 'main')).toHaveLength(3);
+    expect(filterPerformancesByScope(rows, 'main')).toHaveLength(2);
   });
 
   it('keeps supporting performances', () => {
@@ -110,8 +124,16 @@ describe('filterPerformancesByScope', () => {
 });
 
 describe('parsing persisted values', () => {
-  it('accepts known roles and rejects anything else', () => {
-    expect(parsePerformanceRole('Accompanist')).toBe('Accompanist');
+  it('accepts known roles', () => {
+    expect(parsePerformanceRole('Instrumental')).toBe('Instrumental');
+    expect(parsePerformanceRole('Lead vocal')).toBe('Lead vocal');
+  });
+
+  it('maps the retired Accompanist value rather than dropping it', () => {
+    expect(parsePerformanceRole('Accompanist')).toBe('Instrumental');
+  });
+
+  it('rejects anything else', () => {
     expect(parsePerformanceRole('Trombone soloist')).toBeUndefined();
     expect(parsePerformanceRole(undefined)).toBeUndefined();
     expect(parsePerformanceRole(7)).toBeUndefined();
