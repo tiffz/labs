@@ -1,5 +1,10 @@
 /* eslint-disable react/prop-types -- MRT Cell render props are typed via MRT_ColumnDef, not PropTypes */
-import { performanceRole } from '../performances/performanceRole';
+import {
+  filterPerformancesByScope,
+  parsePerformanceScope,
+  performanceRole,
+  type PerformanceScope,
+} from '../performances/performanceRole';
 import { applyTemplateProgressToSong } from '../repertoire/repertoireMilestones';
 import AddIcon from '@mui/icons-material/Add';
 import Alert from '@mui/material/Alert';
@@ -157,6 +162,7 @@ import {
 } from './performancesScreen/performancesSubTabSubscription';
 
 const VIEW_STORAGE_KEY = 'encore.performances.view';
+const SCOPE_STORAGE_KEY = 'encore.performances.scope';
 
 const PERFORMANCES_FILTER_PINNED = ['venue', 'accompaniment', 'perfDate'] as const;
 
@@ -321,6 +327,15 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
     if (typeof window === 'undefined') return 'table';
     return window.localStorage.getItem(VIEW_STORAGE_KEY) === 'grid' ? 'grid' : 'table';
   });
+  /*
+   * Which slice of the log is showing. Defaults to her own performances, so accompaniment work
+   * does not dilute the singing archive — but it is a VISIBLE, labelled control, never a silent
+   * filter. A default that quietly hides rows reads as data loss.
+   */
+  const [scope, setScope] = useState<PerformanceScope>(() => {
+    if (typeof window === 'undefined') return 'main';
+    return parsePerformanceScope(window.localStorage.getItem(SCOPE_STORAGE_KEY)) ?? 'main';
+  });
   const [perfMrtTable, setPerfMrtTable] = useState<MRT_TableInstance<PerfMrtRow> | null>(null);
   const handlePerfMrtTableReady = useCallback((next: MRT_TableInstance<PerfMrtRow>) => {
     setPerfMrtTable(next);
@@ -432,6 +447,10 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
   }, [viewMode]);
 
   useEffect(() => {
+    window.localStorage.setItem(SCOPE_STORAGE_KEY, scope);
+  }, [scope]);
+
+  useEffect(() => {
     if (viewMode === 'grid') setRowSelection({});
   }, [viewMode]);
 
@@ -512,6 +531,7 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
     const venueChipFilters = perfFilterValues.venue ?? [];
     const accompanimentChipFilters = perfFilterValues.accompaniment ?? [];
     const roleChipFilters = perfFilterValues.role ?? [];
+    // Scope first: it decides which log you are looking at, the chip filters then narrow within it.
     const songChipFilters = perfFilterValues.song ?? [];
     const originChipFilters = perfFilterValues.origin ?? [];
     const perfDateRange = encoreDateRangeFromFilterRecord(perfFilterValues, 'perfDate');
@@ -530,7 +550,7 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
         accompaniment: p.accompanimentTags ?? [],
       };
     });
-    let rows = all;
+    let rows = filterPerformancesByScope(all, scope);
     if (originChipFilters.length > 0) {
       // Read the stored discriminant, NOT the resolved subject: an original that has not synced
       // to this device yet resolves to `unknown`, and classifying that as a cover would silently
@@ -593,6 +613,7 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
   }, [
     heavyListTabActive,
     performances,
+    scope,
     songById,
     originalById,
     debouncedQuery,
@@ -776,21 +797,36 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
     setPerfOpen(true);
   }, []);
 
+  /*
+   * Insights counts the slice you are looking at, so its numbers match the list. Scoped once here
+   * rather than threading a scope parameter through the stats model's seven grouping sites — those
+   * functions stay pure and take pre-filtered input.
+   *
+   * Deliberately NOT cache-ref gated, unlike the stats memos below. This is one linear filter over
+   * an array already in memory; the keep-alive rule exists for memos that rebuild MRT columns or
+   * recompute aggregates, and each cache ref costs a `react-hooks/refs` violation (ref access
+   * during render) that the ratchet counts. Not worth it for an O(n) filter.
+   */
+  const scopedPerformances = useMemo(
+    () => filterPerformancesByScope(performances, scope),
+    [performances, scope],
+  );
+
   const performanceDashboardStats = useMemo(() => {
     if (!heavyListTabActive) return perfDashboardStatsCacheRef.current;
-    const next = buildPerformanceDashboardStats(performances, songById, normalizePerfVenueLabel, originalById);
+    const next = buildPerformanceDashboardStats(scopedPerformances, songById, normalizePerfVenueLabel, originalById);
     perfDashboardStatsCacheRef.current = next;
     return next;
-  }, [heavyListTabActive, performances, songById, originalById]);
+  }, [heavyListTabActive, scopedPerformances, songById, originalById]);
 
   const extendedPerformanceInsights = useMemo(() => {
     if (!heavyListTabActive) return perfExtendedInsightsCacheRef.current;
     const next = performanceDashboardStats
-      ? buildExtendedPerformanceInsights(performances, songById, performanceDashboardStats, undefined, originalById)
+      ? buildExtendedPerformanceInsights(scopedPerformances, songById, performanceDashboardStats, undefined, originalById)
       : null;
     perfExtendedInsightsCacheRef.current = next;
     return next;
-  }, [heavyListTabActive, performances, songById, originalById, performanceDashboardStats]);
+  }, [heavyListTabActive, scopedPerformances, songById, originalById, performanceDashboardStats]);
 
   const columns = useMemo<MRT_ColumnDef<PerfMrtRow>[]>(() => {
     if (!heavyListTabActive) return perfColumnsCacheRef.current;
@@ -1324,6 +1360,8 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
               hasActivePerfFilters={hasActivePerfFilters}
               viewMode={viewMode}
               onViewModeChange={setViewMode}
+              scope={scope}
+              onScopeChange={setScope}
               table={perfMrtTable}
               onResetTableLayout={resetPerformancesTableLayout}
               perfFilterBarRef={perfFilterBarRef}
@@ -1649,7 +1687,9 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
           performerDisplayName={effectiveDisplayName ?? ''}
           stats={performanceDashboardStats}
           extended={extendedPerformanceInsights}
-          performances={performances}
+          performances={scopedPerformances}
+          scope={scope}
+          onScopeChange={setScope}
           songById={songById}
           originalById={originalById}
           normalizeVenue={normalizePerfVenueLabel}

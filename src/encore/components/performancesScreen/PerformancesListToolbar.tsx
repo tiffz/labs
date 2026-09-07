@@ -5,6 +5,7 @@ import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import ToggleButton from '@mui/material/ToggleButton';
+import type { PerformanceScope } from '../../performances/performanceRole';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
@@ -29,6 +30,9 @@ export type PerformancesListToolbarProps = {
   filteredCount: number;
   hasActivePerfFilters: boolean;
   viewMode: PerformancesViewMode;
+  /** Which slice of the log is showing. Labelled and visible — never a silent default filter. */
+  scope: PerformanceScope;
+  onScopeChange: (next: PerformanceScope) => void;
   onViewModeChange: (next: PerformancesViewMode) => void;
   table: MRT_TableInstance<PerfMrtRow> | null;
   onResetTableLayout: () => void;
@@ -54,6 +58,8 @@ export function PerformancesListToolbar(props: PerformancesListToolbarProps): Re
     filteredCount,
     hasActivePerfFilters,
     viewMode,
+    scope,
+    onScopeChange,
     onViewModeChange,
     table,
     onResetTableLayout,
@@ -85,6 +91,29 @@ export function PerformancesListToolbar(props: PerformancesListToolbarProps): Re
           onResetLayout={onResetTableLayout}
         />
       ) : null}
+      {/*
+        Text labels, not icons: unlike the layout toggle beside it, this changes WHICH rows exist,
+        so it has to read as a statement about the data rather than a display preference.
+      */}
+      <ToggleButtonGroup
+        exclusive
+        size="small"
+        value={scope}
+        onChange={(_e, next: PerformanceScope | null) => {
+          if (next) onScopeChange(next);
+        }}
+        aria-label="Which performances to show"
+      >
+        <ToggleButton value="main" sx={{ textTransform: 'none', px: 1.25 }}>
+          Yours
+        </ToggleButton>
+        <ToggleButton value="supporting" sx={{ textTransform: 'none', px: 1.25 }}>
+          Supporting
+        </ToggleButton>
+        <ToggleButton value="all" sx={{ textTransform: 'none', px: 1.25 }}>
+          All
+        </ToggleButton>
+      </ToggleButtonGroup>
       <ToggleButtonGroup
         exclusive
         size="small"

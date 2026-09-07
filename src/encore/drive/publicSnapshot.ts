@@ -1,3 +1,4 @@
+import { isMainPerformance } from '../performances/performanceRole';
 import type {
   EncoreMediaLink,
   EncorePerformance,
@@ -76,7 +77,17 @@ export function filterSnapshotSource(
   // would publish a date, venue, notes, and a resolved video URL with no subject a guest could
   // resolve. Drop them FIRST — the `onlyPerformedSongs` intersection below is optional, so relying
   // on it to hide them would leak every such row on the default publish path.
-  const shareable = performances.filter((p) => p.subjectKind !== 'original');
+  //
+  // Supporting roles are dropped for the same structural reason, and in the same place: the guest
+  // page is her performance archive. A show where she sang backup or played piano for someone else
+  // is her work, and it is tracked — but it is not what the shared page is for, and publishing it
+  // would misrepresent the archive to anyone reading it.
+  //
+  // Derived from the role via `isMainPerformance`, never a stored "public" flag, so the two cannot
+  // disagree about what gets published.
+  const shareable = performances.filter(
+    (p) => p.subjectKind !== 'original' && isMainPerformance(p),
+  );
   if (!options?.onlyPerformedSongs) return { songs, performances: shareable };
   performances = shareable;
   const performedIds = new Set(performances.map((p) => p.songId));

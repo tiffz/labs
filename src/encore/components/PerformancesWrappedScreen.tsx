@@ -22,6 +22,9 @@ import { useEffect, useMemo, useState, type MouseEvent as ReactMouseEvent, type 
 import type { EncorePerformance, EncoreSong } from '../types';
 import type { EncoreOriginalSong } from '../originals/types';
 import { encoreSubjectRoute, type PerformanceSubject } from '../performances/performanceSubject';
+import ToggleButton from '@mui/material/ToggleButton';
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
+import type { PerformanceScope } from '../performances/performanceRole';
 import type { EncoreAppRoute } from '../routes/encoreAppHash';
 import {
   performanceSubjectKey,
@@ -71,7 +74,11 @@ export type PerformancesWrappedScreenProps = {
   performerDisplayName: string;
   stats: PerformanceDashboardStats;
   extended: ExtendedPerformanceInsights;
+  /** Already narrowed to {@link PerformancesWrappedScreenProps.scope} by the parent. */
   performances: EncorePerformance[];
+  /** Which slice these numbers describe. Shown so the totals are never ambiguous. */
+  scope?: PerformanceScope;
+  onScopeChange?: (next: PerformanceScope) => void;
   songById: Map<string, EncoreSong>;
   originalById?: Map<string, EncoreOriginalSong>;
   normalizeVenue: (tag: string) => string;
@@ -331,6 +338,8 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
     onFocusVenue,
     onAddPerformance,
     embedded = false,
+    scope,
+    onScopeChange,
   } = props;
   const theme = useTheme();
   const primary = theme.palette.primary.main;
@@ -438,6 +447,28 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
                 }}>
                 Lifetime totals by default. Pick a year to zoom in; charts and rankings follow that scope.
               </Typography>
+              {scope && onScopeChange ? (
+                <ToggleButtonGroup
+                  exclusive
+                  size="small"
+                  value={scope}
+                  onChange={(_e, next: PerformanceScope | null) => {
+                    if (next) onScopeChange(next);
+                  }}
+                  aria-label="Which performances these numbers cover"
+                  sx={{ mt: 1.5 }}
+                >
+                  <ToggleButton value="main" sx={{ textTransform: 'none', px: 1.25 }}>
+                    Yours
+                  </ToggleButton>
+                  <ToggleButton value="supporting" sx={{ textTransform: 'none', px: 1.25 }}>
+                    Supporting
+                  </ToggleButton>
+                  <ToggleButton value="all" sx={{ textTransform: 'none', px: 1.25 }}>
+                    All
+                  </ToggleButton>
+                </ToggleButtonGroup>
+              ) : null}
             </Box>
             <FormControl size="small" sx={{ minWidth: 200, flexShrink: 0 }} id="encore-perf-insights-scope">
               <InputLabel id="encore-perf-insights-scope-label">Scope</InputLabel>
