@@ -1,4 +1,5 @@
 /* eslint-disable react/prop-types -- MRT Cell render props are typed via MRT_ColumnDef, not PropTypes */
+import { performanceRole } from '../performances/performanceRole';
 import AddIcon from '@mui/icons-material/Add';
 import Alert from '@mui/material/Alert';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
@@ -59,8 +60,7 @@ import {
   type EncoreAccompanimentTag,
   type EncoreMrtTablePrefs,
   type EncorePerformance,
-  type EncoreSong,
-} from '../types';
+  type EncoreSong, type EncorePerformanceRole, ENCORE_PERFORMANCE_ROLES } from '../types';
 import {
   encoreAppHref,
   isModifiedOrNonPrimaryClick,
@@ -300,6 +300,7 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
   const debouncedQuery = useDebouncedString(query, 220);
   const [perfFilterValues, setPerfFilterValues] = useState<Record<string, string[]>>(() => ({
     venue: [],
+    role: [],
     accompaniment: [],
     perfDateAfter: [],
     perfDateBefore: [],
@@ -509,6 +510,7 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
     if (!heavyListTabActive) return perfMrtDataCacheRef.current;
     const venueChipFilters = perfFilterValues.venue ?? [];
     const accompanimentChipFilters = perfFilterValues.accompaniment ?? [];
+    const roleChipFilters = perfFilterValues.role ?? [];
     const songChipFilters = perfFilterValues.song ?? [];
     const originChipFilters = perfFilterValues.origin ?? [];
     const perfDateRange = encoreDateRangeFromFilterRecord(perfFilterValues, 'perfDate');
@@ -523,6 +525,7 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
         songLabel: subject.title,
         artistLabel: subject.artist,
         venue: normalizePerfVenueLabel(p.venueTag),
+        role: performanceRole(p),
         accompaniment: p.accompanimentTags ?? [],
       };
     });
@@ -568,6 +571,11 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
         return matchConcrete;
       });
     }
+    if (roleChipFilters.length > 0) {
+      // No "not set" sentinel here, unlike accompaniment: absent means 'Lead vocal', so every
+      // row resolves to exactly one role and a blank bucket would always be empty.
+      rows = rows.filter((r) => roleChipFilters.includes(r.role));
+    }
     if (isEncoreDateRangeActive(perfDateRange)) {
       rows = rows.filter((r) => encoreDateInRange(r.date, perfDateRange));
     }
@@ -603,6 +611,11 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
     const next: EncoreFilterFieldConfig[] = [
       { id: 'venue', label: 'Venue', options: venueOpts },
       { id: 'accompaniment', label: 'Accompaniment', options: accOpts },
+      {
+        id: 'role',
+        label: 'Your role',
+        options: ENCORE_PERFORMANCE_ROLES.map((r) => ({ value: r, label: r })),
+      },
       encoreDateRangeFilterField('perfDate', 'Date'),
       {
         id: 'song',
@@ -635,13 +648,14 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
   const hasPerfChipFilters = Boolean(
     (perfFilterValues.venue ?? []).length > 0 ||
       (perfFilterValues.accompaniment ?? []).length > 0 ||
+      (perfFilterValues.role ?? []).length > 0 ||
       isEncoreDateRangeActive(perfDateRange) ||
       (perfFilterValues.song ?? []).length > 0 ||
       (perfFilterValues.origin ?? []).length > 0,
   );
 
   const clearPerfFilters = useCallback(() => {
-    setPerfFilterValues({ venue: [], accompaniment: [], perfDateAfter: [], perfDateBefore: [], song: [], origin: [] });
+    setPerfFilterValues({ venue: [], accompaniment: [], role: [], perfDateAfter: [], perfDateBefore: [], song: [], origin: [] });
     setVisiblePerfFilterIds([...PERFORMANCES_FILTER_PINNED]);
   }, []);
 
@@ -875,6 +889,32 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
           onChange={(v) => {
             if (v == null) return;
             void updatePerformance({ ...row.original.perf, venueTag: v });
+          }}
+        />
+      ),
+    },
+    {
+      accessorKey: 'role',
+      header: 'Your role',
+      meta: { encoreFilterFieldId: 'role' },
+      Header: ({ column }) => (
+        <EncoreMrtColumnHeader label="Your role" column={column} filterBarRef={perfFilterBarRef} />
+      ),
+      size: 130,
+      minSize: 110,
+      Cell: ({ row }) => (
+        <InlineChipSelect<EncorePerformanceRole>
+          value={row.original.role}
+          options={ENCORE_PERFORMANCE_ROLES}
+          placeholder="Role"
+          onChange={(v) => {
+            if (v == null) return;
+            // Store the default as absent, matching the editor, so unchanged rows stay
+            // byte-identical on the wire.
+            void updatePerformance({
+              ...row.original.perf,
+              role: v === 'Lead vocal' ? undefined : v,
+            });
           }}
         />
       ),

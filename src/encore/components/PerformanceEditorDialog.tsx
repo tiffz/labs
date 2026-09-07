@@ -1073,7 +1073,7 @@ export function PerformanceEditorDialog(props: {
             <>
               <PerformanceEditorSection
                 title="Performance details"
-                caption="When and where you played this song."
+                caption="When and where you played, and what you played."
               >
                 <PerformanceMetadataSection
                   draft={draft}
