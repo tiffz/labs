@@ -151,6 +151,12 @@ export function PerformanceEditorDialog(props: {
   initialLocalVideoFile?: File | null;
   /** When true (edit mode), metadata fields stay read-only and saves append videos only. */
   addVideoMode?: boolean;
+  /**
+   * Shared metadata to start a NEW performance from — used by "add another song" on an event, so
+   * a multi-song event is logged once rather than retyped per song. Ignored when editing an
+   * existing performance. Carries date, venue and accompaniment; deliberately not the role.
+   */
+  initialSeed?: Pick<EncorePerformance, 'date' | 'venueTag' | 'accompanimentTags'> | null;
   onClose: () => void;
   onSave: (p: EncorePerformance) => Promise<void>;
   /** When set (edit mode only), shows a de-emphasized control to remove this row from the log (Drive files stay). */
@@ -166,6 +172,7 @@ export function PerformanceEditorDialog(props: {
     venueOptions,
     initialLocalVideoFile,
     addVideoMode = false,
+    initialSeed = null,
     onClose,
     onSave,
     onDelete,
@@ -202,6 +209,15 @@ export function PerformanceEditorDialog(props: {
    * copy button, and what broke when it was one.
    */
   const [foreignVideoSources, setForeignVideoSources] = useState<ForeignVideoSource[]>([]);
+  /*
+   * Read through a ref, not a dependency. The seed only matters when the dialog opens, and callers
+   * naturally pass a fresh object literal each render — as a dependency that would re-run the reset
+   * effect mid-edit and wipe whatever the user had typed.
+   */
+  const initialSeedRef = useRef(initialSeed);
+  useEffect(() => {
+    initialSeedRef.current = initialSeed;
+  }, [initialSeed]);
   const draftRef = useRef(draft);
   useEffect(() => {
     draftRef.current = draft;
@@ -237,7 +253,10 @@ export function PerformanceEditorDialog(props: {
   useEffect(() => {
     if (open) {
       const base = normalizeEncorePerformance(
-        performance ? { ...performance } : newPerformance(songId, subjectKind),
+        performance
+          ? { ...performance }
+          : // Seed shared event metadata over the blank draft, never over a row being edited.
+            { ...newPerformance(songId, subjectKind), ...(initialSeedRef.current ?? {}) },
       );
       setDraft(base);
       const primary = base.videos?.find((v) => v.id === base.primaryVideoId) ?? base.videos?.[0];

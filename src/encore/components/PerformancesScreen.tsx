@@ -144,8 +144,11 @@ import {
 } from '../performances/performancesStatsModel';
 import { PerformancesBulkSelectionBar } from './performancesScreen/PerformancesBulkSelectionBar';
 import { performanceVideoOpenUrl } from '../utils/performanceVideoUrl';
+import { eventSeedFromPerformance } from '../performances/performanceEvents';
+import LibraryAddIcon from '@mui/icons-material/LibraryAdd';
 import { PerformanceVideoThumb } from './PerformanceVideoThumb';
 import { usePerformancesColumns } from './performancesScreen/usePerformancesColumns';
+import { usePerformanceEventGroups } from './performancesScreen/usePerformanceEventGroups';
 import { PerformancesMrtTableView } from './performancesScreen/PerformancesMrtTableView';
 import { PerformancesListToolbar } from './performancesScreen/PerformancesListToolbar';
 import {
@@ -239,6 +242,11 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
   const [pickQuery, setPickQuery] = useState('');
   const [perfOpen, setPerfOpen] = useState(false);
   const [perfEditing, setPerfEditing] = useState<EncorePerformance | null>(null);
+  /*
+   * A ref, not state: the seed is only READ when the editor opens, and it is always set in the
+   * same handler that opens it, so the value is in place before the resulting render.
+   */
+  const eventSeedRef = useRef<Pick<EncorePerformance, 'date' | 'venueTag' | 'accompanimentTags'> | null>(null);
   const [perfSongId, setPerfSongId] = useState<string | null>(null);
   const [perfSubjectKind, setPerfSubjectKind] = useState<'song' | 'original'>('song');
   const [viewMode, setViewMode] = useState<PerformancesViewMode>(() => {
@@ -708,7 +716,23 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
     [savePerformance],
   );
 
+  /*
+   * Add another song to an existing event. Seeds date, venue and accompaniment from a performance
+   * already logged there, then opens the song picker (which can create a song from Spotify) before
+   * the editor. Deliberately does NOT carry the role forward — see eventSeedFromPerformance.
+   */
+  // A plain function, not a useCallback: it is only ever called from an inline arrow in the
+  // event header below, never passed to a memoized child, so memoizing it buys nothing — and
+  // measured at 2 `preserve-manual-memoization` violations in this already-tight component.
+  function addSongFromEvent(p: EncorePerformance): void {
+    eventSeedRef.current = eventSeedFromPerformance(p);
+    setPerfEditing(null);
+    setPickQuery('');
+    setPickSongOpen(true);
+  }
+
   const openEdit = useCallback((p: EncorePerformance) => {
+    eventSeedRef.current = null;
     setPerfEditing(p);
     setPerfSongId(p.songId);
     setPerfSubjectKind(p.subjectKind ?? 'song');
@@ -753,6 +777,8 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
     updatePerformance,
     perfFilterBarRef,
   });
+
+  const gridEventGroups = usePerformanceEventGroups(data);
 
   const perfTableBodyRowSx = useMemo(
     () => ({
@@ -1283,20 +1309,51 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
             pb: { xs: 2, md: 1 },
           }}
         >
-          <Box
-            sx={{
-              mt: 2,
-              display: 'grid',
-              gridTemplateColumns: {
-                xs: 'repeat(1, minmax(0, 1fr))',
-                sm: 'repeat(2, minmax(0, 1fr))',
-                md: 'repeat(3, minmax(0, 1fr))',
-                lg: 'repeat(4, minmax(0, 1fr))',
-              },
-              gap: 2,
-            }}
-          >
-          {data.map(({ perf, song, date, venue }) => {
+          {gridEventGroups.map((event) => (
+            <Box key={event.key} sx={{ mt: 2 }}>
+              {/*
+                The event as a visible object: one date at one venue, the songs performed there, and
+                the action that adds another. Previously an event existed only in the data model and
+                as an icon buried in a table row — you could not see that three songs belonged to one
+                night.
+              */}
+              <Stack
+                direction="row"
+                sx={{ alignItems: 'baseline', gap: 1, flexWrap: 'wrap', mb: 1 }}
+              >
+                <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                  {encoreFormatDateLabel(event.date)}
+                </Typography>
+                <Typography variant="subtitle2" sx={{ color: 'text.secondary' }}>
+                  {event.venue}
+                </Typography>
+                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                  {event.rows.length === 1 ? '1 song' : `${event.rows.length} songs`}
+                </Typography>
+                <Box sx={{ flex: 1 }} />
+                <Button
+                  size="small"
+                  variant="text"
+                  startIcon={<LibraryAddIcon sx={{ fontSize: 16 }} />}
+                  sx={{ textTransform: 'none', fontWeight: 600 }}
+                  onClick={() => addSongFromEvent(event.rows[0]!.perf)}
+                >
+                  Add another song
+                </Button>
+              </Stack>
+              <Box
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: {
+                    xs: 'repeat(1, minmax(0, 1fr))',
+                    sm: 'repeat(2, minmax(0, 1fr))',
+                    md: 'repeat(3, minmax(0, 1fr))',
+                    lg: 'repeat(4, minmax(0, 1fr))',
+                  },
+                  gap: 2,
+                }}
+              >
+          {event.rows.map(({ perf, song, date, venue }) => {
             const url = performanceVideoOpenUrl(perf);
             return (
               <Card
@@ -1417,7 +1474,9 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
               </Card>
             );
           })}
-          </Box>
+              </Box>
+            </Box>
+          ))}
         </Box>
       )}
         </Box>
@@ -1558,6 +1617,7 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
         <PerformanceEditorDialog
           open={perfOpen}
           performance={perfEditing}
+          initialSeed={eventSeedRef.current}
           songId={perfSongId}
           subjectKind={perfSubjectKind}
           subjectTitle={
@@ -1570,6 +1630,7 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
             setPerfSongId(null);
             setPerfSubjectKind('song');
             setPerfEditing(null);
+            eventSeedRef.current = null;
           }}
           onSave={async (perf) => {
             await savePerformance(perf);
@@ -1714,6 +1775,18 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
     </>
   );
 }, encoreTabBodyPropsAreEqual);
+
+/** Event header date, e.g. "Sat 4 May 2026". Parsed as a local calendar day, not a UTC instant. */
+function encoreFormatDateLabel(isoDay: string): string {
+  const [y, m, d] = isoDay.split('-').map(Number);
+  if (!y || !m || !d) return isoDay;
+  return new Date(y, m - 1, d).toLocaleDateString(undefined, {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+}
 
 export function PerformancesScreen(props?: PerformancesScreenProps): ReactElement {
   const tabActive = props?.heavyListTabActive ?? true;

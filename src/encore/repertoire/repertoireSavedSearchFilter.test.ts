@@ -149,3 +149,61 @@ describe('derivePlaylistImportTagsFromFilters', () => {
     expect(derivePlaylistImportTagsFromFilters({ tags: [] })).toBeUndefined();
   });
 });
+
+describe('songRole filter', () => {
+  const led = song({ id: 'led', title: 'Led', artist: 'A' });
+  const supported = song({ id: 'supported', title: 'Supported', artist: 'A' });
+  const never = song({ id: 'never', title: 'Never performed', artist: 'A' });
+  const songs = [led, supported, never];
+  const performances = [
+    perf({ id: 'p1', songId: 'led', venueTag: 'V' }),
+    { ...perf({ id: 'p2', songId: 'supported', venueTag: 'V' }), role: 'Accompanist' as const },
+  ];
+  const perfBySong = buildPerfBySong(performances);
+
+  function run(values: Record<string, string[]>) {
+    return filterSongsByRepertoireSavedSearchBundle(
+      songs,
+      performances,
+      perfBySong,
+      [],
+      '',
+      fv(values),
+    ).map((s) => s.id);
+  }
+
+  it('is a no-op when unset, so existing saved searches are unchanged', () => {
+    // This function also drives Spotify playlist sync; a predicate that changed meaning for an
+    // existing saved search would quietly change a synced playlist's contents.
+    expect(run({})).toEqual(['led', 'supported', 'never']);
+  });
+
+  it('keeps only songs she has led', () => {
+    expect(run({ songRole: ['led'] })).toEqual(['led']);
+  });
+
+  it('keeps only songs she has never led but has performed', () => {
+    expect(run({ songRole: ['supported'] })).toEqual(['supported']);
+  });
+
+  it('treats a performance with no role as led', () => {
+    // Absent means Lead vocal, so the whole back catalogue counts as led.
+    expect(run({ songRole: ['led'] })).toContain('led');
+  });
+
+  it('excludes never-performed songs from both sides', () => {
+    expect(run({ songRole: ['led'] })).not.toContain('never');
+    expect(run({ songRole: ['supported'] })).not.toContain('never');
+  });
+
+  it('counts a song as led when any one performance was led', () => {
+    const mixed = [
+      perf({ id: 'm1', songId: 'supported', venueTag: 'V' }),
+      { ...perf({ id: 'm2', songId: 'supported', venueTag: 'V' }), role: 'Accompanist' as const },
+    ];
+    const out = filterSongsByRepertoireSavedSearchBundle(
+      [supported], mixed, buildPerfBySong(mixed), [], '', fv({ songRole: ['led'] }),
+    );
+    expect(out.map((s) => s.id)).toEqual(['supported']);
+  });
+});

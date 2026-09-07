@@ -16,6 +16,7 @@ export type RepertoireViewMode = 'table' | 'grid';
 
 export const REPERTOIRE_FILTER_EMPTY: Record<string, string[]> = {
   performed: [],
+  songRole: [],
   practicing: [],
   venue: [],
   tags: [],
