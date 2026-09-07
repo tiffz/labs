@@ -43,7 +43,7 @@ export type LibrarySongPickerDialogProps = {
   /**
    * Songwriting originals offered below the repertoire songs. Omit to keep the picker songs-only —
    * the bulk import flows deliberately do, because title-matching an import row against an original
-   * would silently file a gig video under the wrong subject.
+   * would silently file a performance video under the wrong subject.
    */
   originals?: EncoreOriginalSong[];
   /** Required to make {@link LibrarySongPickerDialogProps.originals} selectable. */

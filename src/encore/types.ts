@@ -412,7 +412,7 @@ export interface RepertoireWirePayload {
   exportedAt: string;
   songs: EncoreSong[];
   performances: EncorePerformance[];
-  /** Saved venue names for autocomplete and bulk import matching (singer gig locations). */
+  /** Saved venue names for autocomplete and bulk import matching (performance locations). */
   venueCatalog?: string[];
   /** Global milestone definitions applied to every song (checklist template). */
   milestoneTemplate?: EncoreMilestoneDefinition[];

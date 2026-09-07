@@ -32,7 +32,7 @@ describe('venue normalisation', () => {
   });
 
   it('collapses runs of inner whitespace', () => {
-    // The most likely way a gig silently splits: venueTag is free text with an autocomplete.
+    // The most likely way an event silently splits: venueTag is free text with an autocomplete.
     expect(normalizeVenueForEventKey('The  Blue   Room')).toBe(normalizeVenueForEventKey('The Blue Room'));
   });
 
@@ -63,7 +63,7 @@ describe('performanceEventKey', () => {
 });
 
 describe('groupPerformancesIntoEvents', () => {
-  it('groups several songs at one gig into one event', () => {
+  it('groups several songs at one venue and date into one event', () => {
     const rows = [
       perf('1', '2026-05-04', 'Blue Room'),
       perf('2', '2026-05-04', 'Blue Room'),
@@ -91,7 +91,7 @@ describe('groupPerformancesIntoEvents', () => {
     expect(events).toHaveLength(2);
   });
 
-  it('treats a one-song gig as an event of one', () => {
+  it('treats a single-song event as an event of one', () => {
     const events = groupPerformancesIntoEvents([perf('1', '2026-05-04', 'Blue Room')]);
     expect(events).toHaveLength(1);
     expect(events[0]!.performances).toHaveLength(1);
@@ -132,7 +132,7 @@ describe('siblingPerformancesAtEvent', () => {
     perf('3', '2026-05-05', 'Blue Room'),
   ];
 
-  it('finds the other songs from the same gig', () => {
+  it('finds the other songs from the same event', () => {
     expect(siblingPerformancesAtEvent(rows[0]!, rows).map((p) => p.id)).toEqual(['2']);
   });
 
@@ -140,7 +140,7 @@ describe('siblingPerformancesAtEvent', () => {
     expect(siblingPerformancesAtEvent(rows[0]!, rows).map((p) => p.id)).not.toContain('1');
   });
 
-  it('is empty for a one-song gig', () => {
+  it('is empty for a single-song event', () => {
     expect(siblingPerformancesAtEvent(rows[2]!, rows)).toEqual([]);
   });
 });

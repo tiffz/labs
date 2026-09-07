@@ -1,4 +1,4 @@
-/* eslint-disable react/prop-types -- MRT Cell render props are typed via MRT_ColumnDef, not PropTypes */
+ 
 import {
   filterPerformancesByScope,
   parsePerformanceScope,
@@ -46,7 +46,6 @@ import { alpha, useTheme } from '@mui/material/styles';
 import {
   memo,
   useCallback,
-  useContext,
   useEffect,
   useMemo,
   useRef,
@@ -56,8 +55,6 @@ import {
 } from 'react';
 import {
   useMaterialReactTable,
-  type MRT_ColumnDef,
-  type MRT_Row,
   type MRT_RowSelectionState,
   type MRT_TableInstance,
 } from 'material-react-table';
@@ -66,7 +63,7 @@ import {
   type EncoreAccompanimentTag,
   type EncoreMrtTablePrefs,
   type EncorePerformance,
-  type EncoreSong, type EncorePerformanceRole, ENCORE_PERFORMANCE_ROLES } from '../types';
+  type EncoreSong, ENCORE_PERFORMANCE_ROLES } from '../types';
 import {
   encoreAppHref,
   isModifiedOrNonPrimaryClick,
@@ -96,7 +93,6 @@ import {
 } from '../theme/encoreUiTokens';
 import { encoreListPageHeaderMb, encoreListPagePaddingTop, encorePagePaddingTop, encoreScreenPaddingX } from '../theme/encoreM3Layout';
 import { EncorePageHeader } from '../ui/EncorePageHeader';
-import { performanceVideoOpenUrl } from '../utils/performanceVideoUrl';
 import { performanceVideoPlaybackTarget } from '../utils/performancePlaybackTarget';
 import { LibrarySongPickerDialog } from './LibrarySongPickerDialog';
 import { BulkPerformanceImportDialog } from './BulkPerformanceImportDialog';
@@ -105,7 +101,6 @@ import { PlaylistImportDialog } from './PlaylistImportDialog';
 import { PerformanceEditorDialog } from './PerformanceEditorDialog';
 import { PerformancesWrappedScreen } from './PerformancesWrappedScreen';
 import { SpotifyBrandIcon, YouTubeBrandIcon } from './EncoreBrandIcon';
-import { PerformanceVideoThumb } from './PerformanceVideoThumb';
 import {
   LEGACY_MRT_ACTIONS_DATA_COL,
   ensureEncoreMrtRowActionsInOrder,
@@ -118,15 +113,12 @@ import {
 import {
   type PerformancesViewMode,
   type PerfMrtRow,
-  formatPerformanceNotesLine,
   normalizePerformancesTableSorting,
   normalizePerfVenueLabel,
   perfMrtColumnId,
   performancesColumnOrderForMrt,
 } from './performancesScreenHelpers';
-import { InlineChipDate, InlineChipMultiSelect, InlineChipSelect } from '../ui/InlineEditChip';
 import { type EncoreFilterChipBarHandle, type EncoreFilterFieldConfig } from '../ui/EncoreFilterChipBar';
-import { EncoreMrtColumnHeader } from '../ui/EncoreMrtColumnHeader';
 import { ENCORE_FILTER_SENTINEL } from '../utils/encoreFilterSentinels';
 import {
   encoreDateInRange,
@@ -144,16 +136,16 @@ import {
   encoreTabBodyPropsAreEqual,
   useEncoreTabFrozenSnapshot,
 } from '../utils/useEncoreTabFrozenSnapshot';
-import { HighlightedText } from '../ui/HighlightedText';
 import {
   buildExtendedPerformanceInsights,
   buildPerformanceDashboardStats,
   type ExtendedPerformanceInsights,
   type PerformanceDashboardStats,
 } from '../performances/performancesStatsModel';
-import AppTooltip from '../../shared/components/AppTooltip';
-import { EncoreMrtSearchHighlightContext } from './encoreMrtSearchHighlightContext';
 import { PerformancesBulkSelectionBar } from './performancesScreen/PerformancesBulkSelectionBar';
+import { performanceVideoOpenUrl } from '../utils/performanceVideoUrl';
+import { PerformanceVideoThumb } from './PerformanceVideoThumb';
+import { usePerformancesColumns } from './performancesScreen/usePerformancesColumns';
 import { PerformancesMrtTableView } from './performancesScreen/PerformancesMrtTableView';
 import { PerformancesListToolbar } from './performancesScreen/PerformancesListToolbar';
 import {
@@ -166,79 +158,6 @@ const SCOPE_STORAGE_KEY = 'encore.performances.scope';
 
 const PERFORMANCES_FILTER_PINNED = ['venue', 'accompaniment', 'perfDate'] as const;
 
-function PerfSongColumnCell({ row }: { row: MRT_Row<PerfMrtRow> }): ReactElement {
-  const highlight = useContext(EncoreMrtSearchHighlightContext);
-  const { subject, artistLabel, perf } = row.original;
-  // Route by subject, so an original opens its songwriting page rather than dead-ending.
-  const href = subject.href ?? undefined;
-  return (
-    <Box>
-      <Button
-        variant="text"
-        size="small"
-        disabled={!href}
-        component={href ? 'a' : 'button'}
-        href={href}
-        sx={{
-          textAlign: 'left',
-          justifyContent: 'flex-start',
-          fontWeight: 600,
-          textTransform: 'none',
-          p: 0,
-          minWidth: 0,
-          maxWidth: '100%',
-          color: 'text.primary',
-          '&:hover': { bgcolor: 'transparent', color: 'primary.main' },
-        }}
-      >
-        <AppTooltip title={row.original.songLabel}>
-          <Box component="span" sx={{ display: 'block', minWidth: 0, maxWidth: '100%' }}>
-            <HighlightedText
-              text={row.original.songLabel}
-              highlight={highlight}
-              variant="body2"
-              sx={{
-                fontWeight: 600,
-                display: 'block',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-              }}
-            />
-          </Box>
-        </AppTooltip>
-      </Button>
-      {artistLabel ? (
-        <AppTooltip title={artistLabel}>
-          <Box component="span" sx={{ display: 'block', minWidth: 0, maxWidth: '100%' }}>
-            <HighlightedText
-              text={artistLabel}
-              highlight={highlight}
-              variant="caption"
-              sx={{
-                color: 'text.secondary',
-                display: 'block',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-              }}
-            />
-          </Box>
-        </AppTooltip>
-      ) : null}
-      {perf.notes ? (
-        <AppTooltip title={perf.notes}>
-          <Box component="span" sx={{ display: 'block', minWidth: 0, maxWidth: '100%', mt: 0.25 }}>
-            <HighlightedText
-              text={formatPerformanceNotesLine(perf.notes)}
-              highlight={highlight}
-              variant="caption"
-              sx={{ color: 'text.secondary', lineHeight: 1.4, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis' }}
-            />
-          </Box>
-        </AppTooltip>
-      ) : null}
-    </Box>
-  );
-}
 
 export type PerformancesScreenProps = {
   heavyListTabActive?: boolean;
@@ -300,7 +219,6 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
   const perfFilterFieldDefsCacheRef = useRef<EncoreFilterFieldConfig[]>([]);
   const perfDashboardStatsCacheRef = useRef<PerformanceDashboardStats | null>(null);
   const perfExtendedInsightsCacheRef = useRef<ExtendedPerformanceInsights | null>(null);
-  const perfColumnsCacheRef = useRef<MRT_ColumnDef<PerfMrtRow>[]>([]);
   const hasAnyPerformanceVideoLinkCacheRef = useRef(false);
 
   const [query, setQuery] = useState('');
@@ -828,161 +746,13 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
     return next;
   }, [heavyListTabActive, scopedPerformances, songById, originalById, performanceDashboardStats]);
 
-  const columns = useMemo<MRT_ColumnDef<PerfMrtRow>[]>(() => {
-    if (!heavyListTabActive) return perfColumnsCacheRef.current;
-    const next: MRT_ColumnDef<PerfMrtRow>[] = [
-    {
-      id: 'video',
-      header: 'Video',
-      Header: ({ column }) => <EncoreMrtColumnHeader label="Video" column={column} />,
-      size: 120,
-      enableColumnFilter: false,
-      enableSorting: false,
-      Cell: ({ row }) => {
-        const url = performanceVideoOpenUrl(row.original.perf);
-        const thumb = (
-          <PerformanceVideoThumb performance={row.original.perf} width={100} alt="" googleAccessToken={googleAccessToken} />
-        );
-        if (url) {
-          return (
-            <Box
-              component="a"
-              href={url}
-              target="_blank"
-              rel="noreferrer"
-              aria-label="Open performance video"
-              onClick={(e) => e.stopPropagation()}
-              sx={{
-                display: 'inline-flex',
-                borderRadius: 1,
-                lineHeight: 0,
-                textDecoration: 'none',
-                color: 'inherit',
-                '&:focus-visible': {
-                  outline: '2px solid',
-                  outlineColor: 'primary.main',
-                  outlineOffset: 2,
-                },
-              }}
-            >
-              {thumb}
-            </Box>
-          );
-        }
-        return (
-          <Box sx={{ lineHeight: 0 }} aria-label="No video link">
-            {thumb}
-          </Box>
-        );
-      },
-    },
-    {
-      accessorKey: 'date',
-      header: 'Date',
-      meta: { encoreFilterFieldId: 'perfDate' },
-      Header: ({ column }) => (
-        <EncoreMrtColumnHeader label="Date" column={column} filterBarRef={perfFilterBarRef} />
-      ),
-      size: 160,
-      enableColumnFilter: false,
-      Cell: ({ row }) => (
-        <InlineChipDate
-          value={row.original.date}
-          placeholder="Set date"
-          onChange={(d) => {
-            if (!d) return;
-            void updatePerformance({ ...row.original.perf, date: d });
-          }}
-        />
-      ),
-    },
-    {
-      accessorKey: 'songLabel',
-      header: 'Song',
-      meta: { encoreFilterFieldId: 'song' },
-      Header: ({ column }) => (
-        <EncoreMrtColumnHeader label="Song" column={column} filterBarRef={perfFilterBarRef} />
-      ),
-      size: 240,
-      minSize: 180,
-      enableColumnFilter: false,
-      Cell: ({ row }) => <PerfSongColumnCell row={row} />,
-    },
-    {
-      accessorKey: 'venue',
-      header: 'Venue',
-      meta: { encoreFilterFieldId: 'venue' },
-      Header: ({ column }) => (
-        <EncoreMrtColumnHeader label="Venue" column={column} filterBarRef={perfFilterBarRef} />
-      ),
-      size: 140,
-      minSize: 120,
-      Cell: ({ row }) => (
-        <InlineChipSelect<string>
-          value={row.original.venue}
-          options={venueOptions}
-          freeSolo
-          placeholder="Venue"
-          onChange={(v) => {
-            if (v == null) return;
-            void updatePerformance({ ...row.original.perf, venueTag: v });
-          }}
-        />
-      ),
-    },
-    {
-      accessorKey: 'role',
-      header: 'Your role',
-      meta: { encoreFilterFieldId: 'role' },
-      Header: ({ column }) => (
-        <EncoreMrtColumnHeader label="Your role" column={column} filterBarRef={perfFilterBarRef} />
-      ),
-      size: 130,
-      minSize: 110,
-      Cell: ({ row }) => (
-        <InlineChipSelect<EncorePerformanceRole>
-          value={row.original.role}
-          options={ENCORE_PERFORMANCE_ROLES}
-          placeholder="Role"
-          onChange={(v) => {
-            if (v == null) return;
-            // Store the default as absent, matching the editor, so unchanged rows stay
-            // byte-identical on the wire.
-            void updatePerformance({
-              ...row.original.perf,
-              role: v === 'Lead vocal' ? undefined : v,
-            });
-          }}
-        />
-      ),
-    },
-    {
-      accessorKey: 'accompaniment',
-      header: 'Accompaniment',
-      meta: { encoreFilterFieldId: 'accompaniment' },
-      Header: ({ column }) => (
-        <EncoreMrtColumnHeader label="Accompaniment" column={column} filterBarRef={perfFilterBarRef} />
-      ),
-      size: 160,
-      minSize: 140,
-      Cell: ({ row }) => (
-        <InlineChipMultiSelect<EncoreAccompanimentTag>
-          values={row.original.accompaniment}
-          options={ENCORE_ACCOMPANIMENT_TAGS}
-          placeholder="Add tags"
-          onChange={(arr) => {
-            void updatePerformance({
-              ...row.original.perf,
-              accompanimentTags: arr.length ? arr : undefined,
-            });
-          }}
-        />
-      ),
-    },
-  ];
-    perfColumnsCacheRef.current = next;
-    return next;
-  }, [heavyListTabActive, googleAccessToken, venueOptions, updatePerformance]);
+  const columns = usePerformancesColumns({
+    heavyListTabActive,
+    googleAccessToken,
+    venueOptions,
+    updatePerformance,
+    perfFilterBarRef,
+  });
 
   const perfTableBodyRowSx = useMemo(
     () => ({
@@ -1724,7 +1494,7 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
           setPerfOpen(true);
         }}
         /*
-         * The only caller that opts into creating a song. Logging a gig regularly means logging a
+         * The only caller that opts into creating a song. Logging an event regularly means logging a
          * song that is not in the library yet — especially when accompanying, where the piece is
          * often someone else's. Before this, the picker dead-ended with "Add a song from Repertoire
          * first", which meant leaving the flow.
