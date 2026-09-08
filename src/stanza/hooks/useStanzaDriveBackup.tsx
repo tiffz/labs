@@ -100,6 +100,7 @@ import {
   type StanzaDriveUndoSnapshot,
 } from '../drive/stanzaDriveUndoSnapshots';
 import { countSongsThatWouldGainMarkersFromSnapshot } from '../drive/stanzaDriveMarkerSummary';
+import { planStanzaMergePersist } from '../drive/stanzaMergePersistPlan';
 import { labsDriveAutoPushAllowed } from '../../shared/drive/labsDriveSyncGuard';
 import {
   formatLabsDriveSyncError,
@@ -138,17 +139,28 @@ function stanzaDriveSyncOperationInProgress(): boolean {
   return stanzaDriveMergeInProgress || stanzaDriveBulkSyncInProgressRef.current || labsBlockingJobsActive();
 }
 
-async function persistMergedSongs(nextRows: StanzaSong[]): Promise<void> {
+/**
+ * Write a merge result back, without destroying work done while the merge was running.
+ *
+ * `basedOn` is the library snapshot the merge actually read. It is required, because the sweep
+ * below cannot otherwise tell a row the merge deliberately dropped from one that did not exist
+ * when the merge started — and the pull holds that gap open for a long time (it writes a full
+ * pre-merge undo snapshot, blobs and all, in between). Opening `/stanza/?v=<id>` mints a row
+ * during exactly that gap. Policy and the failing cases: `../drive/stanzaMergePersistPlan.ts`.
+ */
+async function persistMergedSongs(
+  nextRows: StanzaSong[],
+  basedOn: readonly StanzaSong[],
+): Promise<void> {
   stanzaDriveMergeInProgress = true;
   try {
     await stanzaDb.transaction('rw', stanzaDb.songs, async () => {
-      const keep = new Set(nextRows.map((s) => s.id));
-      for (const row of await stanzaDb.songs.toArray()) {
-        if (!keep.has(row.id)) {
-          await stanzaDb.songs.delete(row.id);
-        }
+      const live = await stanzaDb.songs.toArray();
+      const plan = planStanzaMergePersist({ live, nextRows, basedOn });
+      for (const id of plan.deleteIds) {
+        await stanzaDb.songs.delete(id);
       }
-      for (const r of nextRows) {
+      for (const r of plan.puts) {
         await stanzaDb.songs.put(r);
       }
     });
@@ -239,7 +251,7 @@ async function mergeRemoteEnvelopeIntoLocal(
       youtubeTombstoneVideoIds,
       localSongTombstoneIds,
     });
-  await persistMergedSongs(nextRows);
+  await persistMergedSongs(nextRows, localRows);
   await remapStanzaTakesForConsolidation(remappedIds);
   for (const fid of staleTombstoneFileIds) {
     clearStanzaDriveTombstone(fid);
@@ -259,7 +271,7 @@ async function mergeRemoteEnvelopeIntoLocal(
       if (overlay) {
         const overlayRows = await stanzaDb.songs.toArray();
         const mergedOverlay = mergeStanzaPracticeOverlayIntoRows(overlayRows, overlay);
-        await persistMergedSongs(mergedOverlay);
+        await persistMergedSongs(mergedOverlay, overlayRows);
       }
     }
   }
@@ -310,6 +322,12 @@ export function useStanzaDriveBackup() {
   const sessionPullSucceededRef = useRef(false);
   const manualBackupSucceededRef = useRef(false);
   const pullFromDriveAndMergeRef = useRef<(opts?: { silent?: boolean }) => Promise<unknown>>(async () => undefined);
+  /**
+   * Library rows the in-flight merge was computed from. Set in `mergePayload`, read in
+   * `onMergePayload` — the harness runs them as separate steps, and the persist step must not
+   * delete rows that appeared in between (see `persistMergedSongs`).
+   */
+  const lastMergeBasisRef = useRef<readonly StanzaSong[] | null>(null);
   const [syncPaused, setSyncPaused] = useState(false);
 
   const allowAutoPush = useCallback(
@@ -570,7 +588,7 @@ export function useStanzaDriveBackup() {
             tombstoneFileIds: getStanzaDriveTombstoneFileIds(),
             youtubeTombstoneVideoIds: getStanzaYoutubeTombstoneVideoIds(),
           });
-          await persistMergedSongs(nextRows);
+          await persistMergedSongs(nextRows, localRows);
           await remapStanzaTakesForConsolidation(remappedIds);
           patchStanzaDriveSyncMeta({
             lastCloudModifiedTime: conflict.driveModifiedTime,
@@ -638,7 +656,7 @@ export function useStanzaDriveBackup() {
         // back. Tombstones for any restored `driveSourceFileId` are then cleared so subsequent
         // pushes don't immediately re-broadcast the deletion.
         const { nextRows, remappedIds, report } = mergeDriveRowsIntoLocalLibrary(localRows, env.songs);
-        await persistMergedSongs(nextRows);
+        await persistMergedSongs(nextRows, localRows);
         await remapStanzaTakesForConsolidation(remappedIds);
         const restoredDriveFileIds = new Set<string>();
         for (const row of nextRows) {
@@ -778,6 +796,10 @@ export function useStanzaDriveBackup() {
       return song ? [song] : null;
     },
     mergePayload: async (local, remote) => {
+      // The harness runs `mergePayload` and `onMergePayload` as separate steps and writes a
+      // pre-merge undo snapshot in between. `onMergePayload` needs the rows this merge was
+      // computed from to know which rows it is entitled to delete, so hand them across.
+      lastMergeBasisRef.current = local;
       const tombstoneFileIds = getStanzaDriveTombstoneFileIds();
       const youtubeTombstoneVideoIds = getStanzaYoutubeTombstoneVideoIds();
       const localSongTombstoneIds = getStanzaLocalSongTombstoneIds();
@@ -797,7 +819,7 @@ export function useStanzaDriveBackup() {
       return nextRows;
     },
     onMergePayload: async (songs) => {
-      await persistMergedSongs(songs);
+      await persistMergedSongs(songs, lastMergeBasisRef.current ?? songs);
       await tryHydrateLibraryFromDrive({ interactive: true });
     },
     snapshotBeforeMerge: (trigger) =>
