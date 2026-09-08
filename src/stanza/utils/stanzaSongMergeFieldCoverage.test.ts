@@ -137,3 +137,12 @@ const SENTINEL: Record<string, unknown> = {
   drumsGain: 0.21,
   drumsMuted: true,
 };
+
+describe('playbackRate', () => {
+  it('is merged, not local-only', () => {
+    // Per-song practice setting, like the mix gains: the speed you need for a hard passage belongs
+    // to the song, not to the laptop you set it on. It was React state only until 2026-09-07 and
+    // reset to 1x on every reload, which read as "my settings did not save".
+    expect(STANZA_SONG_MERGE_POLICY.playbackRate).toBe('merged');
+  });
+});

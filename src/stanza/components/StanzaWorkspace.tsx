@@ -25,6 +25,7 @@
  * next tranche extracts self-contained hooks (drive deep-link, transpose pipeline).
  */
 
+import { clampStanzaPlaybackRate } from '../utils/stanzaPlaybackRateLimits';
 import {
   useCallback,
   useEffect,
@@ -1159,6 +1160,7 @@ export default function StanzaWorkspace() {
     }
   }, [selected, sectionLayoutDuration, persistSong]);
 
+
   const commitMarkers = useCallback(
     async (markers: StanzaMarker[], context?: StanzaMarkersChangeContext) => {
       if (!selected) return;
@@ -1675,6 +1677,54 @@ export default function StanzaWorkspace() {
     primaryMixKey,
     stemMixKey,
   });
+
+  /*
+   * Apply the speed AND save it.
+   *
+   * `applyPlaybackRate` sets the media element and React state and stops there, so every reload
+   * reset the song to 1x — which reads as "the playback speed I configured is missing". Persisting
+   * on change is what makes it a practice setting rather than a session accident.
+   *
+   * `touchUpdatedAt: false` on purpose: nudging a speed slider must not make this song look newer
+   * than the same song on another device and win a sync merge against real edits made there.
+   * `recordUndo: false` for the same reason a volume drag is not an undo step.
+   */
+  const applyAndPersistPlaybackRate = useCallback(
+    (rate: number) => {
+      applyPlaybackRate(rate);
+      const songId = selectedRef.current?.id;
+      if (!songId) return;
+      void persistSong(
+        { id: songId, playbackRate: clampStanzaPlaybackRate(rate) },
+        { recordUndo: false, touchUpdatedAt: false },
+      );
+    },
+    [applyPlaybackRate, persistSong],
+  );
+
+  /*
+   * Restore the saved speed when a song loads.
+   *
+   * Persisting without this would be worse than not persisting at all: the value would sit in the
+   * database looking correct while the app kept playing at 1x. Keyed on the song id so switching
+   * songs re-applies, and it deliberately does NOT depend on the live rate — that would fight the
+   * user mid-adjustment.
+   */
+  const restoredRateForSongRef = useRef<string | null>(null);
+  useEffect(() => {
+    const song = selected;
+    if (!song) {
+      restoredRateForSongRef.current = null;
+      return;
+    }
+    if (restoredRateForSongRef.current === song.id) return;
+    restoredRateForSongRef.current = song.id;
+    const saved = song.playbackRate;
+    if (saved == null) return;
+    const clamped = clampStanzaPlaybackRate(saved);
+    if (Math.abs(clamped - 1) < 0.0001) return;
+    applyPlaybackRate(clamped);
+  }, [selected, applyPlaybackRate]);
 
   const setPracticeSource = useCallback(
     async (source: StanzaPracticeSource) => {
@@ -2772,7 +2822,7 @@ export default function StanzaWorkspace() {
                   joinSectionsEnabled={areContiguousSegmentIndices(selectedSegmentIndices)}
                   onClearSegmentSelection={clearSegmentSelection}
                   playbackRate={playback.playbackRate}
-                  onPlaybackRateChange={applyPlaybackRate}
+                  onPlaybackRateChange={applyAndPersistPlaybackRate}
                   selectionTimeSpan={
                     selectedSegmentIndices.length > 0
                       ? (effectiveSelectionSpan ?? segmentSelectionLoopHull ?? undefined)
