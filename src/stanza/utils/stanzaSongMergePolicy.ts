@@ -77,6 +77,13 @@ export const STANZA_SONG_MERGE_POLICY = {
   /** Union of both sides' maps, newest `deletedAt` per id — a delete on either device sticks. */
   deletedMarkerIds: 'merged',
 
+  /**
+   * A per-song practice setting like the mix gains above: `merged`, so changing speed on one
+   * device carries to the others. Not `local-only` — the speed you need for a hard passage is a
+   * property of the song, not of the laptop you happened to set it on.
+   */
+  playbackRate: 'merged',
+
   // --- local-only -----------------------------------------------------------------------------
   /** Device-local Find-the-Beat cache; never synced (ADR 0013). Stripped by the envelope. */
   analysisCache: 'local-only',

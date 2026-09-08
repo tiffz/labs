@@ -103,6 +103,17 @@ export interface StanzaSong {
   /** Mute the metronome from the Mix without disabling its calibration. */
   metronomeMuted?: boolean;
   /**
+   * Playback speed for this song, as a media `playbackRate` multiplier (1 = normal).
+   *
+   * Per-song, not global: the speed you need for a fast passage belongs to that song, and it was
+   * previously React state only — `applyPlaybackRate` set the media element and `setPlayback`, and
+   * nothing wrote it anywhere. Every reload silently reset it to 1, which reads as "my settings did
+   * not save".
+   *
+   * Absent means 1, so rows written before this field keep their meaning with no migration.
+   */
+  playbackRate?: number;
+  /**
    * "Add drums" master switch (see ADR 0009). When true, the drums panel renders below the
    * metronome strip. {@link drumPattern} stores the user's Darbuka notation for this song.
    */
