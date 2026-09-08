@@ -1,16 +1,52 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Snackbar from '@mui/material/Snackbar';
 import type { SxProps, Theme } from '@mui/material/styles';
 import { getLabsDriveBackupRestrictionHashesFromEnv } from '../../shared/google/labsDriveTesterGate';
 import { LabsDriveAccountMenu } from '../../shared/google/LabsDriveAccountMenu';
 import LabsPortfolioConflictReviewDialog from '../../shared/google/LabsPortfolioConflictReviewDialog';
 import type { LabsDriveBackupUiProps } from '../../shared/google/labsDriveBackupUiTypes';
+import { useLabsUndo } from '../../shared/undo/LabsUndoContext';
 import { stanzaGoogleClientConfigured, useStanzaDriveBackup } from '../hooks/useStanzaDriveBackup';
 import { formatStanzaDriveUndoSnapshotTrigger, parseSnapshotEnvelope } from '../drive/stanzaDriveUndoSnapshots';
 import { summarizeEnvelopeSections } from '../drive/stanzaDriveMarkerSummary';
 import { stanzaDriveLastBackupDisplayIso } from '../drive/stanzaDriveSyncMeta';
+import { applyStanzaOrganizeMerge } from '../organize/stanzaOrganizeApply';
+import type { StanzaOrganizeSelection } from '../organize/stanzaOrganizeMerge';
+import StanzaOrganizeDialog from './StanzaOrganizeDialog';
 
 export default function StanzaAccountMenu() {
   const backup = useStanzaDriveBackup();
+  const { push, undo } = useLabsUndo();
+  const [organizeOpen, setOrganizeOpen] = useState(false);
+  const [organizeBusy, setOrganizeBusy] = useState(false);
+  const [organizeToast, setOrganizeToast] = useState<string | null>(null);
+
+  const handleOrganizeMerge = useCallback(
+    async (selections: StanzaOrganizeSelection[]) => {
+      if (selections.length === 0) return;
+      setOrganizeBusy(true);
+      try {
+        const { report, undo: undoMerge, redo } = await applyStanzaOrganizeMerge(selections);
+        if (report.mergedGroups > 0) {
+          push({ undo: undoMerge, redo });
+          const n = report.droppedRows;
+          setOrganizeToast(
+            report.tombstonesPersisted
+              ? `Merged ${n} duplicate${n === 1 ? '' : 's'}.`
+              : `Merged ${n} duplicate${n === 1 ? '' : 's'}. Back up soon to keep them merged.`,
+          );
+        }
+        setOrganizeOpen(false);
+      } finally {
+        setOrganizeBusy(false);
+      }
+    },
+    [push],
+  );
+
   const lastBackupDisplayIso = useMemo(
     () => stanzaDriveLastBackupDisplayIso(backup.lastMeta),
     [backup.lastMeta],
@@ -112,6 +148,26 @@ export default function StanzaAccountMenu() {
             'Metadata and linked audio sync to a Stanza folder on Drive (progress.json, main_audio/, stem_audio/). Re-download happens when you open a song on another device.',
         }}
         drive={drive}
+        integrationsSlot={({ close }) => (
+          <Box sx={{ px: 2.5, py: 1 }}>
+            <Button
+              fullWidth
+              startIcon={<AutoFixHighIcon fontSize="small" />}
+              onClick={() => {
+                close();
+                setOrganizeOpen(true);
+              }}
+              sx={{
+                justifyContent: 'flex-start',
+                color: 'text.primary',
+                textTransform: 'none',
+                fontWeight: 600,
+              }}
+            >
+              Organize library
+            </Button>
+          </Box>
+        )}
         ids={{ menu: 'stanza-account-menu', button: 'stanza-account-menu-button' }}
         appearance={{
           menuPaperClassName: 'stanza-panel',
@@ -146,6 +202,30 @@ export default function StanzaAccountMenu() {
         />
       ) : null}
       {backup.confirmRestoreSnapshotDialog}
+      <StanzaOrganizeDialog
+        open={organizeOpen}
+        busy={organizeBusy}
+        onClose={() => setOrganizeOpen(false)}
+        onMerge={(selections) => void handleOrganizeMerge(selections)}
+      />
+      <Snackbar
+        open={!!organizeToast}
+        autoHideDuration={8000}
+        onClose={() => setOrganizeToast(null)}
+        message={organizeToast}
+        action={
+          <Button
+            color="inherit"
+            size="small"
+            onClick={() => {
+              setOrganizeToast(null);
+              void undo();
+            }}
+          >
+            Undo
+          </Button>
+        }
+      />
     </>
   );
 }
