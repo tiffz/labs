@@ -59,7 +59,6 @@ import {
   isStanzaBlobLikeVideo,
   stanzaSongTitleFromFileName,
 } from '../db/stanzaLocalAudioImport';
-import { stanzaFingerprintDurationSec } from '../utils/stanzaLocalMediaFingerprint';
 import { getStanzaLocalMainMediaElement } from '../utils/stanzaLocalMainMediaElement';
 import { runStanzaLibraryDedupeMigrationOnce } from '../db/stanzaConsolidateLocalLibrary';
 import { useStanzaFileDrop } from '../hooks/useStanzaFileDrop';
@@ -73,7 +72,9 @@ import {
   sanitizeStanzaMarkers,
   STANZA_TIME_EPS,
 } from '../utils/segments';
-import { stanzaSegmentLayoutDuration } from '../utils/stanzaSegmentLayoutDuration';
+import { stanzaSegmentLayoutDuration,
+  stanzaMediaDurationForMarkerTrim,
+} from '../utils/stanzaSegmentLayoutDuration';
 import { pickRandomSectionIndex } from '../utils/pickRandomSectionIndex';
 import {
   applySectionSelectionExtend,
@@ -850,15 +851,24 @@ export default function StanzaWorkspace() {
     [selected?.markers, selected?.localMediaFingerprint, playback.duration],
   );
 
-  const sectionLayoutDurationRef = useRef(0);
-  sectionLayoutDurationRef.current = sectionLayoutDuration;
-  const knownHorizonSecRef = useRef(0);
-  // Decoded PCM + fingerprint + live transport — not marker layout (YouTube sections can exceed the local file).
-  knownHorizonSecRef.current = Math.max(
-    playback.duration > 0 ? playback.duration : 0,
-    decodedLocalDurationSec,
-    stanzaFingerprintDurationSec(selected?.localMediaFingerprint) ?? 0,
+  /**
+   * Media duration only — decoded PCM + fingerprint + live transport, never the marker layout
+   * (YouTube sections can exceed the local file). This is also the only duration allowed to trim
+   * markers; see `stanzaMediaDurationForMarkerTrim`.
+   */
+  const markerTrimDuration = useMemo(
+    () =>
+      stanzaMediaDurationForMarkerTrim({
+        playbackDuration: playback.duration,
+        localMediaFingerprint: selected?.localMediaFingerprint,
+        decodedLocalDurationSec,
+      }),
+    [playback.duration, selected?.localMediaFingerprint, decodedLocalDurationSec],
   );
+  const knownHorizonSecRef = useRef(0);
+  knownHorizonSecRef.current = markerTrimDuration;
+  const markerTrimDurationRef = useRef(0);
+  markerTrimDurationRef.current = markerTrimDuration;
 
   useEffect(() => {
     if (!(decodedLocalDurationSec > 0)) return;
@@ -1079,12 +1089,9 @@ export default function StanzaWorkspace() {
       const prevSnap = recordUndo ? structuredClone(row) : null;
       const nextMarkers =
         patch.markers != null
-          ? sanitizeStanzaMarkers(
-              ensureMarkerIds(patch.markers),
-              sectionLayoutDurationRef.current > 0
-                ? sectionLayoutDurationRef.current
-                : durationRef.current,
-            )
+          ? // Media duration only. Trimming against the marker-derived layout duration deleted
+            // the newest section on save (see `stanzaMediaDurationForMarkerTrim`).
+            sanitizeStanzaMarkers(ensureMarkerIds(patch.markers), markerTrimDurationRef.current)
           : row.markers;
       const now = Date.now();
       const next: StanzaSong = {
@@ -1152,13 +1159,16 @@ export default function StanzaWorkspace() {
 
   /** One-time cleanup for redundant 0:00 / track-end markers left from older builds or hover rename. */
   useEffect(() => {
-    if (!selected || !(sectionLayoutDuration > 0)) return;
+    if (!selected) return;
     const raw = selected.markers ?? [];
-    const clean = sanitizeStanzaMarkers(ensureMarkerIds(raw), sectionLayoutDuration);
+    // `markerTrimDuration` may be 0 (YouTube player still loading, or errored). That is fine and
+    // deliberate: it disables the end-trim while leaving the 0:00 ghost trim this effect exists
+    // for. Gating the whole effect on a known duration would be the same bug in reverse.
+    const clean = sanitizeStanzaMarkers(ensureMarkerIds(raw), markerTrimDuration);
     if (!markerTimesEqual(raw, clean)) {
       void persistSong({ id: selected.id, markers: clean }, { recordUndo: false });
     }
-  }, [selected, sectionLayoutDuration, persistSong]);
+  }, [selected, markerTrimDuration, persistSong]);
 
 
   const commitMarkers = useCallback(
