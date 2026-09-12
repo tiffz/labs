@@ -18,7 +18,8 @@ import { ensureDriveCopyAccessToken } from '../drive/driveReadonlyAccess';
 import { upsertPerformanceVideoBySource } from '../performance/performanceVideoAttach';
 import {
   applyForeignVideoCopies,
-  foreignSourceForVideo,
+  liveForeignSourceForVideo,
+  pruneStaleForeignVideoSources,
   planForeignVideoCopies,
   setForeignVideoCopyRequested,
   upsertForeignVideoSource,
@@ -285,6 +286,9 @@ export function PerformanceEditorDialog(props: {
       setShortcutMsg(null);
       setPendingLocalVideoFiles([]);
       setPendingLinkVideo(null);
+      // Per-session staging state, like the two above: a source resolved in a previous editing
+      // session describes a draft that no longer exists.
+      setForeignVideoSources([]);
       setInlineLinkFeedbackVideoId(null);
       setRemoveConfirmOpen(false);
       setDriveLinkFeedback(null);
@@ -769,6 +773,11 @@ export function PerformanceEditorDialog(props: {
               copied.push({ videoId: task.videoId, copiedFileId: result.fileId });
             }
             videos = applyForeignVideoCopies(videos, copied);
+            // The copy repointed these videos at the user's own files, so the sources that drove
+            // it no longer describe anything. Keeping them is what left "Save a copy to my Drive"
+            // on a video that had already been copied.
+            const copiedVideos = videos;
+            setForeignVideoSources((sources) => pruneStaleForeignVideoSources(sources, copiedVideos));
             setProgress(1);
           },
         );
@@ -1038,7 +1047,7 @@ export function PerformanceEditorDialog(props: {
                 uploading={uploading}
                 playbackActive={open}
                 foreignCopy={(() => {
-                  const source = foreignSourceForVideo(foreignVideoSources, video.id);
+                  const source = liveForeignSourceForVideo(foreignVideoSources, video);
                   if (!source) return undefined;
                   return {
                     copyRequested: source.copyRequested,

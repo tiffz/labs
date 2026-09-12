@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   applyForeignVideoCopies,
-  foreignSourceForVideo,
+  liveForeignSourceForVideo,
+  pruneStaleForeignVideoSources,
   planForeignVideoCopies,
   pruneForeignVideoSources,
   setForeignVideoCopyRequested,
@@ -119,12 +120,14 @@ describe('the source registry', () => {
     const sources = [source({ videoId: 'v1' }), source({ videoId: 'v2' })];
     const next = setForeignVideoCopyRequested(sources, 'v1', false);
 
-    expect(foreignSourceForVideo(next, 'v1')!.copyRequested).toBe(false);
-    expect(foreignSourceForVideo(next, 'v2')!.copyRequested).toBe(true);
+    expect(liveForeignSourceForVideo(next, video('v1', 'their-file'))!.copyRequested).toBe(false);
+    expect(liveForeignSourceForVideo(next, video('v2', 'their-file'))!.copyRequested).toBe(true);
   });
 
   it('reports no source for a video that is not foreign', () => {
-    expect(foreignSourceForVideo([source({ videoId: 'v1' })], 'v9')).toBeUndefined();
+    expect(
+      liveForeignSourceForVideo([source({ videoId: 'v1' })], video('v9', 'their-file')),
+    ).toBeUndefined();
   });
 });
 
@@ -144,5 +147,39 @@ describe('the end-to-end save shape', () => {
 
     expect(saved).toHaveLength(1);
     expect(saved[0]!.videoTargetDriveFileId).toBe('copy-of-their-file');
+  });
+});
+
+/**
+ * The owner: "Save a copy to my Drive" still showed on a video that had already been copied.
+ *
+ * A foreign source describes the file a video points at right now. After the copy it points at her
+ * own file, so the offer is meaningless — and worse, it invites a copy of a copy. The plan already
+ * skipped these; only the card did not, because it looked up by video id alone.
+ */
+describe('a copied video stops offering to be copied', () => {
+  it('hides the checkbox once the video points at the copy', () => {
+    const sources = [source({ videoId: 'v1', fileId: 'their-file' })];
+    const beforeCopy = video('v1', 'their-file');
+    const afterCopy = video('v1', 'my-own-copy');
+
+    expect(liveForeignSourceForVideo(sources, beforeCopy)).toBeDefined();
+    // The bug: keyed by id alone, this still returned the source after the copy.
+    expect(sources.find((s) => s.videoId === afterCopy.id)).toBeDefined();
+    expect(liveForeignSourceForVideo(sources, afterCopy)).toBeUndefined();
+  });
+
+  it('plans no second copy for an already-copied video', () => {
+    const sources = [source({ videoId: 'v1', fileId: 'their-file' })];
+    expect(planForeignVideoCopies([video('v1', 'my-own-copy')], sources)).toEqual([]);
+  });
+
+  it('prunes sources the copy made dead', () => {
+    const sources = [
+      source({ videoId: 'v1', fileId: 'their-file' }),
+      source({ videoId: 'v2', fileId: 'still-theirs' }),
+    ];
+    const videos = [video('v1', 'my-own-copy'), video('v2', 'still-theirs')];
+    expect(pruneStaleForeignVideoSources(sources, videos).map((s) => s.videoId)).toEqual(['v2']);
   });
 });
