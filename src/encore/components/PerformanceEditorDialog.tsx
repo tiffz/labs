@@ -15,6 +15,7 @@ import {
   copyDriveFileToMyDrive,
 } from '../../shared/drive/copyDriveFileToMyDrive';
 import { ensureDriveCopyAccessToken } from '../drive/driveReadonlyAccess';
+import { upsertPerformanceVideoBySource } from '../performance/performanceVideoAttach';
 import {
   applyForeignVideoCopies,
   foreignSourceForVideo,
@@ -61,6 +62,15 @@ import { PerformanceEditorVideosDropZone } from './performance/PerformanceEditor
 import { setEncoreDropSurface } from './song/encoreDropSurface';
 
 type PendingLinkVideo = {
+  /**
+   * The id the row will keep once saved.
+   *
+   * Staged links used to get their id from `newPerformanceVideo` at save time, which meant the id
+   * did not exist while the link was being resolved — so a foreign-copy registration, which is
+   * keyed by video id, had nothing to anchor to and the copy silently never ran. Minting it here
+   * makes the staged row identifiable before it is saved.
+   */
+  id: string;
   externalVideoUrl?: string;
   videoTargetDriveFileId?: string;
   videoShortcutDriveFileId?: string;
@@ -230,6 +240,10 @@ export function PerformanceEditorDialog(props: {
   const [pendingLocalVideoFiles, setPendingLocalVideoFiles] = useState<File[]>([]);
   /** Staged link (YouTube / Drive) for add-video mode — appended on save only. */
   const [pendingLinkVideo, setPendingLinkVideo] = useState<PendingLinkVideo | null>(null);
+  const pendingLinkVideoRef = useRef<PendingLinkVideo | null>(null);
+  useEffect(() => {
+    pendingLinkVideoRef.current = pendingLinkVideo;
+  }, [pendingLinkVideo]);
   /** Per saved-video link field values while editing a performance. */
   const [videoLinkDrafts, setVideoLinkDrafts] = useState<Record<string, string>>({});
   /** When set, drive link feedback is shown on that saved video row only. */
@@ -298,15 +312,17 @@ export function PerformanceEditorDialog(props: {
         const normalized = normalizeEncorePerformance(d);
         const existing = [...(normalized.videos ?? [])];
         if (metadataLocked || opts?.appendNew) {
-          const appended = newPerformanceVideo({
-            externalVideoUrl: fields.externalVideoUrl,
-            videoTargetDriveFileId: fields.videoTargetDriveFileId,
-            videoShortcutDriveFileId: fields.videoShortcutDriveFileId,
-          });
+          // Idempotent on the source: this handler is debounced and re-fires whenever its identity
+          // changes, so an unconditional append produced a second row per pass for one pasted link.
+          const { videos: nextVideos, videoId } = upsertPerformanceVideoBySource(
+            existing,
+            fields,
+            () => newPerformanceVideo(),
+          );
           return syncPerformanceLegacyVideoFields({
             ...d,
-            videos: [...existing, appended],
-            primaryVideoId: normalized.primaryVideoId ?? existing[0]?.id ?? appended.id,
+            videos: nextVideos,
+            primaryVideoId: normalized.primaryVideoId ?? nextVideos[0]?.id ?? videoId,
           });
         }
         if (opts?.targetVideoId) {
@@ -390,6 +406,7 @@ export function PerformanceEditorDialog(props: {
         setPendingLocalVideoFiles([]);
         if (metadataLocked) {
           setPendingLinkVideo({
+            id: crypto.randomUUID(),
             externalVideoUrl: `https://www.youtube.com/watch?v=${encodeURIComponent(parsed.videoId)}`,
             displayName: 'YouTube video',
           });
@@ -412,7 +429,7 @@ export function PerformanceEditorDialog(props: {
         applyFeedback(null);
         setPendingLocalVideoFiles([]);
         if (metadataLocked) {
-          setPendingLinkVideo({ externalVideoUrl: parsed.url, displayName: 'External video' });
+          setPendingLinkVideo({ id: crypto.randomUUID(), externalVideoUrl: parsed.url, displayName: 'External video' });
           setVideoInput('');
           setDriveLinkFeedback(null);
           return;
@@ -444,7 +461,7 @@ export function PerformanceEditorDialog(props: {
 
         if (!googleAccessToken) {
           if (metadataLocked) {
-            setPendingLinkVideo({ videoTargetDriveFileId: fileIdForMeta, displayName: 'Drive video' });
+            setPendingLinkVideo({ id: crypto.randomUUID(), videoTargetDriveFileId: fileIdForMeta, displayName: 'Drive video' });
           }
           applyFeedback({ kind: 'needs_signin' });
           return;
@@ -471,23 +488,38 @@ export function PerformanceEditorDialog(props: {
            * into someone's Drive on a keystroke is not on. Staging it is also what device uploads
            * already do, so both video sources now behave the same way.
            */
-          if (meta.ownedByMe === false) {
-            const attached = normalizeEncorePerformance(draftRef.current).videos ?? [];
-            const target = attached.find((v) => v.videoTargetDriveFileId === resolvedDriveFileId);
-            if (target) {
-              setForeignVideoSources((sources) =>
-                upsertForeignVideoSource(sources, {
-                  videoId: target.id,
-                  fileId: resolvedDriveFileId,
-                  name: displayName,
-                  copyRequested: true,
-                }),
-              );
-            }
+          /*
+           * Which row will hold this source. The copy registry is keyed by video id, so this has
+           * to resolve in BOTH modes or the copy never runs.
+           *
+           * In add-video mode the link is staged rather than applied, so it is not in the draft and
+           * the old lookup found nothing — it registered no source, planned no copy, and saved a
+           * pointer at a stranger's file. That is the "it never uploaded" report: the copy step was
+           * skipped entirely, silently, for exactly the flow that needed it.
+           */
+          const stagedPending = pendingLinkVideoRef.current;
+          const sourceVideoId = metadataLocked
+            ? stagedPending?.videoTargetDriveFileId === resolvedDriveFileId && stagedPending.id
+              ? stagedPending.id
+              : crypto.randomUUID()
+            : (normalizeEncorePerformance(draftRef.current).videos ?? []).find(
+                (v) => v.videoTargetDriveFileId === resolvedDriveFileId,
+              )?.id;
+
+          if (meta.ownedByMe === false && sourceVideoId) {
+            setForeignVideoSources((sources) =>
+              upsertForeignVideoSource(sources, {
+                videoId: sourceVideoId,
+                fileId: resolvedDriveFileId,
+                name: displayName,
+                copyRequested: true,
+              }),
+            );
           }
           applyFeedback({ kind: 'ok', name: displayName });
           if (metadataLocked) {
             setPendingLinkVideo({
+              id: sourceVideoId ?? crypto.randomUUID(),
               videoTargetDriveFileId: fileIdForMeta,
               displayName,
             });
@@ -649,7 +681,18 @@ export function PerformanceEditorDialog(props: {
       }
       setUploading(false);
     } else if (pendingLinkVideo) {
-      videos = [...videos, newPerformanceVideo(pendingLinkVideo)];
+      // Keep the staged id — the foreign-copy registration is anchored to it — and drop
+      // `displayName`, which is a caption for the staging UI and not part of the stored video.
+      const stagedFields = {
+        id: pendingLinkVideo.id,
+        externalVideoUrl: pendingLinkVideo.externalVideoUrl,
+        videoTargetDriveFileId: pendingLinkVideo.videoTargetDriveFileId,
+        videoShortcutDriveFileId: pendingLinkVideo.videoShortcutDriveFileId,
+      };
+      const upserted = upsertPerformanceVideoBySource(videos, stagedFields, () =>
+        newPerformanceVideo({ id: stagedFields.id }),
+      );
+      videos = upserted.videos;
       primaryVideoId = primaryVideoId ?? videos[0]?.id;
     }
 
