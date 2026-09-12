@@ -433,6 +433,22 @@ jobs:
       env:
         VITE_GOOGLE_API_KEY: ${{ secrets.VITE_GOOGLE_API_KEY }}
         VITE_LABS_DRIVE_TESTER_HASHES: ${{ secrets.VITE_LABS_DRIVE_TESTER_HASHES }}
+        # Turns on the session BFF (ADR 0014) so Google access tokens refresh server-side
+        # instead of expiring roughly hourly with no way back. The worker has been deployed and
+        # healthy since 2026-07-25; this build var is the only thing that was never set, so the
+        # whole BFF was dead code in production.
+        #
+        # Override with a repo secret of the same name; set that secret to an empty string (or
+        # delete this line) to fall back to GIS-only sign-in. Every technical BFF failure is
+        # already treated as recoverable and falls through to GIS, so the worst case here is
+        # today's behaviour, not a broken sign-in.
+        #
+        # KNOWN LIMIT: on *.workers.dev the session cookie is cross-site to labs.tiffzhang.com, so
+        # browsers blocking third-party cookies may drop it — sign-in appears to work, then the
+        # next refresh says "not signed in". The durable fix is a same-site custom domain
+        # (session.tiffzhang.com), which needs the DNS zone moved to Cloudflare first; see
+        # workers/labs-session-bff/README.md § First-party host.
+        VITE_LABS_SESSION_BFF_URL: ${{ secrets.VITE_LABS_SESSION_BFF_URL || 'https://labs-session-bff.tiffz.workers.dev' }}
         VITE_APP_ENV: production
       run: npm run build
 
