@@ -49,6 +49,27 @@ export interface ForeignVideoCopyTask {
 }
 
 /**
+ * Is this source still describing the video's current target?
+ *
+ * A source is a statement about a file the video points at *right now*. Once the copy runs,
+ * `applyForeignVideoCopies` repoints the video at the user's own copy, and the statement stops
+ * being true — there is nothing foreign left to offer to copy.
+ *
+ * This is the single definition of "still live", because the display and the plan disagreeing is
+ * what produced the report: `planForeignVideoCopies` skipped stale sources, but the card looked the
+ * source up by video id alone, so "Save a copy to my Drive" kept offering to copy a file the user
+ * already owned. Remembering the original upload source after the copy has no meaning; both
+ * callers now ask the same question.
+ */
+export function isForeignVideoSourceLive(
+  video: EncorePerformanceVideo | undefined,
+  source: ForeignVideoSource,
+): boolean {
+  if (!video) return false; // removed from the draft
+  return video.videoTargetDriveFileId?.trim() === source.fileId.trim();
+}
+
+/**
  * Which foreign videos still need copying at save time.
  *
  * Skips any source whose video has since been removed from the draft, and any whose file id no
@@ -65,13 +86,25 @@ export function planForeignVideoCopies(
   for (const source of sources) {
     if (!source.copyRequested) continue;
     if (seen.has(source.videoId)) continue; // one copy per video, whatever the registry says
-    const video = byId.get(source.videoId);
-    if (!video) continue; // removed from the draft before saving
-    if (video.videoTargetDriveFileId !== source.fileId) continue; // replaced by another source
+    if (!isForeignVideoSourceLive(byId.get(source.videoId), source)) continue;
     seen.add(source.videoId);
     tasks.push({ videoId: source.videoId, sourceFileId: source.fileId, name: source.name });
   }
   return tasks;
+}
+
+/**
+ * Drop sources that no longer describe their video — after a copy, or after the link was replaced.
+ *
+ * The registry is per-editor-session staging state, so a dead entry has no reason to survive the
+ * save that killed it.
+ */
+export function pruneStaleForeignVideoSources(
+  sources: readonly ForeignVideoSource[],
+  videos: readonly EncorePerformanceVideo[],
+): ForeignVideoSource[] {
+  const byId = new Map(videos.map((v) => [v.id, v]));
+  return sources.filter((s) => isForeignVideoSourceLive(byId.get(s.videoId), s));
 }
 
 /**
@@ -124,12 +157,19 @@ export function pruneForeignVideoSources(
   return sources.filter((s) => ids.has(s.videoId));
 }
 
-/** The foreign source for one video, if it has one. */
-export function foreignSourceForVideo(
+/**
+ * The foreign source for one video, if it still has a live one.
+ *
+ * Takes the video rather than just its id so the answer cannot outlive the fact: a source whose
+ * file the video no longer points at is not offered.
+ */
+export function liveForeignSourceForVideo(
   sources: readonly ForeignVideoSource[],
-  videoId: string,
+  video: EncorePerformanceVideo,
 ): ForeignVideoSource | undefined {
-  return sources.find((s) => s.videoId === videoId);
+  const source = sources.find((s) => s.videoId === video.id);
+  if (!source) return undefined;
+  return isForeignVideoSourceLive(video, source) ? source : undefined;
 }
 
 /** Flip the copy checkbox for one video. */
