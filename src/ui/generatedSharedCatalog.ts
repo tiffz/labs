@@ -31982,6 +31982,74 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-rhythm-sectionrepeatspan-ts-ismeasureinsectionrepeat",
+    "name": "isMeasureInSectionRepeat",
+    "path": "src/shared/rhythm/sectionRepeatSpan.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "rhythm-core",
+    "description": "Is this measure one of the repeat's own written measures, or one of its expansions?",
+    "tags": [
+      "rhythm"
+    ],
+    "appsUsing": [
+      "drums"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-rhythm-sectionrepeatspan-ts-issectionrepeatghostmeasure",
+    "name": "isSectionRepeatGhostMeasure",
+    "path": "src/shared/rhythm/sectionRepeatSpan.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "rhythm-core",
+    "description": "Is this measure an expansion ghost — a copy the repeat generated rather than one the user wrote? Written measures (`startMeasure`…`endMeasure`) are the source and stay editable; everything after them inside the span is a ghost.",
+    "tags": [
+      "rhythm"
+    ],
+    "appsUsing": [
+      "drums"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-rhythm-sectionrepeatspan-ts-sectionrepeatlastmeasure",
+    "name": "sectionRepeatLastMeasure",
+    "path": "src/shared/rhythm/sectionRepeatSpan.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "rhythm-core",
+    "description": "Last measure index the repeat covers, expansions included.",
+    "tags": [
+      "rhythm"
+    ],
+    "appsUsing": [
+      "drums"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-rhythm-sectionrepeatspan-ts-sectionrepeatmeasurespan",
+    "name": "sectionRepeatMeasureSpan",
+    "path": "src/shared/rhythm/sectionRepeatSpan.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "rhythm-core",
+    "description": "How many measures a section repeat occupies once its expansions are counted. `repeatCount` is TOTAL PLAYS — `types.ts` says so outright: \"How many times to play (2 = play twice total)\". Three separate places computed the span as `length * (repeatCount + 1)` with the comment \"Source + Repeats\", which counts one copy too many. The owner hit it with: …|: D-S-TKT-D-TKS-TK| D-S-TKT-DKTKS-TK:|x2 |: D-D-TKT-D-TKT-TK| D-D-TKT-D-D-S---:| The `x2` section is measures 4-5, expanded to 6-7 — four measures. The old arithmetic claimed six, so measures 8 and 9 (the whole following section) were inside the repeat's span, got marked as expansion ghosts, and vanished from the render. Hence \"everything after the x2 is missing\". One function, because the bug was the duplication as much as the arithmetic.",
+    "tags": [
+      "rhythm"
+    ],
+    "appsUsing": [
+      "drums"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-rhythm-timesignatureutils-ts-formatbeatgrouping",
     "name": "formatBeatGrouping",
     "path": "src/shared/rhythm/timeSignatureUtils.ts",

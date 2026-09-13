@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import type { TimeSignature, ParsedRhythm, RepeatMarker } from '../types';
+import { isSectionRepeatGhostMeasure } from '../../shared/rhythm/sectionRepeatSpan';
 import { notationToGrid, gridToNotation, getLinkedPositions, type SequencerCell } from '../utils/sequencerUtils';
 import { getSixteenthsPerMeasure, getDefaultBeatGrouping, getBeatGroupingInSixteenths } from '../utils/timeSignatureUtils';
 import DrumSymbolIcon from './DrumSymbolIcon';
@@ -244,13 +245,9 @@ const RhythmSequencer: React.FC<RhythmSequencerProps> = ({
           if (r.type === 'measure') {
             if (r.repeatMeasures.includes(measureIdx)) isGhost = true;
           } else if (r.type === 'section') {
-            if (measureIdx > r.endMeasure) {
-              // Check if it falls within the repeats of this section
-              const len = r.endMeasure - r.startMeasure + 1;
-              const totalLen = len * (r.repeatCount + 1); // Source + Repeats
-              const relative = measureIdx - r.startMeasure;
-              if (relative < totalLen) isGhost = true;
-            }
+            // `repeatCount` is total plays, so the span is length * repeatCount. Computing
+            // length * (repeatCount + 1) here swallowed the measures of the NEXT section.
+            if (isSectionRepeatGhostMeasure(measureIdx, r)) isGhost = true;
           }
         }
       }
@@ -339,12 +336,7 @@ const RhythmSequencer: React.FC<RhythmSequencerProps> = ({
                 if (r.type === 'measure') {
                   if (r.repeatMeasures.includes(measureIdx)) isGhost = true;
                 } else if (r.type === 'section') {
-                  if (measureIdx > r.endMeasure) {
-                    const len = r.endMeasure - r.startMeasure + 1;
-                    const totalLen = len * (r.repeatCount + 1);
-                    const relative = measureIdx - r.startMeasure;
-                    if (relative < totalLen) isGhost = true;
-                  }
+                  if (isSectionRepeatGhostMeasure(measureIdx, r)) isGhost = true;
                 }
               }
             }
