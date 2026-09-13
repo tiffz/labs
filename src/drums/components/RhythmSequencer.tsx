@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import type { TimeSignature, ParsedRhythm, RepeatMarker } from '../types';
-import { isSectionRepeatGhostMeasure } from '../../shared/rhythm/sectionRepeatSpan';
+import {
+  isSectionRepeatGhostMeasure,
+  sectionRepeatGhostMeasureCount,
+} from '../../shared/rhythm/sectionRepeatSpan';
 import { notationToGrid, gridToNotation, getLinkedPositions, type SequencerCell } from '../utils/sequencerUtils';
 import { getSixteenthsPerMeasure, getDefaultBeatGrouping, getBeatGroupingInSixteenths } from '../utils/timeSignatureUtils';
 import DrumSymbolIcon from './DrumSymbolIcon';
@@ -445,10 +448,11 @@ const RhythmSequencer: React.FC<RhythmSequencerProps> = ({
     if (!parsedRhythm.repeats) return hidden;
 
     parsedRhythm.repeats.forEach(repeat => {
-      // FIX Phase 33: Hide ALL ghost measures (repeatCount * blockLength)
+      // Hide the generated copies only. `repeatCount` is total plays, so a block played n times
+      // generates n-1 copies; `blockLength * repeatCount` counted the written block as a ghost and
+      // hid that many measures of the following section.
       if (repeat.type === 'section' && repeat.repeatCount > 0) {
-        const blockLength = repeat.endMeasure - repeat.startMeasure + 1;
-        const measuresToHide = blockLength * repeat.repeatCount;
+        const measuresToHide = sectionRepeatGhostMeasureCount(repeat);
         const startHiddenIndex = repeat.endMeasure + 1;
 
         for (let i = 0; i < measuresToHide; i++) {

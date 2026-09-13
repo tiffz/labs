@@ -46,3 +46,21 @@ export function isMeasureInSectionRepeat(measureIndex: number, repeat: SectionRe
 export function isSectionRepeatGhostMeasure(measureIndex: number, repeat: SectionRepeat): boolean {
   return measureIndex > repeat.endMeasure && isMeasureInSectionRepeat(measureIndex, repeat);
 }
+
+/**
+ * How many measures after the written block are expansion ghosts.
+ *
+ * `repeatCount` is total plays, so a block written once and played `n` times generates `n - 1`
+ * copies. The renderer hid `blockLength * repeatCount` measures starting after the block —
+ * counting the written block itself as a ghost — and so ate that many measures of whatever came
+ * next. Its comment stated the wrong premise outright: "(x3) => Source + 3 Ghosts. Total 4."
+ *
+ * This is the fourth site of the same off-by-one. The first three said `repeatCount + 1`; this one
+ * said `* repeatCount` where it meant `* (repeatCount - 1)`, which is why grepping for the
+ * expression missed it. Ask this function instead of doing the arithmetic.
+ */
+export function sectionRepeatGhostMeasureCount(repeat: SectionRepeat): number {
+  const length = repeat.endMeasure - repeat.startMeasure + 1;
+  if (length <= 0) return 0;
+  return sectionRepeatMeasureSpan(repeat) - length;
+}

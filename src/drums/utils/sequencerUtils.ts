@@ -10,6 +10,7 @@
  */
 
 import { parsePatternToNotes } from './notationHelpers';
+import { sectionRepeatMeasureSpan } from '../../shared/rhythm/sectionRepeatSpan';
 import { getSixteenthsPerMeasure } from './timeSignatureUtils';
 // Importing from shared parser which we just exported
 import { preprocessRepeats, parseNotation } from '../../shared/rhythm/rhythmParser';
@@ -440,7 +441,10 @@ export function collapseRepeats(slices: string[], existingRepeats?: RepeatMarker
 
         // Advance past all instances (Total Count)
         // Source + (count-1) Repeats = count blocks.
-        i += blockLength * repeatCount;
+        // Span = written block + its generated copies. Correct here, but routed through the
+        // shared helper so every piece of section-repeat arithmetic has one definition — this
+        // off-by-one has now been fixed in five separate places.
+        i += sectionRepeatMeasureSpan(sectionRepeat);
         continue;
       }
       // If invalid, fall through to single measure logic (Divergence!)
