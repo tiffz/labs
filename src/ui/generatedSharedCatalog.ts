@@ -34275,6 +34275,31 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-utils-labscrashlog-ts-isstalechunkloadmessage",
+    "name": "isStaleChunkLoadMessage",
+    "path": "src/shared/utils/labsCrashLog.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Does this message mean \"a lazy chunk 404'd because a deploy replaced it\"? Vite fires `vite:preloadError` for imports routed through its preload helper, but a dynamic `import()` that fails outside that path just rejects. The owner's crash log caught exactly that: `Failed to fetch dynamically imported module: js/PerformancesScreen-<hash>.js` recorded with `source: 'unhandled-rejection'`, not `'window-error'` — so the reload guard never ran and the screen broke instead. Each engine words it differently, hence the list.",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [
+      "cats",
+      "chords",
+      "corp",
+      "drums",
+      "forms",
+      "story",
+      "ui",
+      "words",
+      "zines"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-utils-labscrashlog-ts-labscrashlogentry",
     "name": "LabsCrashLogEntry",
     "path": "src/shared/utils/labsCrashLog.ts",
