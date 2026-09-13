@@ -220,6 +220,26 @@ export function shouldReloadForPreloadError(
   return now - lastReloadAt >= cooldownMs;
 }
 
+/**
+ * Does this message mean "a lazy chunk 404'd because a deploy replaced it"?
+ *
+ * Vite fires `vite:preloadError` for imports routed through its preload helper, but a dynamic
+ * `import()` that fails outside that path just rejects. The owner's crash log caught exactly that:
+ * `Failed to fetch dynamically imported module: js/PerformancesScreen-<hash>.js` recorded with
+ * `source: 'unhandled-rejection'`, not `'window-error'` — so the reload guard never ran and the
+ * screen broke instead. Each engine words it differently, hence the list.
+ */
+export function isStaleChunkLoadMessage(message: string | undefined | null): boolean {
+  const m = (message ?? '').toLowerCase();
+  if (!m) return false;
+  return (
+    m.includes('failed to fetch dynamically imported module') ||
+    m.includes('error loading dynamically imported module') ||
+    m.includes('importing a module script failed') || // Safari
+    m.includes('unable to preload css')
+  );
+}
+
 function preloadErrorMessage(event: Event): string {
   const payload = (event as Event & { payload?: unknown }).payload;
   if (payload instanceof Error) return payload.message;
@@ -235,28 +255,37 @@ function preloadErrorMessage(event: Event): string {
  * genuinely-missing asset or an offline device falls through to the error boundary instead of
  * reloading forever.
  */
+/**
+ * Reload once to pick up the new chunk names. Returns true when the reload was taken, so callers
+ * can suppress the rethrow that would otherwise trip the error boundary first.
+ *
+ * Loop-guarded via sessionStorage: a genuinely-missing asset or an offline device falls through to
+ * the error boundary rather than reloading forever.
+ */
+function tryReloadForStaleChunk(): boolean {
+  const now = Date.now();
+  let lastReloadAt: number | null = null;
+  try {
+    const raw = sessionStorage.getItem(PRELOAD_RELOAD_KEY);
+    lastReloadAt = raw == null ? null : Number(raw);
+  } catch {
+    lastReloadAt = null;
+  }
+  if (!shouldReloadForPreloadError(now, lastReloadAt)) return false;
+  try {
+    sessionStorage.setItem(PRELOAD_RELOAD_KEY, String(now));
+  } catch {
+    /* sessionStorage unavailable (private mode) — reload anyway */
+  }
+  window.location.reload();
+  return true;
+}
+
 function installDynamicImportReloadGuard(appId: string): void {
   window.addEventListener('vite:preloadError', (event) => {
-    const now = Date.now();
-    let lastReloadAt: number | null = null;
-    try {
-      const raw = sessionStorage.getItem(PRELOAD_RELOAD_KEY);
-      lastReloadAt = raw == null ? null : Number(raw);
-    } catch {
-      lastReloadAt = null;
-    }
-
     void appendLabsCrashLogEntry({ appId, message: preloadErrorMessage(event), source: 'window-error' });
-
-    if (!shouldReloadForPreloadError(now, lastReloadAt)) return; // already retried — let it surface
     // Prevent Vite from rethrowing (which would also trip the error boundary) before we reload.
-    event.preventDefault();
-    try {
-      sessionStorage.setItem(PRELOAD_RELOAD_KEY, String(now));
-    } catch {
-      /* sessionStorage unavailable (private mode) — reload anyway */
-    }
-    window.location.reload();
+    if (tryReloadForStaleChunk()) event.preventDefault();
   });
 }
 
@@ -290,5 +319,11 @@ export function installLabsCrashHandlers(appId: string): void {
       stack,
       source: 'unhandled-rejection',
     });
+
+    // A stale lazy chunk can arrive here instead of via `vite:preloadError`, and this handler used
+    // to only write it down. Same deploy, same fix, same loop guard.
+    if (isStaleChunkLoadMessage(message)) {
+      if (tryReloadForStaleChunk()) event.preventDefault();
+    }
   });
 }
