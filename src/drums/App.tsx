@@ -111,6 +111,12 @@ const App: React.FC = () => {
   }, [notation, timeSignature]);
 
   // Use rhythm selection hook
+  /**
+   * Mirrors `isPlaying` for `useRhythmSelection`, which runs before the playback hook exists.
+   * While a loop is playing, an outside click must not clear the selection describing it.
+   */
+  const isPlayingRef = useRef(false);
+
   const {
     selection,
     selectionDuration,
@@ -127,6 +133,8 @@ const App: React.FC = () => {
     noteDisplayRef: noteDisplayRef as React.RefObject<HTMLElement>,
     measureSourceMapping: parsedRhythm.measureSourceMapping,
     parsedRhythm,
+    // Declared above the playback hook because `isPlaying` does not exist yet here; mirrored below.
+    isPlayingRef,
   });
 
   // Recognize rhythm pattern
@@ -170,6 +178,9 @@ const App: React.FC = () => {
     metronomePreferences,
   });
 
+  useEffect(() => {
+    isPlayingRef.current = isPlaying;
+  }, [isPlaying]);
   usePlaybackWakeLock(isPlaying);
 
   const handleInsertPattern = useCallback((pattern: string) => {

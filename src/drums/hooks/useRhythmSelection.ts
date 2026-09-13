@@ -5,7 +5,10 @@ import { expandSimileMeasure } from '../utils/notationUtils';
 import { parseRhythm, findMeasureIndexAtTick, findMeasureIndexFromVisualTick } from '../../shared/rhythm/rhythmParser';
 // getSixteenthsPerMeasure removed (unused)
 import type { TimeSignature, ParsedRhythm } from '../types';
-import { isDrumsSelectionProtectedTarget } from '../utils/drumsSelectionProtectedZones';
+import {
+    isDrumsSelectionProtectedTarget,
+    shouldClearDrumsSelectionOnOutsideClick,
+} from '../utils/drumsSelectionProtectedZones';
 
 interface UseRhythmSelectionProps {
     notation: string;
@@ -15,6 +18,11 @@ interface UseRhythmSelectionProps {
     noteDisplayRef: RefObject<HTMLElement>;
     measureSourceMapping?: Record<number, number>;
     parsedRhythm: ParsedRhythm;
+    /**
+     * Live playback flag. A ref because `isPlaying` is declared after this hook in `App`, and
+     * because the listener below must read the current value rather than a captured one.
+     */
+    isPlayingRef?: RefObject<boolean>;
 }
 
 export interface SelectionState {
@@ -31,6 +39,7 @@ export function useRhythmSelection({
     setNotationWithoutHistory,
     noteDisplayRef,
     parsedRhythm,
+    isPlayingRef,
 }: UseRhythmSelectionProps) {
     const [selection, setSelectionState] = useState<SelectionState>({
         startCharPosition: null, // String index
@@ -94,18 +103,13 @@ export function useRhythmSelection({
     // Handling global click to clear selection
     useEffect(() => {
         const handleGlobalClick = (e: MouseEvent) => {
-            // Only process if there's an active selection
-            if (selection.startCharPosition === null) return;
-
-            if (isDrumsSelectionProtectedTarget(e.target)) {
-                return;
-            }
-
-            if (noteDisplayRef.current?.contains(e.target as Node)) {
-                return;
-            }
-
-            clearSelection();
+            const shouldClear = shouldClearDrumsSelectionOnOutsideClick({
+                hasSelection: selection.startCharPosition !== null,
+                isPlaying: isPlayingRef?.current === true,
+                targetProtected: isDrumsSelectionProtectedTarget(e.target),
+                insideNoteDisplay: noteDisplayRef.current?.contains(e.target as Node) === true,
+            });
+            if (shouldClear) clearSelection();
         };
 
         const handleGlobalKeyDown = (e: KeyboardEvent) => {
@@ -137,7 +141,7 @@ export function useRhythmSelection({
             document.removeEventListener('mousedown', handleGlobalClick);
             document.removeEventListener('keydown', handleGlobalKeyDown, true);
         };
-    }, [selection.startCharPosition, clearSelection, noteDisplayRef]);
+    }, [selection.startCharPosition, clearSelection, noteDisplayRef, isPlayingRef]);
 
     // Handle replacing selected notes with a pattern
     const handleReplaceSelection = useCallback((pattern: string) => {
