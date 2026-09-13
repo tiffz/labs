@@ -154,4 +154,27 @@ test.describe('Darbuka Rhythm Trainer - User Interactions', () => {
     await expect(page.locator('.error-message')).toHaveCount(0);
     await expect(page.locator('.empty-state')).toHaveCount(0);
   });
+
+  test('a section repeat does not eat the measures after it', async ({ page }) => {
+    /*
+     * The owner's rhythm, reported twice. The first fix corrected the span arithmetic in the parser
+     * and sequencer but missed the renderer, which had the same off-by-one written differently
+     * (`blockLength * repeatCount` instead of `* (repeatCount - 1)`) and so kept hiding her final
+     * section. Rendered here rather than unit-tested only, because that is where it survived.
+     *
+     * 10 measures parse; the x2 block generates 2 ghosts, so 8 staves must be drawn. Against the
+     * old renderer this reports 6.
+     */
+    const rhythm =
+      'D-D-TKT-D-TKT-TK|x3 D-D-TKT-D-TKT---| |: D-S-TKT-D-TKS-TK| D-S-TKT-DKTKS-TK:|x2\n|: D-D-TKT-D-TKT-TK| D-D-TKT-D-D-S---:|';
+    await page.goto(`/drums/?rhythm=${encodeURIComponent(rhythm)}&bpm=80`);
+
+    const staff = page.locator('.vexflow-container svg').first();
+    await expect(staff).toBeVisible({ timeout: 20000 });
+    await page.locator('.vexflow-container svg text').first().waitFor({ timeout: 20000 });
+
+    await expect
+      .poll(async () => page.locator('.vexflow-container svg .vf-stave').count(), { timeout: 10000 })
+      .toBe(8);
+  });
 });

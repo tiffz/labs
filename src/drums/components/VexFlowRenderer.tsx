@@ -1,4 +1,5 @@
 import React, { useEffect, useLayoutEffect, useRef, useState, useCallback } from 'react';
+import { sectionRepeatGhostMeasureCount } from '../../shared/rhythm/sectionRepeatSpan';
 import { Renderer, Stave, StaveNote, Voice, Formatter, Beam, Dot, BarlineType } from 'vexflow';
 import type { ParsedRhythm, Note, DrumSound, TimeSignature, RepeatMarker, SectionRepeat } from '../types';
 import { drawDrumSymbol } from '../assets/drumSymbols';
@@ -574,13 +575,11 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
       const hiddenMeasureIndices = new Set<number>();
       if (rhythm.repeats) {
         rhythm.repeats.forEach(repeat => {
-          // FIX Phase 32: Unrolled Section Repeats logic update.
-          // repeatCount (from Parser) matches number of GHOST blocks generated.
-          // (x3) => Source + 3 Ghosts. Total 4.
-          // We must hide ALL ghosts.
+          // Hide the expansion ghosts, and only those. `repeatCount` is TOTAL PLAYS, so a block
+          // played n times generates n-1 copies — the old `blockLength * repeatCount` counted the
+          // written block as a ghost too and hid that many measures of the FOLLOWING section.
           if (repeat.type === 'section' && repeat.repeatCount > 0) {
-            const blockLength = repeat.endMeasure - repeat.startMeasure + 1;
-            const measuresToHide = blockLength * repeat.repeatCount;
+            const measuresToHide = sectionRepeatGhostMeasureCount(repeat);
             const startHiddenIndex = repeat.endMeasure + 1;
 
             for (let i = 0; i < measuresToHide; i++) {
