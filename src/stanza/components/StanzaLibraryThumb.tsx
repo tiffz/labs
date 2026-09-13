@@ -11,14 +11,19 @@
  *      song rows, audio-only files, decode failure).
  *
  * Object-URL lifecycle note (load-bearing):
- *   - We deliberately omit the `useEffect` cleanup that would call `URL.revokeObjectURL`.
- *     Under React Strict Mode, that cleanup runs synchronously while the freshly-mounted
- *     `<img>` / `<video>` still references `u`, which paints a broken image.
- *   - Instead we revoke the *previous* URL inside the next effect run (`setUrl(prev =>
- *     { revoke(prev); return next })`), then leak the final URL into GC (~negligible).
+ *   - Leases come from `useLabsObjectUrl`, which refcounts by content key and defers the revoke.
+ *   - This file used to skip the unmount cleanup entirely, because under Strict Mode revoking
+ *     synchronously invalidates a URL the freshly-remounted `<img>` / `<video>` still references
+ *     and paints broken. That diagnosis was right; the conclusion — "leak the final URL into GC
+ *     (~negligible)" — was not. An object URL is a strong reference to its Blob and
+ *     `revokeObjectURL` is the only release, so the video path below pinned an ENTIRE VIDEO per
+ *     unmounted card, for the lifetime of the document, accumulating as the library was browsed.
+ *   - Deferring the revoke solves the same Strict Mode problem without leaking: the remount
+ *     re-acquires inside the grace window and cancels the pending revoke.
  */
 
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useLabsObjectUrl } from '../../shared/utils/useLabsObjectUrl';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import { stanzaDb, type StanzaSong } from '../db/stanzaDb';
@@ -32,17 +37,9 @@ interface StanzaLibraryJpegThumbProps {
 }
 
 function StanzaLibraryJpegThumb({ songId, blob, onInvalidate }: StanzaLibraryJpegThumbProps) {
+  // Content key, not object identity: a Dexie live query emits a fresh Blob for unchanged bytes.
   const thumbKey = `${songId}:${blob.size}:${blob.type}`;
-  const [url, setUrl] = useState(() => URL.createObjectURL(blob));
-  useLayoutEffect(() => {
-    const u = URL.createObjectURL(blob);
-    setUrl((prev) => {
-      if (prev) URL.revokeObjectURL(prev);
-      return u;
-    });
-    // No returned cleanup: see file-header note about Strict Mode.
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- `blob` reference churns; `thumbKey` encodes identity
-  }, [thumbKey]);
+  const url = useLabsObjectUrl(thumbKey, blob);
 
   const imgRef = useRef<HTMLImageElement | null>(null);
 
@@ -73,17 +70,9 @@ interface StanzaLibraryVideoPosterThumbProps {
 
 function StanzaLibraryVideoPosterThumb({ songId, videoBlob }: StanzaLibraryVideoPosterThumbProps) {
   const [failed, setFailed] = useState(false);
+  // The expensive lease: this URL holds the whole video blob alive until it is revoked.
   const posterKey = `${songId}:${videoBlob.size}:${videoBlob.type}`;
-  const [url, setUrl] = useState(() => URL.createObjectURL(videoBlob));
-  useLayoutEffect(() => {
-    const u = URL.createObjectURL(videoBlob);
-    setUrl((prev) => {
-      if (prev) URL.revokeObjectURL(prev);
-      return u;
-    });
-    // No returned cleanup: see file-header note about Strict Mode.
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- `videoBlob` reference churns; `posterKey` encodes identity
-  }, [posterKey]);
+  const url = useLabsObjectUrl(posterKey, videoBlob);
   useEffect(() => {
     setFailed(false);
   }, [songId, videoBlob.size, videoBlob.type]);

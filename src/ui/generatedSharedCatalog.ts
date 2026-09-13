@@ -34664,6 +34664,97 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-utils-labsobjecturlregistry-ts-acquirelabsobjecturl",
+    "name": "acquireLabsObjectUrl",
+    "path": "src/shared/utils/labsObjectUrlRegistry.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Take a lease on an object URL for `blob`, keyed by `key`. `key` must identify the blob's *content* (e.g. `${id}:${size}:${type}`) rather than the object reference, because a Dexie live query hands back a fresh Blob object for unchanged bytes on every emission — keying on identity would mint a new URL per render.",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-utils-labsobjecturlregistry-ts-labs-object-url-revoke-grace-ms",
+    "name": "LABS_OBJECT_URL_REVOKE_GRACE_MS",
+    "path": "src/shared/utils/labsObjectUrlRegistry.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "How long a zero-ref URL survives before being revoked. Only needs to outlast React's synchronous Strict-Mode remount and any single paint; it is not a cache TTL. Keep it short — this window is exactly how long a blob outlives its last viewer.",
+    "tags": [
+      "utils",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-utils-labsobjecturlregistry-ts-labsobjecturlleasecount",
+    "name": "labsObjectUrlLeaseCount",
+    "path": "src/shared/utils/labsObjectUrlRegistry.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Number of URLs currently held. A session that browses and returns must not grow this.",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-utils-labsobjecturlregistry-ts-labsobjecturlrefcount",
+    "name": "labsObjectUrlRefCount",
+    "path": "src/shared/utils/labsObjectUrlRegistry.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Live lease count for a key — for tests and leak assertions.",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-utils-labsobjecturlregistry-ts-releaselabsobjecturl",
+    "name": "releaseLabsObjectUrl",
+    "path": "src/shared/utils/labsObjectUrlRegistry.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Drop one lease. The URL is revoked once nothing holds it and the grace period elapses.",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-utils-labsobjecturlregistry-ts-resetlabsobjecturlregistryfortests",
+    "name": "resetLabsObjectUrlRegistryForTests",
+    "path": "src/shared/utils/labsObjectUrlRegistry.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Test-only: drop everything without waiting for timers.",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-utils-labspdffromcanvas-ts-createpdfblobfromcanvas",
     "name": "createPdfBlobFromCanvas",
     "path": "src/shared/utils/labsPdfFromCanvas.ts",
@@ -35449,6 +35540,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "words"
     ],
     "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-utils-uselabsobjecturl-ts-uselabsobjecturl",
+    "name": "useLabsObjectUrl",
+    "path": "src/shared/utils/useLabsObjectUrl.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "A shared, refcounted object URL for `blob`, released when the last holder unmounts. Replaces the hand-rolled \"create in `useLayoutEffect`, revoke the previous one, leak the last\" pattern that `StanzaLibraryThumb` documented as load-bearing. It is safe under Strict Mode for a different reason: the registry defers the revoke, so the immediate unmount/remount re-acquires and cancels it. Nothing is skipped, so nothing is leaked. `key` must describe the blob's CONTENT (`${id}:${size}:${type}`), not its object identity — a Dexie live query emits a fresh Blob object for unchanged bytes, and keying on identity would mint a URL per render.",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
     "demoId": null
   },
   {
