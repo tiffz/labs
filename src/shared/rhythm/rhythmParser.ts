@@ -1,5 +1,6 @@
 
 // ... (Imports and Interfaces matching previous full file)
+import { sectionRepeatMeasureSpan } from './sectionRepeatSpan';
 import type {
   Note,
   Measure,
@@ -444,8 +445,7 @@ export function detectIdenticalMeasures(measures: Measure[], existingRepeats: Re
   const coveredMeasures = new Set<number>();
   for (const repeat of existingRepeats) {
     if (repeat.type === 'section') {
-      const length = repeat.endMeasure - repeat.startMeasure + 1;
-      const totalMeasures = length * (repeat.repeatCount + 1); // Source + Repeats
+      const totalMeasures = sectionRepeatMeasureSpan(repeat);
       for (let i = 0; i < totalMeasures; i++) {
         coveredMeasures.add(repeat.startMeasure + i);
       }
