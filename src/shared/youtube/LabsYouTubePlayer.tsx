@@ -154,11 +154,21 @@ const LabsYouTubePlayer: React.FC<LabsYouTubePlayerProps> = ({
                     /* iframe not ready / torn down */
                   }
                 },
+                /**
+                 * NaN when the player cannot say — never 0.
+                 *
+                 * Returning 0 on failure made a dead controller indistinguishable from a playhead
+                 * at the very start of the track, and `Number.isFinite(0)` is true, so every
+                 * consumer accepted it. In Stanza that meant section looping compared a bogus 0
+                 * against the section end, never crossed it, and played on for bars. Callers must
+                 * treat a non-finite reading as "unknown", which they already do via `isFinite`.
+                 */
                 getCurrentTime: () => {
                   try {
-                    return player.getCurrentTime() || 0;
+                    const t = player.getCurrentTime();
+                    return typeof t === 'number' && Number.isFinite(t) ? t : Number.NaN;
                   } catch {
-                    return 0;
+                    return Number.NaN;
                   }
                 },
                 setPlaybackRate: (rate: number) => {

@@ -58,6 +58,8 @@ export function useStanzaTransportLoop(opts: UseStanzaTransportLoopOptions): {
 } {
   const { refsRef, readLiveTransportTime, getLocalMainMedia, setPlayback } = opts;
   const loopWrapPrevTimeRef = useRef<number | null>(null);
+  /** One warn per stall episode, reset when the clock recovers. */
+  const loggedClockStallRef = useRef(false);
   const loopWrapStallFramesRef = useRef(0);
   const loopWrapGuardRef = useRef(createStanzaLoopWrapGuard());
   /**
@@ -313,6 +315,25 @@ export function useStanzaTransportLoop(opts: UseStanzaTransportLoopOptions): {
         }
         loopWrapPrevTimeRef.current = tickResult.nextPreviousTransportTime;
         loopWrapStallFramesRef.current = tickResult.nextStalledFrames;
+
+        /*
+         * The section-loop clock stopped being believable. Decisions are already suppressed inside
+         * the tick; this is the breadcrumb, logged once per stall so a practice session cannot
+         * flood the console. The prod crash log showed the YouTube controller degrading
+         * (`getPlayerState is not a function`) with nothing recording that playback had gone blind,
+         * which is why this took a report to find rather than a log to read.
+         */
+        if (tickResult.transportClockStalled) {
+          if (!loggedClockStallRef.current) {
+            loggedClockStallRef.current = true;
+            console.warn(
+              '[stanza] section-loop transport clock stopped advancing; loop bounds are unenforceable until it recovers',
+              { youtube: refs.isYoutubeRef.current, lastBelievedTime: loopWrapPrevTimeRef.current },
+            );
+          }
+        } else {
+          loggedClockStallRef.current = false;
+        }
 
         if (tickResult.seekBeforeLoopStart != null) {
           refs.seekUnifiedRef.current(tickResult.seekBeforeLoopStart, { flushPlaybackState: true });
