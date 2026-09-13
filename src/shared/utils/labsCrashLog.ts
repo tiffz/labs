@@ -3,6 +3,12 @@
  * Optional production beacon when `VITE_LABS_CRASH_BEACON_URL` is set — see docs/adr/0016-client-crash-telemetry.md
  */
 
+import {
+  formatHeapPressureMessage,
+  readLabsHeapSample,
+  shouldReportHeapPressure,
+} from './labsHeapPressure';
+
 export type LabsCrashLogEntry = {
   id: string;
   appId: string;
@@ -289,10 +295,42 @@ function installDynamicImportReloadGuard(appId: string): void {
   });
 }
 
+/** Heap sampling cadence. Slow on purpose: this watches a leak, not a frame budget. */
+const HEAP_SAMPLE_INTERVAL_MS = 30_000;
+
+/**
+ * Record heap pressure while a page still exists to record it.
+ *
+ * Everything here is best-effort and swallowed. Instrumentation that can throw would be adding a
+ * crash to an app being diagnosed for crashing.
+ */
+function installHeapPressureWatch(appId: string): void {
+  let lastReportedRatio: number | null = null;
+  const sampleOnce = () => {
+    try {
+      const sample = readLabsHeapSample(typeof performance === 'undefined' ? undefined : performance);
+      if (!shouldReportHeapPressure(sample, lastReportedRatio) || !sample) return;
+      lastReportedRatio = sample.ratio;
+      void appendLabsCrashLogEntry({
+        appId,
+        message: formatHeapPressureMessage(sample),
+        source: 'window-error',
+      });
+    } catch {
+      /* never let the watcher be the thing that breaks */
+    }
+  };
+  // `performance.memory` is Chrome-only; bail before arming a timer that can never report.
+  if (readLabsHeapSample(typeof performance === 'undefined' ? undefined : performance) == null) return;
+  window.setInterval(sampleOnce, HEAP_SAMPLE_INTERVAL_MS);
+  sampleOnce();
+}
+
 export function installLabsCrashHandlers(appId: string): void {
   if (typeof window === 'undefined') return;
 
   installDynamicImportReloadGuard(appId);
+  installHeapPressureWatch(appId);
 
   if (import.meta.env.DEV) {
     (window as Window & { __labsExportCrashLog?: () => Promise<string> }).__labsExportCrashLog =

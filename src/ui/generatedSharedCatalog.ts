@@ -34503,6 +34503,99 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-utils-labsheappressure-ts-formatheappressuremessage",
+    "name": "formatHeapPressureMessage",
+    "path": "src/shared/utils/labsHeapPressure.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "One line that says how bad it is and what was happening, without needing a heap dump to read.",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-utils-labsheappressure-ts-labs-heap-rewarn-step",
+    "name": "LABS_HEAP_REWARN_STEP",
+    "path": "src/shared/utils/labsHeapPressure.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Re-warn only after climbing this much further, so one session cannot flood 50 log slots.",
+    "tags": [
+      "utils",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-utils-labsheappressure-ts-labs-heap-warn-ratio",
+    "name": "LABS_HEAP_WARN_RATIO",
+    "path": "src/shared/utils/labsHeapPressure.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Warn here; Chrome tends to kill somewhere above this, with little warning.",
+    "tags": [
+      "utils",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-utils-labsheappressure-ts-labsheapsample",
+    "name": "LabsHeapSample",
+    "path": "src/shared/utils/labsHeapPressure.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Non-standard Chrome heap counters.",
+    "tags": [
+      "utils",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-utils-labsheappressure-ts-readlabsheapsample",
+    "name": "readLabsHeapSample",
+    "path": "src/shared/utils/labsHeapPressure.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Non-standard Chrome heap counters.",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-utils-labsheappressure-ts-shouldreportheappressure",
+    "name": "shouldReportHeapPressure",
+    "path": "src/shared/utils/labsHeapPressure.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Should this sample be written down, given the worst already reported? Reports on first crossing, then only after a further , so a session that sits just over the line writes one entry rather than hundreds — the crash log keeps 50, and flooding it would evict the crash we are trying to read.",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-utils-labspdffromcanvas-ts-createpdfblobfromcanvas",
     "name": "createPdfBlobFromCanvas",
     "path": "src/shared/utils/labsPdfFromCanvas.ts",
