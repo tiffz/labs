@@ -33,6 +33,21 @@ For **multi-bug / upgrade / spot-check** sessions, optimize for wall-clock and t
 9. **Scoped tests first** — touched-file Vitest/e2e, then one `presubmit`. Do not babysit unrelated dirty-tree failures.
 10. **Check for parallel-agent ownership before starting** — in a shared / multi-worktree setup (a coordinator running parallel sessions, a `dev-integration` trunk, sibling `.claude/worktrees/*`), run `git worktree list`, `git branch -a`, and `git log dev-integration` **first**. If a branch is already checked out in another worktree or a fix already sits on the trunk, it is owned — do not duplicate it. Duplicating owned work (a bug fix, an audit, a PR conflict-resolve) is pure waste and can collide. Root cause class: `parallel-worktree-duplication`.
 11. **A broken dev environment is a bug to fix, not to route around.** If a route freezes / errors / won't render for you, do not offload the verification to the user as "manual testing" — the same breakage hits them. Fix the dev-env issue (or spike a lighter repro path), then verify yourself. Handing a user a checklist of manual-verify tasks to work around your broken dev loop is a process failure. Root cause class: `verification-offloaded`.
-12. **Codify on second occurrence** of the same root-cause class in-session (test/doc/rule) — see [`docs/CONTINUOUS_PROCESS_IMPROVEMENT.md`](../../docs/CONTINUOUS_PROCESS_IMPROVEMENT.md) § Session throughput.
+12. **Own port 5173 before trusting a local e2e run.** Playwright reuses an existing dev server
+    (`reuseExistingServer: !CI`), so a server left running from ANOTHER worktree silently serves its
+    code instead of yours. One had been up since three weeks prior; several "verified" results in
+    that session were measuring a different checkout. Check `lsof -nP -iTCP:5173 -sTCP:LISTEN` and
+    the owning process's cwd, then kill it. **When a result looks too convenient, sabotage the
+    source and re-run** — a test that still passes with the string it asserts deliberately broken is
+    not testing your code. Root cause class: `stale-server-verification`.
+13. **Fix duplicated invariants by searching the CONCEPT, not the expression.** The same off-by-one
+    lived in five places; grepping `repeatCount + 1` found four, and the fifth said
+    `* repeatCount` where it meant `* (repeatCount - 1)`. The user reported the same bug twice
+    because of it. Grep every use of the symbol, then move the rule into one function so a sixth
+    copy cannot appear. Root cause class: `duplicated-invariant`.
+14. **A user-visible bug needs a test at the layer the user sees.** Unit tests were green while
+    production stayed broken, because the bug lived in the renderer and the tests covered the
+    parser. Reproduce in the browser at the reported URL before claiming a visual bug is fixed.
+15. **Codify on second occurrence** of the same root-cause class in-session (test/doc/rule) — see [`docs/CONTINUOUS_PROCESS_IMPROVEMENT.md`](../../docs/CONTINUOUS_PROCESS_IMPROVEMENT.md) § Session throughput.
 
 Root cause classes: `warm-state-optimisation` · `local-ci-gate-drift` (a blocking CI job with no presubmit counterpart — guarded by `src/shared/ciPresubmitParity.test.ts`) · `gate-discovered-by-failing` · `session-thrash` when the same bug class is rediscovered without a spike.
