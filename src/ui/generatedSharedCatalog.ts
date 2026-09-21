@@ -24456,6 +24456,37 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-music-latenotegate-ts-isnotestillscheduleable",
+    "name": "isNoteStillScheduleable",
+    "path": "src/shared/music/lateNoteGate.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Is this note still early enough to schedule, rather than already overdue?",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-latenotegate-ts-note-late-skip-sec",
+    "name": "NOTE_LATE_SKIP_SEC",
+    "path": "src/shared/music/lateNoteGate.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "How far past its moment a note may still be scheduled. Small enough that a burst is impossible, large enough to absorb the sub-millisecond difference between computing `audioTime` and handing it to the instrument.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
     "id": "src-shared-music-lyrics-lyricstochartlayout-ts-chartdocumenttochartlayout",
     "name": "chartDocumentToChartLayout",
     "path": "src/shared/music/lyrics/lyricsToChartLayout.ts",

@@ -1,4 +1,5 @@
 import type { PianoScore, ScoreNote } from '../music/scoreTypes';
+import { isNoteStillScheduleable } from '../music/lateNoteGate';
 import { midiToFrequency, durationToBeats } from '../music/scoreTypes';
 import { PianoSynthesizer, SampledPiano } from './instruments';
 import type { Instrument } from './instruments';
@@ -666,13 +667,20 @@ export class ScorePlaybackEngine {
           const trimmedDur = isNearEnd
             ? durSec + 1.5
             : event.duration > 4 ? durSec : durSec * 0.9;
-          for (const midi of event.pitches) {
-            this.instrument.playNote({
-              frequency: midiToFrequency(midi),
-              startTime: audioTime,
-              duration: trimmedDur,
-              velocity: 0.7 * volume * this.masterVolume,
-            });
+          /*
+           * Drop the note if its moment has passed. Web Audio clamps a past `start()` to "now",
+           * so a backlog from a stalled tick would fire together — playback appears to pause and
+           * then race. The chart path already gates this way; see `lateNoteGate`.
+           */
+          if (isNoteStillScheduleable(audioTime, now)) {
+            for (const midi of event.pitches) {
+              this.instrument.playNote({
+                frequency: midiToFrequency(midi),
+                startTime: audioTime,
+                duration: trimmedDur,
+                velocity: 0.7 * volume * this.masterVolume,
+              });
+            }
           }
         }
       }
