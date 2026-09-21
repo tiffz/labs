@@ -17,6 +17,25 @@ updates:
     ignore:
       - dependency-name: '*'
         update-types: ['version-update:semver-major']
+      # React is peer-capped by @react-three/fiber, which renders through
+      # `react-reconciler` and so pins React's internals tightly:
+      #   peer react@">=19 <19.3" from @react-three/fiber@9.7.0   (9.7.0 = latest stable)
+      # Proposing 19.3 does not fail a test — it fails `npm ci`, so every job dies at
+      # "Setup project" before anything runs, and the whole group PR is blocked by one package.
+      # That was 5 of the last 5 CI failures (issue #178).
+      #
+      # REMOVE THESE FOUR ENTRIES once @react-three/fiber widens its peer range; check with
+      #   npm view @react-three/fiber peerDependencies.react
+      # Nothing else should be added here: an ignore that outlives its reason is how a project
+      # quietly stops receiving updates it could take.
+      - dependency-name: 'react'
+        versions: ['>=19.3']
+      - dependency-name: 'react-dom'
+        versions: ['>=19.3']
+      - dependency-name: '@types/react'
+        versions: ['>=19.3']
+      - dependency-name: '@types/react-dom'
+        versions: ['>=19.3']
 
   # Session BFF worker has its own package.json (Hono + wrangler).
   - package-ecosystem: npm

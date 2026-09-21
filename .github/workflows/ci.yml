@@ -8,6 +8,11 @@ on:
       - '**.tsx'
       - '**.js'
       - '**.jsx'
+      # .mjs was missing, so a PR touching only `scripts/*.mjs` triggered no CI at all — the
+      # required checks never reported and the PR sat BLOCKED forever, unmergeable. Most of this
+      # repo's CI tooling is .mjs.
+      - '**.mjs'
+      - '**.cjs'
       - '**.json'
       - '**.css'
       - '**.md'
@@ -19,7 +24,9 @@ on:
       - '**.gif'
       - 'public/**'
       - 'package*.json'
-      - '.github/workflows/**'
+      # Whole directory, not just workflows: dependabot.yml and composite actions change CI
+      # behaviour too, and a config-only PR that cannot report a check cannot merge.
+      - '.github/**'
       - 'vite.config.*'
       - 'vitest.config.*'
       - 'tsconfig*.json'
@@ -36,6 +43,11 @@ on:
       - '**.tsx'
       - '**.js'
       - '**.jsx'
+      # .mjs was missing, so a PR touching only `scripts/*.mjs` triggered no CI at all — the
+      # required checks never reported and the PR sat BLOCKED forever, unmergeable. Most of this
+      # repo's CI tooling is .mjs.
+      - '**.mjs'
+      - '**.cjs'
       - '**.json'
       - '**.css'
       - '**.md'
@@ -47,7 +59,9 @@ on:
       - '**.gif'
       - 'public/**'
       - 'package*.json'
-      - '.github/workflows/**'
+      # Whole directory, not just workflows: dependabot.yml and composite actions change CI
+      # behaviour too, and a config-only PR that cannot report a check cannot merge.
+      - '.github/**'
       - 'vite.config.*'
       - 'vitest.config.*'
       - 'tsconfig*.json'
