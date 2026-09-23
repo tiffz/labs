@@ -38,6 +38,20 @@ const DEFAULT_CLASS_NAMES: KeyboardClassNames = {
   bassRange: 'shared-pk-bass-range',
 };
 
+/**
+ * Per-key presentation an app layers on top of the plain keyboard: a role class
+ * (e.g. "in this scale", "retuned"), a small badge drawn on the keycap, and a
+ * spoken name replacing the bare note name.
+ */
+export interface PianoKeyDecoration {
+  /** Extra class on the key button. */
+  className?: string;
+  /** Short badge rendered on the keycap, e.g. `½♭`. */
+  badge?: string;
+  /** Replaces the default accessible name for the key. */
+  ariaLabel?: string;
+}
+
 interface OnscreenPianoKeyboardProps {
   octaves?: number[];
   activeNotes?: Set<number>;
@@ -47,6 +61,12 @@ interface OnscreenPianoKeyboardProps {
   showBlackLabels?: boolean;
   highlightBassBelowMidi?: number;
   classNames?: Partial<KeyboardClassNames>;
+  /**
+   * Optional per-key styling hook, called once per rendered key. Keeps
+   * app-specific meaning (scale membership, microtonal retuning) out of this
+   * component while letting apps paint it — see Maqam Playground.
+   */
+  decorateKey?: (midi: number) => PianoKeyDecoration | undefined;
 }
 
 export default function OnscreenPianoKeyboard({
@@ -58,6 +78,7 @@ export default function OnscreenPianoKeyboard({
   showBlackLabels = true,
   highlightBassBelowMidi,
   classNames,
+  decorateKey,
 }: OnscreenPianoKeyboardProps): React.ReactElement {
   const classes: KeyboardClassNames = { ...DEFAULT_CLASS_NAMES, ...classNames };
 
@@ -83,6 +104,7 @@ export default function OnscreenPianoKeyboard({
             const midi = (octave + 1) * 12 + key.midi;
             const active = activeNotes?.has(midi) ?? false;
             const isBass = typeof highlightBassBelowMidi === 'number' && midi < highlightBassBelowMidi;
+            const decoration = decorateKey?.(midi);
             return (
               <button
                 key={midi}
@@ -90,7 +112,9 @@ export default function OnscreenPianoKeyboard({
                   classes.whiteKey,
                   active ? 'active' : '',
                   isBass ? classes.bassRange : '',
+                  decoration?.className ?? '',
                 ].filter(Boolean).join(' ')}
+                aria-label={decoration?.ariaLabel}
                 onPointerDown={(event) => handlePointerDown(event, midi)}
                 onPointerUp={(event) => handlePointerUp(event, midi)}
                 onPointerCancel={(event) => handlePointerUp(event, midi)}
@@ -100,6 +124,9 @@ export default function OnscreenPianoKeyboard({
                 }}
               >
                 {showLabels && <span className={classes.whiteKeyLabel}>{key.note}{octave}</span>}
+                {decoration?.badge && (
+                  <span className="shared-pk-badge" aria-hidden="true">{decoration.badge}</span>
+                )}
               </button>
             );
           })}
@@ -108,10 +135,16 @@ export default function OnscreenPianoKeyboard({
             const midi = (octave + 1) * 12 + key.midi;
             const active = activeNotes?.has(midi) ?? false;
             const leftPct = ((key.afterWhite + 1) / 7) * 100;
+            const decoration = decorateKey?.(midi);
             return (
               <button
                 key={midi}
-                className={[classes.blackKey, active ? 'active' : ''].filter(Boolean).join(' ')}
+                className={[
+                  classes.blackKey,
+                  active ? 'active' : '',
+                  decoration?.className ?? '',
+                ].filter(Boolean).join(' ')}
+                aria-label={decoration?.ariaLabel}
                 style={{ left: `${leftPct}%` }}
                 onPointerDown={(event) => handlePointerDown(event, midi)}
                 onPointerUp={(event) => handlePointerUp(event, midi)}
@@ -123,6 +156,9 @@ export default function OnscreenPianoKeyboard({
               >
                 {showLabels && showBlackLabels && (
                   <span className={classes.blackKeyLabel}>{key.note}{octave}</span>
+                )}
+                {decoration?.badge && (
+                  <span className="shared-pk-badge" aria-hidden="true">{decoration.badge}</span>
                 )}
               </button>
             );

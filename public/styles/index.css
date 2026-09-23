@@ -347,6 +347,11 @@ body {
   background-image: url('/icons/favicon-count.svg');
 }
 
+.app-icon.maqam {
+  background-image: url('/icons/favicon-maqam.svg');
+  background-size: 100% 100%;
+}
+
 /* Encore app: violet/fuchsia theme + bordered tile (matches catalog icons like agility / melodia). */
 .app-icon.encore {
   background-color: #fdf4ff;

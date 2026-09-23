@@ -55,6 +55,7 @@ const MULTI_APP_INPUTS = {
   scrapboard: resolve(__dirname, 'src/scrapboard/index.html'),
   muscle: resolve(__dirname, 'src/muscle/index.html'),
   midi: resolve(__dirname, 'src/midi/index.html'),
+  maqam: resolve(__dirname, 'src/maqam/index.html'),
 } as const;
 
 const SRC_ROOT = resolve(__dirname, 'src');

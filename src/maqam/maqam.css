@@ -1,0 +1,541 @@
+/**
+ * Maqam Playground.
+ *
+ * Three key states carry the whole app, so they are tokens rather than literals
+ * and they appear in exactly one place each:
+ *   --maqam-tonic       the home note
+ *   --maqam-scale       a degree of the maqam, in equal temperament
+ *   --maqam-microtonal  a key bent off the piano grid
+ *
+ * Mobile-first; breakpoints per docs/RESPONSIVE_DESIGN.md.
+ */
+
+.maqam {
+  --maqam-tonic: #1d4e6f;
+  --maqam-tonic-soft: #d8e8f2;
+  --maqam-scale: #2f7d5c;
+  --maqam-scale-soft: #dcefe4;
+  --maqam-microtonal: #a9661a;
+  --maqam-microtonal-soft: #fbe6c7;
+  --maqam-ink: #241d16;
+  --maqam-ink-soft: #6a5c4c;
+  --maqam-rule: rgba(36, 29, 22, 0.14);
+  --maqam-panel-gap: 20px;
+
+  background: #fbf7f0;
+  color: var(--maqam-ink);
+}
+
+.maqam-header h1 {
+  margin: 0;
+  font-size: 1.4rem;
+  line-height: 1.2;
+}
+
+.maqam-header__sub {
+  margin: 4px 0 0;
+  color: var(--maqam-ink-soft);
+  font-size: 0.9rem;
+}
+
+.maqam-app {
+  display: flex;
+  flex-direction: column;
+  gap: var(--maqam-panel-gap);
+  padding-bottom: 24px;
+}
+
+/*
+ * Panels are separated by space and a hairline rule, not cards. Cards here
+ * would nest inside the app shell's own surface — card-in-card, which
+ * .agents/rules/ux-restraint.md rule 5 forbids.
+ */
+.maqam-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.maqam-panel + .maqam-panel {
+  border-top: 1px solid var(--maqam-rule);
+  padding-top: var(--maqam-panel-gap);
+}
+
+.maqam-panel__heading {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--maqam-ink-soft);
+}
+
+.maqam-panel__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.maqam-panel__actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* ---------------------------------------------------------------- picker -- */
+
+.maqam-picker {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+@media (min-width: 480px) {
+  .maqam-picker {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 900px) {
+  .maqam-picker {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.maqam-picker__option {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: flex-start;
+  min-height: 48px;
+  padding: 10px 14px;
+  border: 1px solid var(--maqam-rule);
+  border-radius: 10px;
+  background: #ffffff;
+  color: var(--maqam-ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.12s,
+    background 0.12s;
+}
+
+.maqam-picker__option:hover {
+  border-color: var(--maqam-tonic);
+}
+
+.maqam-picker__option.is-selected {
+  border-color: var(--maqam-tonic);
+  background: var(--maqam-tonic-soft);
+  /* Selection is carried by fill AND a heavier border, not colour alone —
+     docs/SELECTION_VISUAL_HIERARCHY.md. */
+  box-shadow: inset 0 0 0 1px var(--maqam-tonic);
+}
+
+.maqam-picker__name {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.maqam-picker__translit {
+  font-size: 0.78rem;
+  color: var(--maqam-ink-soft);
+}
+
+.maqam-description {
+  margin: 0;
+  max-width: 62ch;
+  color: var(--maqam-ink-soft);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+/* -------------------------------------------------------------- keyboard -- */
+
+.maqam-keyboard {
+  /* The keyboard is the one surface allowed to scroll sideways: two octaves of
+     real keys will not fit 390px, and shrinking them below a fingertip is
+     worse than scrolling. Tagged per .agents/rules/layout-no-horizontal-scroll.md. */
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.maqam-keyboard .shared-pk-container {
+  min-width: min-content;
+}
+
+/*
+ * The keyboard is this app's hero, so give it room once there is room. The
+ * shared component ships 36px keys sized for a toolbar; here they carry the
+ * colour tiers, the badges and the home dot, and at 36px those crowd.
+ */
+@media (min-width: 900px) {
+  .maqam-keyboard .shared-pk-white {
+    width: 46px;
+    height: 150px;
+  }
+
+  .maqam-keyboard .shared-pk-black {
+    width: 30px;
+    height: 95px;
+  }
+}
+
+.maqam-key.maqam-key--tonic {
+  background: var(--maqam-tonic-soft);
+  box-shadow: inset 0 -4px 0 var(--maqam-tonic);
+}
+
+.maqam-key.maqam-key--scale {
+  background: var(--maqam-scale-soft);
+  box-shadow: inset 0 -4px 0 var(--maqam-scale);
+}
+
+.maqam-key.maqam-key--microtonal {
+  background: var(--maqam-microtonal-soft);
+  box-shadow: inset 0 -4px 0 var(--maqam-microtonal);
+}
+
+.maqam-key.maqam-key--microtonal .shared-pk-badge {
+  color: var(--maqam-microtonal);
+}
+
+/*
+ * Home marker. A dot rather than another fill, because the tonic can also be
+ * retuned (Sikah sits on E½♭) and the two facts must be readable at once.
+ * Shape as well as colour, so it survives a colour-blind reading.
+ */
+.maqam-key.maqam-key--home::after {
+  content: '';
+  position: absolute;
+  bottom: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--maqam-tonic);
+  pointer-events: none;
+}
+
+.shared-pk-black.maqam-key--home::after {
+  bottom: 8px;
+  background: #ffffff;
+}
+
+/* Black keys keep their dark face; the role reads from the underline only. */
+.shared-pk-black.maqam-key--scale,
+.shared-pk-black.maqam-key--tonic,
+.shared-pk-black.maqam-key--microtonal {
+  background: #1e293b;
+}
+
+.shared-pk-black.maqam-key--scale {
+  box-shadow: inset 0 -5px 0 var(--maqam-scale);
+}
+
+.shared-pk-black.maqam-key--tonic {
+  box-shadow: inset 0 -5px 0 var(--maqam-tonic);
+}
+
+.shared-pk-black.maqam-key--microtonal {
+  box-shadow: inset 0 -5px 0 var(--maqam-microtonal);
+}
+
+/* The pressed state must beat the role colours, or a held key looks unplayed. */
+.maqam-keyboard .shared-pk-white.active,
+.maqam-keyboard .shared-pk-black.active {
+  background: var(--maqam-tonic);
+}
+
+.maqam-tuning-status {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--maqam-ink-soft);
+}
+
+.maqam-badge {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--maqam-microtonal-soft);
+  color: var(--maqam-microtonal);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.maqam-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--maqam-ink-soft);
+}
+
+.maqam-legend__swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  margin-right: 2px;
+  vertical-align: -1px;
+}
+
+.maqam-legend__swatch--tonic {
+  background: var(--maqam-tonic);
+}
+
+.maqam-legend__swatch--scale {
+  background: var(--maqam-scale);
+}
+
+.maqam-legend__swatch--microtonal {
+  background: var(--maqam-microtonal);
+}
+
+.maqam-legend__midi {
+  margin-left: auto;
+}
+
+/* ---------------------------------------------------------------- staves -- */
+
+.maqam-staves {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+@media (min-width: 900px) {
+  .maqam-staves {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.maqam-stave-figure {
+  margin: 0;
+  min-width: 0;
+}
+
+.maqam-stave-figure__caption {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--maqam-ink-soft);
+}
+
+.maqam-staff {
+  position: relative;
+  border: 1px solid var(--maqam-rule);
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 8px 4px 4px;
+  min-width: 0;
+}
+
+.maqam-staff__canvas {
+  min-width: 0;
+  overflow: hidden;
+}
+
+/*
+ * Sits below the empty stave rather than across it. Overlaying put the prompt
+ * on top of the staff lines, which read as a scribbled-on stave rather than an
+ * empty one.
+ */
+.maqam-staff__empty {
+  margin: 4px 0 0;
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--maqam-ink-soft);
+}
+
+/* ---------------------------------------------------------------- matrix -- */
+
+.maqam-matrix {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 6px;
+}
+
+@media (min-width: 640px) {
+  .maqam-matrix {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+  }
+}
+
+.maqam-matrix__slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 48px;
+  padding: 6px 2px;
+  border: 1px solid var(--maqam-rule);
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--maqam-ink-soft);
+  font: inherit;
+  cursor: pointer;
+  transition:
+    border-color 0.12s,
+    background 0.12s;
+}
+
+.maqam-matrix__slot.is-in-scale {
+  color: var(--maqam-ink);
+  border-color: rgba(47, 125, 92, 0.45);
+}
+
+.maqam-matrix__slot.is-bent {
+  background: var(--maqam-microtonal-soft);
+  border-color: var(--maqam-microtonal);
+  color: var(--maqam-microtonal);
+}
+
+.maqam-matrix__note {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.maqam-matrix__cents {
+  font-size: 0.72rem;
+  line-height: 1;
+}
+
+/* ----------------------------------------------------------------- ajnas -- */
+
+.maqam-ajnas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.maqam-ajnas__item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 12px;
+  border: 1px solid var(--maqam-rule);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.maqam-ajnas__name {
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.maqam-ajnas__steps {
+  font-size: 0.76rem;
+  color: var(--maqam-ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ----------------------------------------------------------------- terms -- */
+
+.maqam-terms {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  max-width: 70ch;
+}
+
+.maqam-terms__row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2px;
+}
+
+@media (min-width: 640px) {
+  .maqam-terms__row {
+    grid-template-columns: 9rem 1fr;
+    gap: 16px;
+  }
+}
+
+.maqam-terms__term {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.maqam-terms__plural {
+  font-weight: 400;
+  font-size: 0.74rem;
+  font-style: italic;
+  color: var(--maqam-ink-soft);
+}
+
+.maqam-terms__definition {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--maqam-ink-soft);
+}
+
+/* ---------------------------------------------------------------- shared -- */
+
+.maqam-text-button {
+  border: 0;
+  background: none;
+  padding: 4px 0;
+  color: var(--maqam-tonic);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.maqam-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.maqam :focus-visible {
+  outline: 2px solid var(--maqam-tonic);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* Coarse pointers need a real fingertip target on every control. */
+@media (pointer: coarse) {
+  .maqam-picker__option,
+  .maqam-matrix__slot {
+    min-height: 52px;
+  }
+
+  .maqam-text-button {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+}

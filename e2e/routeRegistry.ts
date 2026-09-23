@@ -115,6 +115,17 @@ export const APP_ROUTE_REGISTRY: RouteSpec[] = [
     visualId: 'melodia',
   },
   {
+    route: '/maqam/',
+    title: /Maqam Playground/i,
+    visibleSelector: '#main',
+    smoke: true,
+    // Visual baselines come later: the staves are VexFlow SVG whose glyph
+    // metrics settle only once Bravura loads, and baselines must be captured on
+    // Linux CI (skill labs-visual-regression). Smoke covers the shell today.
+    visual: false,
+    notes: 'In development; quarter-tone retuning playground.',
+  },
+  {
     route: '/midi/',
     title: /Midi Scratchpad/i,
     visibleSelector: '#main',

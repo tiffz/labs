@@ -28,8 +28,18 @@ const SRC_ROOT = path.join(REPO_ROOT, 'src');
 // A module is a "notation surface" if it constructs a VexFlow Renderer.
 const RENDERER_CONSTRUCT = /new Renderer\s*\(/;
 const VEXFLOW_IMPORT = /from ['"]vexflow['"]/;
-// It is gated if it imports either arm of the shared gate.
-const GATE_IMPORT = /useVexFlowMusicFontReady|ensureVexFlowFontsLoaded/;
+/**
+ * It is gated if it IMPORTS either arm of the shared gate.
+ *
+ * Deliberately scoped to an import statement. A bare identifier search also
+ * matched the name in a doc comment, so a surface that merely *mentioned* the
+ * gate in prose — "callers should use useVexFlowMusicFontReady()" — passed
+ * while drawing ungated. Every one of the surfaces this guard covers imports
+ * the gate directly today, so the tighter form costs nothing and removes the
+ * false negative (class: `guardrail-cannot-fail`).
+ */
+const GATE_IMPORT =
+  /import[^;]*\b(?:useVexFlowMusicFontReady|ensureVexFlowFontsLoaded)\b[^;]*from/s;
 
 /**
  * Burn-down ledger: notation surfaces not yet routed through the gate. Each flashes

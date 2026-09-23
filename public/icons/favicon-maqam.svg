@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Maqam Playground">
+  <rect width="64" height="64" rx="14" fill="#1d4e6f" />
+  <!-- Half-flat: a flat sign with the bowl mirrored, the glyph the app exists to teach. -->
+  <g fill="none" stroke="#fbf7f0" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M23 13 V47" />
+    <path d="M23 30 C33 24 41 29 39 36 C37 43 29 46 23 44" />
+  </g>
+  <circle cx="46" cy="20" r="4.5" fill="#e0a94a" />
+</svg>
