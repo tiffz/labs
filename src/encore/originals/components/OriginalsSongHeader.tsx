@@ -15,6 +15,7 @@ import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { alpha, useTheme } from '@mui/material/styles';
 import { useState, type ReactElement } from 'react';
+import { useDebouncedTextDraft } from '../../hooks/useDebouncedTextDraft';
 import { encoreAppHref, handleSpaLinkClick, navigateEncore } from '../../routes/encoreAppHash';
 import { encoreHairline, encoreRadius } from '../../theme/encoreUiTokens';
 import type { EncoreOriginalSong, OriginalSongSnapshot } from '../types';
@@ -39,6 +40,21 @@ export function OriginalsSongHeader({
   onDelete,
 }: OriginalsSongHeaderProps): ReactElement {
   const theme = useTheme();
+
+  /**
+   * The title owns its own text and publishes on a debounce.
+   *
+   * Bound straight to `song.title`, every keystroke re-rendered the whole `OriginalSongPage`
+   * subtree and queued a Dexie write, because `update()` drives both. Measured at a realistic
+   * library size: 29 long tasks and 2,144ms blocked for 26 characters.
+   *
+   * `flush` on blur, and on unmount by default, so navigating away mid-word cannot lose a title.
+   */
+  const { draft: titleDraft, setDraft: setTitleDraft, flush: flushTitle } = useDebouncedTextDraft(
+    song.title,
+    (next) => onChange({ title: next }),
+  );
+
   const [historyAnchor, setHistoryAnchor] = useState<HTMLElement | null>(null);
   const [moreAnchor, setMoreAnchor] = useState<HTMLElement | null>(null);
 
@@ -71,8 +87,9 @@ export function OriginalsSongHeader({
             Original
           </Typography>
           <TextField
-            value={song.title}
-            onChange={(e) => onChange({ title: e.target.value })}
+            value={titleDraft}
+            onChange={(e) => setTitleDraft(e.target.value)}
+            onBlur={flushTitle}
             placeholder="Untitled original"
             variant="standard"
             fullWidth
