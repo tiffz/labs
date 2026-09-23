@@ -41,6 +41,17 @@ function decodeBasicEntitiesOnce(value: string): string {
     .replace(/\u00a0/g, ' ');
 }
 
+/** Tag-stripping plain text. No DOM required. */
+function richTextPlainTextWithoutDom(trimmedHtml: string): string {
+  const withBreaks = trimmedHtml
+    .replace(/<\/p>/gi, '\n')
+    .replace(/<\/li>/gi, '\n')
+    .replace(/<br\s*\/?>/gi, '\n');
+  return decodeBasicEntitiesOnce(stripHtmlTagsIteratively(withBreaks))
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 /** Plain text for previews / counts. Not a security sanitizer. */
 export function richTextPlainText(htmlOrPlain: string | undefined): string {
   if (!htmlOrPlain) return '';
@@ -54,17 +65,24 @@ export function richTextPlainText(htmlOrPlain: string | undefined): string {
     return text.replace(/\s+/g, ' ').trim();
   }
 
-  const withBreaks = t
-    .replace(/<\/p>/gi, '\n')
-    .replace(/<\/li>/gi, '\n')
-    .replace(/<br\s*\/?>/gi, '\n');
-  return decodeBasicEntitiesOnce(stripHtmlTagsIteratively(withBreaks))
-    .replace(/\s+/g, ' ')
-    .trim();
+  return richTextPlainTextWithoutDom(t);
 }
 
+/**
+ * Whether the value carries any text at all.
+ *
+ * Deliberately never builds a DOM. Encore's Originals library asks this per song per
+ * render (workflow completion + dashboard status), so on a real library it ran
+ * `DOMParser.parseFromString` over every song's full brainstorm document on every
+ * keystroke — 137ms of blocking parse in one profile. Emptiness only needs "is there
+ * non-whitespace text outside the tags", which tag-stripping answers exactly as well.
+ */
 export function isRichTextEmpty(htmlOrPlain: string | undefined): boolean {
-  return richTextPlainText(htmlOrPlain).length === 0;
+  if (!htmlOrPlain) return true;
+  const t = htmlOrPlain.trim();
+  if (!t) return true;
+  if (!t.includes('<')) return false;
+  return richTextPlainTextWithoutDom(t).length === 0;
 }
 
 export type RichTextLinkPreview = {

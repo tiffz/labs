@@ -42,6 +42,22 @@ Reuse in retrospectives ([`CONTINUOUS_PROCESS_IMPROVEMENT.md`](CONTINUOUS_PROCES
 - `warmup-storm` — prefetch/queue rebuild retriggers on unrelated config changes
 - `revoked-blob-display` — media cache lifecycle (see `GESTURE_MEDIA_STABILITY.md`)
 - `gpu-fill` — dense GLB + PBR → decimate in Blender export; Lambert in runtime
+- `dev-build-shipped` — the deployed bundle is a development build (see below)
+
+## Measure the deployed build, not a local one
+
+Before profiling an app's runtime, confirm production is actually production. CI's `build`
+job inherited `NODE_ENV: test`, and Vite derives `isProduction` from `NODE_ENV` — so every
+deploy resolved the `development` export condition and shipped React's dev bundle. The
+deployed vendor chunk carried 12,163 `jsxDEV` call sites, each JSX element allocating an
+`Error` to capture an owner stack, and ran ~310 KB heavier than the same commit built
+correctly.
+
+Gate: [`scripts/check-prod-build-mode.mjs`](../scripts/check-prod-build-mode.mjs) — runs in
+presubmit and in CI's build job, and checks both the workflow env and the built `dist/`.
+
+`NODE_ENV` belongs on the build **step**, never the job: at job level `npm ci` omits
+devDependencies when it is `production`.
 
 ## First-paint load (bundle)
 

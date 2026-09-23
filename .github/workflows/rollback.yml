@@ -84,7 +84,14 @@ jobs:
           npm ci
 
       - name: Build rollback artifact
+        env:
+          # Same reason as ci.yml's build job — a non-production NODE_ENV ships React's
+          # development bundle. See scripts/check-prod-build-mode.mjs.
+          NODE_ENV: production
         run: npm run build
+
+      - name: Production build mode gate (no React dev bundle in dist/)
+        run: node scripts/check-prod-build-mode.mjs
 
       - name: Setup Pages
         if: ${{ !inputs.dry_run }}

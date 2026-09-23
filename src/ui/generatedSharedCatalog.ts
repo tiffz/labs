@@ -35100,7 +35100,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "No JSDoc summary provided.",
+    "description": "Whether the value carries any text at all. Deliberately never builds a DOM. Encore's Originals library asks this per song per render (workflow completion + dashboard status), so on a real library it ran `DOMParser.parseFromString` over every song's full brainstorm document on every keystroke — 137ms of blocking parse in one profile. Emptiness only needs \"is there non-whitespace text outside the tags\", which tag-stripping answers exactly as well.",
     "tags": [
       "utils"
     ],
