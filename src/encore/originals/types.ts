@@ -146,6 +146,19 @@ export function normalizeEncoreOriginalSong(raw: LegacyOriginalRow): EncoreOrigi
     brainstormResources: song.brainstormResources ?? [],
     songReferences: song.songReferences ?? [],
     stageCompletion: song.stageCompletion ?? {},
+    /*
+     * `history` and `takes` are typed as required and read without guards —
+     * `[...song.history].reverse()` in OriginalsSongHeader, `song.takes.length` in
+     * originalsMainTake. A row missing either throws "history is not iterable" from inside
+     * render, and the error boundary takes down the whole song page: "Something went wrong".
+     *
+     * The type does not prevent it, because rows do not only come from code that satisfies it.
+     * `JSON.stringify` omits `undefined`, so a row that ever held `history: undefined` loses the
+     * key on a Drive round-trip and returns without it. Every other array field here was already
+     * defaulted for this reason; these two were missed.
+     */
+    history: Array.isArray(song.history) ? song.history : [],
+    takes: Array.isArray(song.takes) ? song.takes : [],
     timeSignature: normalizeTimeSignature(song.timeSignature),
     sectionPlaybackOverrides: remapSectionPlaybackOverridesForChordPro(
       song.lyricsAndChords,
