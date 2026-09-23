@@ -189,14 +189,29 @@ export class GridMetronomeScheduler {
     try {
       const adjusted = timelineSec - this.anchorSec;
       const globalSlot = Math.floor(adjusted / this.slotDurationSec + 1e-9);
-      if (globalSlot < 0) return;
 
       const horizonSlot = Math.floor(
         (adjusted + Math.max(0, lookAheadSec)) / this.slotDurationSec + 1e-9,
       );
 
+      /*
+       * Before the anchor this used to `return` on a negative slot, which skipped the look-ahead
+       * as well — so slot 0 was never scheduled IN ADVANCE. It was first considered on the poll
+       * after the anchor had already passed, by which point its audio time is in the past and the
+       * late-drop below discards it.
+       *
+       * That is why the first click "sometimes doesn't play", and why a first-beat offset does not
+       * help you line up a song that starts off the beat: setting an offset puts the playhead
+       * before the anchor at start, which is exactly the condition that loses beat 1 — the one
+       * beat the offset exists to place.
+       *
+       * Keep scheduling while the horizon can still reach slot 0; only the slots themselves are
+       * clamped to >= 0 below.
+       */
+      if (horizonSlot < 0) return;
+
       if (this.lastGlobalSlot < 0) {
-        this.lastGlobalSlot = globalSlot - 1;
+        this.lastGlobalSlot = Math.max(-1, globalSlot - 1);
       }
 
       /*
@@ -205,7 +220,7 @@ export class GridMetronomeScheduler {
        * playhead, so the old `globalSlot < lastGlobalSlot` test would fire on every poll.
        */
       if (this.lastSeenSlot >= 0 && globalSlot < this.lastSeenSlot) {
-        this.lastGlobalSlot = globalSlot - 1;
+        this.lastGlobalSlot = Math.max(-1, globalSlot - 1);
       }
       this.lastSeenSlot = globalSlot;
 
@@ -213,7 +228,8 @@ export class GridMetronomeScheduler {
 
       await this.ensureAudio(ctx, prefs);
 
-      for (let slot = this.lastGlobalSlot + 1; slot <= horizonSlot; slot++) {
+      // Never emit a negative slot: those are before beat 1 and are not part of the grid.
+      for (let slot = Math.max(0, this.lastGlobalSlot + 1); slot <= horizonSlot; slot++) {
         const entry = this.grid[slot % this.slotsPerMeasure];
         if (!entry) continue;
 

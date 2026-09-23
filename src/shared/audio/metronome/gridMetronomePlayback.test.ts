@@ -130,4 +130,65 @@ describe('click count is independent of poll cadence', () => {
       expect(await clicksAtCadence(hz, 6), `cadence ${hz}Hz`).toBe(fast);
     }
   });
+
+
+  /**
+   * Reported: "Offset seems to still start the metronome right away and mute it, making the offset
+   * not useful for lining up the start", alongside "sometimes the first metronome beat doesn't
+   * play". One mechanism produces both.
+   *
+   * `pollTimeline` used to `return` as soon as the current slot was negative — i.e. whenever the
+   * playhead sat before the anchor, which is precisely what a first-beat offset creates. That
+   * return skipped the LOOK-AHEAD too, so slot 0 was never scheduled in advance. It was first seen
+   * on the poll after the anchor had already passed, when its audio time is in the past, and the
+   * late-drop discarded it. The one beat the offset exists to place is the one that went missing.
+   */
+  describe('first beat with an offset', () => {
+    const timeSignature = { numerator: 4, denominator: 4 };
+
+    it('schedules beat 1 in advance while the playhead is still before the anchor', async () => {
+      vi.mocked(playClickSampleAt).mockClear();
+      const scheduler = new GridMetronomeScheduler();
+      const ctx = { currentTime: 10 } as AudioContext;
+      // Beat 1 is 2s into the media; the playhead is 40ms short of it, inside a 100ms look-ahead.
+      scheduler.configure(120, timeSignature, basePrefs, 2);
+      await scheduler.pollTimeline(ctx, 1.96, basePrefs, 100, 0.02, 0.1);
+      expect(playClickSampleAt).toHaveBeenCalledTimes(1);
+      // And scheduled for the FUTURE, not clamped to now.
+      const when = vi.mocked(playClickSampleAt).mock.calls[0]?.[2] as number;
+      expect(when).toBeGreaterThan(ctx.currentTime);
+    });
+
+    it('stays silent before the anchor is within reach', async () => {
+      vi.mocked(playClickSampleAt).mockClear();
+      const scheduler = new GridMetronomeScheduler();
+      const ctx = { currentTime: 10 } as AudioContext;
+      scheduler.configure(120, timeSignature, basePrefs, 2);
+      // A full second early, far outside the look-ahead — nothing to schedule yet.
+      await scheduler.pollTimeline(ctx, 1.0, basePrefs, 100, 0.02, 0.1);
+      expect(playClickSampleAt).not.toHaveBeenCalled();
+    });
+
+    it('never emits a click before beat 1', async () => {
+      vi.mocked(playClickSampleAt).mockClear();
+      const scheduler = new GridMetronomeScheduler();
+      const ctx = { currentTime: 10 } as AudioContext;
+      scheduler.configure(120, timeSignature, basePrefs, 2);
+      await scheduler.pollTimeline(ctx, 1.96, basePrefs, 100, 0.02, 0.1);
+      const times = vi.mocked(playClickSampleAt).mock.calls.map((c) => c[2] as number);
+      // Exactly one click, and it is beat 1 — no earlier slot may be emitted.
+      expect(times).toHaveLength(1);
+      expect(times[0]).toBeGreaterThan(ctx.currentTime);
+    });
+
+    it('does not double-fire beat 1 once the playhead reaches the anchor', async () => {
+      vi.mocked(playClickSampleAt).mockClear();
+      const scheduler = new GridMetronomeScheduler();
+      const ctx = { currentTime: 10 } as AudioContext;
+      scheduler.configure(120, timeSignature, basePrefs, 2);
+      await scheduler.pollTimeline(ctx, 1.96, basePrefs, 100, 0.02, 0.1);
+      await scheduler.pollTimeline(ctx, 2.0, basePrefs, 100, 0.02, 0.1);
+      expect(playClickSampleAt).toHaveBeenCalledTimes(1);
+    });
+  });
 });
