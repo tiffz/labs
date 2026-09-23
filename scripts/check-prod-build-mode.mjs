@@ -86,6 +86,8 @@ const MARKERS = [
   { needle: 'react_stack_bottom_frame', max: 0 },
   { needle: 'captureOwnerStack', max: 2 },
   { needle: 'jsxDEV', max: 20 },
+  // Not a React marker — see the perf-fixture check below.
+  { needle: '__labsSeedEncorePerfFixture', max: Infinity },
 ];
 
 const distJs = path.join('dist', 'js');
@@ -106,6 +108,17 @@ if (fs.existsSync(distJs)) {
           `React's development bundle. Check NODE_ENV wherever \`vite build\` ran.`,
       );
     }
+  }
+
+  // The Encore perf fixture seeds 60 songs into the live Dexie database. It is gated at
+  // runtime on a loopback hostname and on no Google identity, but it must not reach a
+  // deployed bundle at all. `VITE_LABS_PERF_FIXTURE=1` exists only for local measurement
+  // against `vite preview`; a build carrying it must never be what gets deployed.
+  if (counts.get('__labsSeedEncorePerfFixture') > 0) {
+    failures.push(
+      `dist/js: contains \`__labsSeedEncorePerfFixture\` — this build was made with ` +
+        `VITE_LABS_PERF_FIXTURE=1 and must not be deployed.`,
+    );
   }
 } else {
   console.log('check:prod-build-mode: no dist/ — static workflow check only');
