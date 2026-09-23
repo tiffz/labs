@@ -14,14 +14,28 @@ import { enterEncoreApp } from '../helpers/enterEncoreApp';
 const TYPED = 'abcdefghijklmnopqrstuvwxyz';
 
 /**
- * Typing should cost roughly nothing. Before the search box owned its own text this measured 27
- * long tasks and seconds of blocked main thread at this library size — one long task per
- * keystroke, which is why keys were dropped unless you typed slowly. It now measures 0.
+ * Two budgets, because a render cascade fragments differently depending on machine speed and
+ * neither signal alone survives both shapes.
  *
- * The allowance is for CI scheduling noise, not for a render cascade: anything approaching
- * one-per-keystroke is the regression this exists to catch.
+ * Measured, typing 26 characters into library search:
+ *
+ *   healthy, CI linux runner     7 long tasks, worst  66ms
+ *   healthy, fast local machine  0 long tasks, worst   0ms
+ *   cascade, CI linux runner    27 long tasks, seconds blocked   (the #210 regression)
+ *   cascade, fast local machine  2 long tasks, worst 405ms
+ *
+ * A slow machine slices the same work into many small tasks; a fast one coalesces it into a few
+ * enormous ones. So COUNT catches the CI shape (7 vs 27) and WORST catches the local shape
+ * (66ms vs 405ms), and each keeps roughly 2-6x margin over healthy.
+ *
+ * The previous budget was a flat 6 — one below what a healthy CI runner actually measures. It
+ * blocked a deploy on run 35927686775 with `7 long tasks, 393ms blocked`, which was not a
+ * regression at all. Calibrating a perf floor on a fast laptop is how that happens.
+ *
+ * The strict, machine-independent assertion is the functional one below: no dropped keystrokes.
  */
-const MAX_LONG_TASKS = 6;
+const MAX_LONG_TASKS = Math.floor(TYPED.length / 2);
+const MAX_WORST_LONG_TASK_MS = 250;
 
 async function seedFixture(page: import('@playwright/test').Page) {
   await page.waitForFunction(() => typeof window.__labsSeedEncorePerfFixture === 'function', undefined, {
@@ -67,6 +81,10 @@ test.describe('Encore typing latency', () => {
       `${longTasks.length} long tasks, ${Math.round(blockedMs)}ms blocked while typing ` +
         `${TYPED.length} characters — a render cascade per keystroke is back`,
     ).toBeLessThanOrEqual(MAX_LONG_TASKS);
+    expect(
+      Math.round(worst),
+      `worst single task ${Math.round(worst)}ms while typing — the UI froze for that long`,
+    ).toBeLessThanOrEqual(MAX_WORST_LONG_TASK_MS);
   });
 
   /**
@@ -97,5 +115,9 @@ test.describe('Encore typing latency', () => {
       `${longTasks.length} long tasks, ${Math.round(blockedMs)}ms blocked while typing ` +
         `${TYPED.length} characters into the original title`,
     ).toBeLessThanOrEqual(MAX_LONG_TASKS);
+    expect(
+      Math.round(worst),
+      `worst single task ${Math.round(worst)}ms while typing the original title`,
+    ).toBeLessThanOrEqual(MAX_WORST_LONG_TASK_MS);
   });
 });
