@@ -1,4 +1,5 @@
 import BookmarksOutlinedIcon from '@mui/icons-material/BookmarksOutlined';
+import { useDebouncedSearchDraft } from './useDebouncedSearchDraft';
 import BookmarkAddIcon from '@mui/icons-material/BookmarkAdd';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import SearchIcon from '@mui/icons-material/Search';
@@ -93,6 +94,16 @@ export function LibraryRepertoireFiltersPanel(props: LibraryRepertoireFiltersPan
     compact = false,
     statsCaption,
   } = props;
+
+  /*
+   * The search box owns its raw text; the parent only hears the debounced value. `searchQuery`
+   * used to live in LibraryScreen (2,652 lines), so every keystroke re-rendered that whole tree —
+   * 27 long tasks for 26 characters at a realistic library size. See `useDebouncedSearchDraft`.
+   */
+  const { draft: searchDraft, setDraft: setSearchDraft } = useDebouncedSearchDraft(
+    searchQuery,
+    onSearchQueryChange,
+  );
 
   const [savedSearchMenuAnchor, setSavedSearchMenuAnchor] = useState<null | HTMLElement>(null);
   const savedSearchMenuOpen = Boolean(savedSearchMenuAnchor);
@@ -250,8 +261,8 @@ export function LibraryRepertoireFiltersPanel(props: LibraryRepertoireFiltersPan
           <TextField
             size="small"
             placeholder="Search title, artist, venue, key…"
-            value={searchQuery}
-            onChange={(e) => onSearchQueryChange(e.target.value)}
+            value={searchDraft}
+            onChange={(e) => setSearchDraft(e.target.value)}
             sx={{ flex: '1 1 12rem', minWidth: 0, maxWidth: { md: 320 } }}
             slotProps={{
               input: {

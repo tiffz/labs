@@ -14,6 +14,7 @@ import { EncoreProvider } from './context/EncoreContext';
 import App from './App';
 import { syncEncoreGuestShareRobotsFromHash } from './seo/guestShareRobots';
 import { exposeOriginalsQueueE2eSeed } from './originals/e2eSeedOriginalsQueue';
+import { exposeEncorePerfFixture } from './dev/encorePerfFixture';
 import '../shared/components/music/appSharedThemes.css';
 import '../shared/styles/labsChrome.css';
 import './styles/encore.css';
@@ -23,6 +24,7 @@ installServerLogger('ENCORE');
 installLabsCrashHandlers('encore');
 initMaterialIconRuntime();
 exposeOriginalsQueueE2eSeed();
+exposeEncorePerfFixture();
 
 syncEncoreGuestShareRobotsFromHash();
 window.addEventListener('hashchange', syncEncoreGuestShareRobotsFromHash);
