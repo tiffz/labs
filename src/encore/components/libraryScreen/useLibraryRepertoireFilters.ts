@@ -16,7 +16,6 @@ import {
   type EncoreDateRangeFilterValue,
 } from '../../utils/encoreDateRangeFilter';
 import { patchEncoreFilterDateRange } from '../../utils/encoreFilterFieldHelpers';
-import { useDebouncedString } from '../../utils/useDebouncedString';
 import {
   REPERTOIRE_FILTER_EMPTY,
   REPERTOIRE_FILTER_PINNED,
@@ -77,7 +76,12 @@ export function useLibraryRepertoireFilters(
   extrasRef.current = repertoireExtras;
 
   const [searchQuery, setSearchQuery] = useState('');
-  const debouncedSearch = useDebouncedString(searchQuery, 220);
+  /*
+   * `searchQuery` now arrives already debounced — the search box owns its raw text and publishes on
+   * a 220ms delay (see `useDebouncedSearchDraft`). Debouncing again here would double the wait
+   * before results update, for no benefit: by the time this hook sees a change, typing has settled.
+   */
+  const debouncedSearch = searchQuery;
   const [repertoireFilterValues, setRepertoireFilterValues] = useState<Record<string, string[]>>(
     () => ({ ...REPERTOIRE_FILTER_EMPTY }),
   );
