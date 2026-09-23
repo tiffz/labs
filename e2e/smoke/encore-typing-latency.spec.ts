@@ -68,4 +68,34 @@ test.describe('Encore typing latency', () => {
         `${TYPED.length} characters — a render cascade per keystroke is back`,
     ).toBeLessThanOrEqual(MAX_LONG_TASKS);
   });
+
+  /**
+   * The reported worst case: "the place where typing lag is the worst is on the title editing
+   * in the originals feature". The library-search test above cannot catch it — that box now owns
+   * its own text, while the song title writes through to the song record on every keystroke.
+   */
+  test('original song title accepts every keystroke without blocking', async ({ page }) => {
+    await enterEncoreApp(page);
+    await page.goto('/encore/#/originals');
+    const seeded = await seedFixture(page);
+    console.log(`SEEDED=${JSON.stringify(seeded)}`);
+
+    await page.goto('/encore/#/originals/perf-fixture-original-0');
+    await page.reload();
+
+    const title = page.getByLabel('Song title');
+    await title.waitFor({ timeout: 25_000 });
+
+    const { longTasks, value } = await typeAndMeasure(page, title);
+    const worst = longTasks.length ? Math.max(...longTasks) : 0;
+    const blockedMs = longTasks.reduce((a, b) => a + b, 0);
+    console.log(`ORIGINAL_TITLE longTasks=${longTasks.length} worst=${Math.round(worst)}ms`);
+
+    expect(value, 'dropped keystrokes while typing the original title').toContain(TYPED);
+    expect(
+      longTasks.length,
+      `${longTasks.length} long tasks, ${Math.round(blockedMs)}ms blocked while typing ` +
+        `${TYPED.length} characters into the original title`,
+    ).toBeLessThanOrEqual(MAX_LONG_TASKS);
+  });
 });

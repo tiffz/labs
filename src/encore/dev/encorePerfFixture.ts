@@ -16,8 +16,11 @@ import type { EncoreOriginalSong } from '../originals/types';
  * the wrong device would corrupt the one copy of her songwriting. Three independent gates, any one
  * of which is sufficient:
  *
- *  1. `import.meta.env.DEV` — registration is compiled out of production builds, so the function
- *     does not exist in the deployed bundle.
+ *  1. Registration is compiled out of production builds, so the function does not exist in the
+ *     deployed bundle — `import.meta.env.DEV`, or an explicit `VITE_LABS_PERF_FIXTURE=1` build
+ *     flag that only a local measurement run sets. Vite replaces both statically, so with the
+ *     flag unset the whole registration is dead-code-eliminated, and
+ *     `scripts/check-prod-build-mode.mjs` fails any `dist/` that still contains it.
  *  2. Hostname must be loopback. Deliberately NOT `isLabsE2eHarness()`, whose comment claims it is
  *     "never true on production Pages deploy" while its own `?labsE2e` branch makes it true there.
  *  3. Refuses when a Google identity is present. A signed-in device can push, and no fixture
@@ -69,6 +72,25 @@ function lyricsOfLines(lines: number): string {
   return out.join('\n');
 }
 
+/**
+ * Rich-text brainstorm doc, in the shape TipTap stores.
+ *
+ * Present because the code under test branches on it: `isRichTextEmpty` returns early for
+ * `undefined`, so a fixture without this field cannot execute the HTML path at all — and
+ * the Originals library asks that question per song per render. Omitting it is the
+ * `fixture-shares-the-bug` class: coverage looks complete while the hot path never runs.
+ */
+function brainstormHtmlOfParagraphs(paragraphs: number): string {
+  const out: string[] = [];
+  for (let i = 0; i < paragraphs; i += 1) {
+    out.push(
+      `<p>Idea ${i}: <strong>hook</strong> lands on the <em>four</em>, then the ` +
+        `<s>pre-chorus</s> pre-chorus lifts a third. Try it against the bridge.</p>`,
+    );
+  }
+  return out.join('');
+}
+
 export interface EncorePerfFixtureShape {
   songs: number;
   performancesPerSong: number;
@@ -76,6 +98,7 @@ export interface EncorePerfFixtureShape {
   lyricLinesPerOriginal: number;
   takesPerOriginal: number;
   historyPerOriginal: number;
+  brainstormParagraphsPerOriginal: number;
 }
 
 /** Sized to the reported library (~60 repertoire songs). */
@@ -86,6 +109,7 @@ export const DEFAULT_ENCORE_PERF_FIXTURE: EncorePerfFixtureShape = {
   lyricLinesPerOriginal: 60,
   takesPerOriginal: 3,
   historyPerOriginal: 20,
+  brainstormParagraphsPerOriginal: 40,
 };
 
 export async function seedEncorePerfFixture(
@@ -119,12 +143,14 @@ export async function seedEncorePerfFixture(
   );
 
   const lyrics = lyricsOfLines(s.lyricLinesPerOriginal);
+  const brainstormHtml = brainstormHtmlOfParagraphs(s.brainstormParagraphsPerOriginal);
   const originals = Array.from({ length: s.originals }, (_, i) => ({
     id: `${p}original-${i}`,
     title: `Fixture Original ${i}`,
     key: 'C',
     tempo: 84 + (i % 40),
     lyricsAndChords: lyrics,
+    brainstormHtml,
     takes: Array.from({ length: s.takesPerOriginal }, (_, t) => ({
       id: `${p}take-${i}-${t}`,
       label: `Take ${t + 1}`,
@@ -181,9 +207,16 @@ declare global {
   }
 }
 
-/** Dev-only registration — compiled out of production builds. */
+/**
+ * Registration, compiled out of production builds.
+ *
+ * The opt-in flag exists so the typing-latency spec can run against a real production bundle
+ * (`LABS_E2E_PREVIEW=1`). Without it the spec can only ever measure the dev server, which is the
+ * wrong build to ask performance questions of — React behaves differently there. No deploy sets
+ * the flag; gates 2 and 3 still apply when it is set.
+ */
 export function exposeEncorePerfFixture(): void {
-  if (!import.meta.env.DEV) return;
+  if (!import.meta.env.DEV && import.meta.env.VITE_LABS_PERF_FIXTURE !== '1') return;
   if (typeof window === 'undefined') return;
   window.__labsSeedEncorePerfFixture = seedEncorePerfFixture;
   window.__labsClearEncorePerfFixture = clearEncorePerfFixture;
