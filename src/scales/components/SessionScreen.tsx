@@ -65,7 +65,7 @@ import {
   DEFAULT_AUTO_LOOP_DWELL_MS as AUTO_LOOP_DWELL_MS,
 } from './useAutoLoopScheduler';
 import { isDebugEnabled, logDebugEvent } from '../utils/practiceDebugLog';
-import { readLabsDebugFromLocation } from '../../shared/debug/readLabsDebugParams';
+import { isLabsDebugFull, isLabsDebugVisible } from '../../shared/debug/labsDebugAccess';
 import { useScalesSessionDebugBridge } from '../context/scalesSessionDebugBridge';
 import type { ScalesDebugHelpSurface } from '../context/scalesSessionDebugTypes';
 import {
@@ -117,7 +117,16 @@ import { SessionExerciseResultBreakdown } from './sessionScreen/SessionExerciseR
 import { SessionScreenIcon as Icon } from './sessionScreen/SessionScreenIcon';
 
 export default function SessionScreen() {
-  const labsDebug = readLabsDebugFromLocation().debug;
+  /*
+   * Tiered per ADR 0026, not one raw `?debug` flag.
+   *
+   * This used to read the raw query flag directly, so an anonymous `?debug` on production
+   * could fire "complete exercise perfectly", which dispatches a full set of perfect results and
+   * finishes the exercise — it mutates practice progress. Only the read-only previews belong in the
+   * diagnostics tier.
+   */
+  const debugFull = isLabsDebugFull();
+  const debugVisible = isLabsDebugVisible();
   const { setSessionApi } = useScalesSessionDebugBridge();
   const [helpPreview, setHelpPreview] = useState<ScalesDebugHelpSurface | null>(null);
 
@@ -532,7 +541,7 @@ export default function SessionScreen() {
   }, [dispatch, activeExercise?.bpm, clearCountInTimers]);
 
   const completeExercisePerfectDebug = useCallback(() => {
-    if (!labsDebug || !score || !activeExercise) return;
+    if (!debugFull || !score || !activeExercise) return;
     if (state.isPlaying) stopPlayback();
     finishedRef.current = false;
     manuallyStoppedRef.current = false;
@@ -546,7 +555,7 @@ export default function SessionScreen() {
     // the results / boundary interstitial instead of scheduling another run.
     setLoopPaused(true);
   }, [
-    labsDebug,
+    debugFull,
     score,
     activeExercise,
     state.isPlaying,
@@ -558,7 +567,7 @@ export default function SessionScreen() {
 
   const sessionDebugApi = useMemo(
     () => (
-      labsDebug && activeExercise && loaded && score
+      debugFull && activeExercise && loaded && score
         ? {
             completeExercisePerfect: completeExercisePerfectDebug,
             setHelpPreview: (s: ScalesDebugHelpSurface | null) => setHelpPreview(s),
@@ -566,11 +575,11 @@ export default function SessionScreen() {
           }
         : null
     ),
-    [labsDebug, activeExercise, loaded, score, completeExercisePerfectDebug],
+    [debugFull, activeExercise, loaded, score, completeExercisePerfectDebug],
   );
 
   useEffect(() => {
-    if (!labsDebug) {
+    if (!debugFull) {
       setSessionApi(null);
       return;
     }
@@ -583,21 +592,21 @@ export default function SessionScreen() {
       setHelpPreview(null);
       setSessionApi(null);
     };
-  }, [labsDebug, sessionDebugApi, setSessionApi]);
+  }, [debugFull, sessionDebugApi, setSessionApi]);
 
   useEffect(() => {
-    if (!labsDebug || !helpPreview) return;
+    if (!debugVisible || !helpPreview) return;
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setHelpPreview(null);
     };
     window.addEventListener('keydown', onKeyDown, true);
     return () => window.removeEventListener('keydown', onKeyDown, true);
-  }, [labsDebug, helpPreview]);
+  }, [debugVisible, helpPreview]);
 
   useEffect(() => {
-    if (!labsDebug || helpPreview !== 'wrong_note') return;
+    if (!debugVisible || helpPreview !== 'wrong_note') return;
     dispatch({ type: 'WRONG_NOTE_FLASH', notes: [60, 64] });
-  }, [labsDebug, helpPreview, dispatch]);
+  }, [debugVisible, helpPreview, dispatch]);
 
   const goToStage = useCallback((stageId: string) => {
     if (!activeExercise) return;
@@ -910,7 +919,7 @@ export default function SessionScreen() {
     && !freeTempoCompleteForGuidance
     && !lastResultForGuidance
     && !isGuidancePayloadEmpty(guidancePayload);
-  const showGuidanceDebug = labsDebug && helpPreview === 'guidance' && !!stageInfo && !isGuidancePayloadEmpty(guidancePayload);
+  const showGuidanceDebug = debugVisible && helpPreview === 'guidance' && !!stageInfo && !isGuidancePayloadEmpty(guidancePayload);
   const guidanceModal = showGuidanceCallout ? (
     <GuidanceCallout payload={guidancePayload} onDismiss={dismissGuidance} />
   ) : null;
@@ -1605,7 +1614,7 @@ export default function SessionScreen() {
    *                      Paper + manual action buttons.
    */
   const hasResult = !!lastExerciseResult && !isPlaying;
-  const stuckDialogDebugOnly = labsDebug && (
+  const stuckDialogDebugOnly = debugVisible && (
     helpPreview === 'stuck_drill'
     || helpPreview === 'stuck_regular'
     || helpPreview === 'stuck_tip'
@@ -3055,7 +3064,7 @@ export default function SessionScreen() {
           </Button>
         )}
       </Paper>
-      {labsDebug && helpPreview === 'practice_tip' && (
+      {debugVisible && helpPreview === 'practice_tip' && (
         <Box
           sx={{
             position: 'fixed',
@@ -3077,7 +3086,7 @@ export default function SessionScreen() {
           </Alert>
         </Box>
       )}
-      {labsDebug && helpPreview?.startsWith('shaky_') && currentStage && (() => {
+      {debugVisible && helpPreview?.startsWith('shaky_') && currentStage && (() => {
         const mock =
           helpPreview === 'shaky_timing' ? DEBUG_SHAKY_MOCK_TIMING
             : helpPreview === 'shaky_pitch' ? DEBUG_SHAKY_MOCK_PITCH
@@ -3110,7 +3119,7 @@ export default function SessionScreen() {
         );
       })()}
       <Dialog
-        open={labsDebug && helpPreview === 'drill_how_it_works'}
+        open={debugVisible && helpPreview === 'drill_how_it_works'}
         onClose={() => setHelpPreview(null)}
         maxWidth="xs"
         fullWidth
