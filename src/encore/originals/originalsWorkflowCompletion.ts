@@ -84,6 +84,22 @@ export function inferredWorkflowStage(song: EncoreOriginalSong): OriginalsWorkfl
   for (const step of ORIGINALS_WORKFLOW_STAGES) {
     if (!isStageComplete(song, step.id)) return step.id;
   }
+
+  /*
+   * Everything is *monotonically* complete, which a single take is enough to achieve: `takes` being
+   * done makes every earlier stage report done too. But `isOriginalDemoReady` asks the RAW question
+   * and needs all four on their own merits.
+   *
+   * Without the second pass those two disagree and the song parks on the last stage forever: the
+   * library reads "Record Takes" on a song that already has takes, "Demo ready" never arrives, and
+   * nothing says which stage is actually missing. That is the reported "originals stuck in Record
+   * Takes that I can't mark demo-ready".
+   *
+   * So when the song is not demo-ready, name the stage that is genuinely outstanding.
+   */
+  for (const step of ORIGINALS_WORKFLOW_STAGES) {
+    if (!isStageCompleteRaw(song, step.id)) return step.id;
+  }
   return 'takes';
 }
 
@@ -103,7 +119,12 @@ export function toggleStageCompletion(
 
 export function formatOriginalStageSummary(song: EncoreOriginalSong): string {
   if (isOriginalDemoReady(song)) return 'Demo ready';
-  const done = ORIGINALS_WORKFLOW_STAGES.filter((s) => isStageComplete(song, s.id)).length;
+  /*
+   * Raw, not monotonic, so this agrees with the stage label beside it. With the monotonic count a
+   * song holding one take reported "4/4 stages" while refusing to say "Demo ready" — a direct
+   * contradiction in the same table row.
+   */
+  const done = ORIGINALS_WORKFLOW_STAGES.filter((s) => isStageCompleteRaw(song, s.id)).length;
   return `${done}/${ORIGINALS_WORKFLOW_STAGES.length} stages`;
 }
 

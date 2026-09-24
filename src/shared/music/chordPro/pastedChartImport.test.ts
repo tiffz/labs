@@ -296,3 +296,103 @@ Your voice stayed when we were grown`;
     expect(imported.sectionCount).toBe(9);
   });
 });
+
+describe('leading Key/BPM header', () => {
+  const REPORTED = `Key: C
+BPM: 84
+
+[Verse 1]
+C        F
+Line one here
+G        Am
+Line two here
+
+[Chorus]
+F        C
+Chorus line
+`;
+
+  /**
+   * The reported bug, both halves. `Key: C` used to become a section with type `Other` and an EMPTY
+   * header — nothing to click, hence "ghost section 1 I cannot delete" — and `BPM: 84` vanished.
+   */
+  it('does not turn Key/BPM into a headerless ghost section', () => {
+    const result = importPastedChartFromClipboard(REPORTED);
+    expect(result.ok).toBe(true);
+
+    const headers = result.layout?.sections.map((s) => s.header) ?? [];
+    expect(headers).toEqual(['Verse 1', 'Chorus']);
+    expect(headers, 'a section with no header cannot be deleted from the UI').not.toContain('');
+
+    const allText = (result.layout?.sections ?? []).flatMap((s) => s.lines.map((l) => l.text));
+    expect(allText.join('\n')).not.toMatch(/Key:|BPM:/);
+  });
+
+  it('keeps the key and tempo instead of dropping them', () => {
+    const result = importPastedChartFromClipboard(REPORTED);
+    expect(result.metadata?.key).toBe('C');
+    expect(result.metadata?.bpm).toBe(84);
+    expect(result.message).toContain('key C');
+    expect(result.message).toContain('84 BPM');
+  });
+
+  it('keeps every lyric line', () => {
+    const result = importPastedChartFromClipboard(REPORTED);
+    const allText = (result.layout?.sections ?? []).flatMap((s) => s.lines.map((l) => l.text));
+    expect(allText).toEqual(['Line one here', 'Line two here', 'Chorus line']);
+  });
+
+  it('leaves a chart with no header block unchanged', () => {
+    // Two chord lines: below that, `looksLikePastedChart` treats the paste as lyrics, not a chart.
+    const plain = '[Verse 1]\nC        F\nLine one here\nG        Am\nLine two here\n';
+    const result = importPastedChartFromClipboard(plain);
+    expect(result.metadata?.recognized ?? []).toEqual([]);
+    expect(result.layout?.sections.map((s) => s.header)).toEqual(['Verse 1']);
+    expect(result.message).not.toContain('from the header');
+  });
+});
+
+describe('long charts are not truncated on import', () => {
+  function longChart(sections: number): string {
+    const out: string[] = [];
+    for (let s = 0; s < sections; s += 1) {
+      out.push(`[Verse ${s + 1}]`);
+      for (let l = 0; l < 8; l += 1) {
+        out.push('C        F');
+        out.push(`Section ${s + 1} line ${l + 1}`);
+      }
+    }
+    return out.join('\n');
+  }
+
+  /**
+   * The reported bug. The search window used to open at `lines.length - 150`, so on a chart longer
+   * than that the first header INSIDE the window won and everything before it was discarded. A
+   * 255-line chart lost 119 lines with no prose above it at all.
+   */
+  it('keeps every section of a chart longer than the old 150-line window', () => {
+    const chart = longChart(15);
+    expect(chart.split('\n').length).toBeGreaterThan(150);
+
+    const { text, excerpted } = extractChartPortionForImport(chart);
+    expect(excerpted, 'nothing above the chart, so nothing to excerpt').toBe(false);
+    expect(text.split('\n')[0]).toBe('[Verse 1]');
+    expect(text.split('\n').length).toBe(chart.split('\n').length);
+  });
+
+  it('imports every line of a long chart', () => {
+    const result = importPastedChartFromClipboard(longChart(15));
+    expect(result.ok).toBe(true);
+    expect(result.layout?.sections.map((s) => s.header)).toEqual(
+      Array.from({ length: 15 }, (_, i) => `Verse ${i + 1}`),
+    );
+  });
+
+  it('still drops prose notes above a long chart', () => {
+    const prose = Array.from({ length: 12 }, (_, i) => `Some note about the song, line ${i + 1}.`).join('\n');
+    const { text, excerpted } = extractChartPortionForImport(`${prose}\n\n${longChart(15)}`);
+    expect(excerpted).toBe(true);
+    expect(text).not.toContain('Some note about the song');
+    expect(text.split('\n')[0]).toBe('[Verse 1]');
+  });
+});
