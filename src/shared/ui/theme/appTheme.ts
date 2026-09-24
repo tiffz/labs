@@ -406,18 +406,22 @@ const THEMES: Record<AppThemeId, Theme> = {
   }),
   // Warm sand and indigo: the palette of tilework and manuscript ink, chosen so
   // the amber "retuned key" state reads as a highlight rather than a warning.
+  // M3 shape and type rhythm via `materialPolish`, matching Encore.
   maqam: buildTheme({
     mode: 'light',
-    primary: '#1d4e6f',
-    secondary: '#b4782a',
-    backgroundDefault: '#fbf7f0',
-    backgroundPaper: '#ffffff',
-    textPrimary: '#241d16',
-    textSecondary: '#6a5c4c',
-    divider: 'rgba(36, 29, 22, 0.14)',
-    radius: 10,
+    primary: '#1d5b82',
+    secondary: '#8a5a12',
+    backgroundDefault: '#fdf8f3',
+    backgroundPaper: '#fffbf7',
+    textPrimary: '#201b16',
+    textSecondary: '#52463a',
+    // Hairlines are the exception, not the default: M3 separates with tonal
+    // surface steps, so this stays faint enough to disappear unless needed.
+    divider: 'rgba(32, 27, 22, 0.08)',
+    radius: 12,
     spacingBase: 8,
     readable: true,
+    materialPolish: true,
   }),
   midi: buildTheme({
     mode: 'light',

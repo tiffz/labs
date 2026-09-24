@@ -32,6 +32,17 @@ async function renderedGlyphs(page: import('@playwright/test').Page) {
 
 /** @see src/maqam/CUJs.md */
 test.describe('Maqam Playground', () => {
+  test('CUJ-001: black keys are labelled, so accidentals are identifiable', async ({ page }) => {
+    await page.goto('/maqam/');
+    await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
+
+    // 5 black keys per octave, 3 octaves. Unlabelled black keys made it
+    // impossible to tell which accidental you were looking at.
+    const blackLabels = page.locator('.shared-pk-black .shared-pk-black-label');
+    await expect(blackLabels).toHaveCount(15);
+    await expect(blackLabels.first()).toHaveText('C#3');
+  });
+
   test('CUJ-001: shell loads and the default maqam paints its retuned keys', async ({
     page,
   }) => {
@@ -41,10 +52,10 @@ test.describe('Maqam Playground', () => {
     await page.goto('/maqam/');
     await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
 
-    // Rast is the default: E and B are half-flat, so exactly two pitch classes
-    // are retuned — across two rendered octaves that is four keys.
+    // Rast is the default: E and B are half-flat, so exactly 2 pitch classes
+    // are retuned — across the 3 rendered octaves that is 6 keys.
     const retuned = page.locator('.maqam-key--microtonal');
-    await expect(retuned).toHaveCount(4);
+    await expect(retuned).toHaveCount(6);
     await expect(retuned.first().locator('.shared-pk-badge')).toHaveText('½♭');
 
     expect(pageErrors).toEqual([]);
@@ -53,7 +64,7 @@ test.describe('Maqam Playground', () => {
   test('CUJ-001: all nine families are offered', async ({ page }) => {
     await page.goto('/maqam/');
     await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
-    await expect(page.locator('.maqam-select option')).toHaveCount(9);
+    await expect(page.locator('.maqam-topbar__picker option')).toHaveCount(9);
   });
 
   test('CUJ-001: choosing a maqam with no microtones clears every retuned key', async ({
@@ -62,7 +73,7 @@ test.describe('Maqam Playground', () => {
     await page.goto('/maqam/');
     await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
 
-    await page.locator('.maqam-select').selectOption('hijaz_d');
+    await page.locator('.maqam-topbar__picker select').selectOption('hijaz_d');
 
     // Hijaz is entirely in 12-TET — its drama is the augmented second, not a
     // quarter-tone. Nothing should be painted amber.
@@ -78,8 +89,8 @@ test.describe('Maqam Playground', () => {
     await page.goto('/maqam/?maqam=sikah_e');
     await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
 
-    await expect(page.locator('.maqam-key--home')).toHaveCount(2); // one per octave
-    await expect(page.locator('.maqam-key--home.maqam-key--microtonal')).toHaveCount(2);
+    await expect(page.locator('.maqam-key--home')).toHaveCount(3); // one per octave
+    await expect(page.locator('.maqam-key--home.maqam-key--microtonal')).toHaveCount(3);
   });
 
   /**
@@ -138,14 +149,14 @@ test.describe('Maqam Playground', () => {
     await page.getByRole('button', { name: /Tune keys/ }).click();
     // A is untouched in Rast; bending it makes the tuning custom.
     await page.getByRole('button', { name: /^A is in equal temperament/ }).click();
-    await expect(page.locator('.maqam-badge')).toHaveText('Custom');
+    await expect(page.locator('.maqam-badge')).toHaveText('Custom tuning');
     await expect(page).toHaveURL(/tuning=/);
 
     await page.goto(page.url());
     await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
-    await expect(page.locator('.maqam-badge')).toHaveText('Custom');
-    // Rast's two bends plus the hand-added one, over two octaves.
-    await expect(page.locator('.maqam-key--microtonal')).toHaveCount(6);
+    await expect(page.locator('.maqam-badge')).toHaveText('Custom tuning');
+    // Rast's 2 bends plus the hand-added one, over 3 octaves.
+    await expect(page.locator('.maqam-key--microtonal')).toHaveCount(9);
   });
 
   test('CUJ-003: returning the tuning to the preset drops the custom badge', async ({
@@ -153,13 +164,13 @@ test.describe('Maqam Playground', () => {
   }) => {
     await page.goto('/maqam/?maqam=rast_c&tuning=----d----d-d');
     await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
-    await expect(page.locator('.maqam-badge')).toHaveText('Custom');
+    await expect(page.locator('.maqam-badge')).toHaveText('Custom tuning');
 
     await page.getByRole('button', { name: /^Reset$/ }).click();
 
     // Derived, not remembered: undoing the edit must clear the badge.
     await expect(page.locator('.maqam-badge')).toHaveCount(0);
-    await expect(page.locator('.maqam-key--microtonal')).toHaveCount(4);
+    await expect(page.locator('.maqam-key--microtonal')).toHaveCount(6);
   });
 
   test('CUJ-004: the explainer opens and closes on Escape', async ({ page }) => {
@@ -169,7 +180,7 @@ test.describe('Maqam Playground', () => {
     await page.getByRole('button', { name: /How maqamat work/ }).click();
     const dialog = page.getByRole('dialog');
     await expect(dialog).toBeVisible();
-    await expect(dialog).toContainText('Seven notes is right');
+    await expect(dialog).toContainText('7 notes is right');
 
     await page.keyboard.press('Escape');
     await expect(dialog).toHaveCount(0);

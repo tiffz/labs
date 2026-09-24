@@ -17,7 +17,7 @@ export default function JinsBreakdown({ preset }: JinsBreakdownProps) {
 
   return (
     <div className="maqam-jins">
-      <h2 className="maqam-panel__heading">Built from</h2>
+      <h2 className="maqam-eyebrow">Built from</h2>
 
       <ol className="maqam-jins__list">
         {preset.primaryAjnas.map((jins) => (

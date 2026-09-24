@@ -58,7 +58,9 @@ export default function MaqamKeyboard({
         onNoteOn={onNoteOn}
         onNoteOff={onNoteOff}
         showLabels
-        showBlackLabels={false}
+        // Black keys carry names too. Without them the accidentals are an
+        // unreadable wall of dark keys, and "which key is F#?" has no answer.
+        showBlackLabels
         decorateKey={decorateKey}
       />
     </div>
