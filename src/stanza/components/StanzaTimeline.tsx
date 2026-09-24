@@ -728,10 +728,10 @@ export default function StanzaTimeline({
         {onClearSegmentSelection ? (
           <>
             <span className="stanza-playback-chip-divider" aria-hidden />
-            <AppTooltip title="Deselect sections">
+            <AppTooltip title="Deselect sections and return the calibration rail to the whole song">
               <IconButton
                 size="small"
-                className="stanza-playback-chip-btn"
+                className="stanza-playback-chip-btn stanza-playback-chip-btn--state"
                 aria-label="Deselect sections"
                 onClick={onClearSegmentSelection}
               >
