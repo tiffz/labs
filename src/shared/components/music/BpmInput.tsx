@@ -3,6 +3,7 @@ import AnchoredPopover from '../AnchoredPopover';
 import { COMMON_BPMS, DEFAULT_BPM_MAX, DEFAULT_BPM_MIN } from '../../music/musicInputConstants';
 import AppSlider from '../AppSlider';
 import { NumericStepperField } from './NumericStepperField';
+import { parseNumericFieldDraft } from './numericFieldDraftUtils';
 import { buildSliderMilestones, pickBpmSliderMilestones } from './sliderMilestoneUtils';
 import SliderMilestoneLabels from './sliderMilestoneLabels';
 import {
@@ -107,9 +108,9 @@ const BpmInput: React.FC<BpmInputProps> = ({
   }, [isEditing, value]);
 
   const commit = (raw: string): void => {
-    const parsed = Number(raw);
-    if (Number.isNaN(parsed)) {
-      setDraft(String(value));
+    const parsed = parseNumericFieldDraft(raw);
+    if (parsed === null) {
+      setDraft(String(Math.round(value)));
       return;
     }
     const next = clamp(parsed, min, max);

@@ -14561,6 +14561,24 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-components-music-numericfielddraftutils-ts-parsenumericfielddraft",
+    "name": "parseNumericFieldDraft",
+    "path": "src/shared/components/music/numericFieldDraftUtils.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Parse what the user typed into a numeric field. Blank or unparseable is an ABSENCE, never a value. `Number('')` is `0`, not `NaN`, so the obvious `Number.isFinite(Number(draft))` guard accepts an empty box and commits zero — which then clamps to the field minimum. Clearing the Encore/Stanza BPM box and tabbing away silently set the tempo to 20 BPM, and the only way to change 100 to 200 was to overwrite the first digit in place rather than select-all-and-retype. Callers restore their current value on `null`.",
+    "tags": [
+      "components",
+      "music"
+    ],
+    "appsUsing": [
+      "ui"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-components-music-numericstepperfield-tsx-numericstepperfield",
     "name": "NumericStepperField",
     "path": "src/shared/components/music/NumericStepperField.tsx",

@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactElement } from 'react';
 import Typography from '@mui/material/Typography';
 import { NumericStepperField } from '../../shared/components/music/NumericStepperField';
+import { parseNumericFieldDraft } from '../../shared/components/music/numericFieldDraftUtils';
 
 export type MidiIntStepperProps = {
   label: string;
@@ -52,8 +53,10 @@ export function MidiIntStepper({
             inputValue={draft}
             onInputChange={(event) => setDraft(event.target.value)}
             onInputBlur={() => {
-              const parsed = Number(draft);
-              commit(Number.isFinite(parsed) ? parsed : value);
+              const parsed = parseNumericFieldDraft(draft);
+              // A cleared box is an absence: restore the text, publish nothing.
+              if (parsed === null) setDraft(String(value));
+              else commit(parsed);
             }}
             onInputKeyDown={(event) => {
               if (event.key === 'Enter') {

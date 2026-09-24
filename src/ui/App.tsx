@@ -18,6 +18,7 @@ import PlaybackSpeedControl from '../shared/components/music/PlaybackSpeedContro
 import { PlaybackVolumeRow } from '../shared/components/music/PlaybackVolumeRow';
 import { ChordPlaybackSettingsPanel } from '../shared/components/music/ChordPlaybackSettingsPanel';
 import { NumericStepperField } from '../shared/components/music/NumericStepperField';
+import { parseNumericFieldDraft } from '../shared/components/music/numericFieldDraftUtils';
 import { DEFAULT_CHORD_PLAYBACK_SETTINGS } from '../shared/music/chordPlaybackSettings';
 import type { SoundType } from '../shared/music/soundOptions';
 import DrumNotationMini, { type NotationStyle } from '../shared/notation/DrumNotationMini';
@@ -837,11 +838,13 @@ function NumericStepperFieldDemo() {
       inputValue={draft}
       onInputChange={(e) => setDraft(e.target.value)}
       onInputBlur={() => {
-        const n = Number(draft);
-        if (Number.isFinite(n)) {
-          setValue(n);
-          setDraft(String(n));
+        const n = parseNumericFieldDraft(draft);
+        if (n === null) {
+          setDraft(String(value));
+          return;
         }
+        setValue(n);
+        setDraft(String(n));
       }}
       inputAriaLabel="Demo numeric value"
       stepperAriaLabel="Adjust value"

@@ -18,6 +18,7 @@ import {
 } from '../../music/timeSignaturePresets';
 import AnchoredPopover from '../AnchoredPopover';
 import { NumericStepperField } from './NumericStepperField';
+import { parseNumericFieldDraft } from './numericFieldDraftUtils';
 import './bpmInput.css';
 import './timeSignatureInput.css';
 
@@ -149,14 +150,17 @@ function TimeSignaturePickerPanel({
               inputValue={numeratorDraft}
               onInputChange={(event) => setNumeratorDraft(event.target.value)}
               onInputBlur={() => {
-                const parsed = Number(numeratorDraft);
-                applyNumerator(Number.isFinite(parsed) ? parsed : value.numerator);
+                const parsed = parseNumericFieldDraft(numeratorDraft);
+                // A cleared box is an absence: restore the text, publish nothing.
+                if (parsed === null) setNumeratorDraft(String(value.numerator));
+                else applyNumerator(parsed);
               }}
               onInputKeyDown={(event) => {
                 if (event.key === 'Enter') {
                   event.preventDefault();
-                  const parsed = Number(numeratorDraft);
-                  applyNumerator(Number.isFinite(parsed) ? parsed : value.numerator);
+                  const parsed = parseNumericFieldDraft(numeratorDraft);
+                  if (parsed === null) setNumeratorDraft(String(value.numerator));
+                  else applyNumerator(parsed);
                 }
               }}
               min={TIME_SIGNATURE_NUMERATOR_MIN}
