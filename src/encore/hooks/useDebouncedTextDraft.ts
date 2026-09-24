@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 /** Matches the delay the library filter used before drafts moved down the tree. */
 export const ENCORE_TEXT_DRAFT_DEBOUNCE_MS = 220;
@@ -8,6 +8,8 @@ export interface DebouncedTextDraft {
   setDraft: (next: string) => void;
   /** Publish any pending text immediately. Call from `onBlur`. */
   flush: () => void;
+  /** Spread onto the input. Focus tracking is what keeps the caret still — see below. */
+  focusProps: { onFocus: () => void; onBlur: () => void };
 }
 
 export interface DebouncedTextDraftOptions {
@@ -49,6 +51,8 @@ export function useDebouncedTextDraft(
   const { delayMs = ENCORE_TEXT_DRAFT_DEBOUNCE_MS, flushOnUnmount = true } = options;
 
   const [draft, setDraftState] = useState(external);
+  /** True between focus and blur. While true the user owns the value, not the parent. */
+  const focusedRef = useRef(false);
   const publishedRef = useRef(external);
   const pendingRef = useRef<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -79,7 +83,18 @@ export function useDebouncedTextDraft(
     publishRef.current(pending);
   }, []);
 
+  /*
+   * Accept a value pushed from outside — but NEVER while the field has focus.
+   *
+   * Rewriting a focused input's `value` resets the caret to the end, and on macOS it also hands the
+   * text-substitution engine a value it did not expect, which is how a stray "." appears after a
+   * double space. Reported as "my editing cursor jumps around unexpectedly".
+   *
+   * While focused, the user is the source of truth. Anything the parent has to say can wait for
+   * blur, at which point `flush` has already published what was typed.
+   */
   useEffect(() => {
+    if (focusedRef.current) return;
     if (external !== publishedRef.current) {
       publishedRef.current = external;
       pendingRef.current = null;
@@ -113,5 +128,18 @@ export function useDebouncedTextDraft(
     [delayMs, flush],
   );
 
-  return { draft, setDraft, flush };
+  const focusProps = useMemo(
+    () => ({
+      onFocus: () => {
+        focusedRef.current = true;
+      },
+      onBlur: () => {
+        focusedRef.current = false;
+        flush();
+      },
+    }),
+    [flush],
+  );
+
+  return { draft, setDraft, flush, focusProps };
 }
