@@ -44,6 +44,7 @@ import type { LyreflySyncPayload } from './lyreflyDriveEnvelope';
 import { applyLyreflyProjectPackageToDb, buildLyreflyProjectPackageFromDb } from './lyreflyProjectPackageDb';
 import { projectPackageFromFiles, projectPackageToFiles, type LyreflyProjectPackageFiles } from './projectPackage';
 import { escapeDriveQueryLiteral } from '../../shared/drive/escapeDriveQueryLiteral';
+import { formatMissingSidecarsMessage, runSidecarBatch } from '../../shared/drive/sidecarBatchTolerance';
 
 type FolderCache = Map<string, Promise<string>>;
 
@@ -423,22 +424,29 @@ export async function downloadMissingLyreflyProjectSidecars(
   const candidates = merged.projects.filter((p) => Boolean(p.projectFolderId));
   if (candidates.length === 0) return;
 
-  for (let i = 0; i < candidates.length; i += 1) {
-    const summary = candidates[i];
-    if (!summary) continue;
-    const localProject = await lyreflyDb.projects.get(summary.id);
-    const localPageCount = await lyreflyDb.pageNodes.where('projectId').equals(summary.id).count();
-    const remotePageCount = summary.pageCount ?? 0;
-    // Never treat an empty local workbench as hydrated (stubs used to copy projectFolderId and
-    // skip download when pageCount was 0/undefined). Require local pages when remote has any.
-    const pagesCaughtUp =
-      localPageCount > 0 && (remotePageCount === 0 || localPageCount >= remotePageCount);
-    const clockCaughtUp =
-      Boolean(localProject) && localProject!.updatedAt >= (summary.updatedAt || '');
-    if (pagesCaughtUp && clockCaughtUp) continue;
-    onProgress(`Downloading project ${i + 1} of ${candidates.length}: ${summary.title}`);
-    await downloadOneLyreflyProjectPackage(accessToken, summary, onProgress);
-  }
+  // One project folder trashed on Drive used to abort this loop, leaving every later project in the
+  // library unfetched on every subsequent sync.
+  const outcome = await runSidecarBatch(
+    candidates,
+    async (summary, i) => {
+      const localProject = await lyreflyDb.projects.get(summary.id);
+      const localPageCount = await lyreflyDb.pageNodes.where('projectId').equals(summary.id).count();
+      const remotePageCount = summary.pageCount ?? 0;
+      // Never treat an empty local workbench as hydrated (stubs used to copy projectFolderId and
+      // skip download when pageCount was 0/undefined). Require local pages when remote has any.
+      const pagesCaughtUp =
+        localPageCount > 0 && (remotePageCount === 0 || localPageCount >= remotePageCount);
+      const clockCaughtUp =
+        localProject != null && localProject.updatedAt >= (summary.updatedAt || '');
+      if (pagesCaughtUp && clockCaughtUp) return;
+      onProgress(`Downloading project ${i + 1} of ${candidates.length}: ${summary.title}`);
+      await downloadOneLyreflyProjectPackage(accessToken, summary, onProgress);
+    },
+    { labelOf: (summary) => summary.title || summary.id },
+  );
+
+  const missing = formatMissingSidecarsMessage(outcome);
+  if (missing) onProgress(missing);
 }
 
 /** `needsSidecarDownload` for {@link lyreflyPortfolioDriveBackupConfig} — synchronous by contract. */

@@ -30,6 +30,7 @@ import { reindexGesturePacksMissingPhotos } from './gesturePackIndex';
 import { reconcileDriveFolderMerges } from './gestureReconcileDriveFolderMerges';
 import { reconcileStaleGestureUploadPacks } from './reconcileStaleGestureUploadPacks';
 import { readGestureDriveSyncMeta, writeGestureDriveSyncMeta } from './gestureDriveSyncMeta';
+import { formatMissingSidecarsMessage, runSidecarBatch } from '../../shared/drive/sidecarBatchTolerance';
 import {
   findLatestGesturePrePullSnapshot,
   formatGestureDriveUndoSnapshotTrigger,
@@ -111,14 +112,38 @@ export const gesturePortfolioDriveBackupConfig: LabsPortfolioDriveBackupConfig<
   // re-indexing packs whose photo lists are missing after a merge.
   downloadSidecars: async (token, _merged, onProgress) => {
     onProgress('Checking Drive photo folders…');
-    await reconcileDriveFolderMerges(token);
-    const reindex = await reindexGesturePacksMissingPhotos(token);
-    await reconcileStaleGestureUploadPacks(token);
-    if (reindex.photoCount > 0) {
+    /*
+     * Three independent reconciliation steps, run through the tolerant batch so a folder the user
+     * deleted in Drive (404) cannot stop the other two. Each step is the "item" here — unlike
+     * Zinebox and Lyrefly, Gesture's photos live in the user's own folders, so there is no per-file
+     * download loop to guard. Auth and rate-limit failures still stop the batch.
+     */
+    let reindexedPhotoCount = 0;
+    const outcome = await runSidecarBatch(
+      [
+        { label: 'Drive folder merges', run: () => reconcileDriveFolderMerges(token) },
+        {
+          label: 'pack photo re-index',
+          run: async () => {
+            const reindex = await reindexGesturePacksMissingPhotos(token);
+            reindexedPhotoCount = reindex.photoCount;
+          },
+        },
+        { label: 'stale upload packs', run: () => reconcileStaleGestureUploadPacks(token) },
+      ],
+      async (step) => {
+        await step.run();
+      },
+      { labelOf: (step) => step.label },
+    );
+
+    if (reindexedPhotoCount > 0) {
       onProgress(
-        `Loaded ${reindex.photoCount} photo${reindex.photoCount === 1 ? '' : 's'} from Drive folders.`,
+        `Loaded ${reindexedPhotoCount} photo${reindexedPhotoCount === 1 ? '' : 's'} from Drive folders.`,
       );
     }
+    const missing = formatMissingSidecarsMessage(outcome);
+    if (missing) onProgress(missing);
   },
   needsSidecarDownload: (merged) => merged.packs.some((p) => Boolean(p.driveFolderId?.trim())),
   messages: {

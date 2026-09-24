@@ -18534,6 +18534,73 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-drive-sidecarbatchtolerance-ts-formatmissingsidecarsmessage",
+    "name": "formatMissingSidecarsMessage",
+    "path": "src/shared/drive/sidecarBatchTolerance.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "User-facing line naming what could not be fetched, or null when everything landed.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-sidecarbatchtolerance-ts-isbatchstoppingsidecarerror",
+    "name": "isBatchStoppingSidecarError",
+    "path": "src/shared/drive/sidecarBatchTolerance.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Continuing would fail identically for every remaining item, so stopping is the correct response. 401/403 need a fresh token or consent; 429 and 5xx need backoff, not several hundred more calls.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-sidecarbatchtolerance-ts-ismissingsidecarerror",
+    "name": "isMissingSidecarError",
+    "path": "src/shared/drive/sidecarBatchTolerance.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "The sidecar is gone from Drive: trashed, deleted, or no longer visible to this app.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-sidecarbatchtolerance-ts-runsidecarbatch",
+    "name": "runSidecarBatch",
+    "path": "src/shared/drive/sidecarBatchTolerance.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Run a sidecar download batch so one dead blob cannot pause a whole library's sync. Every `downloadSidecars` implementation awaited each item inside a bare loop. One trashed or permission-changed blob throws a 404, the loop aborts, the exception propagates into the merge, and every *later* item in the batch is never fetched — a single dead PDF stalls the rest of the library, on every subsequent sync, with no message naming the file. Tolerating a missing item is safe: the sidecar is already gone from Drive, and skipping it leaves local data untouched. Tolerating an AUTH or RATE-LIMIT failure is not — every remaining item will fail the same way, and grinding through hundreds of them is exactly the API-abuse pattern `driveRequestGovernor` exists to prevent. So those still stop the batch.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-sidecarbatchtolerance-ts-sidecarbatchoutcome",
+    "name": "SidecarBatchOutcome",
+    "path": "src/shared/drive/sidecarBatchTolerance.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Run a sidecar download batch so one dead blob cannot pause a whole library's sync. Every `downloadSidecars` implementation awaited each item inside a bare loop. One trashed or permission-changed blob throws a 404, the loop aborts, the exception propagates into the merge, and every *later* item in the batch is never fetched — a single dead PDF stalls the rest of the library, on every subsequent sync, with no message naming the file. Tolerating a missing item is safe: the sidecar is already gone from Drive, and skipping it leaves local data untouched. Tolerating an AUTH or RATE-LIMIT failure is not — every remaining item will fail the same way, and grinding through hundreds of them is exactly the API-abuse pattern `driveRequestGovernor` exists to prevent. So those still stop the batch.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
     "id": "src-shared-drive-uselabsdriveportfolioautosync-ts-labsdriveportfoliolocalchangeevent",
     "name": "LabsDrivePortfolioLocalChangeEvent",
     "path": "src/shared/drive/useLabsDrivePortfolioAutoSync.ts",
