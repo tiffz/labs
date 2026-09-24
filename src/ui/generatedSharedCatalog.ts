@@ -22013,6 +22013,37 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-music-chordpro-chartmetadataheader-ts-chartmetadataheader",
+    "name": "ChartMetadataHeader",
+    "path": "src/shared/music/chordPro/chartMetadataHeader.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Leading metadata block on a pasted chart. Supported, case-insensitive, one per line, only BEFORE the first section header: Key: C key: Cm {key: C} BPM: 84 Tempo: 84 {tempo: 84} Capo: 2 Time: 6/8 Time signature: 6/8 Restricted to the leading block on purpose. A lyric line that happens to read \"Key: C\" further down the song is lyrics, and hijacking it would silently delete a line of someone's song. Before this existed, `Key: C` at the top of a paste became a section: type `Other`, header `\"\"`, one line of text. That is the \"ghost section 1 I cannot delete\" — it had no header to click. And `BPM: 84` was dropped entirely, with no toast and nothing written to the song.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-chartmetadataheader-ts-parsechartmetadataheader",
+    "name": "parseChartMetadataHeader",
+    "path": "src/shared/music/chordPro/chartMetadataHeader.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Leading metadata block on a pasted chart. Supported, case-insensitive, one per line, only BEFORE the first section header: Key: C key: Cm {key: C} BPM: 84 Tempo: 84 {tempo: 84} Capo: 2 Time: 6/8 Time signature: 6/8 Restricted to the leading block on purpose. A lyric line that happens to read \"Key: C\" further down the song is lyrics, and hijacking it would silently delete a line of someone's song. Before this existed, `Key: C` at the top of a paste became a section: type `Other`, header `\"\"`, one line of text. That is the \"ghost section 1 I cannot delete\" — it had no header to click. And `BPM: 84` was dropped entirely, with no toast and nothing written to the song.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-music-chordpro-chartplaybacksequence-ts-chart-playback-beats-per-measure",
     "name": "CHART_PLAYBACK_BEATS_PER_MEASURE",
     "path": "src/shared/music/chordPro/chartPlaybackSequence.ts",
