@@ -867,6 +867,28 @@ a.stanza-library-card {
   font-size: 17px;
 }
 
+/*
+ * State-changing controls read as buttons; value nudges do not.
+ *
+ * The selection footer and calibration rail mixed the two: "Deselect sections", "Analyze" and
+ * "Reset tempo" are mode/state changes, but they rendered identically to the bare +/- nudge arrows
+ * — a flat icon with a tooltip. Reported as "state-changing buttons don't look like buttons", and it
+ * is why the way OUT of section-edit state was not findable.
+ *
+ * A visible surface rather than a text label, because the footer has to survive the 390px floor and
+ * a label on each would overflow it. Matches the base rule specificity, so no override flag is needed.
+ */
+.stanza-playback-chip-btn--state.MuiIconButton-root {
+  border: 1px solid var(--stanza-paper-line);
+  background: var(--stanza-tray-bg);
+  color: var(--stanza-ink);
+}
+
+.stanza-playback-chip-btn--state.MuiIconButton-root:hover {
+  background: var(--stanza-tray-bg-hover);
+  border-color: var(--stanza-ink-muted);
+}
+
 .stanza-playback-chip-btn.MuiIconButton-root:hover {
   color: var(--stanza-ink);
   background: var(--stanza-tray-bg-hover);

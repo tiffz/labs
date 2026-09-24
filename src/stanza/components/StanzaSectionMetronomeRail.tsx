@@ -733,6 +733,7 @@ export default function StanzaSectionMetronomeRail({
                   <IconButton
                     type="button"
                     size="small"
+                    className="stanza-btn-soft-outline stanza-rail-compact-btn"
                     aria-label={
                       timingScope === 'section' && segmentCalibration
                         ? 'Use song tempo'
@@ -752,6 +753,25 @@ export default function StanzaSectionMetronomeRail({
           label="Beat 1 (ms)"
           className="stanza-rail-calibration-field"
           inheritanceMode={tempoInheritanceMode}
+          /*
+           * Same inherit/custom caption as BPM. Both numbers come from one calibration, but only
+           * BPM said whose — so with a section selected you could see the tempo was inherited from
+           * the whole song while Beat 1 looked like it belonged to the section. Reported as section
+           * vs whole-song confusion.
+           */
+          inheritanceHint={
+            timingScope === 'section' ? (
+              <StanzaRailInheritanceHint
+                mode={tempoInheritanceMode}
+                onResetToParent={
+                  tempoInheritanceMode === 'custom' ? resetTempoCalibration : undefined
+                }
+                resetLabel="Use song Beat 1"
+                inheritLabel="From whole song"
+                showCustomStatus={false}
+              />
+            ) : null
+          }
         >
           <Box className="stanza-rail-beat-offset-shell">
             <input
