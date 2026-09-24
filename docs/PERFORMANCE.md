@@ -102,6 +102,34 @@ presubmit and in CI's build job, and checks both the workflow env and the built 
 `NODE_ENV` belongs on the build **step**, never the job: at job level `npm ci` omits
 devDependencies when it is `production`.
 
+## Interaction budgets measure two different things
+
+`measureClickUntil` + `reportInteractionLatency` measure **wall clock** from click until a DOM
+condition, with a two-tier gate: advisory at 1x budget, hard fail at 3x
+([`interactionLatencyCore.ts`](../src/shared/test/interactionLatencyCore.ts)).
+
+Wall clock cannot see a render cascade. The Encore Originals title blocked the main thread for
+**2,144ms across 29 long tasks** while every individual interaction still resolved promptly — a
+click-until-condition measurement saw nothing wrong. For interactions where a cascade is the risk,
+use `measureClickBlocking` + `reportInteractionBlocking`, which also captures long tasks and fails
+on a single task longer than 1.5x the budget.
+
+**Do not assert long-task COUNT.** It inverts between machines: a cascade fragments into many small
+tasks on a slow runner and collapses into a few enormous ones on a fast one (measured: 7 healthy vs
+29 broken on CI; 26 healthy vs 3 broken under 4x throttle). Worst-single-task and the functional
+"did input get dropped" check are the portable signals.
+
+Every measurement is recorded as a Playwright annotation, including the ones inside budget — the
+advisory tier used to be a bare `console.warn`, which with no reviewer is
+[`advisory-into-the-void`](CI_CHECK_VALUE.md). The in-budget numbers are also what a future budget
+calibration needs; none of them were recorded anywhere before.
+
+The instrument has its own self-test,
+[`interaction-blocking-instrument.spec.ts`](../e2e/smoke/interaction-blocking-instrument.spec.ts):
+it blocks the main thread on purpose and requires the observer to see it. Verified to fail when the
+observer is pointed at the wrong entry type — otherwise every blocking assertion in the suite could
+pass forever while measuring nothing.
+
 ## First-paint load (bundle)
 
 Eager JS is measured by [`scripts/bundle-size-report.mjs`](../scripts/bundle-size-report.mjs) (entry + `modulepreload`s, gzip). Gate: [`PERFORMANCE_BUDGETS.md`](PERFORMANCE_BUDGETS.md).
