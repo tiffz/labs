@@ -7,13 +7,21 @@ import { enableDebug } from './utils/practiceDebugLog';
 import DebugPanel from './components/DebugPanel';
 import { ScalesSessionDebugBridgeProvider } from './context/scalesSessionDebugBridge';
 import SkipToMain from '../shared/components/SkipToMain';
-import { readLabsDebugFromLocation } from '../shared/debug/readLabsDebugParams';
+import { isLabsDebugVisible } from '../shared/debug/labsDebugAccess';
 import { ScalesDriveBackupProvider } from './context/ScalesDriveBackupContext';
 
 /** SessionScreen pulls ScoreDisplay/VexFlow — keep off the home-screen first paint. */
 const SessionScreen = lazy(() => import('./components/SessionScreen'));
 
-const debugMode = readLabsDebugFromLocation().debug;
+/*
+ * Diagnostics tier (ADR 0026), not the raw `?debug` flag.
+ *
+ * The panel itself is a read-only event log plus help-surface previews, so it belongs at
+ * `isLabsDebugVisible()`. Its one mutating control — "complete exercise perfectly" — is rendered
+ * only when `sessionApi` is non-null, and `SessionScreen` now publishes that API at the `full` tier
+ * only. So an anonymous production `?debug` gets the log and the previews and cannot touch progress.
+ */
+const debugMode = isLabsDebugVisible();
 if (debugMode) enableDebug();
 
 function ScreenRouter() {
