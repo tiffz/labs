@@ -18,7 +18,26 @@ export interface StaffNote {
 export interface DrawStaffOptions {
   width: number;
   height: number;
+  /**
+   * Uniform scale for the whole drawing, so the notation grows into the space
+   * the layout gives it instead of sitting small in a tall box. VexFlow lays
+   * out at a fixed stave size, so this is a canvas transform rather than a
+   * different layout.
+   */
+  scale?: number;
+  /**
+   * Indices into `notes` to draw as lit. Used to show which degree of the scale
+   * the key you are holding corresponds to — the link between the keyboard and
+   * the page that makes the notation legible.
+   */
+  highlighted?: ReadonlySet<number>;
+  /** Colour for lit noteheads. Defaults to the app's retuned amber. */
+  highlightColor?: string;
 }
+
+const DEFAULT_HIGHLIGHT = '#a9661a';
+const INK = '#241d16';
+const EMPTY_HIGHLIGHT: ReadonlySet<number> = new Set<number>();
 
 /**
  * Draw a single-stave run of notes into `container`, after the Bravura music
@@ -59,7 +78,13 @@ function drawStaffNow(
   renderer.resize(options.width, options.height);
   const context = renderer.getContext();
 
-  const stave = new Stave(4, 0, options.width - 12);
+  const scale = options.scale && options.scale > 0 ? options.scale : 1;
+  if (scale !== 1) context.scale(scale, scale);
+  // Everything below lays out in pre-scale units, so the stave must be told the
+  // width it actually has after the transform.
+  const innerWidth = options.width / scale;
+
+  const stave = new Stave(4, 0, innerWidth - 12);
   stave.addClef('treble');
   stave.setContext(context).draw();
 
@@ -68,13 +93,26 @@ function drawStaffNow(
     return;
   }
 
-  const staveNotes = notes.map((note) => {
+  const lit = options.highlighted ?? EMPTY_HIGHLIGHT;
+  const litColor = options.highlightColor ?? DEFAULT_HIGHLIGHT;
+
+  const staveNotes = notes.map((note, index) => {
     const staveNote = new StaveNote({
       keys: [vexflowKey(note, note.octave)],
       duration: 'q',
     });
     if (note.accidental !== 'n') {
       staveNote.addModifier(new Accidental(note.accidental), 0);
+    }
+    if (lit.has(index)) {
+      // Colour the whole note — head, stem and accidental — so a lit degree
+      // reads at a glance rather than needing a hunt for a tinted notehead.
+      staveNote.setStyle({ fillStyle: litColor, strokeStyle: litColor });
+      staveNote
+        .getModifiers()
+        .forEach((modifier) => modifier.setStyle({ fillStyle: litColor, strokeStyle: litColor }));
+    } else {
+      staveNote.setStyle({ fillStyle: INK, strokeStyle: INK });
     }
     return staveNote;
   });
@@ -87,7 +125,7 @@ function drawStaffNow(
   voice.setStrict(false);
   voice.addTickables(staveNotes);
 
-  new Formatter().joinVoices([voice]).format([voice], Math.max(options.width - 80, 40));
+  new Formatter().joinVoices([voice]).format([voice], Math.max(innerWidth - 80, 40));
   voice.draw(context, stave);
 
   applyStaffAccessibility(container, notes);

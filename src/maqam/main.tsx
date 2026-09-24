@@ -15,8 +15,6 @@ import { initMaterialIconRuntime } from '../shared/ui/icons/materialIconsBootstr
 import '../shared/components/music/appSharedThemes.css';
 import '../shared/components/music/onscreenPianoKeyboard.css';
 import '../shared/styles/labsChrome.css';
-import '../shared/layout/app-shell-layout.css';
-import './maqam-layout.css';
 import './maqam.css';
 import App from './App';
 

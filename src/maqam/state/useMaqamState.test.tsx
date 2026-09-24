@@ -65,7 +65,7 @@ class FakeAudioContext {
 }
 
 function Harness() {
-  const { noteOn, noteOff, ribbon, keyTunings } = useMaqamState();
+  const { noteOn, noteOff, activeNotes, keyTunings } = useMaqamState();
   return (
     <div>
       <button type="button" onClick={() => noteOn(64)} data-testid="play-e">
@@ -74,7 +74,7 @@ function Harness() {
       <button type="button" onClick={() => noteOff(64)} data-testid="stop-e">
         stop E
       </button>
-      <span data-testid="ribbon-length">{ribbon.length}</span>
+      <span data-testid="active-count">{activeNotes.size}</span>
       <span data-testid="e-role">{keyTunings[4]?.role}</span>
     </div>
   );
@@ -99,8 +99,9 @@ describe('useMaqamState under StrictMode', () => {
    * key was silently inaudible in production while the UI looked fine.
    *
    * Asserting on started oscillators rather than on visible output, because the
-   * visible path was deliberately decoupled from audio: the staff updates even
-   * when sound fails, which would hide exactly this bug from a DOM assertion.
+   * visible path was deliberately decoupled from audio: the keyboard responds
+   * even when sound fails, which would hide exactly this bug from a DOM
+   * assertion.
    */
   it('still sounds a note after StrictMode tears the first effect pass down', async () => {
     render(
@@ -116,7 +117,7 @@ describe('useMaqamState under StrictMode', () => {
     expect(startedOscillators).toBeGreaterThan(0);
   });
 
-  it('records the note on the staff as well', async () => {
+  it('marks the key as held so the staff can light its degree', async () => {
     render(
       <StrictMode>
         <Harness />
@@ -127,7 +128,18 @@ describe('useMaqamState under StrictMode', () => {
       screen.getByTestId('play-e').click();
     });
 
-    expect(screen.getByTestId('ribbon-length').textContent).toBe('1');
+    expect(screen.getByTestId('active-count').textContent).toBe('1');
+  });
+
+  it('releases the key on note off', async () => {
+    render(<Harness />);
+    await act(async () => {
+      screen.getByTestId('play-e').click();
+    });
+    await act(async () => {
+      screen.getByTestId('stop-e').click();
+    });
+    expect(screen.getByTestId('active-count').textContent).toBe('0');
   });
 
   it('loads the default maqam, so E is a retuned key', () => {
@@ -150,7 +162,7 @@ describe('useMaqamState under StrictMode', () => {
     expect(closedContexts).toBe(1);
   });
 
-  it('keeps the staff updating even when the AudioContext cannot be created', async () => {
+  it('keeps the keyboard responding even when the AudioContext cannot be created', async () => {
     // Chrome throws from the constructor past its six-context-per-document cap.
     vi.stubGlobal(
       'AudioContext',
@@ -168,16 +180,18 @@ describe('useMaqamState under StrictMode', () => {
 
     // No sound, but the notation still teaches — the app's other half survives.
     expect(startedOscillators).toBe(0);
-    expect(screen.getByTestId('ribbon-length').textContent).toBe('1');
+    expect(screen.getByTestId('active-count').textContent).toBe('1');
   });
 
-  it('caps the live staff at four notes', async () => {
+  it('does not double-count a retriggered key', async () => {
     render(<Harness />);
-    for (let i = 0; i < 6; i += 1) {
+    for (let i = 0; i < 4; i += 1) {
       await act(async () => {
         screen.getByTestId('play-e').click();
       });
     }
-    expect(screen.getByTestId('ribbon-length').textContent).toBe('4');
+    // One key held is one entry, however many times it retriggers — otherwise
+    // a MIDI controller's key repeat would light phantom degrees.
+    expect(screen.getByTestId('active-count').textContent).toBe('1');
   });
 });

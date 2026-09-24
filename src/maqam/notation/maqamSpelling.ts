@@ -1,6 +1,5 @@
 import {
   pitchClassOf,
-  type MaqamAccidentalCode,
   type MaqamLetter,
   type MaqamNoteSpelling,
 } from './maqamAccidentals';
@@ -27,42 +26,28 @@ const DEFAULT_SPELLINGS: MaqamNoteSpelling[] = [
   { letter: 'B', accidental: 'n' },
 ];
 
-/** Bend a default spelling down by a quarter-tone, keeping its letter. */
-const HALF_FLATTENED: Record<MaqamAccidentalCode, MaqamAccidentalCode> = {
-  n: 'd', // E -> E half-flat
-  b: 'db', // B flat -> B three-quarter-flat
-  '#': '+', // (unused by the defaults, kept total)
-  d: 'd',
-  '+': '+',
-  db: 'db',
-  '++': '++',
-};
-
 /**
- * How to write a played MIDI note, given the maqam loaded and the bend the
- * tuning applies to it.
+ * Which degrees of the written scale the held keys correspond to.
  *
- * A maqam that names the key wins: playing E in Rast writes E-half-flat, which
- * is what the ear hears, rather than the E-natural the key is painted with.
- * Outside the maqam, the key falls back to its default spelling, bent if the
- * user has retuned it by hand.
+ * Matching is by pitch class, not by MIDI note, so holding E in any octave
+ * lights every E in the scale — including Sikah's upper tonic, which is the
+ * same degree an octave up. That is the honest answer for a 12-key board: one
+ * key IS every octave of that pitch class.
  */
-export function spellMidiNote(
-  midiNote: number,
-  cents: number,
+export function highlightedDegreeIndices(
   preset: MaqamPreset | undefined,
-): StaffNote {
-  const pitchClass = ((Math.round(midiNote) % 12) + 12) % 12;
-  const octave = Math.floor(Math.round(midiNote) / 12) - 1;
+  activeNotes: ReadonlySet<number>,
+): Set<number> {
+  const lit = new Set<number>();
+  if (!preset || activeNotes.size === 0) return lit;
 
-  const named = preset?.scaleDegrees.find((degree) => pitchClassOf(degree) === pitchClass);
-  if (named) {
-    return { letter: named.letter, accidental: named.accidental, octave };
-  }
+  const activePitchClasses = new Set<number>();
+  for (const midi of activeNotes) activePitchClasses.add(((midi % 12) + 12) % 12);
 
-  const fallback = DEFAULT_SPELLINGS[pitchClass];
-  const accidental = cents === 0 ? fallback.accidental : HALF_FLATTENED[fallback.accidental];
-  return { letter: fallback.letter, accidental, octave };
+  preset.scaleDegrees.forEach((degree, index) => {
+    if (activePitchClasses.has(pitchClassOf(degree))) lit.add(index);
+  });
+  return lit;
 }
 
 /** The written form of a maqam's own scale, for the reference stave. */

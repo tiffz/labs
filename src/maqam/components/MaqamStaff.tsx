@@ -5,28 +5,33 @@ import { drawMaqamStaff, describeStaff, type StaffNote } from '../notation/maqam
 
 interface MaqamStaffProps {
   notes: StaffNote[];
-  height?: number;
-  /** Shown in place of the staff when there is nothing to draw. */
-  emptyMessage?: string;
+  /** Indices into `notes` to draw lit — the degrees currently being played. */
+  highlighted?: ReadonlySet<number>;
   className?: string;
 }
 
-const DEFAULT_HEIGHT = 96;
+/** Unscaled drawing height: a treble stave plus room for ledger lines. */
+const BASE_HEIGHT = 96;
 const MIN_WIDTH = 240;
+/** Width at which the stave reads at its natural size; wider gets scaled up. */
+const COMFORTABLE_WIDTH = 620;
+/** Past this the noteheads look inflated rather than generous. */
+const MAX_SCALE = 1.9;
 
 /**
- * A single stave, redrawn when its notes or its width change.
+ * A single stave, sized from its width.
  *
- * VexFlow draws to a fixed pixel width, so the stave has to be re-rendered on
- * resize rather than scaled with CSS — scaling would stretch the clef and
- * noteheads out of proportion with the staff lines.
+ * VexFlow draws to fixed pixel coordinates, so growing the notation is a canvas
+ * transform rather than a CSS stretch — CSS scaling would distort staff-line
+ * weight against notehead size.
+ *
+ * Scale comes from the width and the height follows from it. Deriving it from
+ * the available *height* instead was tried and looked worse: the box stretched
+ * to whatever the layout had spare and the notation sat in a pool of white.
+ * It also risked a measure-draw feedback loop, since the SVG is what fills the
+ * box being measured.
  */
-export default function MaqamStaff({
-  notes,
-  height = DEFAULT_HEIGHT,
-  emptyMessage,
-  className,
-}: MaqamStaffProps) {
+export default function MaqamStaff({ notes, highlighted, className }: MaqamStaffProps) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const [width, setWidth] = useState(0);
   const fontReady = useVexFlowMusicFontReady();
@@ -34,44 +39,35 @@ export default function MaqamStaff({
   useEffect(() => {
     const host = hostRef.current;
     if (!host || typeof ResizeObserver === 'undefined') return;
-    const observe = new ResizeObserver((entries) => {
-      const next = entries[0]?.contentRect.width ?? 0;
-      // Round to whole pixels: a fractional resize loop would redraw the whole
-      // stave on every sub-pixel change during a window drag.
-      setWidth(Math.round(next));
+    // Whole pixels: a fractional resize loop would redraw the entire stave on
+    // every sub-pixel change during a window drag.
+    const measure = (next: number) => setWidth(Math.round(next));
+    const observer = new ResizeObserver((entries) => {
+      const rect = entries[0]?.contentRect;
+      if (rect) measure(rect.width);
     });
-    observe.observe(host);
-    setWidth(Math.round(host.getBoundingClientRect().width));
-    return () => observe.disconnect();
+    observer.observe(host);
+    measure(host.getBoundingClientRect().width);
+    return () => observer.disconnect();
   }, []);
+
+  const scale = Math.min(Math.max(width / COMFORTABLE_WIDTH, 1), MAX_SCALE);
+  const height = Math.round(BASE_HEIGHT * scale);
 
   useEffect(() => {
     const host = hostRef.current;
     if (!host || !fontReady || width < MIN_WIDTH) return;
-    let cancelled = false;
-    void drawMaqamStaff(host, notes, { width, height }).then(() => {
-      // A newer draw may have started during the font await; its own effect
-      // will have cleared and redrawn, so nothing to undo here.
-      if (cancelled) return;
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [notes, width, height, fontReady]);
-
-  const isEmpty = notes.length === 0;
+    void drawMaqamStaff(host, notes, { width, height, scale, highlighted });
+  }, [notes, highlighted, width, height, scale, fontReady]);
 
   return (
     <div className={['maqam-staff', className].filter(Boolean).join(' ')}>
       <div
         ref={hostRef}
         className="maqam-staff__canvas"
-        style={{ minHeight: height }}
+        style={{ height }}
         data-testid="maqam-staff-canvas"
       />
-      {isEmpty && emptyMessage && (
-        <p className="maqam-staff__empty">{emptyMessage}</p>
-      )}
       {/* The SVG carries its own aria-label; this keeps the note list available
           even before the font resolves and the SVG exists. */}
       <span className="maqam-visually-hidden">{describeStaff(notes)}</span>

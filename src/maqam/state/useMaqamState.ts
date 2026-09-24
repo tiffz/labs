@@ -18,16 +18,6 @@ import {
 } from './maqamTuning';
 import { readMaqamUrlState, writeMaqamUrlSearch } from './maqamUrlState';
 
-/** How many notes the live staff keeps. Four is a jins — the unit of the music. */
-export const RIBBON_LENGTH = 4;
-
-export interface PlayedNote {
-  /** Monotonic id; MIDI note numbers repeat, React keys must not. */
-  id: number;
-  midiNote: number;
-  cents: number;
-}
-
 export interface MaqamState {
   preset: MaqamPreset | undefined;
   presetId: string;
@@ -36,7 +26,6 @@ export interface MaqamState {
   isPresetTuning: boolean;
   keyTunings: KeyTuning[];
   activeNotes: Set<number>;
-  ribbon: PlayedNote[];
   midiDevices: MidiDevice[];
   midiSupported: boolean;
   audioState: AudioContextState | 'uninitialized';
@@ -45,7 +34,6 @@ export interface MaqamState {
   resetTuning: () => void;
   noteOn: (midiNote: number) => void;
   noteOff: (midiNote: number) => void;
-  clearRibbon: () => void;
 }
 
 export function useMaqamState(): MaqamState {
@@ -57,7 +45,6 @@ export function useMaqamState(): MaqamState {
   const [presetId, setPresetId] = useState(initial.presetId);
   const [matrix, setMatrix] = useState<DetuneMatrix>(initial.matrix);
   const [activeNotes, setActiveNotes] = useState<Set<number>>(() => new Set());
-  const [ribbon, setRibbon] = useState<PlayedNote[]>([]);
   const [midiDevices, setMidiDevices] = useState<MidiDevice[]>([]);
   const [midiSupported, setMidiSupported] = useState(false);
   const [audioState, setAudioState] = useState<AudioContextState | 'uninitialized'>(
@@ -95,8 +82,6 @@ export function useMaqamState(): MaqamState {
     matrixRef.current = matrix;
   }, [matrix]);
 
-  const nextNoteId = useRef(0);
-
   useEffect(
     () => () => {
       synthRef.current?.dispose();
@@ -118,11 +103,6 @@ export function useMaqamState(): MaqamState {
         next.add(midiNote);
         return next;
       });
-      setRibbon((prev) => {
-        nextNoteId.current += 1;
-        return [...prev, { id: nextNoteId.current, midiNote, cents }].slice(-RIBBON_LENGTH);
-      });
-
       const synth = getSynth();
       void synth.resume().then(() => setAudioState(synth.getState()));
       synth.noteOn(midiNote, cents);
@@ -188,8 +168,6 @@ export function useMaqamState(): MaqamState {
     });
   }, [presetId]);
 
-  const clearRibbon = useCallback(() => setRibbon([]), []);
-
   // Keep the URL shareable. Replace, never push: retuning a key is not a
   // navigation, and a back button that steps through every toggle is a trap.
   useEffect(() => {
@@ -211,7 +189,6 @@ export function useMaqamState(): MaqamState {
     isPresetTuning,
     keyTunings,
     activeNotes,
-    ribbon,
     midiDevices,
     midiSupported,
     audioState,
@@ -220,6 +197,5 @@ export function useMaqamState(): MaqamState {
     resetTuning,
     noteOn,
     noteOff,
-    clearRibbon,
   };
 }
