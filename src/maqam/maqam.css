@@ -51,7 +51,16 @@
   height: 100vh;
   height: 100dvh;
   overflow: hidden;
-  background: var(--m3-surface);
+  /* A warm wash rather than a flat fill: the page had the right colours and
+     none of the depth, which is most of what read as "dry". */
+  background:
+    radial-gradient(120% 90% at 12% 0%, #fffdfa 0%, rgba(255, 253, 250, 0) 55%),
+    radial-gradient(
+      90% 70% at 100% 100%,
+      #f6ecdd 0%,
+      rgba(246, 236, 221, 0) 60%
+    ),
+    var(--m3-surface);
   color: var(--m3-on-surface);
 }
 
@@ -212,9 +221,11 @@
 .maqam-staff-surface.MuiPaper-root {
   border: 0;
   border-radius: var(--maqam-radius-l);
-  background: #ffffff;
+  /* Paper-white, and warmer at the foot, so the staff reads as a page rather
+     than a dialog box. */
+  background: linear-gradient(180deg, #ffffff 0%, #fffdf9 100%);
   padding: 8px 10px;
-  box-shadow: 0 1px 2px rgba(32, 27, 22, 0.05);
+  box-shadow: 0 1px 3px rgba(32, 27, 22, 0.07);
 }
 
 .maqam-staff {
@@ -240,8 +251,36 @@
 
 .maqam-jins {
   border-radius: var(--maqam-radius-l);
-  background: var(--m3-surface-container);
+  background: linear-gradient(
+    160deg,
+    #fbf4ea 0%,
+    var(--m3-surface-container) 70%
+  );
   padding: 14px 16px;
+}
+
+.maqam-jins__title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--m3-outline-variant);
+}
+
+/* The name the music is actually taught under. Large enough to be read, not
+   used as a texture. */
+.maqam-jins__arabic {
+  font-size: 1.7rem;
+  line-height: 1.1;
+  font-weight: 600;
+  color: var(--m3-primary);
+}
+
+.maqam-jins__translit {
+  font-size: 0.78rem;
+  color: var(--m3-on-surface-variant);
 }
 
 .maqam-jins__list {
@@ -307,7 +346,14 @@
   flex-shrink: 0;
   padding: 14px 16px;
   border-radius: var(--maqam-radius-xl);
-  background: var(--m3-surface-container);
+  /* The instrument gets the warmest surface in the app — it is the hero, and a
+     flat panel made it read as a control strip. */
+  background: linear-gradient(
+    168deg,
+    #f9f2e8 0%,
+    var(--m3-surface-container-high) 100%
+  );
+  box-shadow: 0 1px 2px rgba(32, 27, 22, 0.05);
 }
 
 .maqam-keyboard {
@@ -396,66 +442,70 @@
   bottom: 8px;
 }
 
-.maqam-key.maqam-key--tonic {
-  background: var(--maqam-tonic-soft);
-  box-shadow: inset 0 -5px 0 var(--maqam-tonic);
-}
-
-.maqam-key.maqam-key--scale {
-  background: var(--maqam-scale-soft);
-  box-shadow: inset 0 -5px 0 var(--maqam-scale);
-}
-
-.maqam-key.maqam-key--microtonal {
-  background: var(--maqam-microtonal-soft);
-  box-shadow: inset 0 -5px 0 var(--maqam-microtonal);
-}
-
-.maqam-key.maqam-key--microtonal .shared-pk-badge {
-  color: var(--m3-on-tertiary-container);
-  font-size: 0.78rem;
-}
-
 /*
- * Home marker. A dot rather than another fill, because the tonic can also be
- * retuned (Sikah sits on E½♭) and the two facts must be readable at once.
- * Shape as well as colour, so it survives a colour-blind reading.
+ * One visual channel per fact.
+ *
+ * Fill says "in this maqam" and nothing else. The tonic is a dot, a retuned key
+ * gets an amber cap and badge, the sounding note a saturated fill. A key can
+ * carry all of them at once — Sikah's E half-flat does — and each stays
+ * readable, which the previous three-competing-fills model made impossible.
  */
+.maqam-key.maqam-key--in-scale {
+  background: var(--maqam-scale-soft);
+}
+
+/* Tonic: shape, so it survives a colour-blind reading and stacks with a bend. */
 .maqam-key.maqam-key--home::after {
   content: '';
   position: absolute;
   bottom: 26px;
   left: 50%;
   transform: translateX(-50%);
-  width: 8px;
-  height: 8px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
   background: var(--maqam-tonic);
   pointer-events: none;
 }
 
 .shared-pk-black.maqam-key--home::after {
-  bottom: 24px;
+  bottom: 26px;
   background: #ffffff;
 }
 
-/* Black keys keep their dark face; the role reads from the underline only. */
-.shared-pk-black.maqam-key--scale,
-.shared-pk-black.maqam-key--tonic,
-.shared-pk-black.maqam-key--microtonal {
-  background: #241f1a;
+/* Retuned: an amber cap at the top of the key, where the badge already sits. */
+.maqam-key.maqam-key--retuned {
+  box-shadow: inset 0 7px 0 var(--maqam-microtonal);
 }
 
-.shared-pk-black.maqam-key--scale {
-  box-shadow: inset 0 -5px 0 var(--maqam-scale);
+.maqam-key.maqam-key--retuned .shared-pk-badge {
+  top: 10px;
+  color: var(--m3-on-tertiary-container);
+  font-size: 0.76rem;
 }
 
-.shared-pk-black.maqam-key--tonic {
-  box-shadow: inset 0 -5px 0 var(--maqam-tonic);
+.shared-pk-black.maqam-key--retuned .shared-pk-badge {
+  color: var(--m3-tertiary-container);
 }
 
-.shared-pk-black.maqam-key--microtonal {
-  box-shadow: inset 0 -5px 0 var(--maqam-microtonal);
+/* Black keys keep their dark face; membership reads from the cap and dot. */
+.shared-pk-black.maqam-key--in-scale {
+  background: #2f3a33;
+}
+
+/* Sounding, during melody playback: the loudest state on the board. */
+.maqam-key.maqam-key--sounding {
+  background: var(--maqam-tonic);
+}
+
+.maqam-key.maqam-key--sounding .shared-pk-white-label,
+.maqam-key.maqam-key--sounding .shared-pk-black-label,
+.maqam-key.maqam-key--sounding .shared-pk-badge {
+  color: rgba(255, 255, 255, 0.96);
+}
+
+.maqam-key.maqam-key--sounding.maqam-key--home::after {
+  background: #ffffff;
 }
 
 /* The pressed state must beat the role colours, or a held key looks unplayed. */
@@ -511,16 +561,29 @@
   border-radius: 4px;
 }
 
-.maqam-legend__swatch--tonic {
+.maqam-legend__swatch--scale {
+  background: var(--maqam-scale-soft);
+  box-shadow: inset 0 0 0 1px var(--maqam-scale);
+}
+
+/* The legend mirrors the board exactly: a dot for the tonic, an amber chip for
+   a retuned key. Anything else and a key has to be decoded twice. */
+.maqam-legend__dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
   background: var(--maqam-tonic);
 }
 
-.maqam-legend__swatch--scale {
-  background: var(--maqam-scale);
-}
-
-.maqam-legend__swatch--microtonal {
-  background: var(--maqam-microtonal);
+.maqam-legend__bend {
+  display: inline-block;
+  padding: 0 5px;
+  border-radius: 5px;
+  background: var(--m3-tertiary-container);
+  color: var(--m3-on-tertiary-container);
+  font-size: 0.7rem;
+  font-weight: 700;
 }
 
 .maqam-badge {
@@ -531,6 +594,82 @@
   font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.03em;
+}
+
+/* ------------------------------------------------------------ melody bar -- */
+
+.maqam-melodybar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.maqam-melodybar__play.MuiButton-root {
+  min-width: 5.5rem;
+}
+
+.maqam-melodybar__pick {
+  flex: 0 1 12rem;
+  min-width: 0;
+}
+
+.maqam-melodybar__pick .MuiOutlinedInput-root {
+  background: #ffffff;
+}
+
+/* ------------------------------------------------------------ midi badge -- */
+
+.maqam-midi.MuiButton-root {
+  gap: 7px;
+  color: var(--m3-on-surface-variant);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.maqam-midi__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--m3-outline-variant);
+}
+
+.maqam-midi--connected .maqam-midi__dot {
+  background: var(--m3-secondary);
+  box-shadow: 0 0 0 3px rgba(47, 125, 92, 0.18);
+}
+
+.maqam-midi--ready .maqam-midi__dot {
+  background: var(--m3-tertiary);
+}
+
+.maqam-midi__detail {
+  max-width: 24rem;
+  padding: 14px 16px;
+}
+
+.maqam-midi__detail h3 {
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+}
+
+.maqam-midi__detail p,
+.maqam-midi__detail li {
+  margin: 0 0 8px;
+  font-size: 0.83rem;
+  line-height: 1.5;
+  color: var(--m3-on-surface-variant);
+}
+
+.maqam-midi__detail ul {
+  margin: 0 0 8px;
+  padding-left: 18px;
+}
+
+.maqam-midi__note {
+  margin-bottom: 0;
+  font-style: italic;
 }
 
 /* ---------------------------------------------------------------- matrix -- */

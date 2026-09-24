@@ -9,6 +9,8 @@ interface MaqamKeyboardProps {
   keyTunings: KeyTuning[];
   activeNotes: Set<number>;
   octaves: number[];
+  /** Pitch classes the melody is sounding right now, for playback highlight. */
+  playingPitchClasses?: ReadonlySet<number>;
   onNoteOn: (midi: number) => void;
   onNoteOff: (midi: number) => void;
 }
@@ -25,6 +27,7 @@ export default function MaqamKeyboard({
   keyTunings,
   activeNotes,
   octaves,
+  playingPitchClasses,
   onNoteOn,
   onNoteOff,
 }: MaqamKeyboardProps) {
@@ -33,13 +36,16 @@ export default function MaqamKeyboard({
       const tuning = keyTunings[((midi % 12) + 12) % 12];
       if (!tuning) return undefined;
       const octave = Math.floor(midi / 12) - 1;
+      // One class per independent fact. Fill says "in the maqam", the dot says
+      // "home", the amber mark says "retuned" — so a key that is all three
+      // (Sikah's E½♭) shows all three instead of one winning.
       return {
         className: [
           'maqam-key',
           `maqam-key--${tuning.role}`,
-          // Home is marked separately from the colour tier so a microtonal
-          // tonic (Sikah) shows as both retuned and home.
           tuning.isTonic ? 'maqam-key--home' : '',
+          tuning.isRetuned ? 'maqam-key--retuned' : '',
+          playingPitchClasses?.has(tuning.pitchClass) ? 'maqam-key--sounding' : '',
         ]
           .filter(Boolean)
           .join(' '),
@@ -47,7 +53,7 @@ export default function MaqamKeyboard({
         ariaLabel: `${tuning.ariaLabel}, octave ${octave}`,
       };
     },
-    [keyTunings],
+    [keyTunings, playingPitchClasses],
   );
 
   return (

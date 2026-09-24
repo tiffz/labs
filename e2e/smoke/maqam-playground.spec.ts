@@ -54,9 +54,14 @@ test.describe('Maqam Playground', () => {
 
     // Rast is the default: E and B are half-flat, so exactly 2 pitch classes
     // are retuned — across the 3 rendered octaves that is 6 keys.
-    const retuned = page.locator('.maqam-key--microtonal');
+    const retuned = page.locator('.maqam-key--retuned');
     await expect(retuned).toHaveCount(6);
     await expect(retuned.first().locator('.shared-pk-badge')).toHaveText('½♭');
+
+    // Membership, tonic and retuning are independent channels now: 7 pitch
+    // classes are in the maqam across 3 octaves, and only 2 of them are bent.
+    await expect(page.locator('.maqam-key--in-scale')).toHaveCount(21);
+    await expect(page.locator('.maqam-key--home')).toHaveCount(3);
 
     expect(pageErrors).toEqual([]);
   });
@@ -77,7 +82,7 @@ test.describe('Maqam Playground', () => {
 
     // Hijaz is entirely in 12-TET — its drama is the augmented second, not a
     // quarter-tone. Nothing should be painted amber.
-    await expect(page.locator('.maqam-key--microtonal')).toHaveCount(0);
+    await expect(page.locator('.maqam-key--retuned')).toHaveCount(0);
   });
 
   test('CUJ-001: a maqam whose tonic is microtonal still shows a home key', async ({
@@ -89,8 +94,12 @@ test.describe('Maqam Playground', () => {
     await page.goto('/maqam/?maqam=sikah_e');
     await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
 
-    await expect(page.locator('.maqam-key--home')).toHaveCount(3); // one per octave
-    await expect(page.locator('.maqam-key--home.maqam-key--microtonal')).toHaveCount(3);
+    // The case the single-colour model could not express: one key that is in
+    // the maqam AND home AND retuned, all three readable at once.
+    await expect(page.locator('.maqam-key--home')).toHaveCount(3);
+    await expect(
+      page.locator('.maqam-key--home.maqam-key--retuned.maqam-key--in-scale'),
+    ).toHaveCount(3);
   });
 
   /**
@@ -156,7 +165,7 @@ test.describe('Maqam Playground', () => {
     await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
     await expect(page.locator('.maqam-badge')).toHaveText('Custom tuning');
     // Rast's 2 bends plus the hand-added one, over 3 octaves.
-    await expect(page.locator('.maqam-key--microtonal')).toHaveCount(9);
+    await expect(page.locator('.maqam-key--retuned')).toHaveCount(9);
   });
 
   test('CUJ-003: returning the tuning to the preset drops the custom badge', async ({
@@ -170,7 +179,65 @@ test.describe('Maqam Playground', () => {
 
     // Derived, not remembered: undoing the edit must clear the badge.
     await expect(page.locator('.maqam-badge')).toHaveCount(0);
-    await expect(page.locator('.maqam-key--microtonal')).toHaveCount(6);
+    await expect(page.locator('.maqam-key--retuned')).toHaveCount(6);
+  });
+
+  test('CUJ-005: a melody plays, lighting the staff and the keys together', async ({
+    page,
+  }) => {
+    await page.goto('/maqam/');
+    await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('.maqam-staff svg')).toBeVisible({ timeout: 15_000 });
+
+    await expect(page.locator('.maqam-key--sounding')).toHaveCount(0);
+    await page.getByRole('button', { name: /^Play$/ }).click();
+
+    // The staff and the keyboard read the same timeline, so a lit key means a
+    // lit note. 3 keys because one pitch class appears once per octave.
+    await expect(page.locator('.maqam-key--sounding')).toHaveCount(3, { timeout: 10_000 });
+
+    await page.getByRole('button', { name: /^Stop$/ }).click();
+    await expect(page.locator('.maqam-key--sounding')).toHaveCount(0);
+  });
+
+  test('CUJ-005: every pattern renders notes on the staff', async ({ page }) => {
+    await page.goto('/maqam/');
+    await expect(page.locator('.maqam-staff svg')).toBeVisible({ timeout: 15_000 });
+
+    for (const pattern of ['scale-down', 'jins-by-jins', 'thirds', 'arpeggio', 'qafla']) {
+      await page.locator('.maqam-melodybar__pick select').selectOption(pattern);
+      await expect(page.locator('.maqam-staff svg')).toHaveAttribute(
+        'aria-label',
+        /\w/,
+        { timeout: 10_000 },
+      );
+    }
+  });
+
+  test('CUJ-005: a generated phrase is shareable through the URL', async ({ page }) => {
+    await page.goto('/maqam/');
+    await expect(page.locator('.maqam-staff svg')).toBeVisible({ timeout: 15_000 });
+
+    await page.getByRole('button', { name: /New phrase/ }).click();
+    await expect(page).toHaveURL(/melody=generated&?.*seed=\d+/);
+
+    const label = await page.locator('.maqam-staff svg').getAttribute('aria-label');
+    await page.goto(page.url());
+    await expect(page.locator('.maqam-staff svg')).toBeVisible({ timeout: 15_000 });
+    // Seeded, so the same link gives back the same phrase.
+    await expect(page.locator('.maqam-staff svg')).toHaveAttribute('aria-label', label!);
+  });
+
+  test('CUJ-006: MIDI status is visible and explains itself', async ({ page }) => {
+    await page.goto('/maqam/');
+    await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
+
+    // Off the critical path, but never absent: a silent controller is
+    // undiagnosable without it.
+    const badge = page.locator('.maqam-midi').first();
+    await expect(badge).toBeVisible();
+    await badge.click();
+    await expect(page.getByRole('heading', { name: /Playing with a MIDI keyboard/ })).toBeVisible();
   });
 
   test('CUJ-004: the explainer opens and closes on Escape', async ({ page }) => {

@@ -22,6 +22,15 @@ export type SchedulerPattern =
    * rather than mislabelled as look-ahead.
    */
   | 'reactive-poll'
+  /**
+   * The whole sequence is scheduled on the audio clock up front.
+   *
+   * Only honest for a short, fully-known phrase: Maqam Playground's melodies are
+   * a couple of dozen notes, so there is nothing for a look-ahead window to buy
+   * and nothing to lose to a blocked main thread. Not a wall-clock note clock —
+   * every note carries an absolute `AudioContext` time.
+   */
+  | 'precomputed-sequence'
   | 'reactive-forbidden';
 
 export type AppAudioPattern = {
@@ -92,6 +101,14 @@ export const AUDIO_PATTERN_REGISTRY: Record<string, AppAudioPattern> = {
     metronomeScheduler: 'none',
     drumScheduler: 'measure-look-ahead',
     mixBus: 'labs-audio-mix-bus',
+  },
+  maqam: {
+    // No transport: a melody is a finite phrase scheduled in one pass, and held
+    // keys are one-shot plucks on a user gesture.
+    clock: 'wall-clock-exception',
+    metronomeScheduler: 'none',
+    drumScheduler: 'none',
+    mixBus: 'legacy-local',
   },
   agility: {
     clock: 'wall-clock-exception',

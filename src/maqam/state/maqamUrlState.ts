@@ -5,13 +5,26 @@ import {
   findMaqamPreset,
   type DetuneMatrix,
 } from '../data/maqamPresets';
+import {
+  DEFAULT_MELODY_ID,
+  GENERATED_MELODY_ID,
+  findMelodyDefinition,
+} from '../melody/maqamMelody';
+
+const DEFAULT_SEED = 1;
 
 export const MAQAM_PARAM = 'maqam';
 export const TUNING_PARAM = 'tuning';
+export const MELODY_PARAM = 'melody';
+export const SEED_PARAM = 'seed';
 
 export interface MaqamUrlState {
   presetId: string;
   matrix: DetuneMatrix;
+  /** Which pattern is loaded, or the generated-phrase sentinel. */
+  melodyId: string;
+  /** Seed for the generated phrase, so a good one survives a reload. */
+  melodySeed: number;
 }
 
 /**
@@ -60,9 +73,22 @@ export function readMaqamUrlState(search: string): MaqamUrlState {
   const presetMatrix = preset
     ? deriveDetuneMatrix(preset.scaleDegrees).matrix
     : [...NEUTRAL_DETUNE_MATRIX];
+  const requestedMelody = params.get(MELODY_PARAM);
+  // An unknown pattern falls back to the scale rather than to an empty staff.
+  const melodyId =
+    requestedMelody === GENERATED_MELODY_ID || findMelodyDefinition(requestedMelody ?? '')
+      ? requestedMelody!
+      : DEFAULT_MELODY_ID;
+
+  const rawSeed = Number(params.get(SEED_PARAM));
+  const melodySeed =
+    Number.isInteger(rawSeed) && rawSeed > 0 ? rawSeed : DEFAULT_SEED;
+
   return {
     presetId,
     matrix: decodeTuning(params.get(TUNING_PARAM)) ?? presetMatrix,
+    melodyId,
+    melodySeed,
   };
 }
 
@@ -86,6 +112,14 @@ export function writeMaqamUrlSearch(
 
   if (isPresetTuning) params.delete(TUNING_PARAM);
   else params.set(TUNING_PARAM, encodeTuning(state.matrix));
+
+  // Same rule as the tuning: only write what differs from the default, so a
+  // plain link stays short and a param in the URL always means a choice.
+  if (state.melodyId === DEFAULT_MELODY_ID) params.delete(MELODY_PARAM);
+  else params.set(MELODY_PARAM, state.melodyId);
+
+  if (state.melodyId === GENERATED_MELODY_ID) params.set(SEED_PARAM, String(state.melodySeed));
+  else params.delete(SEED_PARAM);
 
   const query = params.toString();
   return query ? `?${query}` : '';

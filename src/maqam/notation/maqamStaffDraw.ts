@@ -1,4 +1,4 @@
-import { Accidental, Formatter, Renderer, Stave, StaveNote, Voice } from 'vexflow';
+import { Accidental, Beam, Formatter, Renderer, Stave, StaveNote, Voice } from 'vexflow';
 
 import { ensureVexFlowFontsLoaded } from '../../shared/vexflow/vexFlowFontExport';
 import {
@@ -13,6 +13,8 @@ export interface StaffNote {
   accidental: MaqamAccidentalCode;
   /** Written octave — 4 is the octave starting at middle C. */
   octave: number;
+  /** VexFlow duration code. Defaults to a quarter note. */
+  duration?: string;
 }
 
 export interface DrawStaffOptions {
@@ -99,7 +101,7 @@ function drawStaffNow(
   const staveNotes = notes.map((note, index) => {
     const staveNote = new StaveNote({
       keys: [vexflowKey(note, note.octave)],
-      duration: 'q',
+      duration: note.duration ?? 'q',
     });
     if (note.accidental !== 'n') {
       staveNote.addModifier(new Accidental(note.accidental), 0);
@@ -117,16 +119,23 @@ function drawStaffNow(
     return staveNote;
   });
 
-  // An explicit Voice with strict timing off: the reference scale is eight
-  // quarter notes — two bars' worth — and the live ribbon is however many notes
-  // have been played. Neither is a metrical bar, and neither should be rejected
-  // for not adding up to one.
+  // An explicit Voice with strict timing off. A melody here is a phrase, not a
+  // metrical bar — the scale is 8 quarter notes and a generated phrase is
+  // whatever adds up to 2 bars — and neither should be rejected for not
+  // totalling one measure.
   const voice = new Voice({ numBeats: staveNotes.length, beatValue: 4 });
   voice.setStrict(false);
   voice.addTickables(staveNotes);
 
   new Formatter().joinVoices([voice]).format([voice], Math.max(innerWidth - 80, 40));
   voice.draw(context, stave);
+
+  // Beams after the voice draws, or the stems they attach to do not exist yet.
+  // Without these, a run of eighth notes renders as a row of flagged singletons
+  // and reads as unrelated notes rather than as a phrase.
+  for (const beam of Beam.generateBeams(staveNotes)) {
+    beam.setContext(context).draw();
+  }
 
   applyStaffAccessibility(container, notes);
 }

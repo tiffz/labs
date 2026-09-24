@@ -17,8 +17,33 @@ import {
   type KeyTuning,
 } from './maqamTuning';
 import { readMaqamUrlState, writeMaqamUrlSearch } from './maqamUrlState';
+import {
+  DEFAULT_MELODY_ID,
+  GENERATED_MELODY_ID,
+  findMelodyDefinition,
+  generateMelody,
+  resolveMelody,
+  type ResolvedMelodyNote,
+} from '../melody/maqamMelody';
+import { buildMelodyTimeline, noteIndexAt } from '../melody/melodyTimeline';
+
+/** Written octave the melodies sit in — the one starting at middle C. */
+const MELODY_OCTAVE = 4;
+/** Unhurried enough to hear a quarter-tone land. */
+export const MELODY_BPM = 76;
+/** Lead-in before the first note, so the attack is never clipped by scheduling. */
+const PLAYBACK_LEAD_SECONDS = 0.12;
 
 export interface MaqamState {
+  melodyId: string;
+  melodySeed: number;
+  melody: ResolvedMelodyNote[];
+  isPlaying: boolean;
+  /** Index into `melody` of the note sounding now, or null when silent. */
+  playingIndex: number | null;
+  selectMelody: (id: string) => void;
+  shuffleMelody: () => void;
+  togglePlayback: () => void;
   preset: MaqamPreset | undefined;
   presetId: string;
   matrix: DetuneMatrix;
@@ -50,6 +75,10 @@ export function useMaqamState(): MaqamState {
   const [audioState, setAudioState] = useState<AudioContextState | 'uninitialized'>(
     'uninitialized',
   );
+  const [melodyId, setMelodyId] = useState(initial.melodyId);
+  const [melodySeed, setMelodySeed] = useState(initial.melodySeed);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [playingIndex, setPlayingIndex] = useState<number | null>(null);
 
   const preset = useMemo(() => findMaqamPreset(presetId), [presetId]);
   const synthRef = useRef<MaqamSynth | null>(null);
@@ -82,6 +111,9 @@ export function useMaqamState(): MaqamState {
     matrixRef.current = matrix;
   }, [matrix]);
 
+  /** Animation frame that moves the playback highlight. */
+  const frameRef = useRef<number | null>(null);
+
   useEffect(
     () => () => {
       synthRef.current?.dispose();
@@ -110,6 +142,14 @@ export function useMaqamState(): MaqamState {
     },
     [getSynth],
   );
+
+  const stopPlayback = useCallback(() => {
+    synthRef.current?.cancelScheduled();
+    if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
+    frameRef.current = null;
+    setIsPlaying(false);
+    setPlayingIndex(null);
+  }, []);
 
   const noteOff = useCallback((midiNote: number) => {
     synthRef.current?.noteOff(midiNote);
@@ -142,16 +182,23 @@ export function useMaqamState(): MaqamState {
     };
   }, [noteOn, noteOff]);
 
-  const selectPreset = useCallback((id: string) => {
-    const next = findMaqamPreset(id);
-    if (!next) return;
-    // Retuning mid-note would leave a voice sounding at its old pitch with no
-    // key held down, so the board is cleared first.
-    synthRef.current?.allNotesOff();
-    setActiveNotes(new Set());
-    setPresetId(next.id);
-    setMatrix(deriveDetuneMatrix(next.scaleDegrees).matrix);
-  }, []);
+  const selectPreset = useCallback(
+    (id: string) => {
+      const next = findMaqamPreset(id);
+      if (!next) return;
+      // Retuning mid-note would leave a voice sounding at its old pitch with no
+      // key held down, and a phrase mid-flight would keep playing the previous
+      // maqam's tuning under the new maqam's staff. Both stop here, in the
+      // handler — reacting to `presetId` in an effect instead is the
+      // `set-state-in-effect` pattern, and it sets the same state a frame late.
+      stopPlayback();
+      synthRef.current?.allNotesOff();
+      setActiveNotes(new Set());
+      setPresetId(next.id);
+      setMatrix(deriveDetuneMatrix(next.scaleDegrees).matrix);
+    },
+    [stopPlayback],
+  );
 
   const toggleSlot = useCallback((pitchClass: number) => {
     synthRef.current?.allNotesOff();
@@ -168,13 +215,100 @@ export function useMaqamState(): MaqamState {
     });
   }, [presetId]);
 
+  const melody = useMemo<ResolvedMelodyNote[]>(() => {
+    if (!preset) return [];
+    const notes =
+      melodyId === GENERATED_MELODY_ID
+        ? generateMelody(preset, melodySeed)
+        : (findMelodyDefinition(melodyId) ?? findMelodyDefinition(DEFAULT_MELODY_ID))?.build(
+            preset,
+          ) ?? [];
+    return resolveMelody(preset, notes, MELODY_OCTAVE);
+  }, [preset, melodyId, melodySeed]);
+
+  /**
+   * Play the phrase.
+   *
+   * The whole melody is scheduled on the audio clock up front — it is a known,
+   * finite sequence of a couple of dozen notes, so there is nothing to gain from
+   * a look-ahead scheduler and nothing to lose to a blocked main thread. The
+   * animation frame below only *reads* that timeline to move the highlight; it
+   * never decides when a note sounds, so the staff cannot drift from the ear.
+   */
+  const startPlayback = useCallback(() => {
+    const synth = getSynth();
+    if (melody.length === 0) return;
+
+    void synth.resume().then((running) => {
+      setAudioState(synth.getState());
+      const now = synth.currentTime();
+      if (!running || now === null) return;
+
+      const timeline = buildMelodyTimeline(melody, MELODY_BPM);
+      const startAt = now + PLAYBACK_LEAD_SECONDS;
+      melody.forEach((note, index) => {
+        const entry = timeline.entries[index];
+        synth.scheduleNote(
+          note.midiNote,
+          note.cents,
+          startAt + entry.startSeconds,
+          entry.holdSeconds,
+        );
+      });
+
+      setIsPlaying(true);
+      const tick = () => {
+        const clock = synth.currentTime();
+        if (clock === null) {
+          stopPlayback();
+          return;
+        }
+        const elapsed = clock - startAt;
+        if (elapsed >= timeline.totalSeconds) {
+          stopPlayback();
+          return;
+        }
+        setPlayingIndex(noteIndexAt(timeline, elapsed));
+        frameRef.current = requestAnimationFrame(tick);
+      };
+      frameRef.current = requestAnimationFrame(tick);
+    });
+  }, [getSynth, melody, stopPlayback]);
+
+  const togglePlayback = useCallback(() => {
+    if (isPlaying) stopPlayback();
+    else startPlayback();
+  }, [isPlaying, startPlayback, stopPlayback]);
+
+  const selectMelody = useCallback(
+    (id: string) => {
+      stopPlayback();
+      setMelodyId(id);
+    },
+    [stopPlayback],
+  );
+
+  const shuffleMelody = useCallback(() => {
+    stopPlayback();
+    setMelodyId(GENERATED_MELODY_ID);
+    // A fresh seed, kept in the URL so a phrase you like survives a reload.
+    setMelodySeed(Math.floor(Math.random() * 1_000_000) + 1);
+  }, [stopPlayback]);
+
+  // Unmount only. Returning the function schedules it as cleanup rather than
+  // calling it during the effect.
+  useEffect(() => stopPlayback, [stopPlayback]);
+
   // Keep the URL shareable. Replace, never push: retuning a key is not a
   // navigation, and a back button that steps through every toggle is a trap.
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const search = writeMaqamUrlSearch({ presetId, matrix }, window.location.search);
+    const search = writeMaqamUrlSearch(
+      { presetId, matrix, melodyId, melodySeed },
+      window.location.search,
+    );
     throttledReplaceState(`${window.location.pathname}${search}${window.location.hash}`);
-  }, [presetId, matrix]);
+  }, [presetId, matrix, melodyId, melodySeed]);
 
   const keyTunings = useMemo(() => buildKeyTunings(preset, matrix), [preset, matrix]);
   const isPresetTuning = useMemo(
@@ -197,5 +331,13 @@ export function useMaqamState(): MaqamState {
     resetTuning,
     noteOn,
     noteOff,
+    melodyId,
+    melodySeed,
+    melody,
+    isPlaying,
+    playingIndex,
+    selectMelody,
+    shuffleMelody,
+    togglePlayback,
   };
 }

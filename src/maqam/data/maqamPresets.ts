@@ -36,6 +36,14 @@ export interface MaqamPreset {
   name: string;
   /** Transliterated Arabic name, e.g. "Maqam Rast". */
   transliteration: string;
+  /**
+   * The name in Arabic script.
+   *
+   * Not decoration: these are the names the music is actually taught under, and
+   * showing them alongside the transliteration is the difference between an app
+   * about a tradition and an app that has borrowed from one.
+   */
+  arabicName: string;
   /** The tonic, as written. */
   tonic: MaqamNoteSpelling;
   description: string;
@@ -192,6 +200,7 @@ export const MAQAM_PRESETS: MaqamPreset[] = [
     id: 'rast_c',
     name: 'Rast on C',
     transliteration: 'Maqam Rast',
+    arabicName: 'راست',
     tonic: { letter: 'C', accidental: 'n' },
     description:
       'The foundational maqam, and the one others are measured against. Its third and seventh sit half-flat, between the major and minor you already know.',
@@ -216,6 +225,7 @@ export const MAQAM_PRESETS: MaqamPreset[] = [
     id: 'bayati_d',
     name: 'Bayati on D',
     transliteration: 'Maqam Bayati',
+    arabicName: 'بياتي',
     tonic: { letter: 'D', accidental: 'n' },
     description:
       'Everywhere in Arabic song. The half-flat second gives it a pull toward the tonic that no Western mode has.',
@@ -243,6 +253,7 @@ export const MAQAM_PRESETS: MaqamPreset[] = [
     id: 'sikah_e',
     name: 'Sikah on E½♭',
     transliteration: 'Maqam Sikah',
+    arabicName: 'سيكاه',
     tonic: { letter: 'E', accidental: 'd' },
     description:
       'Rooted on a half-flat, so the home note itself is one an untouched piano cannot play. Its first jins is only three notes.',
@@ -276,6 +287,7 @@ export const MAQAM_PRESETS: MaqamPreset[] = [
     id: 'saba_d',
     name: 'Saba on D',
     transliteration: 'Maqam Saba',
+    arabicName: 'صبا',
     tonic: { letter: 'D', accidental: 'n' },
     description:
       'The sound of lament. Saba is the one family that never comes home: its upper tonic is flattened, so the scale does not close at the octave.',
@@ -307,6 +319,7 @@ export const MAQAM_PRESETS: MaqamPreset[] = [
     id: 'hijaz_d',
     name: 'Hijaz on D',
     transliteration: 'Maqam Hijaz',
+    arabicName: 'حجاز',
     tonic: { letter: 'D', accidental: 'n' },
     description:
       'No microtones at all. The drama is the step-and-a-half leap from E♭ to F♯. A good place to start if the half-flats are not landing yet.',
@@ -331,6 +344,7 @@ export const MAQAM_PRESETS: MaqamPreset[] = [
     id: 'kurd_d',
     name: 'Kurd on D',
     transliteration: 'Maqam Kurd',
+    arabicName: 'كرد',
     tonic: { letter: 'D', accidental: 'n' },
     description:
       'A flattened second and nothing else exotic. Western ears hear Phrygian; the difference is where the melody rests, not which notes exist.',
@@ -355,6 +369,7 @@ export const MAQAM_PRESETS: MaqamPreset[] = [
     id: 'nahawand_c',
     name: 'Nahawand on C',
     transliteration: 'Maqam Nahawand',
+    arabicName: 'نهاوند',
     tonic: { letter: 'C', accidental: 'n' },
     description:
       'The closest thing to a Western minor. Useful as a control: if Nahawand sounds ordinary to you, the strangeness in the others really is the tuning.',
@@ -379,6 +394,7 @@ export const MAQAM_PRESETS: MaqamPreset[] = [
     id: 'nikriz_c',
     name: 'Nikriz on C',
     transliteration: 'Maqam Nikriz',
+    arabicName: 'نكريز',
     tonic: { letter: 'C', accidental: 'n' },
     description:
       'Built on a five-note jins rather than a four-note one, with a raised fourth. The extra note is why its lower cell reaches all the way to the fifth.',
@@ -403,6 +419,7 @@ export const MAQAM_PRESETS: MaqamPreset[] = [
     id: 'ajam_bb',
     name: 'Ajam on B♭',
     transliteration: 'Maqam Ajam',
+    arabicName: 'عجم',
     tonic: { letter: 'B', accidental: 'b' },
     description:
       'The major scale, by another name and another route. Its two ajnas are identical, which is exactly what makes it sound settled.',

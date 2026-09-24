@@ -9,13 +9,16 @@ import HowMaqamsWork from './components/HowMaqamsWork';
 import JinsBreakdown from './components/JinsBreakdown';
 import MaqamKeyboard from './components/MaqamKeyboard';
 import MaqamStaff from './components/MaqamStaff';
+import MidiStatusBadge from './components/MidiStatusBadge';
 import { MAQAM_PRESETS, PITCH_CLASS_NAMES } from './data/maqamPresets';
-import { highlightedDegreeIndices, referenceStaffNotes } from './notation/maqamSpelling';
+import {
+  GENERATED_MELODY_ID,
+  MELODY_PATTERNS,
+  findMelodyDefinition,
+} from './melody/maqamMelody';
 import { bentPitchClasses, formatCents } from './state/maqamTuning';
 import { useMaqamState } from './state/useMaqamState';
 
-/** Written octave the reference scale starts in. */
-const REFERENCE_OCTAVE = 4;
 /**
  * Three octaves, centred on middle C. Two was enough to play a maqam and its
  * upper jins, but left the board looking like a toy beside a full-width staff —
@@ -38,19 +41,54 @@ export default function App() {
     resetTuning,
     noteOn,
     noteOff,
+    melodyId,
+    melody,
+    isPlaying,
+    playingIndex,
+    selectMelody,
+    shuffleMelody,
+    togglePlayback,
   } = useMaqamState();
 
   const [tuningOpen, setTuningOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
 
-  const scaleNotes = useMemo(() => referenceStaffNotes(preset, REFERENCE_OCTAVE), [preset]);
-  const litDegrees = useMemo(
-    () => highlightedDegreeIndices(preset, activeNotes),
-    [preset, activeNotes],
+  const staffNotes = useMemo(
+    () => melody.map((note) => ({ ...note.staff, duration: note.duration })),
+    [melody],
   );
 
+  /**
+   * Which staff notes to light.
+   *
+   * During playback that is the note the audio clock says is sounding. When
+   * idle it is every note matching a held key, so pressing E lights every E in
+   * the phrase — one key really is every octave of its pitch class here.
+   */
+  const litNotes = useMemo(() => {
+    if (playingIndex !== null) return new Set([playingIndex]);
+    if (activeNotes.size === 0) return new Set<number>();
+    const heldClasses = new Set([...activeNotes].map((midi) => ((midi % 12) + 12) % 12));
+    const lit = new Set<number>();
+    melody.forEach((note, index) => {
+      if (heldClasses.has(((note.midiNote % 12) + 12) % 12)) lit.add(index);
+    });
+    return lit;
+  }, [melody, playingIndex, activeNotes]);
+
+  /** Pitch classes the melody is sounding, so the keyboard lights along with it. */
+  const playingPitchClasses = useMemo(() => {
+    if (playingIndex === null) return undefined;
+    const note = melody[playingIndex];
+    return note ? new Set([((note.midiNote % 12) + 12) % 12]) : undefined;
+  }, [melody, playingIndex]);
+
+  const melodyDescription =
+    melodyId === GENERATED_MELODY_ID
+      ? 'A phrase generated in this maqam: mostly stepwise, resolving to the tonic.'
+      : findMelodyDefinition(melodyId)?.description;
+
   const bentKeys = bentPitchClasses(matrix);
-  const connectedDevices = midiDevices.filter((device) => device.connected);
 
   return (
     <main id="main" className="maqam">
@@ -89,19 +127,58 @@ export default function App() {
           <Button variant="text" onClick={() => setHelpOpen(true)}>
             How maqamat work
           </Button>
+
+          <MidiStatusBadge supported={midiSupported} devices={midiDevices} />
         </header>
 
         <div className="maqam-stage">
           <section className="maqam-stage__staff" aria-labelledby="maqam-scale-heading">
             <div className="maqam-stage__head">
               <h2 id="maqam-scale-heading" className="maqam-eyebrow">
-                The scale
+                Melody
               </h2>
-              <p className="maqam-stage__hint">press a key to light its note</p>
+              <p className="maqam-stage__hint">
+                {isPlaying ? 'playing' : 'press play, or press a key'}
+              </p>
             </div>
+
             <Paper elevation={0} className="maqam-staff-surface">
-              <MaqamStaff notes={scaleNotes} highlighted={litDegrees} />
+              <MaqamStaff notes={staffNotes} highlighted={litNotes} />
             </Paper>
+
+            <div className="maqam-melodybar">
+              <Button
+                variant="contained"
+                disableElevation
+                onClick={togglePlayback}
+                className="maqam-melodybar__play"
+              >
+                {isPlaying ? 'Stop' : 'Play'}
+              </Button>
+
+              <TextField
+                select
+                size="small"
+                label="Pattern"
+                value={melodyId}
+                onChange={(event) => selectMelody(event.target.value)}
+                className="maqam-melodybar__pick"
+                slotProps={{ select: { native: true } }}
+              >
+                {MELODY_PATTERNS.map((pattern) => (
+                  <option key={pattern.id} value={pattern.id}>
+                    {pattern.name}
+                  </option>
+                ))}
+                <option value={GENERATED_MELODY_ID}>Generated phrase</option>
+              </TextField>
+
+              <Button variant="outlined" size="small" disableElevation onClick={shuffleMelody}>
+                New phrase
+              </Button>
+            </div>
+
+            {melodyDescription && <p className="maqam-description">{melodyDescription}</p>}
             {preset && <p className="maqam-description">{preset.description}</p>}
           </section>
 
@@ -121,24 +198,28 @@ export default function App() {
             keyTunings={keyTunings}
             activeNotes={activeNotes}
             octaves={KEYBOARD_OCTAVES}
+            playingPitchClasses={playingPitchClasses}
             onNoteOn={noteOn}
             onNoteOff={noteOff}
           />
 
           <div className="maqam-board__bar">
+            {/* One entry per visual channel, in the order the eye meets them. */}
             <p className="maqam-legend" aria-live="polite">
               <span className="maqam-legend__item">
-                <span className="maqam-legend__swatch maqam-legend__swatch--tonic" />
-                Home
+                <span className="maqam-legend__swatch maqam-legend__swatch--scale" />
+                In this maqam
               </span>
               <span className="maqam-legend__item">
-                <span className="maqam-legend__swatch maqam-legend__swatch--scale" />
-                In the maqam
+                <span className="maqam-legend__dot" aria-hidden="true" />
+                Tonic
               </span>
               {bentKeys.length > 0 && (
                 <span className="maqam-legend__item">
-                  <span className="maqam-legend__swatch maqam-legend__swatch--microtonal" />
-                  {bentKeys.map((pc) => PITCH_CLASS_NAMES[pc]).join(' and ')} tuned{' '}
+                  <span className="maqam-legend__bend" aria-hidden="true">
+                    ½♭
+                  </span>
+                  {bentKeys.map((pc) => PITCH_CLASS_NAMES[pc]).join(' and ')}{' '}
                   {formatCents(-50)}
                 </span>
               )}
@@ -146,13 +227,6 @@ export default function App() {
             </p>
 
             <div className="maqam-board__actions">
-              {midiSupported && (
-                <span className="maqam-board__midi">
-                  {connectedDevices.length > 0
-                    ? `MIDI: ${connectedDevices.map((d) => d.name).join(', ')}`
-                    : 'MIDI ready'}
-                </span>
-              )}
               {!isPresetTuning && preset && (
                 <Button variant="text" size="small" onClick={resetTuning}>
                   Reset

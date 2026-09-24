@@ -17,6 +17,13 @@ export default function JinsBreakdown({ preset }: JinsBreakdownProps) {
 
   return (
     <div className="maqam-jins">
+      <div className="maqam-jins__title">
+        <span className="maqam-jins__arabic" lang="ar" dir="rtl">
+          {preset.arabicName}
+        </span>
+        <span className="maqam-jins__translit">{preset.transliteration}</span>
+      </div>
+
       <h2 className="maqam-eyebrow">Built from</h2>
 
       <ol className="maqam-jins__list">

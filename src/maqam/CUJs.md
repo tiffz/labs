@@ -51,6 +51,34 @@ surface by `src/shared/notation/vexFlowMusicFontGateGuardrails.test.ts`.
 | 2    | Toggle a key     | Keyboard + URL update ≤ 400 ms | `e2e/smoke/maqam-playground.spec.ts`    |
 | 3    | Reload the URL   | Same tuning restored           | `src/maqam/state/maqamUrlState.test.ts` |
 
+## CUJ-005: Hear the maqam as music, not as a scale
+
+**Primary goal:** Press play and feel the phrase, without already knowing the idiom.
+
+| Step | Action         | Budget                                | Verification                         |
+| ---- | -------------- | ------------------------------------- | ------------------------------------ |
+| 1    | Press Play     | First note within 200 ms              | `e2e/smoke/maqam-playground.spec.ts` |
+| 2    | Watch          | Staff note and keys light together    | `e2e/smoke/maqam-playground.spec.ts` |
+| 3    | Pick a pattern | Staff redraws ≤ 400 ms                | `e2e/smoke/maqam-playground.spec.ts` |
+| 4    | New phrase     | Fresh 2 bars, seed written to the URL | `e2e/smoke/maqam-playground.spec.ts` |
+
+**Timing gate:** the staff highlight and the audio read one timeline
+(`melodyTimeline.ts`), so they cannot drift. A separate visual clock would be
+the bug this design exists to prevent.
+
+**Content gate:** every pattern note lands on a real degree of the loaded maqam,
+in all 9 families (`maqamMelody.test.ts`), and sounds at its written pitch.
+
+## CUJ-006: Know whether your controller is connected
+
+| Step | Action             | Budget                       | Verification                         |
+| ---- | ------------------ | ---------------------------- | ------------------------------------ |
+| 1    | Glance at the chip | State visible without action | `e2e/smoke/maqam-playground.spec.ts` |
+| 2    | Click it           | Explains what MIDI does here | `e2e/smoke/maqam-playground.spec.ts` |
+
+Deliberately off the critical path: never a prompt, never a blocking permission
+ask. The app is fully usable with the on-screen keyboard.
+
 ## Layout invariant: one viewport
 
 Every CUJ above is completable without scrolling the page, at 1440x900 and at 390x844.

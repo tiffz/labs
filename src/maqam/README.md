@@ -70,17 +70,63 @@ The matrix is collapsed deliberately. Two co-equal ways to set tuning would be `
 
 The ajnas panel sits beside the staff rather than under it because the ajnas **are** the structure of a maqam. Demoting them to a footnote is what made the first version read as "a scale with two odd accidentals".
 
+### Key colours: one channel per fact
+
+Three different kinds of fact used to compete for one visual channel (fill colour), so "in the maqam" meant different things on different keys.
+
+| Fact          | Channel                                                |
+| ------------- | ------------------------------------------------------ |
+| In this maqam | **Fill** — one colour, binary                          |
+| Tonic         | **Dot** — shape, so it survives a colour-blind reading |
+| Retuned ½♭    | **Amber cap + badge** — an annotation on the key       |
+| Sounding now  | **Saturated fill** — only during playback              |
+
+Sikah's E½♭ is simultaneously filled, dotted and capped. That combination was impossible to express before, and `maqamTuning.test.ts` pins it.
+
 ### The staff scales from its width
 
 `MaqamStaff` measures width, derives a scale, and sets its own height from that. Scaling from the available _height_ instead was tried and looked worse — the box stretched to whatever the layout had spare and the notation sat in a pool of white — and it risks a measure-draw feedback loop, since the SVG is what fills the box being measured.
 
+## Melodies
+
+The staff shows a melody, and the scale is just the default one. Everything is
+**generated from the maqam's own degrees** rather than transcribed:
+
+| Pattern                | What it teaches                                         |
+| ---------------------- | ------------------------------------------------------- |
+| The scale / Descending | The degrees, in order                                   |
+| Jins by jins           | The 2 cells, meeting on the shared degree               |
+| Up to the ghammaz      | Climb to the resting degree and fall back               |
+| In thirds              | Hanon-style interval drill                              |
+| Arpeggio               | Tonic, third, fifth. An interval drill, not a chord     |
+| Qafla                  | The descending cadence a phrase closes on               |
+| Generated phrase       | 2 bars, seeded, mostly stepwise, resolving to the tonic |
+
+### Why generated, not transcribed
+
+Copyright covers expression, not procedure. "Play the scale in thirds" is an idea, and a pattern derived mechanically from data we author carries no licence at all. Transcribing famous maqam repertoire would have meant shipping content whose provenance could not be verified: most named examples are 20th-century and firmly in copyright, and "traditional" attributions are wrong often enough to matter here. `Lamma Bada Yatathanna` was the one melody that checked out ([Wikimedia marks it PD](https://commons.wikimedia.org/wiki/File:Muwashah_lamma_bada_yatathanna.OGG)) — one of nine is not a library.
+
+Generated patterns also cover all 9 families for free, and they are testable: `maqamMelody.test.ts` asserts every note of every pattern lands on a real degree of every maqam, and that the sounded pitch matches the written one on the playback path.
+
+There are no chord progressions, deliberately. Maqam music is monophonic and heterophonic and has no functional harmony; the traditional accompaniment is a drone on the tonic. Saying so is more useful than inventing progressions the idiom does not have.
+
+### Playback
+
+The whole phrase is scheduled on the audio clock up front. It is a known, finite sequence of a couple of dozen notes, so there is nothing to gain from a look-ahead scheduler and nothing to lose to a blocked main thread — and it is not the `setTimeout` note clock `audioPatternRegistry` forbids. An animation frame only _reads_ that timeline to move the highlight, so the staff cannot drift from the ear.
+
 ## Audio
 
-One `MaqamSynth` ([`audio/maqamSynth.ts`](audio/maqamSynth.ts)) owning one `AudioContext` for the app's lifetime, created lazily on the first note (a context built before a user gesture starts suspended) and closed on unmount.
+A **Karplus-Strong plucked string**, rendered offline into an `AudioBuffer` and cached per (note, cents). No samples, no licence, no CDN.
 
-- Cents fold into the **frequency exponent**, not `OscillatorNode.detune`. One place, testable without an AudioContext, and no risk of applying the bend twice.
-- Triangle wave, 16-voice cap with oldest-first eviction, so a dropped MIDI note-off cannot leak voices into Chrome's per-document cap.
-- Not on the shared audio platform: nothing here is grid-aligned. Per [`docs/SHARED_AUDIO_PLATFORM.md`](../../docs/SHARED_AUDIO_PLATFORM.md), a one-shot preview on a user gesture is the documented non-scheduler path.
+Why synthesis rather than a sample library: a piano is the wrong instrument for quarter-tones. It is fixed-pitch percussion, so the ear hears a pitch-shifted piano note as _out of tune_ rather than as an interval — which defeats an app about intervals. A plucked string with a long decay (oud, qanun) carries a microtone as a pitch. And synthesis is parameterised by frequency, so a 350-cent third is rendered **at** 350 cents rather than resampled towards it.
+
+`pluckedString.test.ts` measures the rendered pitch by autocorrelation on the real samples — not by reading back the delay-line length, which would be the implementation grading its own homework. Worst case is **4.5 cents**, a twelfth of a quarter-tone.
+
+- **Doubled courses.** An oud's strings are paired a few cents apart. Two voices per note is both authentic and the biggest richness win available.
+- **A generated room.** A short convolution reverb from decaying noise. Crude, but the difference between an instrument in a room and one in an anechoic void — which is most of what makes a web synth sound cheap.
+- `tone` shapes brightness **outside** the feedback loop. In the loop it was measurably almost inert (0.05 and 0.95 gave near-identical spectra) and it perturbed pitch compensation for nothing.
+- 16-voice cap with oldest-first eviction, so a dropped MIDI note-off cannot leak voices into Chrome's per-document cap.
+- Not on the shared audio platform's scheduler, for the reason in § Playback. Registered honestly in `audioPatternRegistry`.
 
 ## Notation
 
@@ -93,6 +139,11 @@ One `MaqamSynth` ([`audio/maqamSynth.ts`](audio/maqamSynth.ts)) owning one `Audi
 ## Shared code touched
 
 - `OnscreenPianoKeyboard` gained one optional prop, `decorateKey`, for per-key role classes and badges. Additive; every existing caller is unaffected.
+- `audioPatternRegistry` gained a row for `maqam`, describing what this app actually does rather than aspiring to a pattern it does not use.
+
+## MIDI
+
+A status badge in the topbar, deliberately off the critical path: a chip, never a prompt, never a blocking permission ask. The app is fully usable with the on-screen keyboard. But there was previously no way to tell whether a connected controller had been seen, which makes a silent keyboard impossible to diagnose. Clicking it explains what MIDI gets you and why the browser may not offer it.
 
 ## Intentional diversions
 

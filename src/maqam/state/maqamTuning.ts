@@ -12,21 +12,29 @@ import {
   type MaqamScaleDegree,
 } from '../data/maqamPresets';
 
-/** How a piano key relates to the maqam currently loaded. */
-export type KeyRole = 'tonic' | 'microtonal' | 'scale' | 'outside';
+/**
+ * Whether a key belongs to the maqam. Membership only — deliberately binary.
+ *
+ * It used to be four values that conflated three unrelated facts (membership,
+ * tonic, retuning) into one fill colour, which made "in the maqam" mean three
+ * different things depending on which colour won. Each fact now owns its own
+ * visual channel: fill for membership, a dot for the tonic, an amber mark for
+ * retuning. A key can be all three at once — Sikah's E½♭ is — and each stays
+ * readable.
+ */
+export type KeyRole = 'in-scale' | 'outside';
 
 export interface KeyTuning {
   pitchClass: number;
   role: KeyRole;
   /**
-   * Whether this key is the maqam's home note.
-   *
-   * Orthogonal to `role`, not a fourth value of it. Sikah's tonic is E½♭ — both
-   * home *and* retuned — and when these were one field the retuned tier won, so
-   * Sikah rendered with no home key at all. The maqam whose whole point is a
-   * microtonal tonic was the one that hid it.
+   * Whether this key is the maqam's home note. Drawn as a dot: shape rather
+   * than colour, so it survives a colour-blind reading and stacks with the
+   * others.
    */
   isTonic: boolean;
+  /** Whether this key is bent off the 12-TET grid. Drawn as an amber mark. */
+  isRetuned: boolean;
   /** Cents this key is bent by. 0 for every key in equal temperament. */
   cents: number;
   /** How the maqam writes this key, e.g. `E½♭`. Absent for keys outside it. */
@@ -79,13 +87,7 @@ export function buildKeyTunings(
     const bent = cents !== 0;
 
     const isTonic = inScale && pitchClass === tonicPitchClass;
-    const role: KeyRole = bent
-      ? 'microtonal'
-      : isTonic
-        ? 'tonic'
-        : inScale
-          ? 'scale'
-          : 'outside';
+    const role: KeyRole = inScale ? 'in-scale' : 'outside';
 
     const label = degree ? spellingLabel(degree) : bentLabel(pitchClass, cents);
     const badge = bent ? badgeForCents(cents, degree?.accidental) : undefined;
@@ -97,10 +99,11 @@ export function buildKeyTunings(
       pitchClass,
       role,
       isTonic,
+      isRetuned: bent,
       cents,
       label,
       badge,
-      ariaLabel: describeKey(spokenName, role, cents, isTonic),
+      ariaLabel: describeKey(spokenName, role, cents, isTonic, bent),
     };
   });
 }
@@ -142,26 +145,25 @@ export function formatCents(cents: number): string {
   return `${cents > 0 ? '+' : '−'}${Math.abs(cents)}c`;
 }
 
+/**
+ * Spoken description, assembled from the same independent facts the visuals
+ * use — so a screen reader hears exactly what a sighted user sees, rather than
+ * a separate hierarchy of its own.
+ */
 function describeKey(
   label: string | undefined,
   role: KeyRole,
   cents: number,
   isTonic: boolean,
+  isRetuned: boolean,
 ): string {
   const name = label ?? 'key';
-  // "home note" is announced alongside the tuning, not instead of it, so a
-  // microtonal tonic reads as both.
-  const home = isTonic ? ', home note' : '';
-  switch (role) {
-    case 'tonic':
-      return `${name}, home note`;
-    case 'microtonal':
-      return `${name}, tuned ${formatCents(cents)}${home}`;
-    case 'scale':
-      return `${name}, in the maqam`;
-    case 'outside':
-      return `${name}, outside the maqam`;
-  }
+  if (role === 'outside' && !isRetuned) return `${name}, outside the maqam`;
+
+  const parts = [role === 'in-scale' ? 'in the maqam' : 'outside the maqam'];
+  if (isTonic) parts.push('home note');
+  if (isRetuned) parts.push(`tuned ${formatCents(cents)}`);
+  return `${name}, ${parts.join(', ')}`;
 }
 
 /** Toggle one slot between equal temperament and a half-flat. */

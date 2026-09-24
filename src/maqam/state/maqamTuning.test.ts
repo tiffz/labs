@@ -24,54 +24,107 @@ describe('buildKeyTunings', () => {
     expect(tunings.map((t) => t.pitchClass)).toEqual([...Array(12).keys()]);
   });
 
-  it('marks the maqam’s home note as the tonic', () => {
-    const tunings = buildKeyTunings(rast, rastMatrix);
-    expect(tunings[0].role).toBe('tonic'); // C
-    expect(tunings[0].label).toBe('C');
+  /**
+   * The point of the rework: membership is binary. "In this maqam" now means
+   * exactly one thing, rather than losing a colour fight to "tonic" or
+   * "retuned" depending on the key.
+   */
+  it('reports membership as a single binary fact', () => {
+    const roles = new Set(buildKeyTunings(rast, rastMatrix).map((t) => t.role));
+    expect([...roles].sort()).toEqual(['in-scale', 'outside']);
   });
 
-  it('marks bent scale degrees microtonal and labels them as written', () => {
+  it('marks Rast’s 7 pitch classes in-scale and the other 5 outside', () => {
     const tunings = buildKeyTunings(rast, rastMatrix);
-    expect(tunings[4].role).toBe('microtonal'); // E
+    expect(tunings.filter((t) => t.role === 'in-scale')).toHaveLength(7);
+    expect(tunings.filter((t) => t.role === 'outside')).toHaveLength(5);
+  });
+
+  it('marks the tonic independently of membership', () => {
+    const tunings = buildKeyTunings(rast, rastMatrix);
+    expect(tunings[0].isTonic).toBe(true);
+    expect(tunings[0].role).toBe('in-scale');
+    expect(tunings[0].isRetuned).toBe(false);
+  });
+
+  it('marks retuning independently of membership', () => {
+    const tunings = buildKeyTunings(rast, rastMatrix);
+    expect(tunings[4].isRetuned).toBe(true); // E half-flat
+    expect(tunings[4].role).toBe('in-scale');
+    expect(tunings[4].isTonic).toBe(false);
     expect(tunings[4].label).toBe('E½♭');
     expect(tunings[4].badge).toBe('½♭');
-    expect(tunings[4].cents).toBe(-50);
-  });
-
-  it('marks unbent scale degrees as plain scale keys', () => {
-    const tunings = buildKeyTunings(rast, rastMatrix);
-    expect(tunings[2].role).toBe('scale'); // D
-    expect(tunings[5].role).toBe('scale'); // F
-  });
-
-  it('marks keys the maqam never uses as outside it', () => {
-    const tunings = buildKeyTunings(rast, rastMatrix);
-    expect(tunings[1].role).toBe('outside'); // C#
-    expect(tunings[6].role).toBe('outside'); // F#
-    expect(tunings[1].label).toBeUndefined();
   });
 
   /**
-   * A microtonal tonic is still a tonic to the ear, but the keyboard must show
-   * it as bent or the user plays the wrong pitch for home. Sikah is the case.
+   * Sikah is the case the old single-channel model could not express: its
+   * tonic is E½♭, so one key is in the maqam AND home AND retuned. Every one
+   * of those has to survive.
    */
-  it('shows a half-flat tonic as microtonal rather than as an untouched home key', () => {
+  it('lets one key be in-scale, home and retuned at once', () => {
     const sikah = MAQAM_PRESETS_BY_ID.sikah_e;
     const tunings = buildKeyTunings(sikah, deriveDetuneMatrix(sikah.scaleDegrees).matrix);
-    expect(tunings[4].role).toBe('microtonal');
+    expect(tunings[4].role).toBe('in-scale');
+    expect(tunings[4].isTonic).toBe(true);
+    expect(tunings[4].isRetuned).toBe(true);
     expect(tunings[4].label).toBe('E½♭');
   });
 
+  it('marks nothing retuned in a maqam that stays in 12-TET', () => {
+    const hijaz = MAQAM_PRESETS_BY_ID.hijaz_d;
+    const tunings = buildKeyTunings(hijaz, deriveDetuneMatrix(hijaz.scaleDegrees).matrix);
+    expect(tunings.filter((t) => t.isRetuned)).toHaveLength(0);
+    expect(tunings.filter((t) => t.isTonic)).toHaveLength(1);
+    expect(tunings.filter((t) => t.role === 'in-scale')).toHaveLength(7);
+  });
+
+  it('follows the live matrix, not the preset, once they disagree', () => {
+    const edited = toggleDetuneSlot(rastMatrix, 9); // bend A, which Rast leaves alone
+    const tunings = buildKeyTunings(rast, edited);
+    expect(tunings[9].isRetuned).toBe(true);
+    expect(tunings[9].cents).toBe(-50);
+    // Membership is unchanged: A is still a degree of Rast, just bent.
+    expect(tunings[9].role).toBe('in-scale');
+    expect(tunings[9].label).toBe('A');
+  });
+
+  it('can retune a key that is outside the maqam entirely', () => {
+    const tunings = buildKeyTunings(rast, toggleDetuneSlot(rastMatrix, 6)); // F#
+    expect(tunings[6].role).toBe('outside');
+    expect(tunings[6].isRetuned).toBe(true);
+    expect(tunings[6].label).toBe('F♯ −50c');
+  });
+
+  it('handles no preset at all', () => {
+    const tunings = buildKeyTunings(undefined, [...NEUTRAL_DETUNE_MATRIX]);
+    expect(tunings).toHaveLength(12);
+    expect(tunings.every((t) => t.role === 'outside')).toBe(true);
+    expect(tunings.every((t) => !t.isTonic && !t.isRetuned)).toBe(true);
+  });
+
   /**
-   * ...and it must ALSO still read as home. When `role` carried both facts the
-   * retuned tier won, so Sikah — the maqam that exists to demonstrate a
-   * microtonal tonic — rendered with no home key anywhere on the board.
+   * The spoken name is assembled from the same independent facts as the
+   * visuals, so a screen reader hears what a sighted user sees rather than a
+   * hierarchy of its own.
    */
-  it('still marks a microtonal tonic as home', () => {
+  it('speaks every fact that is true of a key', () => {
     const sikah = MAQAM_PRESETS_BY_ID.sikah_e;
     const tunings = buildKeyTunings(sikah, deriveDetuneMatrix(sikah.scaleDegrees).matrix);
-    expect(tunings[4].isTonic).toBe(true);
-    expect(tunings[4].ariaLabel).toBe('E half-flat, tuned −50c, home note');
+    expect(tunings[4].ariaLabel).toBe('E half-flat, in the maqam, home note, tuned −50c');
+  });
+
+  it('speaks a plain scale key simply', () => {
+    expect(buildKeyTunings(rast, rastMatrix)[2].ariaLabel).toBe('D, in the maqam');
+  });
+
+  it('speaks a key outside the maqam as outside it', () => {
+    expect(buildKeyTunings(rast, rastMatrix)[1].ariaLabel).toBe('key, outside the maqam');
+  });
+
+  it('spells accidentals out in the spoken name, never as symbols', () => {
+    for (const tuning of buildKeyTunings(rast, rastMatrix)) {
+      expect(tuning.ariaLabel, `pc ${tuning.pitchClass}`).not.toMatch(/[½¾♭♯♮]/);
+    }
   });
 
   it('marks exactly one key as home in every preset', () => {
@@ -81,84 +134,13 @@ describe('buildKeyTunings', () => {
     }
   });
 
-  it('keeps home on the tonic when the user retunes an unrelated key', () => {
-    const tunings = buildKeyTunings(rast, toggleDetuneSlot(rastMatrix, 9));
-    expect(tunings[0].isTonic).toBe(true);
-    expect(tunings[9].isTonic).toBe(false);
-  });
-
-  it('marks no key as home when no maqam is loaded', () => {
-    const tunings = buildKeyTunings(undefined, [...NEUTRAL_DETUNE_MATRIX]);
-    expect(tunings.some((t) => t.isTonic)).toBe(false);
-  });
-
-  it('gives Hijaz a tonic and six plain scale keys, with nothing bent', () => {
-    const hijaz = MAQAM_PRESETS_BY_ID.hijaz_d;
-    const tunings = buildKeyTunings(hijaz, deriveDetuneMatrix(hijaz.scaleDegrees).matrix);
-    expect(tunings.filter((t) => t.role === 'microtonal')).toHaveLength(0);
-    expect(tunings.filter((t) => t.role === 'tonic')).toHaveLength(1);
-    expect(tunings.filter((t) => t.role === 'scale')).toHaveLength(6);
-  });
-
-  /**
-   * Colour must follow what will sound, not what the preset asked for. Once the
-   * user bends a key by hand, the keyboard has to agree with the audio.
-   */
-  it('colours from the live matrix, not the preset, once they disagree', () => {
-    const edited = toggleDetuneSlot(rastMatrix, 9); // bend A, which Rast leaves alone
-    const tunings = buildKeyTunings(rast, edited);
-    expect(tunings[9].role).toBe('microtonal');
-    expect(tunings[9].cents).toBe(-50);
-    expect(tunings[9].label).toBe('A'); // still spelled by the maqam
-  });
-
-  it('names a bent key the maqam does not use by its piano key and bend', () => {
-    const tunings = buildKeyTunings(rast, toggleDetuneSlot(rastMatrix, 6)); // F#
-    expect(tunings[6].role).toBe('microtonal');
-    expect(tunings[6].label).toBe('F♯ −50c');
-    expect(tunings[6].badge).toBe('−50c');
-  });
-
-  it('handles no preset at all', () => {
-    const tunings = buildKeyTunings(undefined, [...NEUTRAL_DETUNE_MATRIX]);
-    expect(tunings).toHaveLength(12);
-    expect(tunings.every((t) => t.role === 'outside')).toBe(true);
-  });
-
-  /**
-   * The visible keycap says "E½♭"; a speech engine reads that as "E one slash
-   * two flat", or drops the glyph entirely. The spoken name must use words.
-   */
-  it('spells accidentals out in the spoken name, never as symbols', () => {
-    const tunings = buildKeyTunings(rast, rastMatrix);
-    expect(tunings[4].ariaLabel).toBe('E half-flat, tuned −50c');
-    expect(tunings[4].label).toBe('E½♭');
-    for (const tuning of tunings) {
-      expect(tuning.ariaLabel, `pc ${tuning.pitchClass}`).not.toMatch(/[½¾♭♯♮]/);
-    }
-  });
-
-  it('names the tonic as the home note', () => {
-    expect(buildKeyTunings(rast, rastMatrix)[0].ariaLabel).toBe('C, home note');
-  });
-
   it('gives every key a spoken description', () => {
     for (const preset of MAQAM_PRESETS) {
       const tunings = buildKeyTunings(preset, deriveDetuneMatrix(preset.scaleDegrees).matrix);
       for (const tuning of tunings) {
-        expect(tuning.ariaLabel.length, `${preset.id} pc ${tuning.pitchClass}`).toBeGreaterThan(
-          0,
-        );
+        expect(tuning.ariaLabel.length, `${preset.id} pc ${tuning.pitchClass}`).toBeGreaterThan(0);
       }
     }
-  });
-
-  it('spells the octave tonic from the maqam’s opening degree, not its close', () => {
-    // Sikah opens on E-half-flat and closes on E-half-flat an octave up; the
-    // keyboard must not end up spelling pitch class 4 from the closing degree.
-    const sikah = MAQAM_PRESETS_BY_ID.sikah_e;
-    const tunings = buildKeyTunings(sikah, deriveDetuneMatrix(sikah.scaleDegrees).matrix);
-    expect(tunings[4].label).toBe('E½♭');
   });
 });
 

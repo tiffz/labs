@@ -7,7 +7,11 @@ import {
   writeMaqamUrlSearch,
 } from './maqamUrlState';
 import { MAQAM_PRESETS_BY_ID, deriveDetuneMatrix } from '../data/maqamPresets';
+import { DEFAULT_MELODY_ID, GENERATED_MELODY_ID } from '../melody/maqamMelody';
 import { toggleDetuneSlot } from './maqamTuning';
+
+/** The melody half of the state, defaulted, so tuning tests stay about tuning. */
+const plainMelody = { melodyId: DEFAULT_MELODY_ID, melodySeed: 1 };
 
 const rastMatrix = deriveDetuneMatrix(MAQAM_PRESETS_BY_ID.rast_c.scaleDegrees).matrix;
 const hijazMatrix = deriveDetuneMatrix(MAQAM_PRESETS_BY_ID.hijaz_d.scaleDegrees).matrix;
@@ -68,6 +72,28 @@ describe('readMaqamUrlState', () => {
     expect(state.matrix).toEqual(custom);
   });
 
+  it('defaults to the scale pattern', () => {
+    expect(readMaqamUrlState('').melodyId).toBe(DEFAULT_MELODY_ID);
+  });
+
+  it('reads a named pattern', () => {
+    expect(readMaqamUrlState('?melody=thirds').melodyId).toBe('thirds');
+  });
+
+  it('falls back to the scale for an unknown pattern rather than an empty staff', () => {
+    expect(readMaqamUrlState('?melody=not_a_pattern').melodyId).toBe(DEFAULT_MELODY_ID);
+  });
+
+  it('reads a generated phrase and its seed', () => {
+    const state = readMaqamUrlState(`?melody=${GENERATED_MELODY_ID}&seed=777`);
+    expect(state.melodyId).toBe(GENERATED_MELODY_ID);
+    expect(state.melodySeed).toBe(777);
+  });
+
+  it.each(['0', '-5', 'abc', '1.5'])('rejects seed %s rather than generating from it', (seed) => {
+    expect(readMaqamUrlState(`?melody=${GENERATED_MELODY_ID}&seed=${seed}`).melodySeed).toBe(1);
+  });
+
   it('falls back to the maqam’s tuning when the custom one is corrupt', () => {
     const state = readMaqamUrlState('?maqam=rast_c&tuning=garbage');
     expect(state.matrix).toEqual(rastMatrix);
@@ -76,21 +102,21 @@ describe('readMaqamUrlState', () => {
 
 describe('writeMaqamUrlSearch', () => {
   it('writes only the maqam when the tuning is untouched', () => {
-    expect(writeMaqamUrlSearch({ presetId: 'rast_c', matrix: rastMatrix })).toBe(
+    expect(writeMaqamUrlSearch({ presetId: 'rast_c', matrix: rastMatrix, ...plainMelody })).toBe(
       '?maqam=rast_c',
     );
   });
 
   it('adds the tuning once it diverges from the preset', () => {
     const custom = toggleDetuneSlot(rastMatrix, 9);
-    const search = writeMaqamUrlSearch({ presetId: 'rast_c', matrix: custom });
+    const search = writeMaqamUrlSearch({ presetId: 'rast_c', matrix: custom, ...plainMelody });
     expect(search).toContain('maqam=rast_c');
     expect(search).toContain(`tuning=${encodeTuning(custom)}`);
   });
 
   it('drops a stale tuning param when the tuning returns to the preset', () => {
     const search = writeMaqamUrlSearch(
-      { presetId: 'rast_c', matrix: rastMatrix },
+      { presetId: 'rast_c', matrix: rastMatrix, ...plainMelody },
       '?maqam=rast_c&tuning=----d------d',
     );
     expect(search).toBe('?maqam=rast_c');
@@ -98,16 +124,44 @@ describe('writeMaqamUrlSearch', () => {
 
   it('preserves unrelated query params', () => {
     const search = writeMaqamUrlSearch(
-      { presetId: 'rast_c', matrix: rastMatrix },
+      { presetId: 'rast_c', matrix: rastMatrix, ...plainMelody },
       '?debug=1',
     );
     expect(search).toContain('debug=1');
     expect(search).toContain('maqam=rast_c');
   });
 
+  it('keeps the melody out of the URL until it differs from the default', () => {
+    expect(
+      writeMaqamUrlSearch({ presetId: 'rast_c', matrix: rastMatrix, ...plainMelody }),
+    ).not.toContain('melody=');
+  });
+
+  it('writes the melody and its seed once a phrase is generated', () => {
+    const search = writeMaqamUrlSearch({
+      presetId: 'rast_c',
+      matrix: rastMatrix,
+      melodyId: GENERATED_MELODY_ID,
+      melodySeed: 4242,
+    });
+    expect(search).toContain(`melody=${GENERATED_MELODY_ID}`);
+    expect(search).toContain('seed=4242');
+  });
+
+  it('drops the seed for a fixed pattern, where it means nothing', () => {
+    const search = writeMaqamUrlSearch({
+      presetId: 'rast_c',
+      matrix: rastMatrix,
+      melodyId: 'thirds',
+      melodySeed: 99,
+    });
+    expect(search).toContain('melody=thirds');
+    expect(search).not.toContain('seed=');
+  });
+
   it('round-trips through readMaqamUrlState', () => {
     const custom = toggleDetuneSlot(hijazMatrix, 4);
-    const search = writeMaqamUrlSearch({ presetId: 'hijaz_d', matrix: custom });
+    const search = writeMaqamUrlSearch({ presetId: 'hijaz_d', matrix: custom, ...plainMelody });
     const state = readMaqamUrlState(search);
     expect(state.presetId).toBe('hijaz_d');
     expect(state.matrix).toEqual(custom);
