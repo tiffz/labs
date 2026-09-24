@@ -43,6 +43,49 @@ Reuse in retrospectives ([`CONTINUOUS_PROCESS_IMPROVEMENT.md`](CONTINUOUS_PROCES
 - `revoked-blob-display` — media cache lifecycle (see `GESTURE_MEDIA_STABILITY.md`)
 - `gpu-fill` — dense GLB + PBR → decimate in Blender export; Lambert in runtime
 - `dev-build-shipped` — the deployed bundle is a development build (see below)
+- `write-through-input` — a text input bound to a persisted record, writing on every keystroke
+- `perf-floor-on-a-laptop` — a budget calibrated on fast hardware: flaky on CI, or blind to the bug
+
+## Typing must not write through to the record
+
+A `value={record.field}` input whose `onChange` writes to the record re-renders everything
+subscribed to it, once per character — and usually queues a database write each time too.
+Measured on the Encore Originals song title at a realistic library size: **29 long tasks and
+2,144ms blocked** for 26 characters, on CI. The same code measured **0** on a fast laptop.
+
+Let the input own its text and publish on a debounce:
+[`useDebouncedTextDraft`](../src/encore/hooks/useDebouncedTextDraft.ts).
+
+**Flush on blur, and on unmount.** A search box may discard pending text; a song title may not —
+navigating away mid-word would lose the only copy. That is the one thing to get right.
+
+## A fast machine hides render cascades
+
+Do not calibrate an interaction budget on your own machine. The Originals cascade measured 0 long
+tasks locally and 29 on CI; a budget set from the laptop was both blind to it and flaky
+(`7 long tasks` tripped a budget of 6 and blocked a deploy).
+
+Reproduce CI-class conditions locally with CPU throttling:
+
+```sh
+LABS_E2E_CPU_THROTTLE=4 npx playwright test e2e/smoke/encore-typing-latency.spec.ts
+```
+
+The same broken build then measures 51 long tasks locally instead of 0.
+
+Pick the assertion carefully — no single number survives every machine:
+
+|                           | long tasks | worst task |
+| ------------------------- | ---------- | ---------- |
+| healthy, CI runner        | 7          | 66 ms      |
+| healthy, throttled 4x     | 26         | 82 ms      |
+| **cascade**, CI runner    | 29         | 138 ms     |
+| **cascade**, throttled 4x | 3          | 1642 ms    |
+
+Throttling **inverts** the count: a throttled cascade collapses into a few enormous tasks while
+healthy throttled work fragments into many small ones. Assert the count _and_ the worst single
+task — and prefer the functional check (**were keystrokes dropped?**), which caught the cascade in
+every environment and is the symptom users actually report.
 
 ## Measure the deployed build, not a local one
 
