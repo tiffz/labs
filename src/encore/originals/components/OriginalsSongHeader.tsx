@@ -8,14 +8,13 @@ import IconButton from '@mui/material/IconButton';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import Stack from '@mui/material/Stack';
-import TextField from '@mui/material/TextField';
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { alpha, useTheme } from '@mui/material/styles';
-import { useState, type ReactElement } from 'react';
-import { useDebouncedTextDraft } from '../../hooks/useDebouncedTextDraft';
+import { useCallback, useState, type ReactElement } from 'react';
+import { OriginalsSongTitleField } from './OriginalsSongTitleField';
 import { encoreAppHref, handleSpaLinkClick, navigateEncore } from '../../routes/encoreAppHash';
 import { encoreHairline, encoreRadius } from '../../theme/encoreUiTokens';
 import type { EncoreOriginalSong, OriginalSongSnapshot } from '../types';
@@ -41,19 +40,7 @@ export function OriginalsSongHeader({
 }: OriginalsSongHeaderProps): ReactElement {
   const theme = useTheme();
 
-  /**
-   * The title owns its own text and publishes on a debounce.
-   *
-   * Bound straight to `song.title`, every keystroke re-rendered the whole `OriginalSongPage`
-   * subtree and queued a Dexie write, because `update()` drives both. Measured at a realistic
-   * library size: 29 long tasks and 2,144ms blocked for 26 characters.
-   *
-   * `flush` on blur, and on unmount by default, so navigating away mid-word cannot lose a title.
-   */
-  const { draft: titleDraft, setDraft: setTitleDraft, flush: flushTitle } = useDebouncedTextDraft(
-    song.title,
-    (next) => onChange({ title: next }),
-  );
+  const handleTitleCommit = useCallback((next: string) => onChange({ title: next }), [onChange]);
 
   const [historyAnchor, setHistoryAnchor] = useState<HTMLElement | null>(null);
   const [moreAnchor, setMoreAnchor] = useState<HTMLElement | null>(null);
@@ -86,30 +73,11 @@ export function OriginalsSongHeader({
           >
             Original
           </Typography>
-          <TextField
-            value={titleDraft}
-            onChange={(e) => setTitleDraft(e.target.value)}
-            onBlur={flushTitle}
-            placeholder="Untitled original"
-            variant="standard"
-            fullWidth
-            sx={{
-              mt: 0.5,
-              '& .MuiInput-root': { fontSize: 'inherit' },
-            }}
-            slotProps={{
-              input: { disableUnderline: true },
-
-              htmlInput: {
-                'aria-label': 'Song title',
-                style: {
-                  fontSize: '1.375rem',
-                  fontWeight: 700,
-                  letterSpacing: '-0.02em',
-                  padding: 0,
-                },
-              }
-            }} />
+          {/*
+            Isolated so a keystroke re-renders an input, not this whole header and not the page.
+            `handleTitleCommit` is stable so the field's `memo` can hold across publishes.
+          */}
+          <OriginalsSongTitleField title={song.title} onCommit={handleTitleCommit} />
         </Box>
 
         <Stack
