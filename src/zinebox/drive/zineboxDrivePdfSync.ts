@@ -8,6 +8,7 @@ import { zineboxDb } from '../db/zineboxDb';
 import type { ZineboxComic } from '../types';
 import { ZINEBOX_DRIVE_COMICS_FOLDER } from './zineboxDriveEnvelope';
 import { escapeDriveQueryLiteral } from '../../shared/drive/escapeDriveQueryLiteral';
+import { formatMissingSidecarsMessage, runSidecarBatch } from '../../shared/drive/sidecarBatchTolerance';
 
 async function ensureComicsFolder(accessToken: string, appFolderId: string): Promise<string> {
   const q = `name='${escapeDriveQueryLiteral(ZINEBOX_DRIVE_COMICS_FOLDER)}' and mimeType='application/vnd.google-apps.folder' and '${appFolderId}' in parents and trashed=false`;
@@ -50,18 +51,26 @@ export async function downloadMissingZineboxPdfs(
   const pending = comics.filter((c) => c.driveBackupFileId);
   let downloaded = 0;
 
-  for (const comic of pending) {
-    const fileId = comic.driveBackupFileId;
-    if (!fileId) continue;
-    const existing = await zineboxDb.comicFiles.get(comic.id);
-    if (existing?.blob && existing.blob.size > 0) continue;
-    downloaded += 1;
-    onProgress?.(`Downloading PDF ${downloaded}: ${comic.title}`);
-    const bytes = await driveGetMediaArrayBuffer(accessToken, fileId);
-    const blob = new Blob([bytes], { type: 'application/pdf' });
-    await zineboxDb.comicFiles.put({ comicId: comic.id, blob });
-    if (!comic.storageKind) {
-      await zineboxDb.comics.update(comic.id, { storageKind: 'local' });
-    }
-  }
+  // One trashed PDF used to abort this loop, so every later comic in the library went unfetched.
+  const outcome = await runSidecarBatch(
+    pending,
+    async (comic) => {
+      const fileId = comic.driveBackupFileId;
+      if (!fileId) return;
+      const existing = await zineboxDb.comicFiles.get(comic.id);
+      if (existing?.blob && existing.blob.size > 0) return;
+      downloaded += 1;
+      onProgress?.(`Downloading PDF ${downloaded}: ${comic.title}`);
+      const bytes = await driveGetMediaArrayBuffer(accessToken, fileId);
+      const blob = new Blob([bytes], { type: 'application/pdf' });
+      await zineboxDb.comicFiles.put({ comicId: comic.id, blob });
+      if (!comic.storageKind) {
+        await zineboxDb.comics.update(comic.id, { storageKind: 'local' });
+      }
+    },
+    { labelOf: (comic) => comic.title || comic.id },
+  );
+
+  const missing = formatMissingSidecarsMessage(outcome);
+  if (missing) onProgress?.(missing);
 }

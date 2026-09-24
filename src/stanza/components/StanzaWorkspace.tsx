@@ -107,6 +107,7 @@ import { readBestKnownMediaDurationSec, resolveStickyTransportDurationSec } from
 import { primaryPlaybackMuted, stanzaSanitizeLinearBusGain, stemPlaybackMuted } from '../utils/stanzaPlaybackMute';
 import { pruneStanzaSkippedBySegmentId, stanzaSkippedMapsEqual } from '../utils/stanzaSkippedMapPrune';
 import { migrateStanzaSongSegmentKeysIfNeeded } from '../utils/stanzaSegmentMigration';
+import { resolveStanzaRailCalibrationIndex } from '../utils/stanzaRailCalibrationTarget';
 import { resolveStanzaMetronomeGridSync } from '../utils/stanzaMetronomeResolution';
 import {
   resolveStanzaDrumInheritanceMode,
@@ -957,12 +958,16 @@ export default function StanzaWorkspace() {
   const playbackMetCal =
     playbackMetSeg && selected ? selected.metronomeBySegmentId?.[playbackMetSeg.id] : undefined;
 
-  const railCalibSegIdx = useMemo(() => {
-    if (segments.length === 0) return null;
-    if (lastClickedSegmentIndex != null) return lastClickedSegmentIndex;
-    if (selectedSegmentIndices.length > 0) return Math.min(...selectedSegmentIndices);
-    return playbackSegIdx ?? 0;
-  }, [segments, lastClickedSegmentIndex, selectedSegmentIndices, playbackSegIdx]);
+  const railCalibSegIdx = useMemo(
+    () =>
+      resolveStanzaRailCalibrationIndex({
+        segmentCount: segments.length,
+        lastClickedIndex: lastClickedSegmentIndex,
+        selectedIndices: selectedSegmentIndices,
+        playbackIndex: playbackSegIdx,
+      }),
+    [segments.length, lastClickedSegmentIndex, selectedSegmentIndices, playbackSegIdx],
+  );
 
   const railCalibSeg = railCalibSegIdx != null ? segments[railCalibSegIdx]! : null;
 
@@ -1989,6 +1994,9 @@ export default function StanzaWorkspace() {
   const clearSegmentSelection = useCallback(() => {
     setSelectedSegmentIndices([]);
     setSegmentSelectionAnchor(null);
+    // Also release the calibration rail. Without this the rail keeps editing the section you just
+    // deselected, with no way back short of switching songs — the reported dead end.
+    setLastClickedSegmentIndex(null);
     setSectionSelectionExtend({ startDelta: 0, endDelta: 0 });
     setLoopMode((m) => (m === 'loopSelection' ? 'through' : m));
   }, []);

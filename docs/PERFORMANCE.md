@@ -42,6 +42,93 @@ Reuse in retrospectives ([`CONTINUOUS_PROCESS_IMPROVEMENT.md`](CONTINUOUS_PROCES
 - `warmup-storm` — prefetch/queue rebuild retriggers on unrelated config changes
 - `revoked-blob-display` — media cache lifecycle (see `GESTURE_MEDIA_STABILITY.md`)
 - `gpu-fill` — dense GLB + PBR → decimate in Blender export; Lambert in runtime
+- `dev-build-shipped` — the deployed bundle is a development build (see below)
+- `write-through-input` — a text input bound to a persisted record, writing on every keystroke
+- `perf-floor-on-a-laptop` — a budget calibrated on fast hardware: flaky on CI, or blind to the bug
+
+## Typing must not write through to the record
+
+A `value={record.field}` input whose `onChange` writes to the record re-renders everything
+subscribed to it, once per character — and usually queues a database write each time too.
+Measured on the Encore Originals song title at a realistic library size: **29 long tasks and
+2,144ms blocked** for 26 characters, on CI. The same code measured **0** on a fast laptop.
+
+Let the input own its text and publish on a debounce:
+[`useDebouncedTextDraft`](../src/encore/hooks/useDebouncedTextDraft.ts).
+
+**Flush on blur, and on unmount.** A search box may discard pending text; a song title may not —
+navigating away mid-word would lose the only copy. That is the one thing to get right.
+
+## A fast machine hides render cascades
+
+Do not calibrate an interaction budget on your own machine. The Originals cascade measured 0 long
+tasks locally and 29 on CI; a budget set from the laptop was both blind to it and flaky
+(`7 long tasks` tripped a budget of 6 and blocked a deploy).
+
+Reproduce CI-class conditions locally with CPU throttling:
+
+```sh
+LABS_E2E_CPU_THROTTLE=4 npx playwright test e2e/smoke/encore-typing-latency.spec.ts
+```
+
+The same broken build then measures 51 long tasks locally instead of 0.
+
+Pick the assertion carefully — no single number survives every machine:
+
+|                           | long tasks | worst task |
+| ------------------------- | ---------- | ---------- |
+| healthy, CI runner        | 7          | 66 ms      |
+| healthy, throttled 4x     | 26         | 82 ms      |
+| **cascade**, CI runner    | 29         | 138 ms     |
+| **cascade**, throttled 4x | 3          | 1642 ms    |
+
+Throttling **inverts** the count: a throttled cascade collapses into a few enormous tasks while
+healthy throttled work fragments into many small ones. Assert the count _and_ the worst single
+task — and prefer the functional check (**were keystrokes dropped?**), which caught the cascade in
+every environment and is the symptom users actually report.
+
+## Measure the deployed build, not a local one
+
+Before profiling an app's runtime, confirm production is actually production. CI's `build`
+job inherited `NODE_ENV: test`, and Vite derives `isProduction` from `NODE_ENV` — so every
+deploy resolved the `development` export condition and shipped React's dev bundle. The
+deployed vendor chunk carried 12,163 `jsxDEV` call sites, each JSX element allocating an
+`Error` to capture an owner stack, and ran ~310 KB heavier than the same commit built
+correctly.
+
+Gate: [`scripts/check-prod-build-mode.mjs`](../scripts/check-prod-build-mode.mjs) — runs in
+presubmit and in CI's build job, and checks both the workflow env and the built `dist/`.
+
+`NODE_ENV` belongs on the build **step**, never the job: at job level `npm ci` omits
+devDependencies when it is `production`.
+
+## Interaction budgets measure two different things
+
+`measureClickUntil` + `reportInteractionLatency` measure **wall clock** from click until a DOM
+condition, with a two-tier gate: advisory at 1x budget, hard fail at 3x
+([`interactionLatencyCore.ts`](../src/shared/test/interactionLatencyCore.ts)).
+
+Wall clock cannot see a render cascade. The Encore Originals title blocked the main thread for
+**2,144ms across 29 long tasks** while every individual interaction still resolved promptly — a
+click-until-condition measurement saw nothing wrong. For interactions where a cascade is the risk,
+use `measureClickBlocking` + `reportInteractionBlocking`, which also captures long tasks and fails
+on a single task longer than 1.5x the budget.
+
+**Do not assert long-task COUNT.** It inverts between machines: a cascade fragments into many small
+tasks on a slow runner and collapses into a few enormous ones on a fast one (measured: 7 healthy vs
+29 broken on CI; 26 healthy vs 3 broken under 4x throttle). Worst-single-task and the functional
+"did input get dropped" check are the portable signals.
+
+Every measurement is recorded as a Playwright annotation, including the ones inside budget — the
+advisory tier used to be a bare `console.warn`, which with no reviewer is
+[`advisory-into-the-void`](CI_CHECK_VALUE.md). The in-budget numbers are also what a future budget
+calibration needs; none of them were recorded anywhere before.
+
+The instrument has its own self-test,
+[`interaction-blocking-instrument.spec.ts`](../e2e/smoke/interaction-blocking-instrument.spec.ts):
+it blocks the main thread on purpose and requires the observer to see it. Verified to fail when the
+observer is pointed at the wrong entry type — otherwise every blocking assertion in the suite could
+pass forever while measuring nothing.
 
 ## First-paint load (bundle)
 

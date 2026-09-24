@@ -115,8 +115,10 @@ if (changeClass !== 'e2e-only') {
 }
 await runStage('build + scoped Vitest (parallel)', buildAndTests);
 
-await runStage('bundle size gate', [
+await runStage('built-artifact gates', [
   () => runTask('bundle size gate', 'node', ['scripts/bundle-size-report.mjs', '--skip-build', '--check']),
+  // Catches a production build that embedded React's development bundle (see #211).
+  () => runTask('production build mode', 'node', ['scripts/check-prod-build-mode.mjs']),
 ]);
 
 await runStage('scoped e2e smoke', [npmRun('scoped e2e smoke', 'test:e2e:scoped')]);

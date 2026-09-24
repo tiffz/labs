@@ -84,6 +84,12 @@ forgotten)" with a **named re-open trigger** — the condition that would change
 decision ("when the friend needs write access," "when a second concurrent editor
 exists"). A deferral with a trigger is durable; one without is just forgetting.
 
+## Reviews against these principles
+
+- [`ENCORE_PRODUCT_REVIEW_2026-09.md`](ENCORE_PRODUCT_REVIEW_2026-09.md) — Encore measured against
+  principle 1 (one clear job per app): 6 co-equal tabs, 8 CUJs, 4 distinct jobs, and no primary
+  journey. Analysis only; recommendations are proposals.
+
 ## Related
 
 - Proposal gate: [`labs-pm-review`](../.agents/skills/labs-pm-review/SKILL.md); design-time journey: [`labs-ux-journey`](../.agents/skills/labs-ux-journey/SKILL.md).

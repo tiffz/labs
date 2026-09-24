@@ -434,7 +434,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      NODE_ENV: test
+      # NODE_ENV is deliberately NOT set at job level: `npm ci` omits devDependencies
+      # when it is `production`, and anything other than `production` makes `vite build`
+      # ship React's development bundle. It is pinned on the build step instead.
       HUSKY: 0
     steps:
     - name: Checkout code
@@ -464,7 +466,15 @@ jobs:
         # workers/labs-session-bff/README.md § First-party host.
         VITE_LABS_SESSION_BFF_URL: ${{ secrets.VITE_LABS_SESSION_BFF_URL || 'https://labs-session-bff.tiffz.workers.dev' }}
         VITE_APP_ENV: production
+        # Vite derives `isProduction` from NODE_ENV. With any other value (this job used
+        # to inherit `test`) it resolves the `development` export condition, so React,
+        # react-dom and @emotion all come from their dev bundles and every JSX element
+        # allocates an Error for owner stacks. Guarded by scripts/check-prod-build-mode.mjs.
+        NODE_ENV: production
       run: npm run build
+
+    - name: Production build mode gate (no React dev bundle in dist/)
+      run: node scripts/check-prod-build-mode.mjs
 
     - name: Bundle size gate (two-tier vs docs/bundle-size-baseline.json)
       run: node scripts/bundle-size-report.mjs --skip-build --check

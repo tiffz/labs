@@ -14561,6 +14561,24 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-components-music-numericfielddraftutils-ts-parsenumericfielddraft",
+    "name": "parseNumericFieldDraft",
+    "path": "src/shared/components/music/numericFieldDraftUtils.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Parse what the user typed into a numeric field. Blank or unparseable is an ABSENCE, never a value. `Number('')` is `0`, not `NaN`, so the obvious `Number.isFinite(Number(draft))` guard accepts an empty box and commits zero — which then clamps to the field minimum. Clearing the Encore/Stanza BPM box and tabbing away silently set the tempo to 20 BPM, and the only way to change 100 to 200 was to overwrite the first digit in place rather than select-all-and-retype. Callers restore their current value on `null`.",
+    "tags": [
+      "components",
+      "music"
+    ],
+    "appsUsing": [
+      "ui"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-components-music-numericstepperfield-tsx-numericstepperfield",
     "name": "NumericStepperField",
     "path": "src/shared/components/music/NumericStepperField.tsx",
@@ -18534,6 +18552,73 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-drive-sidecarbatchtolerance-ts-formatmissingsidecarsmessage",
+    "name": "formatMissingSidecarsMessage",
+    "path": "src/shared/drive/sidecarBatchTolerance.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "User-facing line naming what could not be fetched, or null when everything landed.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-sidecarbatchtolerance-ts-isbatchstoppingsidecarerror",
+    "name": "isBatchStoppingSidecarError",
+    "path": "src/shared/drive/sidecarBatchTolerance.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Continuing would fail identically for every remaining item, so stopping is the correct response. 401/403 need a fresh token or consent; 429 and 5xx need backoff, not several hundred more calls.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-sidecarbatchtolerance-ts-ismissingsidecarerror",
+    "name": "isMissingSidecarError",
+    "path": "src/shared/drive/sidecarBatchTolerance.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "The sidecar is gone from Drive: trashed, deleted, or no longer visible to this app.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-sidecarbatchtolerance-ts-runsidecarbatch",
+    "name": "runSidecarBatch",
+    "path": "src/shared/drive/sidecarBatchTolerance.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Run a sidecar download batch so one dead blob cannot pause a whole library's sync. Every `downloadSidecars` implementation awaited each item inside a bare loop. One trashed or permission-changed blob throws a 404, the loop aborts, the exception propagates into the merge, and every *later* item in the batch is never fetched — a single dead PDF stalls the rest of the library, on every subsequent sync, with no message naming the file. Tolerating a missing item is safe: the sidecar is already gone from Drive, and skipping it leaves local data untouched. Tolerating an AUTH or RATE-LIMIT failure is not — every remaining item will fail the same way, and grinding through hundreds of them is exactly the API-abuse pattern `driveRequestGovernor` exists to prevent. So those still stop the batch.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-sidecarbatchtolerance-ts-sidecarbatchoutcome",
+    "name": "SidecarBatchOutcome",
+    "path": "src/shared/drive/sidecarBatchTolerance.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Run a sidecar download batch so one dead blob cannot pause a whole library's sync. Every `downloadSidecars` implementation awaited each item inside a bare loop. One trashed or permission-changed blob throws a 404, the loop aborts, the exception propagates into the merge, and every *later* item in the batch is never fetched — a single dead PDF stalls the rest of the library, on every subsequent sync, with no message naming the file. Tolerating a missing item is safe: the sidecar is already gone from Drive, and skipping it leaves local data untouched. Tolerating an AUTH or RATE-LIMIT failure is not — every remaining item will fail the same way, and grinding through hundreds of them is exactly the API-abuse pattern `driveRequestGovernor` exists to prevent. So those still stop the batch.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
     "id": "src-shared-drive-uselabsdriveportfolioautosync-ts-labsdriveportfoliolocalchangeevent",
     "name": "LabsDrivePortfolioLocalChangeEvent",
     "path": "src/shared/drive/useLabsDrivePortfolioAutoSync.ts",
@@ -22005,6 +22090,37 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "stability": "stable",
     "owner": "music-core",
     "description": "Lines that receive one chord when applying a section progression (lyric or chord-only).",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-chartmetadataheader-ts-chartmetadataheader",
+    "name": "ChartMetadataHeader",
+    "path": "src/shared/music/chordPro/chartMetadataHeader.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Leading metadata block on a pasted chart. Supported, case-insensitive, one per line, only BEFORE the first section header: Key: C key: Cm {key: C} BPM: 84 Tempo: 84 {tempo: 84} Capo: 2 Time: 6/8 Time signature: 6/8 Restricted to the leading block on purpose. A lyric line that happens to read \"Key: C\" further down the song is lyrics, and hijacking it would silently delete a line of someone's song. Before this existed, `Key: C` at the top of a paste became a section: type `Other`, header `\"\"`, one line of text. That is the \"ghost section 1 I cannot delete\" — it had no header to click. And `BPM: 84` was dropped entirely, with no toast and nothing written to the song.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-chartmetadataheader-ts-parsechartmetadataheader",
+    "name": "parseChartMetadataHeader",
+    "path": "src/shared/music/chordPro/chartMetadataHeader.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Leading metadata block on a pasted chart. Supported, case-insensitive, one per line, only BEFORE the first section header: Key: C key: Cm {key: C} BPM: 84 Tempo: 84 {tempo: 84} Capo: 2 Time: 6/8 Time signature: 6/8 Restricted to the leading block on purpose. A lyric line that happens to read \"Key: C\" further down the song is lyrics, and hijacking it would silently delete a line of someone's song. Before this existed, `Key: C` at the top of a paste became a section: type `Other`, header `\"\"`, one line of text. That is the \"ghost section 1 I cannot delete\" — it had no header to click. And `BPM: 84` was dropped entirely, with no toast and nothing written to the song.",
     "tags": [
       "music"
     ],
@@ -35118,7 +35234,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "No JSDoc summary provided.",
+    "description": "Whether the value carries any text at all. Deliberately never builds a DOM. Encore's Originals library asks this per song per render (workflow completion + dashboard status), so on a real library it ran `DOMParser.parseFromString` over every song's full brainstorm document on every keystroke — 137ms of blocking parse in one profile. Emptiness only needs \"is there non-whitespace text outside the tags\", which tag-stripping answers exactly as well.",
     "tags": [
       "utils"
     ],

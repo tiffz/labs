@@ -8,6 +8,7 @@ import {
   type LyricLine,
   type SongSection,
 } from './chordChartLayout';
+import { parseChartMetadataHeader, type ChartMetadataHeader } from './chartMetadataHeader';
 import { isChordProSectionHeaderLine, parseChordProSectionHeader, stripSectionHeaderAnnotation } from './chordProText';
 import { importPlainLyricsFromClipboard } from '../lyrics/pastedLyricsImport';
 import {
@@ -320,8 +321,20 @@ export function extractChartPortionForImport(text: string): { text: string; exce
     return { text: trimmed, excerpted: false };
   }
 
-  const searchFrom = Math.max(0, lines.length - 150);
-  for (let i = searchFrom; i < lines.length; i += 1) {
+  /*
+   * Scan from the TOP for the first section header that begins something chart-shaped.
+   *
+   * This used to start at `lines.length - 150`, which silently truncated any chart longer than that:
+   * the window opened in the middle of the song, the first header inside it won, and everything
+   * before it was discarded. A 255-line chart with no prose above it at all lost 119 lines — verses
+   * 1 to 7 — and the import began at "[Verse 8]". That is the reported "lyrics cut off during
+   * import".
+   *
+   * Starting from 0 stays safe because a candidate is only accepted when the slice from it still
+   * `looksLikePastedChart`, so a header-shaped line buried in prose notes does not win unless the
+   * chart really does start there.
+   */
+  for (let i = 0; i < lines.length; i += 1) {
     const header = parsePlainSectionHeader(lines[i]?.trim() ?? '');
     if (!header) continue;
     let start = i;
@@ -354,6 +367,13 @@ export type PastedChartImportSummary = {
   message: string;
   /** When false, the paste was treated as plain text — no toast. */
   notifyUser: boolean;
+  /**
+   * Key / BPM / capo / time signature read from a leading metadata block.
+   *
+   * Previously `Key: C` at the top of a paste became a headerless `Other` section — the ghost
+   * section with nothing to click — and `BPM: 84` was dropped with no trace.
+   */
+  metadata?: ChartMetadataHeader;
 };
 
 /** Detect, optionally excerpt, and parse clipboard chart text for Originals Write mode. */
@@ -394,7 +414,8 @@ export function importPastedChartFromClipboard(raw: string): PastedChartImportSu
     };
   }
 
-  const layout = parsePastedChartToChartLayout(chartText);
+  const metadata = parseChartMetadataHeader(chartText);
+  const layout = parsePastedChartToChartLayout(metadata.body);
   const sectionCount = layout.sections.length;
   const lineCount = layout.sections.reduce((n, s) => n + s.lines.length, 0);
 
@@ -412,6 +433,12 @@ export function importPastedChartFromClipboard(raw: string): PastedChartImportSu
   const sectionWord = sectionCount === 1 ? 'section' : 'sections';
   const lineWord = lineCount === 1 ? 'line' : 'lines';
   let message = `Imported ${sectionCount} ${sectionWord} and ${lineCount} ${lineWord} with chords.`;
+  if (metadata.key || metadata.bpm) {
+    const picked = [metadata.key ? `key ${metadata.key}` : null, metadata.bpm ? `${metadata.bpm} BPM` : null]
+      .filter(Boolean)
+      .join(' and ');
+    message += ` Read ${picked} from the header.`;
+  }
   if (excerpted) {
     message += ' Notes above the chart were left out; paste brainstorm in the Brainstorm tab.';
   }
@@ -424,6 +451,7 @@ export function importPastedChartFromClipboard(raw: string): PastedChartImportSu
     message,
     notifyUser: true,
     layout,
+    metadata,
   };
 }
 

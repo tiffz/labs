@@ -124,6 +124,9 @@ function beatOffsetMsInputToSec(raw: string): number | null {
   return n / 1000;
 }
 
+/** How long to wait after the last digit before re-anchoring the audible metronome. */
+const STANZA_LIVE_OFFSET_SETTLE_MS = 250;
+
 const ZERO_SEG: StanzaSegmentMetronomeCalibration = {
   bpm: 120,
   anchorMediaTime: 0,
@@ -190,6 +193,7 @@ export default function StanzaSectionMetronomeRail({
 
   const [draftBpm, setDraftBpm] = useState(() => Math.round(baselineBpm));
   const [draftOffsetInput, setDraftOffsetInput] = useState(() => beatOffsetSecToMsDisplay(baselineOffsetSec));
+  const liveOffsetTimerRef = useRef<number | null>(null);
   const draftDirtyRef = useRef(false);
   const draftRef = useRef({ bpm: Math.round(baselineBpm), offsetSec: roundBeatOffsetForUi(baselineOffsetSec) });
   const calibrationMetaRef = useRef({
@@ -293,10 +297,16 @@ export default function StanzaSectionMetronomeRail({
 
   useEffect(
     () => () => {
+      if (liveOffsetTimerRef.current != null) {
+        window.clearTimeout(liveOffsetTimerRef.current);
+        liveOffsetTimerRef.current = null;
+      }
       if (persistTimerRef.current != null) {
         window.clearTimeout(persistTimerRef.current);
         persistTimerRef.current = null;
       }
+      // The offset itself is already in draftRef, so the persist below still saves it — only the
+      // audible re-anchor is dropped, and the rail is going away anyway.
       if (draftDirtyRef.current) flushPersist();
     },
     [flushPersist],
@@ -317,18 +327,40 @@ export default function StanzaSectionMetronomeRail({
     [pushLiveFromDraft, schedulePersist],
   );
 
+  /**
+   * Re-anchoring the metronome on every digit makes it lurch while you type: entering `504`
+   * anchors at 5ms, then 50ms, then 504ms, and each one restarts the click grid. The draft ref
+   * updates immediately (so a blur or persist always sees the newest value); only the audible
+   * re-anchor waits for you to stop typing.
+   */
+  const scheduleLivePush = () => {
+    if (liveOffsetTimerRef.current != null) window.clearTimeout(liveOffsetTimerRef.current);
+    liveOffsetTimerRef.current = window.setTimeout(() => {
+      liveOffsetTimerRef.current = null;
+      pushLiveFromDraft(draftRef.current.bpm, draftRef.current.offsetSec);
+    }, STANZA_LIVE_OFFSET_SETTLE_MS);
+  };
+
+  const flushLivePush = () => {
+    if (liveOffsetTimerRef.current == null) return;
+    window.clearTimeout(liveOffsetTimerRef.current);
+    liveOffsetTimerRef.current = null;
+    pushLiveFromDraft(draftRef.current.bpm, draftRef.current.offsetSec);
+  };
+
   const handleOffsetInputChange = (raw: string) => {
     setDraftOffsetInput(raw);
     const sec = beatOffsetMsInputToSec(raw);
     if (sec == null) return;
     const off = roundBeatOffsetForUi(sec);
     draftRef.current = { ...draftRef.current, offsetSec: off };
-    pushLiveFromDraft(draftRef.current.bpm, off);
+    scheduleLivePush();
     schedulePersist();
   };
 
   const handleOffsetBlur = () => {
     setDraftOffsetInput(beatOffsetSecToMsDisplay(draftRef.current.offsetSec));
+    flushLivePush();
     flushPersist();
   };
 
@@ -701,6 +733,7 @@ export default function StanzaSectionMetronomeRail({
                   <IconButton
                     type="button"
                     size="small"
+                    className="stanza-btn-soft-outline stanza-rail-compact-btn"
                     aria-label={
                       timingScope === 'section' && segmentCalibration
                         ? 'Use song tempo'
@@ -720,6 +753,25 @@ export default function StanzaSectionMetronomeRail({
           label="Beat 1 (ms)"
           className="stanza-rail-calibration-field"
           inheritanceMode={tempoInheritanceMode}
+          /*
+           * Same inherit/custom caption as BPM. Both numbers come from one calibration, but only
+           * BPM said whose — so with a section selected you could see the tempo was inherited from
+           * the whole song while Beat 1 looked like it belonged to the section. Reported as section
+           * vs whole-song confusion.
+           */
+          inheritanceHint={
+            timingScope === 'section' ? (
+              <StanzaRailInheritanceHint
+                mode={tempoInheritanceMode}
+                onResetToParent={
+                  tempoInheritanceMode === 'custom' ? resetTempoCalibration : undefined
+                }
+                resetLabel="Use song Beat 1"
+                inheritLabel="From whole song"
+                showCustomStatus={false}
+              />
+            ) : null
+          }
         >
           <Box className="stanza-rail-beat-offset-shell">
             <input

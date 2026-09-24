@@ -8,13 +8,13 @@ import IconButton from '@mui/material/IconButton';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import Stack from '@mui/material/Stack';
-import TextField from '@mui/material/TextField';
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { alpha, useTheme } from '@mui/material/styles';
-import { useState, type ReactElement } from 'react';
+import { useCallback, useState, type ReactElement } from 'react';
+import { OriginalsSongTitleField } from './OriginalsSongTitleField';
 import { encoreAppHref, handleSpaLinkClick, navigateEncore } from '../../routes/encoreAppHash';
 import { encoreHairline, encoreRadius } from '../../theme/encoreUiTokens';
 import type { EncoreOriginalSong, OriginalSongSnapshot } from '../types';
@@ -39,6 +39,9 @@ export function OriginalsSongHeader({
   onDelete,
 }: OriginalsSongHeaderProps): ReactElement {
   const theme = useTheme();
+
+  const handleTitleCommit = useCallback((next: string) => onChange({ title: next }), [onChange]);
+
   const [historyAnchor, setHistoryAnchor] = useState<HTMLElement | null>(null);
   const [moreAnchor, setMoreAnchor] = useState<HTMLElement | null>(null);
 
@@ -70,29 +73,11 @@ export function OriginalsSongHeader({
           >
             Original
           </Typography>
-          <TextField
-            value={song.title}
-            onChange={(e) => onChange({ title: e.target.value })}
-            placeholder="Untitled original"
-            variant="standard"
-            fullWidth
-            sx={{
-              mt: 0.5,
-              '& .MuiInput-root': { fontSize: 'inherit' },
-            }}
-            slotProps={{
-              input: { disableUnderline: true },
-
-              htmlInput: {
-                'aria-label': 'Song title',
-                style: {
-                  fontSize: '1.375rem',
-                  fontWeight: 700,
-                  letterSpacing: '-0.02em',
-                  padding: 0,
-                },
-              }
-            }} />
+          {/*
+            Isolated so a keystroke re-renders an input, not this whole header and not the page.
+            `handleTitleCommit` is stable so the field's `memo` can hold across publishes.
+          */}
+          <OriginalsSongTitleField title={song.title} onCommit={handleTitleCommit} />
         </Box>
 
         <Stack

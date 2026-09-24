@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createBlankOriginalSong } from './types';
+import { createBlankOriginalSong, normalizeEncoreOriginalSong, type EncoreOriginalSong } from './types';
 import {
   formatOriginalStageSummary,
   inferredWorkflowStage,
@@ -101,5 +101,45 @@ describe('originalsWorkflowCompletion', () => {
       takes: [{ id: 't1', label: 'Take 1', driveFileId: 'abc', mimeType: 'audio/mpeg', timestamp: 1, source: 'imported' as const }],
     };
     expect(originalsLibraryStageProgressDetail(song)).toBeNull();
+  });
+});
+
+describe('a song with takes but a genuinely missing earlier stage', () => {
+  /** Takes recorded, lyrics present, but no chord markers anywhere. */
+  const takesButNoChords = (): EncoreOriginalSong =>
+    normalizeEncoreOriginalSong({
+      id: 'stuck',
+      title: 'Stuck Song',
+      lyricsAndChords: '[Verse 1]\nJust words, no chords at all\n',
+      takes: [{ id: 't1', label: 'Take 1', createdAt: '2026-01-01T00:00:00.000Z' }],
+      brainstormHtml: '<p>An idea</p>',
+    } as unknown as EncoreOriginalSong);
+
+  it('is not demo ready', () => {
+    expect(isOriginalDemoReady(takesButNoChords())).toBe(false);
+  });
+
+  /**
+   * The reported bug. `isStageComplete` is monotonic, so one take made every stage report done and
+   * this parked on 'takes' — the library said "Record Takes" on a song that already had takes,
+   * "Demo ready" never arrived, and nothing named the missing stage.
+   */
+  it('names the outstanding stage instead of parking on takes', () => {
+    expect(inferredWorkflowStage(takesButNoChords())).toBe('chords');
+  });
+
+  it('does not claim 4/4 stages while refusing to say demo ready', () => {
+    const summary = formatOriginalStageSummary(takesButNoChords());
+    expect(summary).not.toBe('Demo ready');
+    expect(summary).toBe('3/4 stages');
+  });
+
+  it('still reports demo ready once the missing stage is filled in', () => {
+    const complete = {
+      ...takesButNoChords(),
+      lyricsAndChords: '[Verse 1]\n[C]Just words, [F]now with chords\n',
+    };
+    expect(isOriginalDemoReady(complete)).toBe(true);
+    expect(formatOriginalStageSummary(complete)).toBe('Demo ready');
   });
 });
