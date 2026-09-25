@@ -60,13 +60,34 @@ of things it looks at is not the set of things it governs**. This is harder to s
 assertion, because the test genuinely fails when you break what it covers — it just never covers the
 thing that breaks. Three in one week:
 
-| Guard                          | Governed                 | Actually looked at                                   |
-| ------------------------------ | ------------------------ | ---------------------------------------------------- |
-| `check:ui-copy`                | all user-facing copy     | `.tsx` only — the rhythm copy lives in `.ts`         |
-| `backgroundPlaybackGuardrails` | every rAF audio driver   | a hardcoded list of 2 files, neither the shared one  |
-| `verify:quick`                 | "is this safe to commit" | `typecheck` (app), not `typecheck:full` (tests, e2e) |
+| Guard                          | Governed                 | Actually looked at                                     |
+| ------------------------------ | ------------------------ | ------------------------------------------------------ |
+| `check:ui-copy`                | all user-facing copy     | `.tsx` only — the rhythm copy lives in `.ts`           |
+| `backgroundPlaybackGuardrails` | every rAF audio driver   | a hardcoded list of 2 files, neither the shared one    |
+| `verify:quick`                 | "is this safe to commit" | `typecheck` (app), not `typecheck:full` (tests, e2e)   |
+| `check:ui-copy` (again)        | the em dash ban          | `U+2014` only — `&mdash;` renders one and sailed past  |
+| maqam staff-clip e2e           | every maqam × pattern    | one hardcoded URL, the one that happened to pass       |
+| maqam ajnas cross-check        | how the two cells relate | each cell against the scale, never the cells to each other |
 
-Each was green while the bug it existed to prevent shipped, and each read as reassurance.
+Each was green while the bug it existed to prevent shipped, and each read as reassurance. The
+maqam staff guard is the sharpest case: 29 of 72 combinations clipped their stems, the app's own
+default screen among them, and the one URL in the test was not one of the 29.
+
+**A ban is only as wide as its spellings.** If a rule forbids a character, forbid the HTML entity,
+the escape, and the decomposed form too — otherwise the rule is one encoding away from unenforced.
+
+## A fifth shape: the proxy the failing case also satisfies
+
+An assertion can be falsifiable, well-scoped, and still wrong because it checks a **stand-in** for
+the property, and the broken case satisfies the stand-in.
+
+Maqam's arpeggio claimed "tonic, third, fifth, octave" on a maqam that has no octave. The guard
+asserted the top note's `octaveOffset === 1` — but Saba's *seventh* is also written in the next
+octave, so it passed while the claim stayed false. The real property is "the top note is the tonic
+an octave up", and asserting that failed immediately, on exactly the one preset.
+
+Before landing a guard, ask: **what else makes this assertion true?** If the answer includes the
+bug, the assertion is a proxy, not a test.
 
 **Derive the set; do not enumerate it.** Walk the tree and select by a property of the code — "calls
 `requestAnimationFrame`", "calls a Drive upload helper", "is a displayed string" — so a new file is
@@ -86,4 +107,5 @@ Say so, and prefer the weaker-but-honest assertion over the stronger-but-vacuous
 that admits it is a source scan beats a "behavioural" test that silently checks nothing — and note
 in a comment what a real behavioural check would need.
 
-Root cause classes: `guardrail-cannot-fail`, `fixture-shares-the-bug`, `guardrail-coverage-gap`.
+Root cause classes: `guardrail-cannot-fail`, `fixture-shares-the-bug`, `guardrail-coverage-gap`,
+`guardrail-proxy-assertion`.

@@ -79,11 +79,18 @@ in all 9 families (`maqamMelody.test.ts`), and sounds at its written pitch.
 Deliberately off the critical path: never a prompt, never a blocking permission
 ask. The app is fully usable with the on-screen keyboard.
 
-## Layout invariant: one viewport
+## Layout invariant: one viewport, on a desktop window
 
-Every CUJ above is completable without scrolling the page, at 1440x900 and at 390x844.
+Every CUJ above is completable without scrolling the page **at desktop widths**, down to a
+1280x720 laptop window, where the layout gets smaller rather than scrolling.
 `e2e/smoke/maqam-playground.spec.ts` asserts zero page overflow in both axes; an addition that
 breaks that fails rather than quietly reintroducing a scrollbar.
+
+**This promise does not hold at 390x844, and the test does not run there.** The page scrolls
+about 340px on a phone, and the staff and the keyboard are never on screen together — so CUJ-002,
+which is watching the notehead light as you hold a key, cannot be completed on one. Saying so
+here because the invariant was previously asserted for 390x844 as well, and was not true: a claim
+no test covers is a claim nothing keeps honest. Tracked in `docs/PROCESS_BACKLOG.md`.
 
 The keyboard is the single surface with deliberate horizontal scroll — 2 octaves of
 fingertip-sized keys do not fit 390px, and shrinking them below a fingertip is worse. Enforced by
