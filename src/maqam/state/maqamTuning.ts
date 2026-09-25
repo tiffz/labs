@@ -1,6 +1,8 @@
 import {
   MAQAM_ACCIDENTALS,
+  accidentalFor,
   pitchClassOf,
+  semitoneShiftOf,
   spellingAriaLabel,
   spellingLabel,
   type MaqamAccidentalCode,
@@ -89,11 +91,30 @@ export function buildKeyTunings(
     const isTonic = inScale && pitchClass === tonicPitchClass;
     const role: KeyRole = inScale ? 'in-scale' : 'outside';
 
-    const label = degree ? spellingLabel(degree) : bentLabel(pitchClass, cents);
-    const badge = bent ? badgeForCents(cents, degree?.accidental) : undefined;
+    /*
+     * Spell the key from the LIVE tuning, not the preset's own spelling.
+     *
+     * The colour already followed the matrix; the label did not. So un-bending
+     * Rast's E left a key announcing itself as "E half-flat" while sounding E
+     * natural — the app teaching a wrong interval off a screen that looks
+     * authoritative. Letter comes from the maqam (E half-flat and F
+     * three-quarter-flat sound alike but are different notes); the accidental
+     * comes from what the key will actually play.
+     */
+    const liveSpelling = degree
+      ? {
+          letter: degree.letter,
+          accidental: accidentalFor(semitoneShiftOf(degree), cents) ?? degree.accidental,
+        }
+      : undefined;
+
+    const label = liveSpelling ? spellingLabel(liveSpelling) : bentLabel(pitchClass, cents);
+    const badge = bent ? badgeForCents(cents, liveSpelling?.accidental) : undefined;
     // Screen readers get the accidental spelled out — "E half-flat", not the
     // "E½♭" that a speech engine reads as "E one slash two flat" or skips.
-    const spokenName = degree ? spellingAriaLabel(degree) : bentLabel(pitchClass, cents);
+    const spokenName = liveSpelling
+      ? spellingAriaLabel(liveSpelling)
+      : bentLabel(pitchClass, cents);
 
     return {
       pitchClass,

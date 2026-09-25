@@ -23,7 +23,17 @@ interface HowMaqamsWorkProps {
  */
 export default function HowMaqamsWork({ open, onClose }: HowMaqamsWorkProps) {
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth aria-labelledby="maqam-help-title">
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="sm"
+      fullWidth
+      aria-labelledby="maqam-help-title"
+      /* The dialog renders in a portal at the end of `<body>`, so it needs the
+         app's tokens carried to it or every `var(--m3-*)` below resolves to
+         nothing. */
+      className="maqam-portal"
+    >
       <DialogTitle id="maqam-help-title">How maqamat work</DialogTitle>
 
       <DialogContent dividers className="maqam-help__body">

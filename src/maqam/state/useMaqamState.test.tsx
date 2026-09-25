@@ -83,9 +83,18 @@ class FakeAudioContext {
 }
 
 function Harness() {
-  const { noteOn, noteOff, activeNotes, keyTunings } = useMaqamState();
+  const { noteOn, noteOff, activeNotes, keyTunings, togglePlayback, selectMelody, isPlaying, audioBlocked } =
+    useMaqamState();
   return (
     <div>
+      <button type="button" onClick={togglePlayback} data-testid="toggle-play">
+        play melody
+      </button>
+      <button type="button" onClick={() => selectMelody('scale-down')} data-testid="switch-melody">
+        switch melody
+      </button>
+      <span data-testid="is-playing">{String(isPlaying)}</span>
+      <span data-testid="audio-blocked">{String(audioBlocked)}</span>
       <button type="button" onClick={() => noteOn(64)} data-testid="play-e">
         play E
       </button>
@@ -215,5 +224,76 @@ describe('useMaqamState under StrictMode', () => {
     // One key held is one entry, however many times it retriggers — otherwise
     // a MIDI controller's key repeat would light phantom degrees.
     expect(screen.getByTestId('active-count').textContent).toBe('1');
+  });
+
+  /**
+   * `startPlayback` schedules inside `resume().then(...)`, and `isPlaying` is
+   * only set there too — so a second press arriving before the microtask ran
+   * saw `isPlaying === false`, went ahead, and scheduled the entire phrase a
+   * second time. Every note sounded doubled and slightly flammed, and the
+   * first animation frame leaked because its handle was overwritten.
+   */
+  it('schedules one phrase when Play is pressed twice in a row', async () => {
+    const first = render(<Harness />);
+    await act(async () => {
+      screen.getByTestId('toggle-play').click();
+    });
+    const onePhrase = startedSources;
+    expect(onePhrase).toBeGreaterThan(0);
+    first.unmount();
+
+    startedSources = 0;
+    render(<Harness />);
+    await act(async () => {
+      // Both presses land before the resume microtask, the way a real
+      // double-click does.
+      screen.getByTestId('toggle-play').click();
+      screen.getByTestId('toggle-play').click();
+    });
+
+    expect(startedSources).toBe(onePhrase);
+  });
+
+  it('abandons a phrase that was stopped while the audio context was still waking', async () => {
+    render(<Harness />);
+    await act(async () => {
+      screen.getByTestId('toggle-play').click();
+      // Changing the pattern stops playback. Before the generation check, the
+      // pending `.then` scheduled the old phrase anyway: it played on, with the
+      // UI insisting nothing was playing.
+      screen.getByTestId('switch-melody').click();
+    });
+
+    expect(startedSources).toBe(0);
+    expect(screen.getByTestId('is-playing').textContent).toBe('false');
+  });
+
+  it('says so when it cannot make a sound, rather than failing silently', async () => {
+    vi.stubGlobal(
+      'AudioContext',
+      class {
+        constructor() {
+          throw new Error('too many AudioContexts');
+        }
+      },
+    );
+
+    render(<Harness />);
+    expect(screen.getByTestId('audio-blocked').textContent).toBe('false');
+
+    await act(async () => {
+      screen.getByTestId('play-e').click();
+    });
+
+    // The one thing worse than no sound is no sound and no explanation.
+    expect(screen.getByTestId('audio-blocked').textContent).toBe('true');
+  });
+
+  it('does not cry wolf when audio is working', async () => {
+    render(<Harness />);
+    await act(async () => {
+      screen.getByTestId('play-e').click();
+    });
+    expect(screen.getByTestId('audio-blocked').textContent).toBe('false');
   });
 });

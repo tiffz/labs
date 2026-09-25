@@ -85,7 +85,36 @@ describe('buildKeyTunings', () => {
     expect(tunings[9].cents).toBe(-50);
     // Membership is unchanged: A is still a degree of Rast, just bent.
     expect(tunings[9].role).toBe('in-scale');
-    expect(tunings[9].label).toBe('A');
+    // The label follows the bend too, not just the colour.
+    expect(tunings[9].label).toBe('A½♭');
+  });
+
+  /**
+   * The direction that actually hurt, and that nothing covered.
+   *
+   * The old test only ADDED a bend, where a stale label is merely incomplete.
+   * REMOVING a preset's own bend is the harmful case: the key sounded E natural
+   * while still announcing itself as "E half-flat" to sighted and screen-reader
+   * users alike — the app teaching a wrong interval off an authoritative-looking
+   * screen. Class: `guardrail-coverage-gap`.
+   */
+  it('stops calling a key half-flat once the bend is removed', () => {
+    const unbent = toggleDetuneSlot(rastMatrix, 4); // un-bend Rast's own E
+    const tunings = buildKeyTunings(rast, unbent);
+    expect(tunings[4].isRetuned).toBe(false);
+    expect(tunings[4].cents).toBe(0);
+    expect(tunings[4].label).toBe('E');
+    expect(tunings[4].label).not.toBe('E½♭');
+    expect(tunings[4].ariaLabel).toBe('E, in the maqam');
+    expect(tunings[4].badge).toBeUndefined();
+  });
+
+  it('keeps the letter the maqam chose while the accidental follows the tuning', () => {
+    // Bayati writes its sixth as B-flat. Bending that key must give a
+    // three-quarter-flat B, never an A-something: the letter is the maqam's.
+    const bayati = MAQAM_PRESETS_BY_ID.bayati_d;
+    const bent = toggleDetuneSlot(deriveDetuneMatrix(bayati.scaleDegrees).matrix, 10);
+    expect(buildKeyTunings(bayati, bent)[10].label).toBe('B¾♭');
   });
 
   it('can retune a key that is outside the maqam entirely', () => {

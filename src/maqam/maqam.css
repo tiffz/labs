@@ -12,7 +12,17 @@
  * Mobile-first; breakpoints per docs/RESPONSIVE_DESIGN.md.
  */
 
-.maqam {
+/**
+ * Tokens live on their own class because MUI `Dialog` and `AnchoredPopover`
+ * render into a portal at the end of `<body>`, OUTSIDE `.maqam`. Declared only
+ * on `.maqam`, every `var(--m3-*)` inside those surfaces resolved to nothing:
+ * the help dialog's "lit" comparison chip lost its highlight entirely, which is
+ * the one thing that example exists to show. Not `:root` — per
+ * .agents/rules/focus-theming.md, portal tokens go on a portal class so two
+ * apps on one page cannot fight over the same names.
+ */
+.maqam,
+.maqam-portal {
   /* M3 surface roles */
   --m3-surface: #fdf8f3;
   --m3-surface-container: #f7f0e7;
@@ -43,7 +53,9 @@
   --maqam-radius-m: 12px;
   --maqam-radius-l: 16px;
   --maqam-radius-xl: 28px;
+}
 
+.maqam {
   display: flex;
   flex-direction: column;
   /* 100vh first for browsers without dvh; dvh wins where supported so mobile
@@ -361,7 +373,9 @@
      keys will not fit 390px, and shrinking them below a fingertip is worse than
      scrolling. Per .agents/rules/layout-no-horizontal-scroll.md. */
   overflow-x: auto;
-  padding-bottom: 2px;
+  /* Room for the focus ring (3px + 2px offset). Without it the scroll container
+     clipped the top edge of the ring on the key the user had just tabbed to. */
+  padding: 6px 0;
 }
 
 .maqam-keyboard .shared-pk-container {
@@ -787,6 +801,16 @@
   background: var(--m3-surface-container);
 }
 
+.maqam-alert {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: var(--maqam-radius-m);
+  background: var(--m3-tertiary-container);
+  color: var(--m3-on-tertiary-container);
+  font-size: 0.83rem;
+  line-height: 1.45;
+}
+
 /* ---------------------------------------------------------------- shared -- */
 
 .maqam-visually-hidden {
@@ -801,10 +825,19 @@
   border: 0;
 }
 
-.maqam :focus-visible {
+.maqam :focus-visible,
+.maqam-portal :focus-visible {
   outline: 3px solid var(--m3-primary);
   outline-offset: 2px;
-  border-radius: 6px;
+}
+
+/* Piano keys are not rectangles on a flat plane: black keys sit at z-index 2
+   over the white keys they overlap, so a focused white key's ring was drawn
+   underneath its neighbours and read as two broken stubs. Lift the focused key
+   above both. */
+.maqam-keyboard .shared-pk-white:focus-visible,
+.maqam-keyboard .shared-pk-black:focus-visible {
+  z-index: 3;
 }
 
 /* Coarse pointers need a real fingertip target on every control. */

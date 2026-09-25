@@ -2,12 +2,18 @@ import { describe, expect, it } from 'vitest';
 
 import { buildMelodyTimeline, noteIndexAt } from './melodyTimeline';
 import { MELODY_PATTERNS, resolveMelody } from './maqamMelody';
-import { MAQAM_PRESETS_BY_ID } from '../data/maqamPresets';
+import { MAQAM_PRESETS_BY_ID, deriveDetuneMatrix } from '../data/maqamPresets';
 
 const rast = MAQAM_PRESETS_BY_ID.rast_c;
+const rastMatrix = deriveDetuneMatrix(rast.scaleDegrees).matrix;
 
 const resolved = (patternId: string) =>
-  resolveMelody(rast, MELODY_PATTERNS.find((p) => p.id === patternId)!.build(rast), 4);
+  resolveMelody(
+    rast,
+    MELODY_PATTERNS.find((p) => p.id === patternId)!.build(rast),
+    4,
+    rastMatrix,
+  );
 
 describe('buildMelodyTimeline', () => {
   it('places notes end to end', () => {

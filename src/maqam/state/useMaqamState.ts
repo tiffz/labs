@@ -54,6 +54,13 @@ export interface MaqamState {
   midiDevices: MidiDevice[];
   midiSupported: boolean;
   audioState: AudioContextState | 'uninitialized';
+  /**
+   * Set when audio was asked for and could not be produced. Distinct from
+   * `audioState`, which describes a context that exists: this says the app
+   * tried and the user heard nothing, and it is the only reason to put a line
+   * of text on screen about sound.
+   */
+  audioBlocked: boolean;
   selectPreset: (id: string) => void;
   toggleSlot: (pitchClass: number) => void;
   resetTuning: () => void;
@@ -79,6 +86,7 @@ export function useMaqamState(): MaqamState {
   const [melodySeed, setMelodySeed] = useState(initial.melodySeed);
   const [isPlaying, setIsPlaying] = useState(false);
   const [playingIndex, setPlayingIndex] = useState<number | null>(null);
+  const [audioBlocked, setAudioBlocked] = useState(false);
 
   const preset = useMemo(() => findMaqamPreset(presetId), [presetId]);
   const synthRef = useRef<MaqamSynth | null>(null);
@@ -114,6 +122,17 @@ export function useMaqamState(): MaqamState {
   /** Animation frame that moves the playback highlight. */
   const frameRef = useRef<number | null>(null);
 
+  /**
+   * Bumped by every start and every stop, and re-checked after the `resume()`
+   * await. Two things needed it: pressing Play twice quickly scheduled the
+   * whole phrase twice (`isPlaying` is only set inside the `.then`, so the
+   * second press saw `false` and went ahead) and every note sounded doubled
+   * while the first animation frame leaked, its handle overwritten; and
+   * pressing Stop during the await left the melody scheduled on the audio
+   * clock, so it played on with the UI insisting it was stopped.
+   */
+  const playbackGenerationRef = useRef(0);
+
   useEffect(
     () => () => {
       synthRef.current?.dispose();
@@ -136,7 +155,10 @@ export function useMaqamState(): MaqamState {
         return next;
       });
       const synth = getSynth();
-      void synth.resume().then(() => setAudioState(synth.getState()));
+      void synth.resume().then((running) => {
+        setAudioState(synth.getState());
+        setAudioBlocked(!running);
+      });
       synth.noteOn(midiNote, cents);
       setAudioState(synth.getState());
     },
@@ -144,6 +166,7 @@ export function useMaqamState(): MaqamState {
   );
 
   const stopPlayback = useCallback(() => {
+    playbackGenerationRef.current += 1;
     synthRef.current?.cancelScheduled();
     if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
     frameRef.current = null;
@@ -200,20 +223,28 @@ export function useMaqamState(): MaqamState {
     [stopPlayback],
   );
 
-  const toggleSlot = useCallback((pitchClass: number) => {
-    synthRef.current?.allNotesOff();
-    setActiveNotes(new Set());
-    setMatrix((prev) => toggleDetuneSlot(prev, pitchClass));
-  }, []);
+  const toggleSlot = useCallback(
+    (pitchClass: number) => {
+      // Same treatment as switching maqam. Without this the phrase kept playing
+      // at the old tuning while the board repainted underneath it — the one
+      // moment a learner most wants to hear what a bend does.
+      stopPlayback();
+      synthRef.current?.allNotesOff();
+      setActiveNotes(new Set());
+      setMatrix((prev) => toggleDetuneSlot(prev, pitchClass));
+    },
+    [stopPlayback],
+  );
 
   const resetTuning = useCallback(() => {
+    stopPlayback();
     synthRef.current?.allNotesOff();
     setActiveNotes(new Set());
     setMatrix(() => {
       const current = findMaqamPreset(presetId);
       return current ? deriveDetuneMatrix(current.scaleDegrees).matrix : [];
     });
-  }, [presetId]);
+  }, [presetId, stopPlayback]);
 
   const melody = useMemo<ResolvedMelodyNote[]>(() => {
     if (!preset) return [];
@@ -223,8 +254,10 @@ export function useMaqamState(): MaqamState {
         : (findMelodyDefinition(melodyId) ?? findMelodyDefinition(DEFAULT_MELODY_ID))?.build(
             preset,
           ) ?? [];
-    return resolveMelody(preset, notes, MELODY_OCTAVE);
-  }, [preset, melodyId, melodySeed]);
+    // The live matrix, not the preset: staff, keyboard and audio must all read
+    // one source, or editing the tuning desynchronises them.
+    return resolveMelody(preset, notes, MELODY_OCTAVE, matrix);
+  }, [preset, melodyId, melodySeed, matrix]);
 
   /**
    * Play the phrase.
@@ -239,10 +272,22 @@ export function useMaqamState(): MaqamState {
     const synth = getSynth();
     if (melody.length === 0) return;
 
+    const generation = (playbackGenerationRef.current += 1);
+
     void synth.resume().then((running) => {
+      // Stopped, or a newer press already owns playback. Scheduling now would
+      // double the phrase against itself.
+      if (generation !== playbackGenerationRef.current) return;
+
       setAudioState(synth.getState());
       const now = synth.currentTime();
-      if (!running || now === null) return;
+      if (!running || now === null) {
+        // Say so. Silence that the app presents as normal is indistinguishable
+        // from a broken instrument, and the user has no way to tell which.
+        setAudioBlocked(true);
+        return;
+      }
+      setAudioBlocked(false);
 
       const timeline = buildMelodyTimeline(melody, MELODY_BPM);
       const startAt = now + PLAYBACK_LEAD_SECONDS;
@@ -258,6 +303,7 @@ export function useMaqamState(): MaqamState {
 
       setIsPlaying(true);
       const tick = () => {
+        if (generation !== playbackGenerationRef.current) return;
         const clock = synth.currentTime();
         if (clock === null) {
           stopPlayback();
@@ -326,6 +372,7 @@ export function useMaqamState(): MaqamState {
     midiDevices,
     midiSupported,
     audioState,
+    audioBlocked,
     selectPreset,
     toggleSlot,
     resetTuning,

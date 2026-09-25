@@ -55,7 +55,7 @@ export default function MidiStatusBadge({ supported, devices }: MidiStatusBadgeP
         onClose={() => setAnchor(null)}
         placement="bottom-end"
       >
-        <div className="maqam-midi__detail">
+        <div className="maqam-portal maqam-midi__detail">
           <h3>Playing with a MIDI keyboard</h3>
           {state === 'connected' ? (
             <>

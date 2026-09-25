@@ -1,6 +1,7 @@
-import type { MaqamPreset } from '../data/maqamPresets';
-import { microtonalCentsOf, midiNoteOf } from '../notation/maqamAccidentals';
+import type { DetuneMatrix, MaqamPreset } from '../data/maqamPresets';
+import { accidentalFor, midiNoteOf, semitoneShiftOf } from '../notation/maqamAccidentals';
 import type { StaffNote } from '../notation/maqamStaffDraw';
+import { detuneForMidiNote } from '../audio/maqamSynth';
 
 /**
  * A note of a melody, as a degree of the loaded maqam rather than an absolute
@@ -268,29 +269,46 @@ export interface ResolvedMelodyNote {
 }
 
 /**
- * Resolve a melody into staff notes and MIDI pitches for the loaded maqam.
+ * Resolve a melody into staff notes and MIDI pitches, against the LIVE tuning.
  *
- * Both together, so the staff and the keyboard cannot disagree about which note
- * is sounding — they are two readings of one array rather than two parallel
- * derivations that could drift.
+ * `matrix` is required, and it is the single source of truth for pitch. That is
+ * a correctness fix, not a convenience: this function used to take the bend
+ * from the preset's own spelling while the keyboard took it from the live
+ * matrix, so the moment anyone edited the tuning, pressing E and pressing Play
+ * produced two different pitches for one written note — with the staff and the
+ * screen-reader label still announcing the preset's. The app's one stated
+ * invariant, broken by its own escape hatch.
+ *
+ * The accidental is re-derived too. Un-bend Rast's E and the degree is still
+ * written on the E line, but with no bend, so the staff must draw a natural
+ * rather than a half-flat. Staff, keyboard and audio now all read the matrix.
  */
 export function resolveMelody(
   preset: MaqamPreset,
   notes: MelodyNote[],
   baseOctave: number,
+  matrix: DetuneMatrix,
 ): ResolvedMelodyNote[] {
   const resolved: ResolvedMelodyNote[] = [];
   for (const item of notes) {
     const degree = preset.scaleDegrees[item.degree];
     if (!degree) continue;
+
     const octave = baseOctave + degree.octaveOffset;
+    const midiNote = midiNoteOf(degree, octave);
+    const cents = detuneForMidiNote(midiNote, matrix);
+
+    // Keep the maqam's letter — E half-flat and F three-quarter-flat sound the
+    // same but are different notes — and let the live bend choose the
+    // accidental. Falls back to the written spelling if the pairing has no
+    // symbol, rather than drawing something wrong.
+    const accidental =
+      accidentalFor(semitoneShiftOf(degree), cents) ?? degree.accidental;
+
     resolved.push({
-      staff: { letter: degree.letter, accidental: degree.accidental, octave },
-      // Reuses the accidental table rather than repeating its arithmetic: a
-      // second copy of "which key does E-half-flat play on" is exactly the
-      // duplicated invariant this app already got bitten by once.
-      midiNote: midiNoteOf(degree, octave),
-      cents: microtonalCentsOf(degree),
+      staff: { letter: degree.letter, accidental, octave },
+      midiNote,
+      cents,
       beats: item.beats,
       duration: durationForBeats(item.beats),
     });

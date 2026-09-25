@@ -144,7 +144,7 @@ test.describe('Maqam Playground', () => {
     await expect(page.locator('.maqam-staff svg')).toBeVisible({ timeout: 15_000 });
 
     // Saba stops at its seventh — it has no upper tonic to draw.
-    await expect(page.locator('.maqam-staff svg')).toHaveAttribute(
+    await expect(page.getByTestId('maqam-staff-canvas')).toHaveAttribute(
       'aria-label',
       /^D 4, E half-flat 4, F 4, G flat 4, A 4, B flat 4, C 5$/,
       { timeout: 15_000 },
@@ -206,7 +206,7 @@ test.describe('Maqam Playground', () => {
 
     for (const pattern of ['scale-down', 'jins-by-jins', 'thirds', 'arpeggio', 'qafla']) {
       await page.locator('.maqam-melodybar__pick select').selectOption(pattern);
-      await expect(page.locator('.maqam-staff svg')).toHaveAttribute(
+      await expect(page.getByTestId('maqam-staff-canvas')).toHaveAttribute(
         'aria-label',
         /\w/,
         { timeout: 10_000 },
@@ -221,11 +221,11 @@ test.describe('Maqam Playground', () => {
     await page.getByRole('button', { name: /New phrase/ }).click();
     await expect(page).toHaveURL(/melody=generated&?.*seed=\d+/);
 
-    const label = await page.locator('.maqam-staff svg').getAttribute('aria-label');
+    const label = await page.getByTestId('maqam-staff-canvas').getAttribute('aria-label');
     await page.goto(page.url());
     await expect(page.locator('.maqam-staff svg')).toBeVisible({ timeout: 15_000 });
     // Seeded, so the same link gives back the same phrase.
-    await expect(page.locator('.maqam-staff svg')).toHaveAttribute('aria-label', label!);
+    await expect(page.getByTestId('maqam-staff-canvas')).toHaveAttribute('aria-label', label!);
   });
 
   test('CUJ-006: MIDI status is visible and explains itself', async ({ page }) => {
@@ -251,6 +251,110 @@ test.describe('Maqam Playground', () => {
 
     await page.keyboard.press('Escape');
     await expect(dialog).toHaveCount(0);
+  });
+
+  test('a11y: the keyboard plays from the keyboard', async ({ page }) => {
+    await page.goto('/maqam/');
+    await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
+
+    // Every key is a <button>, so it has always been focusable. Until this
+    // landed, pressing Space on a focused key did nothing at all — WCAG 2.1.1,
+    // and an instrument that says it is operable and is not.
+    // `active` means "you are holding this key"; `maqam-key--sounding` is the
+    // separate fact "the melody is on this pitch class". Pressing a key must
+    // set the first, and must release it again.
+    const key = page.locator('.maqam-keyboard .shared-pk-white').nth(7);
+    await key.focus();
+    await page.keyboard.down(' ');
+    await expect(key).toHaveClass(/\bactive\b/);
+    await page.keyboard.up(' ');
+    await expect(key).not.toHaveClass(/\bactive\b/);
+  });
+
+  test('a11y: tabbing away mid-note does not leave it droning', async ({ page }) => {
+    await page.goto('/maqam/');
+    await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
+
+    const key = page.locator('.maqam-keyboard .shared-pk-white').nth(7);
+    await key.focus();
+    await page.keyboard.down(' ');
+    await expect(key).toHaveClass(/\bactive\b/);
+
+    // No keyup ever reaches the key once focus moves, so without the blur
+    // release the note sounds until the page is reloaded.
+    await page.keyboard.press('Tab');
+    await expect(key).not.toHaveClass(/\bactive\b/);
+    await page.keyboard.up(' ');
+  });
+
+  test('a11y: a focused key shows an unclipped focus ring', async ({ page }) => {
+    await page.goto('/maqam/');
+    await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
+
+    const key = page.locator('.maqam-keyboard .shared-pk-white').nth(7);
+    await key.focus();
+    const ring = await key.evaluate((el) => {
+      const style = getComputedStyle(el);
+      return { width: style.outlineWidth, style: style.outlineStyle };
+    });
+    expect(ring.style).not.toBe('none');
+    expect(parseFloat(ring.width)).toBeGreaterThan(0);
+
+    // The scroll container has to leave room for it, or the ring is sheared off
+    // along the top edge of the key the user just tabbed to.
+    const clipped = await key.evaluate((el) => {
+      const host = el.closest('.maqam-keyboard') as HTMLElement;
+      return el.getBoundingClientRect().top - host.getBoundingClientRect().top;
+    });
+    expect(clipped).toBeGreaterThanOrEqual(5);
+  });
+
+  test('a11y: the staff has exactly one accessible name', async ({ page }) => {
+    await page.goto('/maqam/');
+    await expect(page.locator('.maqam-staff svg')).toBeVisible({ timeout: 15_000 });
+
+    // Labelling both the container and the SVG made a screen reader read the
+    // whole note list twice in a row.
+    const named = await page.locator('.maqam-staff [aria-label]').count();
+    expect(named).toBe(1);
+    await expect(page.locator('.maqam-staff svg')).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  test('the staff draws nothing outside its own viewport', async ({ page }) => {
+    await page.goto('/maqam/?maqam=saba_d&melody=thirds');
+    await expect(page.locator('.maqam-staff svg')).toBeVisible({ timeout: 15_000 });
+
+    // Saba in thirds reaches high enough for ledger lines and beams above the
+    // stave. The box used to be a constant, so they were clipped flat and the
+    // app showed notation that was quietly wrong.
+    const fits = await page.locator('.maqam-staff svg').evaluate((svg) => {
+      const box = (svg as SVGSVGElement).getBBox();
+      const view = (svg as SVGSVGElement).viewBox.baseVal;
+      return {
+        top: box.y - view.y,
+        bottom: view.y + view.height - (box.y + box.height),
+        hasViewBox: view.height > 0,
+      };
+    });
+    expect(fits.hasViewBox).toBe(true);
+    expect(fits.top).toBeGreaterThanOrEqual(0);
+    expect(fits.bottom).toBeGreaterThanOrEqual(0);
+  });
+
+  test('portalled surfaces resolve the app tokens', async ({ page }) => {
+    await page.goto('/maqam/');
+    await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
+
+    await page.getByRole('button', { name: /How maqamat work/ }).click();
+    const lit = page.locator('.maqam-help__compare .is-lit').first();
+    await expect(lit).toBeVisible();
+
+    // MUI portals the dialog to the end of <body>, outside .maqam. With the
+    // tokens declared only there, this chip lost the highlight that is the
+    // entire point of the comparison it sits in.
+    const background = await lit.evaluate((el) => getComputedStyle(el).backgroundColor);
+    expect(background).not.toBe('rgba(0, 0, 0, 0)');
+    expect(background).not.toBe('transparent');
   });
 
   test('the page itself never scrolls', async ({ page }) => {

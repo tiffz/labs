@@ -37,6 +37,9 @@ export interface DrawStaffOptions {
   highlightColor?: string;
 }
 
+/** Breathing room kept above and below the drawn extent, in CSS px. */
+const EDGE_PAD = 6;
+
 const DEFAULT_HIGHLIGHT = '#a9661a';
 const INK = '#241d16';
 const EMPTY_HIGHLIGHT: ReadonlySet<number> = new Set<number>();
@@ -60,20 +63,21 @@ export async function drawMaqamStaff(
   container: HTMLDivElement,
   notes: StaffNote[],
   options: DrawStaffOptions,
-): Promise<void> {
+): Promise<number | undefined> {
   await ensureVexFlowFontsLoaded().catch(() => {
     // Draw in the fallback rather than leave the staff blank forever.
   });
   // The await gives React time to unmount the container or start a newer draw.
-  if (!container.isConnected) return;
-  drawStaffNow(container, notes, options);
+  if (!container.isConnected) return undefined;
+  return drawStaffNow(container, notes, options);
 }
 
+/** @returns the height the drawing needs, or `undefined` if it cannot be measured. */
 function drawStaffNow(
   container: HTMLDivElement,
   notes: StaffNote[],
   options: DrawStaffOptions,
-): void {
+): number | undefined {
   container.replaceChildren();
 
   const renderer = new Renderer(container, Renderer.Backends.SVG);
@@ -92,7 +96,7 @@ function drawStaffNow(
 
   if (notes.length === 0) {
     applyStaffAccessibility(container, notes);
-    return;
+    return fitToDrawnExtent(container, options.width);
   }
 
   const lit = options.highlighted ?? EMPTY_HIGHLIGHT;
@@ -138,17 +142,59 @@ function drawStaffNow(
   }
 
   applyStaffAccessibility(container, notes);
+  return fitToDrawnExtent(container, options.width);
+}
+
+/**
+ * Size the SVG to what VexFlow actually drew, rather than to a guess.
+ *
+ * The height was a constant times the scale, chosen to look right for the
+ * ascending scale. A high ledger line, a beam over the top degree, or a
+ * three-quarter-flat hanging under the stave all draw outside it, and the SVG
+ * viewport clipped them flat — the app silently showed the wrong notation.
+ *
+ * Shifting the viewBox rather than redrawing keeps the stave's own coordinates
+ * intact, so one measure-and-fit pass suffices and nothing scales twice. The
+ * viewBox width is left equal to the attribute width, so the uniform scale
+ * factor stays 1 and staff-line weight is untouched.
+ */
+function fitToDrawnExtent(container: HTMLElement, width: number): number | undefined {
+  const svg = container.querySelector('svg');
+  if (!svg) return undefined;
+
+  let box: DOMRect | undefined;
+  try {
+    box = svg.getBBox();
+  } catch {
+    // jsdom has no layout, so there is nothing to measure. Return an explicit
+    // absence rather than a plausible-looking number: the caller keeps its own
+    // height, and e2e covers the real geometry.
+    return undefined;
+  }
+  if (!box || box.height <= 0 || !Number.isFinite(box.height)) return undefined;
+
+  const top = Math.floor(box.y - EDGE_PAD);
+  const height = Math.ceil(box.height + EDGE_PAD * 2);
+  svg.setAttribute('viewBox', `0 ${top} ${width} ${height}`);
+  svg.setAttribute('height', String(height));
+  return height;
 }
 
 /**
  * VexFlow emits bare SVG with no accessible name, so a screen reader reads the
- * staff as nothing at all. Label the SVG with the notes it draws.
+ * staff as nothing at all.
+ *
+ * The name goes on the CONTAINER, not the SVG. The SVG only exists once the
+ * music font has resolved, and labelling both meant a screen reader announced
+ * the whole note list twice — once for the container's own text, once for the
+ * image. One name, on the element that is always there.
  */
 function applyStaffAccessibility(container: HTMLElement, notes: StaffNote[]): void {
+  container.setAttribute('role', 'img');
+  container.setAttribute('aria-label', describeStaff(notes));
   const svg = container.querySelector('svg');
   if (!svg) return;
-  svg.setAttribute('role', 'img');
-  svg.setAttribute('aria-label', describeStaff(notes));
+  svg.setAttribute('aria-hidden', 'true');
   svg.setAttribute('focusable', 'false');
 }
 

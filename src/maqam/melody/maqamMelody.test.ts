@@ -10,12 +10,18 @@ import {
   melodyBeats,
   resolveMelody,
 } from './maqamMelody';
-import { MAQAM_PRESETS, MAQAM_PRESETS_BY_ID, deriveDetuneMatrix } from '../data/maqamPresets';
+import {
+  MAQAM_PRESETS,
+  MAQAM_PRESETS_BY_ID,
+  NEUTRAL_DETUNE_MATRIX,
+  deriveDetuneMatrix,
+} from '../data/maqamPresets';
 import { detuneForMidiNote, midiNoteToFrequency } from '../audio/maqamSynth';
 import { pitchClassOf, spellingLabel } from '../notation/maqamAccidentals';
 
 const rast = MAQAM_PRESETS_BY_ID.rast_c;
 const saba = MAQAM_PRESETS_BY_ID.saba_d;
+const rastMatrix = deriveDetuneMatrix(rast.scaleDegrees).matrix;
 
 const everyPatternAndPreset = MELODY_PATTERNS.flatMap((pattern) =>
   MAQAM_PRESETS.map((preset) => [`${pattern.id} / ${preset.id}`, pattern, preset] as const),
@@ -55,7 +61,7 @@ describe('melody patterns', () => {
     const notes = pattern.build(preset);
     // `resolveMelody` drops degrees it cannot resolve, so a shortfall here means
     // a pattern pointed somewhere the maqam does not go.
-    expect(resolveMelody(preset, notes, 4)).toHaveLength(notes.length);
+    expect(resolveMelody(preset, notes, 4, deriveDetuneMatrix(preset.scaleDegrees).matrix)).toHaveLength(notes.length);
   });
 
   it.each(everyPatternAndPreset)('%s starts on the tonic', (_label, pattern, preset) => {
@@ -162,7 +168,7 @@ describe('generateMelody', () => {
 
 describe('resolveMelody', () => {
   it('spells Rast’s third as the half-flat the maqam writes', () => {
-    const resolved = resolveMelody(rast, [{ degree: 2, beats: 1 }], 4);
+    const resolved = resolveMelody(rast, [{ degree: 2, beats: 1 }], 4, rastMatrix);
     expect(spellingLabel(resolved[0].staff)).toBe('E½♭');
     expect(resolved[0].cents).toBe(-50);
     expect(resolved[0].midiNote).toBe(64);
@@ -178,7 +184,7 @@ describe('resolveMelody', () => {
     (_id, preset) => {
       const { matrix } = deriveDetuneMatrix(preset.scaleDegrees);
       for (const pattern of MELODY_PATTERNS) {
-        for (const item of resolveMelody(preset, pattern.build(preset), 4)) {
+        for (const item of resolveMelody(preset, pattern.build(preset), 4, matrix)) {
           const written = midiNoteToFrequency(item.midiNote, item.cents);
           const sounded = midiNoteToFrequency(
             item.midiNote,
@@ -190,8 +196,36 @@ describe('resolveMelody', () => {
     },
   );
 
+  /**
+   * The regression this argument exists for.
+   *
+   * `resolveMelody` used to take the bend from the preset's spelling while the
+   * keyboard took it from the live matrix, so editing the tuning made Play and
+   * the keys disagree about the pitch of one written note — and the staff kept
+   * announcing the preset's. The old test could not catch it: it built the
+   * matrix from the same preset it was checking, so both sides always agreed.
+   */
+  it('follows the live matrix when it contradicts the preset spelling', () => {
+    const neutral = [...NEUTRAL_DETUNE_MATRIX];
+    const [third] = resolveMelody(rast, [{ degree: 2, beats: 1 }], 4, neutral);
+
+    // Rast writes its third as E half-flat, but this tuning bends nothing.
+    expect(third.cents).toBe(0);
+    expect(spellingLabel(third.staff)).toBe('E');
+    expect(third.midiNote).toBe(64);
+  });
+
+  it('re-bends the staff when a key outside the preset is bent by hand', () => {
+    // A is unbent in Rast; bending it must change what the staff draws.
+    const bentA = [...deriveDetuneMatrix(rast.scaleDegrees).matrix];
+    bentA[9] = -50;
+    const [sixth] = resolveMelody(rast, [{ degree: 5, beats: 1 }], 4, bentA);
+    expect(sixth.cents).toBe(-50);
+    expect(spellingLabel(sixth.staff)).toBe('A½♭');
+  });
+
   it('keeps each note on the key its spelling names', () => {
-    for (const item of resolveMelody(rast, findMelodyDefinition('scale-up')!.build(rast), 4)) {
+    for (const item of resolveMelody(rast, findMelodyDefinition('scale-up')!.build(rast), 4, rastMatrix)) {
       expect(item.midiNote % 12).toBe(pitchClassOf(item.staff));
     }
   });
@@ -201,7 +235,7 @@ describe('resolveMelody', () => {
     // Out-of-range degrees are skipped rather than clamped onto a wrong pitch —
     // a wrong note is worse than a missing one, and the pattern tests above
     // guarantee shipped patterns never produce them.
-    expect(resolveMelody(rast, notes, 4)).toHaveLength(1);
+    expect(resolveMelody(rast, notes, 4, rastMatrix)).toHaveLength(1);
   });
 });
 

@@ -176,6 +176,40 @@ export function spellingAriaLabel(spelling: MaqamNoteSpelling): string {
 }
 
 /**
+ * The accidental that writes a given semitone shift and microtonal bend.
+ *
+ * The inverse of the table above, and the reason the staff can follow the LIVE
+ * tuning rather than the preset's spelling. When a user un-bends Rast's E, the
+ * degree is still written on the E line with a shift of 0, but the bend is now
+ * 0 cents — so the staff must draw a natural, not a half-flat. Deriving that
+ * here keeps one table authoritative in both directions.
+ *
+ * Returns `undefined` when nothing in the table matches, rather than guessing:
+ * a wrong accidental is worse than a missing one, and the caller can fall back
+ * to the written spelling.
+ */
+export function accidentalFor(
+  semitoneShift: number,
+  microtonalCents: number,
+): MaqamAccidentalCode | undefined {
+  for (const code of Object.keys(MAQAM_ACCIDENTALS) as MaqamAccidentalCode[]) {
+    const accidental = MAQAM_ACCIDENTALS[code];
+    if (
+      accidental.semitoneShift === semitoneShift &&
+      accidental.microtonalCents === microtonalCents
+    ) {
+      return code;
+    }
+  }
+  return undefined;
+}
+
+/** How far a spelling's accidental shifts it from its natural letter, in semitones. */
+export function semitoneShiftOf(spelling: MaqamNoteSpelling): number {
+  return MAQAM_ACCIDENTALS[spelling.accidental].semitoneShift;
+}
+
+/**
  * VexFlow key string, e.g. `e/4`. VexFlow takes the letter and octave here and
  * the accidental as a separate `Accidental` modifier, so this deliberately drops
  * the accidental rather than folding it into the key.

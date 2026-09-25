@@ -36,6 +36,7 @@ export default function App() {
     activeNotes,
     midiDevices,
     midiSupported,
+    audioBlocked,
     selectPreset,
     toggleSlot,
     resetTuning,
@@ -202,6 +203,17 @@ export default function App() {
             onNoteOn={noteOn}
             onNoteOff={noteOff}
           />
+
+          {/* Only ever rendered when sound was asked for and did not arrive.
+              A browser that has not been gestured at, or an exhausted audio
+              context, otherwise leaves the user pressing keys in silence with
+              the app showing every sign of working. */}
+          {audioBlocked && (
+            <p className="maqam-alert" role="status">
+              No sound yet. Your browser holds audio until you interact with the
+              page, so press a key again.
+            </p>
+          )}
 
           <div className="maqam-board__bar">
             {/* One entry per visual channel, in the order the eye meets them. */}

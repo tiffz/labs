@@ -10,7 +10,10 @@ interface MaqamStaffProps {
   className?: string;
 }
 
-/** Unscaled drawing height: a treble stave plus room for ledger lines. */
+/**
+ * Unscaled drawing height used for the FIRST draw only. The real height comes
+ * back from `drawMaqamStaff`, which measures what VexFlow put on the page.
+ */
 const BASE_HEIGHT = 96;
 const MIN_WIDTH = 240;
 /** Width at which the stave reads at its natural size; wider gets scaled up. */
@@ -34,6 +37,11 @@ const MAX_SCALE = 1.9;
 export default function MaqamStaff({ notes, highlighted, className }: MaqamStaffProps) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const [width, setWidth] = useState(0);
+  /**
+   * `null` until a draw reports one, never 0 — a zero height is a valid-looking
+   * value that would collapse the staff to nothing while looking deliberate.
+   */
+  const [drawnHeight, setDrawnHeight] = useState<number | null>(null);
   const fontReady = useVexFlowMusicFontReady();
 
   useEffect(() => {
@@ -52,25 +60,37 @@ export default function MaqamStaff({ notes, highlighted, className }: MaqamStaff
   }, []);
 
   const scale = Math.min(Math.max(width / COMFORTABLE_WIDTH, 1), MAX_SCALE);
-  const height = Math.round(BASE_HEIGHT * scale);
+  const drawHeight = Math.round(BASE_HEIGHT * scale);
 
   useEffect(() => {
     const host = hostRef.current;
     if (!host || !fontReady || width < MIN_WIDTH) return;
-    void drawMaqamStaff(host, notes, { width, height, scale, highlighted });
-  }, [notes, highlighted, width, height, scale, fontReady]);
+    let current = true;
+    void drawMaqamStaff(host, notes, { width, height: drawHeight, scale, highlighted }).then(
+      (measured) => {
+        // A newer draw has started, or nothing could be measured. Either way,
+        // do not overwrite the box with a stale or invented number.
+        if (!current || measured === undefined) return;
+        setDrawnHeight(measured);
+      },
+    );
+    return () => {
+      current = false;
+    };
+  }, [notes, highlighted, width, drawHeight, scale, fontReady]);
 
   return (
     <div className={['maqam-staff', className].filter(Boolean).join(' ')}>
+      {/* `drawMaqamStaff` puts role="img" and the note list on this element, so
+          the staff has one accessible name whether or not the SVG exists yet. */}
       <div
         ref={hostRef}
         className="maqam-staff__canvas"
-        style={{ height }}
+        style={{ height: drawnHeight ?? drawHeight }}
         data-testid="maqam-staff-canvas"
+        role="img"
+        aria-label={describeStaff(notes)}
       />
-      {/* The SVG carries its own aria-label; this keeps the note list available
-          even before the font resolves and the SVG exists. */}
-      <span className="maqam-visually-hidden">{describeStaff(notes)}</span>
     </div>
   );
 }

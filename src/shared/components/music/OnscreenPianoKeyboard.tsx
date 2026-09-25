@@ -82,19 +82,92 @@ export default function OnscreenPianoKeyboard({
 }: OnscreenPianoKeyboardProps): React.ReactElement {
   const classes: KeyboardClassNames = { ...DEFAULT_CLASS_NAMES, ...classNames };
 
+  /**
+   * Which keys the KEYBOARD is holding down. Held separately from `activeNotes`
+   * because that set also contains notes sounded by MIDI, playback, or another
+   * pointer, and releasing one of those on a stray `keyup` would cut a note the
+   * user never pressed.
+   */
+  const heldByKeyboard = React.useRef<Set<number>>(new Set());
+
   const handlePointerDown = (event: React.PointerEvent<HTMLButtonElement>, midi: number) => {
     event.preventDefault();
-    event.currentTarget.setPointerCapture?.(event.pointerId);
+    // Sound the note FIRST. Pointer capture is an enhancement — it keeps the
+    // note held when the finger slides off the keycap — and `setPointerCapture`
+    // throws `InvalidPointerId` if the pointer has already gone up. Capturing
+    // first meant that throw took the note with it, silently.
     onNoteOn(midi);
+    try {
+      event.currentTarget.setPointerCapture?.(event.pointerId);
+    } catch {
+      // No capture: the note still sounds, it just will not track off-key drags.
+    }
   };
 
   const handlePointerUp = (event: React.PointerEvent<HTMLButtonElement>, midi: number) => {
     event.preventDefault();
-    if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
-      event.currentTarget.releasePointerCapture?.(event.pointerId);
+    try {
+      if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
+        event.currentTarget.releasePointerCapture?.(event.pointerId);
+      }
+    } catch {
+      // Already released. Releasing the NOTE is the part that must not be skipped.
     }
     onNoteOff(midi);
   };
+
+  /**
+   * Play from the keyboard. Without this the instrument was mouse-only: every
+   * key was a focusable `<button>` that did nothing when activated, which is
+   * WCAG 2.1.1 (Keyboard) and reads as a broken control rather than a missing
+   * feature.
+   *
+   * Space and Enter hold the note for as long as they are held, matching the
+   * pointer, rather than firing a fixed blip on click.
+   */
+  const isPlayKey = (key: string) => key === 'Enter' || key === ' ' || key === 'Spacebar';
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>, midi: number) => {
+    if (!isPlayKey(event.key)) return;
+    // Space scrolls the page and Enter re-fires `click`; both would fight the note.
+    event.preventDefault();
+    // Auto-repeat would restrike the string 30 times a second.
+    if (event.repeat || heldByKeyboard.current.has(midi)) return;
+    heldByKeyboard.current.add(midi);
+    onNoteOn(midi);
+  };
+
+  const releaseKeyboardNote = (midi: number) => {
+    if (!heldByKeyboard.current.delete(midi)) return;
+    onNoteOff(midi);
+  };
+
+  const handleKeyUp = (event: React.KeyboardEvent<HTMLButtonElement>, midi: number) => {
+    if (!isPlayKey(event.key)) return;
+    event.preventDefault();
+    releaseKeyboardNote(midi);
+  };
+
+  /**
+   * Tabbing away mid-note, or a dialog stealing focus, never delivers the
+   * `keyup` — so the note would sound forever. A stuck drone is the worst
+   * failure this component has.
+   */
+  const handleBlur = (midi: number) => releaseKeyboardNote(midi);
+
+  const pressProps = (midi: number) => ({
+    type: 'button' as const,
+    onPointerDown: (event: React.PointerEvent<HTMLButtonElement>) => handlePointerDown(event, midi),
+    onPointerUp: (event: React.PointerEvent<HTMLButtonElement>) => handlePointerUp(event, midi),
+    onPointerCancel: (event: React.PointerEvent<HTMLButtonElement>) => handlePointerUp(event, midi),
+    onPointerLeave: (event: React.PointerEvent<HTMLButtonElement>) => {
+      if ((event.buttons & 1) !== 1) return;
+      handlePointerUp(event, midi);
+    },
+    onKeyDown: (event: React.KeyboardEvent<HTMLButtonElement>) => handleKeyDown(event, midi),
+    onKeyUp: (event: React.KeyboardEvent<HTMLButtonElement>) => handleKeyUp(event, midi),
+    onBlur: () => handleBlur(midi),
+  });
 
   return (
     <div className={classes.container}>
@@ -115,13 +188,8 @@ export default function OnscreenPianoKeyboard({
                   decoration?.className ?? '',
                 ].filter(Boolean).join(' ')}
                 aria-label={decoration?.ariaLabel}
-                onPointerDown={(event) => handlePointerDown(event, midi)}
-                onPointerUp={(event) => handlePointerUp(event, midi)}
-                onPointerCancel={(event) => handlePointerUp(event, midi)}
-                onPointerLeave={(event) => {
-                  if ((event.buttons & 1) !== 1) return;
-                  handlePointerUp(event, midi);
-                }}
+                aria-pressed={active}
+                {...pressProps(midi)}
               >
                 {showLabels && <span className={classes.whiteKeyLabel}>{key.note}{octave}</span>}
                 {decoration?.badge && (
@@ -145,14 +213,9 @@ export default function OnscreenPianoKeyboard({
                   decoration?.className ?? '',
                 ].filter(Boolean).join(' ')}
                 aria-label={decoration?.ariaLabel}
+                aria-pressed={active}
                 style={{ left: `${leftPct}%` }}
-                onPointerDown={(event) => handlePointerDown(event, midi)}
-                onPointerUp={(event) => handlePointerUp(event, midi)}
-                onPointerCancel={(event) => handlePointerUp(event, midi)}
-                onPointerLeave={(event) => {
-                  if ((event.buttons & 1) !== 1) return;
-                  handlePointerUp(event, midi);
-                }}
+                {...pressProps(midi)}
               >
                 {showLabels && showBlackLabels && (
                   <span className={classes.blackKeyLabel}>{key.note}{octave}</span>
