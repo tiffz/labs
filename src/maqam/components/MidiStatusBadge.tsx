@@ -22,6 +22,17 @@ export default function MidiStatusBadge({ supported, devices }: MidiStatusBadgeP
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   const connected = devices.filter((device) => device.connected);
 
+  /**
+   * "Unavailable" covers two different things, and the app was reporting only
+   * one of them: `MidiInput.init()` answers a single boolean for a missing API,
+   * a rejected promise and a declined permission alike. So Chrome users who
+   * dismissed the prompt were told their browser lacks Web MIDI, in a browser
+   * that has it, with nothing to do about it. Asking the navigator directly
+   * separates "your browser cannot" from "this attempt did not".
+   */
+  const hasWebMidi =
+    typeof navigator !== 'undefined' && typeof navigator.requestMIDIAccess === 'function';
+
   const state = !supported ? 'unsupported' : connected.length > 0 ? 'connected' : 'ready';
   const label =
     state === 'connected'
@@ -76,8 +87,10 @@ export default function MidiStatusBadge({ supported, devices }: MidiStatusBadgeP
             </p>
           ) : (
             <p>
-              This browser does not offer the Web MIDI API. Chrome and Edge do; Safari and Firefox
-              currently do not. The on-screen keyboard works either way.
+              {hasWebMidi
+                ? 'This browser has Web MIDI, but the app could not open it. That usually means access was declined, or another tab is holding the device.'
+                : 'This browser does not offer the Web MIDI API. Chrome and Edge do; Safari and Firefox currently do not.'}{' '}
+              The on-screen keyboard works either way.
             </p>
           )}
 

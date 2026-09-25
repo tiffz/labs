@@ -197,7 +197,9 @@ export const MELODY_PATTERNS: MelodyDefinition[] = [
     id: 'arpeggio',
     name: 'Arpeggio',
     kind: 'arpeggio',
-    description: 'Tonic, third, fifth, octave and back. An interval drill, not a chord.',
+    // Not "octave": Saba has no eighth degree, so on Saba the top of this
+    // shape is the seventh — and the panel on the same screen says so.
+    description: 'Tonic, third, fifth, top of the scale, and back. A drill, not a chord.',
     build: arpeggio,
   },
   {
@@ -215,6 +217,34 @@ export const GENERATED_MELODY_ID = 'generated';
 
 export function findMelodyDefinition(id: string): MelodyDefinition | undefined {
   return MELODY_PATTERNS.find((pattern) => pattern.id === id);
+}
+
+/**
+ * Bring a degree back inside the scale by bouncing off the end, not by pinning
+ * to it.
+ *
+ * Clamping turned every out-of-range step into a repeat of the boundary note,
+ * so phrases that wandered to the tonic or the octave stuck there: runs of
+ * three, four and five identical notes, in a generator whose own description
+ * promises stepwise motion.
+ */
+function reflectIntoScale(degree: number, top: number): number {
+  if (degree < 0) return Math.min(-degree, top);
+  if (degree > top) return Math.max(top - (degree - top), 0);
+  return degree;
+}
+
+/**
+ * Move to `target`, guaranteeing the phrase actually moves.
+ *
+ * Reflection alone is not enough: a step of -2 from degree 1 reflects to 1
+ * again, so the note repeats anyway. When the bounce lands back where it
+ * started, step one degree inward instead.
+ */
+function stepAwayFrom(from: number, target: number, top: number): number {
+  const next = reflectIntoScale(target, top);
+  if (next !== from) return next;
+  return reflectIntoScale(from + (from >= top ? -1 : 1), top);
 }
 
 /** Deterministic PRNG, so a generated phrase is reproducible from its seed. */
@@ -262,16 +292,27 @@ export function generateMelody(preset: MaqamPreset, seed: number): MelodyNote[] 
     beatsLeft -= take;
 
     const roll = random();
-    const next =
+    const step =
       roll < 0.62
-        ? degree + (random() < 0.5 ? 1 : -1)
+        ? (random() < 0.5 ? 1 : -1)
         : roll < 0.88
-          ? degree + (random() < 0.5 ? 2 : -2)
-          : ghammaz;
-    degree = Math.min(Math.max(next, 0), top);
+          ? (random() < 0.5 ? 2 : -2)
+          : 0;
+    // Landing on the ghammaz is a move, not a destination: rolling it while
+    // already there used to be a self-transition, so the note simply repeated.
+    // That was the likelier branch after the phrase starts on the ghammaz half
+    // the time.
+    const target = step === 0 ? (degree === ghammaz ? degree + 1 : ghammaz) : degree + step;
+    degree = stepAwayFrom(degree, target, top);
   }
 
-  notes.push(note(0, beatsLeft));
+  // Merge into the closing tonic rather than striking it twice. A phrase that
+  // wandered home on its last step would otherwise end "C C", which is the
+  // repeated note this generator exists not to produce.
+  const last = notes[notes.length - 1];
+  if (last && last.degree === 0) last.beats += beatsLeft;
+  else notes.push(note(0, beatsLeft));
+
   return notes;
 }
 

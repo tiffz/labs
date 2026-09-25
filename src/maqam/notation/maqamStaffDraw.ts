@@ -40,7 +40,15 @@ export interface DrawStaffOptions {
 /** Breathing room kept above and below the drawn extent, in CSS px. */
 const EDGE_PAD = 6;
 
-const DEFAULT_HIGHLIGHT = '#a9661a';
+/*
+ * The same ink blue the keyboard paints a sounding key with.
+ *
+ * It used to be amber, which is the app's "this pitch is bent off equal
+ * temperament" colour — so during playback the screen showed an amber notehead
+ * and blue keys for one event, and the amber matched the retuned-key mark
+ * exactly. One fact, one channel: blue is sounding.
+ */
+const DEFAULT_HIGHLIGHT = '#1d5b82';
 const INK = '#241d16';
 const EMPTY_HIGHLIGHT: ReadonlySet<number> = new Set<number>();
 

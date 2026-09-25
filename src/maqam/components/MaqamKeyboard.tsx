@@ -9,8 +9,8 @@ interface MaqamKeyboardProps {
   keyTunings: KeyTuning[];
   activeNotes: Set<number>;
   octaves: number[];
-  /** Pitch classes the melody is sounding right now, for playback highlight. */
-  playingPitchClasses?: ReadonlySet<number>;
+  /** The exact note the melody is sounding right now, if any. */
+  playingMidiNote?: number;
   onNoteOn: (midi: number) => void;
   onNoteOff: (midi: number) => void;
 }
@@ -27,7 +27,7 @@ export default function MaqamKeyboard({
   keyTunings,
   activeNotes,
   octaves,
-  playingPitchClasses,
+  playingMidiNote,
   onNoteOn,
   onNoteOff,
 }: MaqamKeyboardProps) {
@@ -45,7 +45,14 @@ export default function MaqamKeyboard({
           `maqam-key--${tuning.role}`,
           tuning.isTonic ? 'maqam-key--home' : '',
           tuning.isRetuned ? 'maqam-key--retuned' : '',
-          playingPitchClasses?.has(tuning.pitchClass) ? 'maqam-key--sounding' : '',
+          // Two tiers: the octave actually sounding, and the octaves that
+          // share its pitch class. One fact each, one weight each.
+          playingMidiNote === midi ? 'maqam-key--sounding' : '',
+          playingMidiNote !== undefined &&
+          playingMidiNote !== midi &&
+          ((playingMidiNote % 12) + 12) % 12 === tuning.pitchClass
+            ? 'maqam-key--echoing'
+            : '',
         ]
           .filter(Boolean)
           .join(' '),
@@ -53,7 +60,7 @@ export default function MaqamKeyboard({
         ariaLabel: `${tuning.ariaLabel}, octave ${octave}`,
       };
     },
-    [keyTunings, playingPitchClasses],
+    [keyTunings, playingMidiNote],
   );
 
   return (

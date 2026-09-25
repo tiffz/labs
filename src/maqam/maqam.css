@@ -661,6 +661,19 @@
   background: var(--maqam-tonic);
 }
 
+/*
+ * The same pitch class an octave away. True, and quieter: it is the sibling of
+ * the note you are hearing, not the note you are hearing. Painted at the
+ * secondary tier so "which key is that" has one loud answer.
+ */
+.maqam-key.maqam-key--echoing {
+  background: var(--maqam-tonic-soft);
+}
+
+.shared-pk-black.maqam-key--echoing {
+  background: #4a6072;
+}
+
 .maqam-key.maqam-key--sounding .shared-pk-white-label,
 .maqam-key.maqam-key--sounding .shared-pk-black-label,
 .maqam-key.maqam-key--sounding .shared-pk-badge {

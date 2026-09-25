@@ -193,11 +193,15 @@ test.describe('Maqam Playground', () => {
     await page.getByRole('button', { name: /^Play$/ }).click();
 
     // The staff and the keyboard read the same timeline, so a lit key means a
-    // lit note. 3 keys because one pitch class appears once per octave.
-    await expect(page.locator('.maqam-key--sounding')).toHaveCount(3, { timeout: 10_000 });
+    // lit note. Exactly ONE key is sounding: the octave actually being played.
+    // Its 2 siblings share the pitch class and are painted a tier quieter, so
+    // "which key is that" has one loud answer rather than three.
+    await expect(page.locator('.maqam-key--sounding')).toHaveCount(1, { timeout: 10_000 });
+    await expect(page.locator('.maqam-key--echoing')).toHaveCount(2);
 
     await page.getByRole('button', { name: /^Stop$/ }).click();
     await expect(page.locator('.maqam-key--sounding')).toHaveCount(0);
+    await expect(page.locator('.maqam-key--echoing')).toHaveCount(0);
   });
 
   test('CUJ-005: every pattern renders notes on the staff', async ({ page }) => {

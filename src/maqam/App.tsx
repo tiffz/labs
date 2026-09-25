@@ -26,6 +26,10 @@ import { useMaqamState } from './state/useMaqamState';
  */
 const KEYBOARD_OCTAVES = [3, 4, 5];
 
+/** "C♯, E and B" — the list separator is a comma, and only the last one is "and". */
+const LIST_FORMAT = new Intl.ListFormat('en', { style: 'long', type: 'conjunction' });
+const listJoin = (items: string[]): string => LIST_FORMAT.format(items);
+
 export default function App() {
   const {
     preset,
@@ -77,12 +81,19 @@ export default function App() {
     return lit;
   }, [melody, playingIndex, activeNotes]);
 
-  /** Pitch classes the melody is sounding, so the keyboard lights along with it. */
-  const playingPitchClasses = useMemo(() => {
-    if (playingIndex === null) return undefined;
-    const note = melody[playingIndex];
-    return note ? new Set([((note.midiNote % 12) + 12) % 12]) : undefined;
-  }, [melody, playingIndex]);
+  /**
+   * The note the melody is sounding, and the octaves that echo it.
+   *
+   * Both, because they are different facts. The primary journey is "watch which
+   * key makes that sound", and lighting all three octaves at full strength gave
+   * that question three equally loud answers — three solid slabs marching
+   * across the board for one note. The octave being played now gets the loud
+   * state; its siblings get the quiet one.
+   */
+  const playingNote = useMemo(
+    () => (playingIndex === null ? undefined : melody[playingIndex]?.midiNote),
+    [melody, playingIndex],
+  );
 
   const melodyDescription =
     melodyId === GENERATED_MELODY_ID
@@ -198,7 +209,7 @@ export default function App() {
             keyTunings={keyTunings}
             activeNotes={activeNotes}
             octaves={KEYBOARD_OCTAVES}
-            playingPitchClasses={playingPitchClasses}
+            playingMidiNote={playingNote}
             onNoteOn={noteOn}
             onNoteOff={noteOff}
           />
@@ -241,7 +252,8 @@ export default function App() {
                   <span className="maqam-legend__bend" aria-hidden="true">
                     ½♭
                   </span>
-                  {bentKeys.map((pc) => PITCH_CLASS_NAMES[pc]).join(' and ')}{' '}
+                  {/* "C♯, E and B", not "C♯ and E and B". */}
+                  {listJoin(bentKeys.map((pc) => PITCH_CLASS_NAMES[pc]))}{' '}
                   {formatCents(-50)}
                 </span>
               )}

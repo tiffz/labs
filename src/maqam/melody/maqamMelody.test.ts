@@ -139,6 +139,31 @@ describe('melody patterns', () => {
   });
 });
 
+/**
+ * A pattern's description is shown beside the staff that renders it, so a word
+ * like "octave" is a claim about the notes on screen. Saba has 7 degrees and
+ * does not return to its tonic, and the arpeggio's description promised an
+ * octave anyway — on the same screen as the panel saying it has none.
+ */
+describe('pattern descriptions', () => {
+  it.each(everyPatternAndPreset)(
+    '%s only claims an octave when it reaches one',
+    (_label, pattern, preset) => {
+      if (!/\boctave\b/i.test(pattern.description)) return;
+      const top = preset.scaleDegrees[Math.max(...pattern.build(preset).map((n) => n.degree))];
+      const tonic = preset.scaleDegrees[0];
+      // The octave is the TONIC an octave up. `octaveOffset` alone is not that
+      // test: Saba's seventh is also written in the next octave, so it passed
+      // an assertion that only looked at the offset while the claim stayed
+      // false.
+      expect(
+        { letter: top.letter, accidental: top.accidental, offset: top.octaveOffset },
+        `${pattern.id} on ${preset.id}`,
+      ).toEqual({ letter: tonic.letter, accidental: tonic.accidental, offset: 1 });
+    },
+  );
+});
+
 describe('generateMelody', () => {
   it('is reproducible from its seed', () => {
     expect(generateMelody(rast, 42)).toEqual(generateMelody(rast, 42));
@@ -191,6 +216,31 @@ describe('generateMelody', () => {
     }
     expect(steps / total).toBeGreaterThan(0.5);
   });
+
+  /**
+   * A stuck note is the one thing the generator must not do, and it did it in
+   * roughly half of all phrases: runs of 3, 4 and 5 identical degrees, against
+   * an on-screen description promising stepwise motion.
+   *
+   * Two causes, both now fixed. Clamping an out-of-range step pinned the degree
+   * to the boundary and repeated it. And the "jump to the ghammaz" branch was a
+   * self-transition whenever the phrase was already there, which the corrected
+   * ghammaz made more likely, since half of all phrases start on it.
+   */
+  it.each(MAQAM_PRESETS.map((p) => [p.id, p] as const))(
+    'never repeats a note in %s',
+    (_id, preset) => {
+      for (let seed = 1; seed <= 500; seed += 1) {
+        const degrees = generateMelody(preset, seed).map((n) => n.degree);
+        for (let i = 1; i < degrees.length; i += 1) {
+          expect(
+            degrees[i],
+            `seed ${seed} repeats degree ${degrees[i]}: ${degrees.join(' ')}`,
+          ).not.toBe(degrees[i - 1]);
+        }
+      }
+    },
+  );
 
   it('survives a zero seed rather than dividing by it', () => {
     expect(() => generateMelody(rast, 0)).not.toThrow();
