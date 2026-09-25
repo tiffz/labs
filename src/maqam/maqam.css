@@ -60,9 +60,18 @@
   --maqam-key-face: #fffefc;
   --maqam-key-face-dim: #e7e0d4;
   --maqam-key-ink: #3d352c;
-  --maqam-key-ink-dim: #9b9184;
   --maqam-key-black: #272320;
-  --maqam-key-black-dim: #7b746b;
+  /*
+   * Recession lives in the FACE, never in the ink.
+   *
+   * Dimming the label too put out-of-maqam note names at 2.36:1 on white keys
+   * and 4.34:1 on black ones, both under AA — so on Saba the six key names a
+   * learner most needs to read ("the ones this maqam does not use") were the
+   * least readable things on screen. Full-strength ink on the dim face is
+   * 8.1:1, and the face alone still carries the distinction.
+   */
+  --maqam-key-face-dim-ink: var(--maqam-key-ink);
+  --maqam-key-black-dim: #5f594f;
 
   /* Type scale. Six sizes, because a screen this small cannot justify more. */
   --maqam-text-xs: 0.6875rem;
@@ -570,11 +579,7 @@
 .maqam-keyboard .shared-pk-white-label {
   font-size: var(--maqam-text-sm);
   font-weight: 600;
-  color: var(--maqam-key-ink-dim);
-}
-
-.maqam-key--in-scale .shared-pk-white-label {
-  color: var(--maqam-key-ink);
+  color: var(--maqam-key-face-dim-ink);
 }
 
 /*
@@ -744,7 +749,7 @@
   width: 7px;
   height: 14px;
   border-radius: 0 0 2px 2px;
-  border: 1px solid var(--maqam-key-ink-dim);
+  border: 1px solid var(--maqam-key-ink);
 }
 
 .maqam-legend__swatch::before {

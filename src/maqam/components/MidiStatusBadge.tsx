@@ -72,7 +72,7 @@ export default function MidiStatusBadge({ supported, devices }: MidiStatusBadgeP
           ) : state === 'ready' ? (
             <p>
               Nothing connected yet. Plug in a USB MIDI keyboard and it should appear here on its
-              own &mdash; no reload, no setup.
+              own. No reload, no setup.
             </p>
           ) : (
             <p>

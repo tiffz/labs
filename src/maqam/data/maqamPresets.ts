@@ -150,6 +150,64 @@ export function degreeAbsoluteCents(degree: MaqamScaleDegree, tonicOctave: numbe
   return midi * 100 + microtonalCentsOf(degree);
 }
 
+/** Scale index a spelling sits at, or -1. */
+function degreeIndexOf(preset: MaqamPreset, spelling: MaqamNoteSpelling): number {
+  return preset.scaleDegrees.findIndex(
+    (degree) => degree.letter === spelling.letter && degree.accidental === spelling.accidental,
+  );
+}
+
+/**
+ * How a maqam's two cells meet.
+ *
+ * Derived, never asserted. The panel used to print "Joined on G, where the
+ * first cell ends and the second begins" for every maqam, directly under the
+ * intervals that disprove it: Rast's lower jins is 0-200-350-500, which is
+ * C D E½♭ F, so it ends on F and the upper jins starts a whole tone above on
+ * G. Rast, Nahawand and Ajam are DISJUNCT — the cells do not touch — and the
+ * app taught the opposite on the screen that loads by default.
+ *
+ * Separately, the ghammaz here is read from the upper jins's root rather than
+ * guessed from the lower jins's note count. The guess was right only for the
+ * conjunct maqamat, so in Rast the "jins by jins" pattern rested twice on F,
+ * a note neither cell is rooted on.
+ */
+export interface AjnasJoin {
+  /** Scale index the lower cell ends on. */
+  lowerTopIndex: number;
+  /** Scale index the upper cell is rooted on. This is the ghammaz. */
+  ghammazIndex: number;
+  /** True when one degree belongs to both cells. */
+  shared: boolean;
+}
+
+/** `undefined` for a maqam with a single settled jins, which has no join. */
+export function ajnasJoin(preset: MaqamPreset): AjnasJoin | undefined {
+  const [lower, upper] = preset.primaryAjnas;
+  if (!lower || !upper) return undefined;
+
+  const lowerRootIndex = degreeIndexOf(preset, lower.root);
+  const ghammazIndex = degreeIndexOf(preset, upper.root);
+  if (lowerRootIndex < 0 || ghammazIndex < 0) return undefined;
+
+  const lowerTopIndex = lowerRootIndex + lower.intervalsInCents.length - 1;
+  return { lowerTopIndex, ghammazIndex, shared: lowerTopIndex === ghammazIndex };
+}
+
+/**
+ * The degree a maqam's phrases rest on, as a scale index.
+ *
+ * For a two-jins maqam that is the upper cell's root. Saba has one settled
+ * jins, so its phrases rest on the top of that cell instead.
+ */
+export function ghammazDegreeIndex(preset: MaqamPreset): number {
+  const join = ajnasJoin(preset);
+  if (join) return join.ghammazIndex;
+  const cellLength = preset.primaryAjnas[0]?.intervalsInCents.length ?? 4;
+  const lastIndex = preset.scaleDegrees.length - 1;
+  return Math.min(Math.max(cellLength - 1, 1), lastIndex);
+}
+
 /** How a maqam's written spelling reads back, e.g. "C D E½♭ F G A B½♭ C". */
 export function scaleDegreeLabels(degrees: MaqamScaleDegree[]): string[] {
   return degrees.map((degree) => spellingLabel(degree));

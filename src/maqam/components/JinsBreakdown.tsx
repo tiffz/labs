@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-import { spellingLabel } from '../notation/maqamAccidentals';
-import { type MaqamPreset } from '../data/maqamPresets';
+import { ajnasJoin, scaleDegreeLabels, type MaqamPreset } from '../data/maqamPresets';
 
 interface JinsBreakdownProps {
   preset: MaqamPreset;
@@ -24,6 +23,16 @@ interface JinsBreakdownProps {
  * that are lit, so reading it beside the board is one glance instead of two.
  */
 export default function JinsBreakdown({ preset }: JinsBreakdownProps) {
+  /**
+   * Derived, not asserted. The panel used to say "Joined on G, where the first
+   * cell ends and the second begins" for every maqam, printed directly under
+   * the intervals that disprove it: Rast's lower jins is C D E½♭ F, so it ends
+   * on F and the second cell starts a whole tone above. Rast, Nahawand and
+   * Ajam are disjunct, and the app taught the opposite by default.
+   */
+  const join = ajnasJoin(preset);
+  const labels = scaleDegreeLabels(preset.scaleDegrees);
+
   const panelRef = useRef<HTMLDivElement | null>(null);
   const [overflowing, setOverflowing] = useState(false);
 
@@ -68,10 +77,16 @@ export default function JinsBreakdown({ preset }: JinsBreakdownProps) {
         ))}
       </ol>
 
-      {preset.primaryAjnas.length > 1 && (
+      {join && join.shared && (
         <p className="maqam-jins__note">
-          Joined on {spellingLabel(preset.primaryAjnas[1].root)}, where the first cell ends and the
-          second begins.
+          Both cells claim {labels[join.ghammazIndex]}. The first ends there and the second starts
+          there, which is what joins them.
+        </p>
+      )}
+      {join && !join.shared && (
+        <p className="maqam-jins__note">
+          The cells do not touch. The first ends on {labels[join.lowerTopIndex]} and the second
+          starts a step higher on {labels[join.ghammazIndex]}.
         </p>
       )}
       {preset.primaryAjnas.length === 1 && (

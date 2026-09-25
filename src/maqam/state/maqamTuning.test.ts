@@ -121,7 +121,7 @@ describe('buildKeyTunings', () => {
     const tunings = buildKeyTunings(rast, toggleDetuneSlot(rastMatrix, 6)); // F#
     expect(tunings[6].role).toBe('outside');
     expect(tunings[6].isRetuned).toBe(true);
-    expect(tunings[6].label).toBe('F♯ −50c');
+    expect(tunings[6].label).toBe('F♯ 50 cents flat');
   });
 
   it('handles no preset at all', () => {
@@ -139,7 +139,9 @@ describe('buildKeyTunings', () => {
   it('speaks every fact that is true of a key', () => {
     const sikah = MAQAM_PRESETS_BY_ID.sikah_e;
     const tunings = buildKeyTunings(sikah, deriveDetuneMatrix(sikah.scaleDegrees).matrix);
-    expect(tunings[4].ariaLabel).toBe('E half-flat, in the maqam, home note, tuned −50c');
+    expect(tunings[4].ariaLabel).toBe(
+      'E half-flat, in the maqam, home note, tuned 50 cents flat',
+    );
   });
 
   it('speaks a plain scale key simply', () => {
@@ -232,8 +234,9 @@ describe('bentPitchClasses', () => {
 
 describe('formatCents', () => {
   it('uses a real minus sign, not a hyphen', () => {
-    expect(formatCents(-50)).toBe('−50c');
-    expect(formatCents(50)).toBe('+50c');
-    expect(formatCents(0)).toBe('0c');
+    // Spoken as well as shown: "minus fifty c" was neither a unit nor English.
+    expect(formatCents(-50)).toBe('50 cents flat');
+    expect(formatCents(50)).toBe('50 cents sharp');
+    expect(formatCents(0)).toBe('in equal temperament');
   });
 });

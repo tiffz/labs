@@ -99,11 +99,43 @@ describe('melody patterns', () => {
     }
   });
 
-  it('meets on the ghammaz in the jins pattern', () => {
-    // Rast's lower jins is 4 notes, so the cells share degree 3 (G).
-    const notes = findMelodyDefinition('jins-by-jins')!.build(rast);
-    const degrees = notes.map((n) => n.degree);
+  /**
+   * This test used to assert the bug and mislabel it in the same breath. The
+   * comment read "Rast's lower jins is 4 notes, so the cells share degree 3
+   * (G)" — but degree 3 of C D E half-flat F G A B half-flat C is F, and
+   * Rast's cells share nothing at all. It stayed green while the pattern
+   * rested twice on a note neither jins is rooted on.
+   */
+  it('plays Rast as two cells that do not touch', () => {
+    // Jins Rast on C is C D E half-flat F. Jins Rast on G starts a whole tone
+    // above, so the pattern steps from one cell to the next.
+    const degrees = findMelodyDefinition('jins-by-jins')!.build(rast).map((n) => n.degree);
+    expect(degrees).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
+    // Nothing repeats, because there is no shared degree to land on twice.
+    expect(new Set(degrees).size).toBe(degrees.length);
+  });
+
+  it('repeats the shared degree in a conjunct maqam', () => {
+    // Bayati's cells meet on G, degree 3, so the pattern lands there twice:
+    // once ending the lower cell, once beginning the upper.
+    const degrees = findMelodyDefinition('jins-by-jins')!
+      .build(MAQAM_PRESETS_BY_ID.bayati_d)
+      .map((n) => n.degree);
     expect(degrees.filter((d) => d === 3)).toHaveLength(2);
+  });
+
+  it('climbs to the ghammaz the upper jins is rooted on', () => {
+    // Not to whatever the lower cell's note count happens to point at.
+    for (const preset of MAQAM_PRESETS) {
+      const upper = preset.primaryAjnas[1];
+      if (!upper) continue;
+      const expected = preset.scaleDegrees.findIndex(
+        (degree) =>
+          degree.letter === upper.root.letter && degree.accidental === upper.root.accidental,
+      );
+      const turn = findMelodyDefinition('ghammaz-turn')!.build(preset).map((n) => n.degree);
+      expect(Math.max(...turn), preset.id).toBe(expected);
+    }
   });
 });
 

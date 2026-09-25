@@ -94,8 +94,23 @@ function extractJsxTextLines(content, fileName) {
   return results;
 }
 
+/*
+ * The entity spellings matter as much as the character.
+ *
+ * The ban matched U+2014 only, so `&mdash;` in JSX text sailed through and
+ * rendered as an em dash anyway — three of them shipped in Maqam Playground
+ * while this check reported "ok". A rule one entity away from unenforced is
+ * the `guardrail-coverage-gap` shape: the guard was real, the set it looked at
+ * was not the set it governed.
+ */
+const EM_DASH_ENTITIES = ['&mdash;', '&#8212;', '&#x2014;'];
+
 const TELLS = [
   { id: 'em dash in UI string', needle: EM_DASH },
+  ...EM_DASH_ENTITIES.map((entity) => ({
+    id: `em dash entity in UI string (${entity})`,
+    needle: entity,
+  })),
   { id: '"Please " prefix in UI string', needle: 'Please ' },
   { id: 'literal "..." in UI string (use \u2026)', needle: '...' },
 ];

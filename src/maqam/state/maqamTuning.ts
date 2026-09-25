@@ -181,9 +181,18 @@ export function liveScaleLabels(
   });
 }
 
+/**
+ * Spelled out, because this string is read aloud as well as shown.
+ *
+ * It used to render "−50c" with a real minus sign, which a screen reader says
+ * as "minus fifty c" — and "c" is not an abbreviation for cents anywhere. The
+ * app also spelled the same unit three ways on one screen ("400¢" in the help
+ * dialog, "350 cents" in the ajnas panel, "−50c" here), so one quantity looked
+ * like three different units to a reader still learning what a cent is.
+ */
 export function formatCents(cents: number): string {
-  if (cents === 0) return '0c';
-  return `${cents > 0 ? '+' : '−'}${Math.abs(cents)}c`;
+  if (cents === 0) return 'in equal temperament';
+  return `${Math.abs(cents)} cents ${cents > 0 ? 'sharp' : 'flat'}`;
 }
 
 /**

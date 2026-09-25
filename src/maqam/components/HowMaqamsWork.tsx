@@ -46,13 +46,13 @@ export default function HowMaqamsWork({ open, onClose }: HowMaqamsWorkProps) {
           </p>
           <p className="maqam-help__compare">
             <span>
-              Major third <strong>400¢</strong>
+              Major third <strong>400 cents</strong>
             </span>
             <span className="is-lit">
-              Rast&rsquo;s third <strong>350¢</strong>
+              Rast&apos;s third <strong>350 cents</strong>
             </span>
             <span>
-              Minor third <strong>300¢</strong>
+              Minor third <strong>300 cents</strong>
             </span>
           </p>
           <p>
@@ -65,9 +65,9 @@ export default function HowMaqamsWork({ open, onClose }: HowMaqamsWorkProps) {
           <h3>A maqam is 2 cells, not a run of notes.</h3>
           <p>
             Each is built from 2 <em>ajnas</em> (singular <em>jins</em>): small cells of 3, 4, or 5
-            notes, joined at a shared degree. Melodies move cell to cell, and a maqam modulates into
-            its neighbours by swapping the upper jins. The panel beside the staff shows the cells of
-            whichever maqam is loaded and the degree they share.
+            notes. Sometimes the cells meet on one degree they both claim. Sometimes they sit a step
+            apart, as Rast&apos;s do. Melodies move cell to cell, and a maqam modulates into its
+            neighbours by swapping the upper jins.
           </p>
         </section>
 
@@ -86,8 +86,8 @@ export default function HowMaqamsWork({ open, onClose }: HowMaqamsWorkProps) {
           </p>
           <p className="maqam-help__caveat">
             Real quarter-tones are not exactly 50 cents. They shift by region, by performer, and by
-            where the note sits in the phrase &mdash; Rast&rsquo;s third is often nearer 340 or 360.
-            Exactly 50 is what a retuned 12-key board can do, not what a singer does.
+            where the note sits in the phrase. Rast&apos;s third is often nearer 340 or 360. Exactly 50
+            is what a retuned 12-key board can do, not what a singer does.
           </p>
         </section>
 
@@ -96,8 +96,8 @@ export default function HowMaqamsWork({ open, onClose }: HowMaqamsWorkProps) {
           <p>
             A maqam is also a <em>sayr</em>: a path. Where a melody starts, where it rests, which
             degree it leans on, how it descends differently from how it climbs. None of that is a
-            scale, and none of it is here. Saba goes further and never closes at the octave &mdash;
-            its upper tonic is flattened, which is why its scale stops at 7 notes.
+            scale, and none of it is here. Saba goes further and never closes at the octave: the
+            app writes it as 7 degrees rather than inventing an eighth.
           </p>
         </section>
       </DialogContent>

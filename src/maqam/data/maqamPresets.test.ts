@@ -4,7 +4,9 @@ import {
   MAQAM_PRESETS,
   MAQAM_PRESETS_BY_ID,
   DEFAULT_MAQAM_ID,
+  ajnasJoin,
   degreeAbsoluteCents,
+  ghammazDegreeIndex,
   deriveDetuneMatrix,
   findMaqamPreset,
   hasMicrotones,
@@ -231,6 +233,71 @@ describe('ajnas agree with the scale they are drawn from', () => {
     });
 
     expect(walked).toEqual(jins.intervalsInCents);
+  });
+
+  /**
+   * The step the per-jins check above could not take.
+   *
+   * It verified each cell against the scale in isolation, so it stayed green
+   * while the panel told every maqam "Joined on G, where the first cell ends
+   * and the second begins" and the melody generator guessed the ghammaz from
+   * the lower cell's note count. Both are only true when the cells are
+   * conjunct. Rast, Nahawand and Ajam are not, and all three shipped wrong.
+   *
+   * This asserts the RELATIONSHIP: where the lower cell ends, where the upper
+   * one is rooted, and that the ghammaz is the upper root rather than a guess.
+   */
+  it.each(MAQAM_PRESETS.map((preset): [string, MaqamPreset] => [preset.id, preset]))(
+    '%s joins its ajnas where the intervals say it does',
+    (_id, preset) => {
+      const labels = scaleDegreeLabels(preset.scaleDegrees);
+      const join = ajnasJoin(preset);
+      const lowerCellLength = preset.primaryAjnas[0].intervalsInCents.length;
+
+      if (preset.primaryAjnas.length < 2) {
+        expect(join, `${preset.id} has one jins and cannot have a join`).toBeUndefined();
+        // Its phrases still need somewhere to rest: the top of the only cell.
+        expect(ghammazDegreeIndex(preset)).toBe(lowerCellLength - 1);
+        return;
+      }
+
+      expect(join, `${preset.id} has 2 ajnas, so it must have a join`).toBeDefined();
+      const { lowerTopIndex, ghammazIndex, shared } = join!;
+
+      // The ghammaz IS the upper cell's root, never an arithmetic guess.
+      const upperRoot = preset.scaleDegrees.findIndex(
+        (degree) =>
+          degree.letter === preset.primaryAjnas[1].root.letter &&
+          degree.accidental === preset.primaryAjnas[1].root.accidental,
+      );
+      expect(ghammazIndex).toBe(upperRoot);
+      expect(ghammazDegreeIndex(preset)).toBe(upperRoot);
+
+      // The lower cell ends where its own interval list runs out.
+      expect(lowerTopIndex).toBe(lowerCellLength - 1);
+
+      // `shared` must describe the scale, not an assumption about it.
+      expect(
+        shared,
+        `${preset.id}: lower cell ends on ${labels[lowerTopIndex]}, upper roots on ${labels[ghammazIndex]}`,
+      ).toBe(lowerTopIndex === ghammazIndex);
+
+      // The upper cell never starts below the lower cell's last note, and never
+      // leaves a gap wider than one scale step.
+      expect(ghammazIndex).toBeGreaterThanOrEqual(lowerTopIndex);
+      expect(ghammazIndex - lowerTopIndex).toBeLessThanOrEqual(1);
+    },
+  );
+
+  /**
+   * Pins the three the app got wrong, by name. A maqam moving between these
+   * lists is a real editorial change and should have to be made on purpose.
+   */
+  it('knows which maqamat are disjunct', () => {
+    const disjunct = MAQAM_PRESETS.filter((preset) => ajnasJoin(preset)?.shared === false)
+      .map((preset) => preset.id)
+      .sort();
+    expect(disjunct).toEqual(['ajam_bb', 'nahawand_c', 'rast_c']);
   });
 
   it('starts every jins at its root', () => {

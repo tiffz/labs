@@ -399,6 +399,59 @@ test.describe('Maqam Playground', () => {
     expect(background).not.toBe('transparent');
   });
 
+  test('a11y: every key name stays readable, in the maqam or out of it', async ({ page }) => {
+    // Saba uses 5 of 7 white keys and 2 of 5 black ones, so both faces are on
+    // screen at once. The names on the keys the maqam does NOT use are exactly
+    // the ones a learner needs in order to tell them apart.
+    await page.goto('/maqam/?maqam=saba_d');
+    await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
+
+    const ratios = await page.evaluate(() => {
+      const channel = (c: number) => {
+        const v = c / 255;
+        return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+      };
+      const parse = (value: string) => (value.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number);
+      const luminance = (value: string) => {
+        const [r, g, b] = parse(value);
+        return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+      };
+      // Labels are drawn over their own key, so the key's background is the
+      // real backdrop even when the label colour carries an alpha.
+      const contrast = (ink: string, face: string) => {
+        const [hi, lo] = [luminance(ink), luminance(face)].sort((a, b) => b - a);
+        return (hi + 0.05) / (lo + 0.05);
+      };
+
+      const measure = (keySelector: string, labelSelector: string) => {
+        const keys = [...document.querySelectorAll(keySelector)].filter(
+          (el) => !el.classList.contains('maqam-key--in-scale'),
+        );
+        return keys.map((key) => {
+          const label = key.querySelector(labelSelector);
+          return contrast(
+            getComputedStyle(label as Element).color,
+            getComputedStyle(key).backgroundColor,
+          );
+        });
+      };
+
+      return {
+        white: measure('.maqam-keyboard .shared-pk-white', '.shared-pk-white-label'),
+        black: measure('.maqam-keyboard .shared-pk-black', '.shared-pk-black-label'),
+      };
+    });
+
+    // A selector that matched nothing would pass every assertion below.
+    expect(ratios.white.length).toBeGreaterThan(0);
+    expect(ratios.black.length).toBeGreaterThan(0);
+
+    // WCAG AA for text under 18px. These labels are 11-12px, so 4.5:1 applies.
+    for (const ratio of [...ratios.white, ...ratios.black]) {
+      expect(ratio).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
   test('the page itself never scrolls', async ({ page }) => {
     await page.goto('/maqam/');
     await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });

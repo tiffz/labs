@@ -1,4 +1,9 @@
-import type { DetuneMatrix, MaqamPreset } from '../data/maqamPresets';
+import {
+  ajnasJoin,
+  ghammazDegreeIndex,
+  type DetuneMatrix,
+  type MaqamPreset,
+} from '../data/maqamPresets';
 import { accidentalFor, midiNoteOf, semitoneShiftOf } from '../notation/maqamAccidentals';
 import type { StaffNote } from '../notation/maqamStaffDraw';
 import { detuneForMidiNote } from '../audio/maqamSynth';
@@ -52,10 +57,18 @@ function note(degree: number, beats: number): MelodyNote {
   return { degree, beats };
 }
 
-/** Where the second jins starts — the degree maqam phrases rest on. */
+/**
+ * Where the second jins starts — the degree maqam phrases rest on.
+ *
+ * Read from the upper jins's root. This used to be guessed from the LOWER
+ * jins's note count, which is only the same answer when the two cells share a
+ * degree. Rast, Nahawand and Ajam are disjunct, so all three rested a whole
+ * tone below their real ghammaz: in Rast, the pattern whose description says
+ * the cells "meet on the degree they share" sat twice on F, which neither cell
+ * is rooted on.
+ */
 function ghammazDegree(preset: MaqamPreset): number {
-  const lowerJinsNotes = preset.primaryAjnas[0]?.intervalsInCents.length ?? 4;
-  return Math.min(Math.max(lowerJinsNotes - 1, 1), span(preset) - 1);
+  return ghammazDegreeIndex(preset);
 }
 
 function ascending(preset: MaqamPreset): MelodyNote[] {
@@ -86,8 +99,7 @@ function thirds(preset: MaqamPreset): MelodyNote[] {
  *
  * Worth being explicit about what this is not: maqam music is monophonic and
  * heterophonic and has no functional harmony, so there are no chord progressions
- * to practise. This is an interval drill. The traditional accompaniment is a
- * drone on the tonic, which the player offers separately.
+ * to practise. This is an interval drill.
  */
 function arpeggio(preset: MaqamPreset): MelodyNote[] {
   const top = Math.min(span(preset) - 1, 7);
@@ -97,17 +109,29 @@ function arpeggio(preset: MaqamPreset): MelodyNote[] {
 }
 
 /**
- * The two ajnas, separately, with a longer note where they meet.
+ * Each cell on its own, held at the end of each.
  *
- * This is the pattern that shows what a maqam actually is: two cells joined at a
- * shared degree, rather than a row of 7 notes.
+ * This is the pattern that shows what a maqam actually is: two cells, rather
+ * than a row of 7 notes. It plays the cells the maqam really has — the lower
+ * one from the tonic to its own top degree, then the upper one from the
+ * ghammaz — so a conjunct maqam repeats the degree they share and a disjunct
+ * one steps up to reach the second cell. Hearing that difference is the point.
+ *
+ * It used to run the first cell all the way to the pivot and start the second
+ * there, which for Rast meant a first "cell" of C D E½♭ F G: a five-note run
+ * ending on a note the four-note Jins Rast does not contain.
  */
 function jinsByJins(preset: MaqamPreset): MelodyNote[] {
-  const pivot = ghammazDegree(preset);
   const last = span(preset) - 1;
+  const join = ajnasJoin(preset);
   const out: MelodyNote[] = [];
-  for (let i = 0; i <= pivot; i += 1) out.push(note(i, i === pivot ? 2 : 1));
-  for (let i = pivot; i <= last; i += 1) out.push(note(i, i === last ? 2 : 1));
+
+  // One settled cell (Saba): play it, then carry on to the top of the scale.
+  const lowerTop = join ? join.lowerTopIndex : ghammazDegree(preset);
+  const upperRoot = join ? join.ghammazIndex : lowerTop;
+
+  for (let i = 0; i <= lowerTop; i += 1) out.push(note(i, i === lowerTop ? 2 : 1));
+  for (let i = upperRoot; i <= last; i += 1) out.push(note(i, i === last ? 2 : 1));
   return out;
 }
 
@@ -152,7 +176,7 @@ export const MELODY_PATTERNS: MelodyDefinition[] = [
     id: 'jins-by-jins',
     name: 'Jins by jins',
     kind: 'exercise',
-    description: 'The 2 cells separately, meeting on the degree they share.',
+    description: 'Each cell on its own, so you hear where one ends and the next starts.',
     build: jinsByJins,
   },
   {
@@ -173,7 +197,7 @@ export const MELODY_PATTERNS: MelodyDefinition[] = [
     id: 'arpeggio',
     name: 'Arpeggio',
     kind: 'arpeggio',
-    description: 'Tonic, third, fifth and back. An interval drill, not a chord.',
+    description: 'Tonic, third, fifth, octave and back. An interval drill, not a chord.',
     build: arpeggio,
   },
   {
