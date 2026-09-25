@@ -237,12 +237,13 @@ export default function App() {
               ))}
             </p>
 
-            {/* One entry per visual channel, in the order the eye meets them. */}
+            {/* One entry per visual channel, in the order the eye meets them.
+                Membership is not one of them: the scale line directly above
+                names the maqam's notes, which explains the bright keys better
+                than a pair of 7px swatches ever did — and those rendered as two
+                near-identical outlined boxes, one sample of a two-sample
+                comparison. */}
             <p className="maqam-legend" aria-live="polite">
-              <span className="maqam-legend__item">
-                <span className="maqam-legend__swatch maqam-legend__swatch--scale" />
-                In this maqam
-              </span>
               <span className="maqam-legend__item">
                 <span className="maqam-legend__dot" aria-hidden="true" />
                 Tonic

@@ -501,6 +501,66 @@ test.describe('Maqam Playground', () => {
     }
   });
 
+  test('every surface that carries a distinction is far enough apart to see', async ({
+    page,
+  }) => {
+    /*
+     * `ux-visual-weight`, as a number.
+     *
+     * Three separate encodings in this app have landed below the threshold
+     * where a difference is visible at all: an out-of-maqam key against the
+     * board measured 1.01:1 (the keys dissolved into it and punched holes in
+     * the keyboard's silhouette), and before that four surfaces sat within
+     * 1.13:1 of each other, which is why the page read as flat. None of it is
+     * a WCAG failure — no text is involved — so nothing else catches it.
+     *
+     * 1.15:1 is the floor for "this difference means something".
+     */
+    await page.goto('/maqam/?maqam=nikriz_c');
+    await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
+
+    const steps = await page.evaluate(() => {
+      const channel = (c: number) => {
+        const v = c / 255;
+        return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+      };
+      const luminance = (value: string) => {
+        const [r, g, b] = (value.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number);
+        return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+      };
+      const ratio = (a: string, b: string) => {
+        const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+        return (hi + 0.05) / (lo + 0.05);
+      };
+      // Gradients: take the first colour stop, which is what the eye meets.
+      const fill = (el: Element) => {
+        const style = getComputedStyle(el);
+        const stops = style.backgroundImage.match(/rgba?\([^)]+\)/g);
+        return stops ? stops[0] : style.backgroundColor;
+      };
+      const pick = (selector: string) => document.querySelector(selector)!;
+      const dimKey = [...document.querySelectorAll('.maqam-keyboard .shared-pk-white')].find(
+        (el) => !el.classList.contains('maqam-key--in-scale'),
+      )!;
+
+      const page_ = fill(pick('.maqam'));
+      const board = fill(pick('.maqam-board'));
+      const dim = fill(dimKey);
+      const bright = fill(pick('.maqam-keyboard .shared-pk-white.maqam-key--in-scale'));
+
+      return {
+        'board against the page': ratio(board, page_),
+        'a key against the board': ratio(dim, board),
+        'in the maqam against outside it': ratio(bright, dim),
+      };
+    });
+
+    expect(Object.keys(steps)).toHaveLength(3);
+    for (const [what, value] of Object.entries(steps)) {
+      expect(value, `${what} is only ${value.toFixed(3)}:1`).toBeGreaterThanOrEqual(1.15);
+    }
+  });
+
   test('the page itself never scrolls', async ({ page }) => {
     await page.goto('/maqam/');
     await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
