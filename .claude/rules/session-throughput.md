@@ -30,13 +30,22 @@ For **multi-bug / upgrade / spot-check** sessions, optimize for wall-clock and t
 9. **Scoped tests first** — touched-file Vitest/e2e, then one `presubmit`. Do not babysit unrelated dirty-tree failures.
 10. **Check for parallel-agent ownership before starting** — in a shared / multi-worktree setup (a coordinator running parallel sessions, a `dev-integration` trunk, sibling `.claude/worktrees/*`), run `git worktree list`, `git branch -a`, and `git log dev-integration` **first**. If a branch is already checked out in another worktree or a fix already sits on the trunk, it is owned — do not duplicate it. Duplicating owned work (a bug fix, an audit, a PR conflict-resolve) is pure waste and can collide. Root cause class: `parallel-worktree-duplication`.
 11. **A broken dev environment is a bug to fix, not to route around.** If a route freezes / errors / won't render for you, do not offload the verification to the user as "manual testing" — the same breakage hits them. Fix the dev-env issue (or spike a lighter repro path), then verify yourself. Handing a user a checklist of manual-verify tasks to work around your broken dev loop is a process failure. Root cause class: `verification-offloaded`.
-12. **Own port 5173 before trusting a local e2e run.** Playwright reuses an existing dev server
-    (`reuseExistingServer: !CI`), so a server left running from ANOTHER worktree silently serves its
-    code instead of yours. One had been up since three weeks prior; several "verified" results in
-    that session were measuring a different checkout. Check `lsof -nP -iTCP:5173 -sTCP:LISTEN` and
-    the owning process's cwd, then kill it. **When a result looks too convenient, sabotage the
-    source and re-run** — a test that still passes with the string it asserts deliberately broken is
-    not testing your code. Root cause class: `stale-server-verification`.
+12. **Own your dev-server port before trusting a local e2e run.** Playwright reuses an existing
+    server (`reuseExistingServer: !CI`), so one left running from ANOTHER checkout silently serves
+    its code instead of yours. One had been up since three weeks prior; several "verified" results
+    in that session were measuring a different checkout.
+
+    The port is now **per checkout** — the main worktree keeps 5173, every linked worktree derives
+    its own from its path ([`scripts/labs-dev-port.mjs`](../../scripts/labs-dev-port.mjs); override
+    with `LABS_E2E_PORT`). So parallel sessions no longer collide by default. Two things still
+    need checking: `node scripts/labs-dev-port.mjs` prints the port this checkout owns, and
+    `lsof -nP -iTCP:<port> -sTCP:LISTEN` plus the owning process's cwd confirms it is yours before
+    you believe a green run.
+
+    **When a result looks too convenient, sabotage the source and re-run** — a test that still
+    passes with the string it asserts deliberately broken is not testing your code. Root cause
+    class: `stale-server-verification`.
+
 13. **Fix duplicated invariants by searching the CONCEPT, not the expression.** The same off-by-one
     lived in five places; grepping `repeatCount + 1` found four, and the fifth said
     `* repeatCount` where it meant `* (repeatCount - 1)`. The user reported the same bug twice

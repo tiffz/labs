@@ -38,10 +38,16 @@ if [ "$LABS_SKIP_PRESUBMIT_PUSH" = "1" ]; then
   exit 0
 fi
 
-# Playwright reuses a healthy server on 5173, but a half-dead or wrong-checkout
-# Vite makes every spec fail with net::ERR_ABORTED (class: e2e-port-collision).
-if command -v lsof >/dev/null 2>&1 && lsof -ti :5173 >/dev/null 2>&1; then
-  echo "pre-push: port 5173 is in use; e2e will reuse it. If specs fail with ERR_ABORTED: kill \$(lsof -ti :5173)" >&2
+# Playwright reuses a healthy server on this checkout's port, but a half-dead
+# one makes every spec fail with net::ERR_ABORTED (class: e2e-port-collision).
+#
+# The port is per-checkout: the main worktree owns 5173, every linked worktree
+# derives its own (playwright.config.ts § resolveDevServerPort), so two agent
+# sessions no longer silently test each other's branch. Ask the config rather
+# than hardcoding 5173 here, or this warning drifts from what Playwright uses.
+LABS_E2E_PORT_IN_USE="$(node scripts/labs-dev-port.mjs 2>/dev/null || echo 5173)"
+if command -v lsof >/dev/null 2>&1 && lsof -ti :"$LABS_E2E_PORT_IN_USE" >/dev/null 2>&1; then
+  echo "pre-push: port $LABS_E2E_PORT_IN_USE is in use; e2e will reuse it. If specs fail with ERR_ABORTED: kill \$(lsof -ti :$LABS_E2E_PORT_IN_USE)" >&2
 fi
 
 # Default: presubmit (lint, typecheck, build, Vitest, and SCOPED e2e for changed

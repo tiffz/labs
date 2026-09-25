@@ -27,7 +27,8 @@ export type AppThemeId =
   | 'lyrefly'
   | 'palettegen'
   | 'scrapboard'
-  | 'muscle';
+  | 'muscle'
+  | 'maqam';
 
 interface AppThemeConfig {
   mode: 'light' | 'dark';
@@ -402,6 +403,25 @@ const THEMES: Record<AppThemeId, Theme> = {
     radius: 4,
     spacingBase: 5,
     readable: true,
+  }),
+  // Warm sand and indigo: the palette of tilework and manuscript ink, chosen so
+  // the amber "retuned key" state reads as a highlight rather than a warning.
+  // M3 shape and type rhythm via `materialPolish`, matching Encore.
+  maqam: buildTheme({
+    mode: 'light',
+    primary: '#1d5b82',
+    secondary: '#8a5a12',
+    backgroundDefault: '#fdf8f3',
+    backgroundPaper: '#fffbf7',
+    textPrimary: '#201b16',
+    textSecondary: '#52463a',
+    // Hairlines are the exception, not the default: M3 separates with tonal
+    // surface steps, so this stays faint enough to disappear unless needed.
+    divider: 'rgba(32, 27, 22, 0.08)',
+    radius: 12,
+    spacingBase: 8,
+    readable: true,
+    materialPolish: true,
   }),
   midi: buildTheme({
     mode: 'light',

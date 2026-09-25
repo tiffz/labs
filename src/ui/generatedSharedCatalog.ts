@@ -14637,6 +14637,24 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-components-music-onscreenpianokeyboard-tsx-pianokeydecoration",
+    "name": "PianoKeyDecoration",
+    "path": "src/shared/components/music/OnscreenPianoKeyboard.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Per-key presentation an app layers on top of the plain keyboard: a role class (e.g. \"in this scale\", \"retuned\"), a small badge drawn on the keycap, and a spoken name replacing the bare note name.",
+    "tags": [
+      "components",
+      "music",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
     "id": "src-shared-components-music-playbackfieldselect-ts-forwardwheeltopagescroller",
     "name": "forwardWheelToPageScroller",
     "path": "src/shared/components/music/playbackFieldSelect.ts",

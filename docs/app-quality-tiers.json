@@ -69,6 +69,12 @@
       "usage": null,
       "why": "Scratchpad; early/low-use. Confirm with GA."
     },
+    "maqam": {
+      "tier": "experimental",
+      "criticality": "low",
+      "usage": null,
+      "why": "In development, not listed publicly. No durable user data — state lives in the URL, so a regression costs nothing but a reload."
+    },
     "agility": {
       "tier": "standard",
       "criticality": "medium",

@@ -86,3 +86,26 @@
   transform: translateX(-50%);
   white-space: nowrap;
 }
+
+/*
+ * Optional per-key badge (see `decorateKey` in OnscreenPianoKeyboard.tsx).
+ * Positioned at the top of the keycap so it never collides with the note
+ * label at the bottom. Apps supply the colours via their own role classes.
+ */
+.shared-pk-badge {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.68rem;
+  line-height: 1;
+  font-weight: 700;
+  user-select: none;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.shared-pk-black .shared-pk-badge {
+  font-size: 0.58rem;
+  color: rgba(255, 255, 255, 0.92);
+}

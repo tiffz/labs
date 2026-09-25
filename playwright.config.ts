@@ -1,11 +1,38 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from '@playwright/test';
+import { DEFAULT_DEV_PORT, resolveDevServerPort } from './scripts/labs-dev-port.mjs';
 
 const configDir = path.dirname(fileURLToPath(import.meta.url));
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Per-checkout dev-server port. The main worktree keeps 5173; every linked
+ * worktree derives its own, so two parallel sessions cannot silently adopt each
+ * other's Vite through `reuseExistingServer`. Rationale and the derivation live
+ * in `scripts/labs-dev-port.mjs` — one copy, because `.husky/pre-push` needs the
+ * same answer. Override with `LABS_E2E_PORT`.
+ */
+const DEV_SERVER_PORT = resolveDevServerPort(configDir);
+const DEV_SERVER_URL = `http://127.0.0.1:${DEV_SERVER_PORT}`;
+
+/**
+ * Say it out loud — a silently relocated server is the same class of problem as
+ * a silently shared one — but only when Playwright is actually running, and only
+ * on stderr.
+ *
+ * This file is imported by tools that parse another command's JSON off stdout
+ * (knip's export ratchet is one), and a stray `console.info` there is not a log
+ * line, it is a parse error in an unrelated check.
+ */
+const RUNNING_PLAYWRIGHT = process.argv.some((arg) => arg.includes('playwright'));
+if (DEV_SERVER_PORT !== DEFAULT_DEV_PORT && RUNNING_PLAYWRIGHT) {
+  process.stderr.write(
+    `[playwright] linked worktree — using ${DEV_SERVER_URL} (override with LABS_E2E_PORT)\n`,
+  );
 }
 
 /**
@@ -58,7 +85,7 @@ export default defineConfig({
   },
   use: {
     headless: true,
-    baseURL: 'http://127.0.0.1:5173',
+    baseURL: DEV_SERVER_URL,
     ignoreHTTPSErrors: true,
     video: 'off',
     // Capture a trace + screenshot on failure in CI. `on-first-retry` never
@@ -122,9 +149,9 @@ export default defineConfig({
   // dev server (pre-compiled assets, closer to CI/prod). Run `npm run build` first.
   webServer: {
     command: process.env.LABS_E2E_PREVIEW
-      ? 'vite preview --host 127.0.0.1 --strictPort --port=5173'
-      : 'vite --open=false --strictPort --port=5173',
-    url: 'http://127.0.0.1:5173',
+      ? `vite preview --host 127.0.0.1 --strictPort --port=${DEV_SERVER_PORT}`
+      : `vite --open=false --strictPort --port=${DEV_SERVER_PORT}`,
+    url: DEV_SERVER_URL,
     reuseExistingServer: !process.env.CI,
     stderr: 'pipe',
     stdout: 'pipe',

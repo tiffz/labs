@@ -124,6 +124,10 @@ const APP_SMOKE_SPECS = {
     { file: 'e2e/smoke/responsive-all-apps.spec.ts', grep: '/muscle/' },
   ],
   midi: [{ file: 'e2e/smoke/app-shells.spec.ts', grep: '/midi/' }],
+  maqam: [
+    'e2e/smoke/maqam-playground.spec.ts',
+    { file: 'e2e/smoke/app-shells.spec.ts', grep: '/maqam/' },
+  ],
   agility: [{ file: 'e2e/smoke/app-shells.spec.ts', grep: '/agility/' }],
   cats: [
     'src/cats/e2e/cats-init.spec.ts',

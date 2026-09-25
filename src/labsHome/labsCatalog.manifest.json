@@ -124,7 +124,7 @@
     {
       "path": "/lyrefly/",
       "title": "Lyrefly",
-      "shortDescription": "Comic project workbench — track ideas, script, thumbs, art, and publishing",
+      "shortDescription": "Comic project workbench \u2014 track ideas, script, thumbs, art, and publishing",
       "stage": "in-development",
       "category": "art",
       "iconClass": "lyrefly"
@@ -184,6 +184,14 @@
       "stage": "experimental",
       "category": "games",
       "iconClass": "corp"
+    },
+    {
+      "path": "/maqam/",
+      "title": "Maqam Playground",
+      "shortDescription": "Retune a keyboard to Arabic maqamat and play the quarter-tones",
+      "stage": "in-development",
+      "category": "music",
+      "iconClass": "maqam"
     }
   ]
 }
