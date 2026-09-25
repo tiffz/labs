@@ -329,37 +329,51 @@ test.describe('Maqam Playground', () => {
      * Derived, not enumerated.
      *
      * This test used to load ONE url — saba_d/thirds — and assert it fitted.
-     * It did. So did the guard, for months, while 29 of the 72 combinations
-     * clipped their stems, the default screen among them. The set it looked at
-     * was not the set it governed: `guardrails-must-be-falsifiable.md`, fourth
-     * shape. The maqamat and patterns now come from the app's own menus, so a
-     * new one is enrolled by existing rather than by someone remembering.
+     * It did. So did the guard, while 29 of the 72 combinations clipped their
+     * stems, the default screen among them. The set it looked at was not the
+     * set it governed: `guardrails-must-be-falsifiable.md`, fourth shape. The
+     * maqamat and patterns come from the app's own menus now, so a new one is
+     * enrolled by existing rather than by someone remembering.
+     *
+     * Driven through the selects rather than 72 navigations. The first version
+     * did `page.goto` per combination and timed out on CI at 32s — 72 cold
+     * loads, each re-running the music-font gate. Changing the selects is one
+     * load, and it is what a user actually does.
      *
      * `<text>` is excluded deliberately. SMuFL fonts declare an em box far
      * larger than any glyph's ink — every notehead reports the same 161-unit
      * height — so including them measures the font, not the drawing. What
-     * actually reaches the edges is geometry: stems, beams, staff lines and
-     * ledger lines, all paths and rects.
+     * reaches the edges is geometry: stems, beams, staff lines, ledger lines.
      */
     await page.goto('/maqam/');
     await expect(page.locator('.maqam-staff svg')).toBeVisible({ timeout: 15_000 });
 
-    const options = await page.evaluate(() => {
-      const values = (selector: string) =>
-        [...document.querySelectorAll<HTMLOptionElement>(`${selector} option`)].map((o) => o.value);
-      return {
-        maqamat: values('.maqam-topbar__picker select'),
-        melodies: values('.maqam-melodybar__pick select'),
-      };
-    });
-    expect(options.maqamat.length).toBeGreaterThan(5);
-    expect(options.melodies.length).toBeGreaterThan(5);
+    const maqamPicker = page.locator('.maqam-topbar__picker select');
+    const melodyPicker = page.locator('.maqam-melodybar__pick select');
+    const maqamat = await maqamPicker.locator('option').evaluateAll((els) =>
+      els.map((el) => (el as HTMLOptionElement).value),
+    );
+    const melodies = await melodyPicker.locator('option').evaluateAll((els) =>
+      els.map((el) => (el as HTMLOptionElement).value),
+    );
+    expect(maqamat.length).toBeGreaterThan(5);
+    expect(melodies.length).toBeGreaterThan(5);
 
     const clipped: string[] = [];
-    for (const maqam of options.maqamat) {
-      for (const melody of options.melodies) {
-        await page.goto(`/maqam/?maqam=${maqam}&melody=${melody}`);
-        await expect(page.locator('.maqam-staff svg')).toBeVisible({ timeout: 15_000 });
+    for (const maqam of maqamat) {
+      await maqamPicker.selectOption(maqam);
+      for (const melody of melodies) {
+        await melodyPicker.selectOption(melody);
+        // The redraw is async (it awaits the font gate), but the font resolved
+        // on the first draw, so this settles within a frame.
+        await expect
+          .poll(async () =>
+            page.locator('.maqam-staff svg').evaluate((node) => {
+              const view = (node as SVGSVGElement).viewBox.baseVal;
+              return view.height > 0 && node.querySelectorAll('path, rect').length > 5;
+            }),
+          )
+          .toBe(true);
 
         const fit = await page.locator('.maqam-staff svg').evaluate((node) => {
           const svg = node as SVGSVGElement;
@@ -380,7 +394,9 @@ test.describe('Maqam Playground', () => {
         // An empty viewBox would satisfy every margin assertion.
         expect(fit.measured, `${maqam}/${melody} drew nothing`).toBeGreaterThan(5);
         if (fit.above < 0 || fit.below < 0) {
-          clipped.push(`${maqam}/${melody} above=${fit.above.toFixed(1)} below=${fit.below.toFixed(1)}`);
+          clipped.push(
+            `${maqam}/${melody} above=${fit.above.toFixed(1)} below=${fit.below.toFixed(1)}`,
+          );
         }
       }
     }
