@@ -74,12 +74,22 @@ The ajnas panel sits beside the staff rather than under it because the ajnas **a
 
 Three different kinds of fact used to compete for one visual channel (fill colour), so "in the maqam" meant different things on different keys.
 
-| Fact          | Channel                                                |
-| ------------- | ------------------------------------------------------ |
-| In this maqam | **Fill** — one colour, binary                          |
-| Tonic         | **Dot** — shape, so it survives a colour-blind reading |
-| Retuned ½♭    | **Amber cap + badge** — an annotation on the key       |
-| Sounding now  | **Saturated fill** — only during playback              |
+| Fact              | Channel                                                                     |
+| ----------------- | --------------------------------------------------------------------------- |
+| In this maqam     | **Presence** — a full-strength key; one outside it recedes toward the board |
+| Tonic             | **Dot** — shape, so it survives a colour-blind reading                      |
+| Retuned ½♭        | **Amber** — an underline at the foot of the key, plus a chip by its name    |
+| Sounding now      | **Blue fill** — only during playback, and only the octave being played      |
+| Its other octaves | **Soft blue** — true, and a tier quieter than the note you can hear         |
+
+Membership is deliberately **not** a hue. Two hues carry meaning here and that is the whole
+palette: blue is "sounding, or home", amber is "bent off equal temperament". A third colour for
+membership put a cool green across two thirds of a warm keyboard and left the two that mean
+something competing with it.
+
+Each step of that presence ladder has to be visible: an out-of-maqam key once measured **1.01:1**
+against the board and dissolved into it. `e2e/smoke/maqam-playground.spec.ts` now fails below
+1.15:1 and names the pair.
 
 Sikah's E½♭ is simultaneously filled, dotted and capped. That combination was impossible to express before, and `maqamTuning.test.ts` pins it.
 
