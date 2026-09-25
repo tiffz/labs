@@ -60,13 +60,13 @@ of things it looks at is not the set of things it governs**. This is harder to s
 assertion, because the test genuinely fails when you break what it covers — it just never covers the
 thing that breaks. Three in one week:
 
-| Guard                          | Governed                 | Actually looked at                                     |
-| ------------------------------ | ------------------------ | ------------------------------------------------------ |
-| `check:ui-copy`                | all user-facing copy     | `.tsx` only — the rhythm copy lives in `.ts`           |
-| `backgroundPlaybackGuardrails` | every rAF audio driver   | a hardcoded list of 2 files, neither the shared one    |
-| `verify:quick`                 | "is this safe to commit" | `typecheck` (app), not `typecheck:full` (tests, e2e)   |
-| `check:ui-copy` (again)        | the em dash ban          | `U+2014` only — `&mdash;` renders one and sailed past  |
-| maqam staff-clip e2e           | every maqam × pattern    | one hardcoded URL, the one that happened to pass       |
+| Guard                          | Governed                 | Actually looked at                                         |
+| ------------------------------ | ------------------------ | ---------------------------------------------------------- |
+| `check:ui-copy`                | all user-facing copy     | `.tsx` only — the rhythm copy lives in `.ts`               |
+| `backgroundPlaybackGuardrails` | every rAF audio driver   | a hardcoded list of 2 files, neither the shared one        |
+| `verify:quick`                 | "is this safe to commit" | `typecheck` (app), not `typecheck:full` (tests, e2e)       |
+| `check:ui-copy` (again)        | the em dash ban          | `U+2014` only — `&mdash;` renders one and sailed past      |
+| maqam staff-clip e2e           | every maqam × pattern    | one hardcoded URL, the one that happened to pass           |
 | maqam ajnas cross-check        | how the two cells relate | each cell against the scale, never the cells to each other |
 
 Each was green while the bug it existed to prevent shipped, and each read as reassurance. The
@@ -82,7 +82,7 @@ An assertion can be falsifiable, well-scoped, and still wrong because it checks 
 the property, and the broken case satisfies the stand-in.
 
 Maqam's arpeggio claimed "tonic, third, fifth, octave" on a maqam that has no octave. The guard
-asserted the top note's `octaveOffset === 1` — but Saba's *seventh* is also written in the next
+asserted the top note's `octaveOffset === 1` — but Saba's _seventh_ is also written in the next
 octave, so it passed while the claim stayed false. The real property is "the top note is the tonic
 an octave up", and asserting that failed immediately, on exactly the one preset.
 
