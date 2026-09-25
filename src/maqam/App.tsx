@@ -16,7 +16,7 @@ import {
   MELODY_PATTERNS,
   findMelodyDefinition,
 } from './melody/maqamMelody';
-import { bentPitchClasses, formatCents } from './state/maqamTuning';
+import { bentPitchClasses, formatCents, liveScaleLabels } from './state/maqamTuning';
 import { useMaqamState } from './state/useMaqamState';
 
 /**
@@ -180,7 +180,6 @@ export default function App() {
             </div>
 
             {melodyDescription && <p className="maqam-description">{melodyDescription}</p>}
-            {preset && <p className="maqam-description">{preset.description}</p>}
           </section>
 
           {preset && (
@@ -216,6 +215,17 @@ export default function App() {
           )}
 
           <div className="maqam-board__bar">
+            {/* The maqam, read back in order. It sits with the board because it
+                names the keys that are lit, and it follows the live tuning, so
+                bending a key rewrites it. */}
+            <p className="maqam-scaleline">
+              {liveScaleLabels(preset, keyTunings).map((label, index) => (
+                <span key={`${label}-${index}`} className="maqam-scaleline__note">
+                  {label}
+                </span>
+              ))}
+            </p>
+
             {/* One entry per visual channel, in the order the eye meets them. */}
             <p className="maqam-legend" aria-live="polite">
               <span className="maqam-legend__item">

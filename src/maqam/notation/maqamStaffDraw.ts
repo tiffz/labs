@@ -1,4 +1,4 @@
-import { Accidental, Beam, Formatter, Renderer, Stave, StaveNote, Voice } from 'vexflow';
+import { Accidental, Beam, BoundingBox, Formatter, Renderer, Stave, StaveNote, Voice } from 'vexflow';
 
 import { ensureVexFlowFontsLoaded } from '../../shared/vexflow/vexFlowFontExport';
 import {
@@ -96,7 +96,7 @@ function drawStaffNow(
 
   if (notes.length === 0) {
     applyStaffAccessibility(container, notes);
-    return fitToDrawnExtent(container, options.width);
+    return fitToDrawnExtent(container, verticalExtentOf(stave, []));
   }
 
   const lit = options.highlighted ?? EMPTY_HIGHLIGHT;
@@ -137,12 +137,13 @@ function drawStaffNow(
   // Beams after the voice draws, or the stems they attach to do not exist yet.
   // Without these, a run of eighth notes renders as a row of flagged singletons
   // and reads as unrelated notes rather than as a phrase.
-  for (const beam of Beam.generateBeams(staveNotes)) {
+  const beams = Beam.generateBeams(staveNotes);
+  for (const beam of beams) {
     beam.setContext(context).draw();
   }
 
   applyStaffAccessibility(container, notes);
-  return fitToDrawnExtent(container, options.width);
+  return fitToDrawnExtent(container, verticalExtentOf(stave, [...staveNotes, ...beams]));
 }
 
 /**
@@ -153,30 +154,71 @@ function drawStaffNow(
  * three-quarter-flat hanging under the stave all draw outside it, and the SVG
  * viewport clipped them flat — the app silently showed the wrong notation.
  *
- * Shifting the viewBox rather than redrawing keeps the stave's own coordinates
- * intact, so one measure-and-fit pass suffices and nothing scales twice. The
- * viewBox width is left equal to the attribute width, so the uniform scale
- * factor stays 1 and staff-line weight is untouched.
+ * The extent comes from VexFlow's own layout objects, NOT from `svg.getBBox()`.
+ * SMuFL fonts declare an enormous em box — Bravura's spans far more than the
+ * glyph's ink — so every notehead `<text>` reports the same 161-unit height
+ * whatever note it draws. Measuring that way made the box half again taller
+ * than the music and filled the difference with white.
+ *
+ * The viewBox is VexFlow's: `SVGContext.scale` implements the zoom by shrinking
+ * the viewBox against fixed width and height attributes, so its numbers are
+ * pre-scale user units and the ratio between the two is the live scale factor.
+ * Only `y` and `height` are touched. Rewriting `width` silently undoes the
+ * scale and redraws the whole staff smaller, which is what the first version of
+ * this function did: it satisfied "nothing is clipped" by shrinking the
+ * notation until it fitted.
  */
-function fitToDrawnExtent(container: HTMLElement, width: number): number | undefined {
-  const svg = container.querySelector('svg');
-  if (!svg) return undefined;
+interface VerticalExtent {
+  top: number;
+  bottom: number;
+}
 
-  let box: DOMRect | undefined;
-  try {
-    box = svg.getBBox();
-  } catch {
-    // jsdom has no layout, so there is nothing to measure. Return an explicit
-    // absence rather than a plausible-looking number: the caller keeps its own
-    // height, and e2e covers the real geometry.
+/**
+ * Vertical span of the music: the five staff lines, plus whatever the notes and
+ * beams put above or below them.
+ *
+ * The stave is measured by its LINES rather than by its bounding box, because
+ * that box reserves four line-spaces of empty margin above and below — room for
+ * ledger lines that may not exist. Including it left the staff sitting in a
+ * pool of white that scaled up with the notation.
+ */
+function verticalExtentOf(
+  stave: Stave,
+  elements: { getBoundingBox(): BoundingBox | undefined }[],
+): VerticalExtent | undefined {
+  let top = stave.getYForLine(0);
+  let bottom = stave.getYForLine(4);
+  if (!Number.isFinite(top) || !Number.isFinite(bottom)) return undefined;
+
+  for (const element of elements) {
+    const box = element.getBoundingBox();
+    if (!box) continue;
+    top = Math.min(top, box.getY());
+    bottom = Math.max(bottom, box.getY() + box.getH());
+  }
+  if (bottom <= top) return undefined;
+  return { top, bottom };
+}
+
+function fitToDrawnExtent(container: HTMLElement, extent: VerticalExtent | undefined): number | undefined {
+  const svg = container.querySelector('svg');
+  if (!svg || !extent) return undefined;
+
+  const view = svg.viewBox.baseVal;
+  const widthAttr = Number(svg.getAttribute('width'));
+  if (!view || view.width <= 0 || !Number.isFinite(widthAttr) || widthAttr <= 0) {
     return undefined;
   }
-  if (!box || box.height <= 0 || !Number.isFinite(box.height)) return undefined;
 
-  const top = Math.floor(box.y - EDGE_PAD);
-  const height = Math.ceil(box.height + EDGE_PAD * 2);
-  svg.setAttribute('viewBox', `0 ${top} ${width} ${height}`);
+  // User units in, device pixels out.
+  const scale = widthAttr / view.width;
+  const top = Math.floor(extent.top - EDGE_PAD);
+  const innerHeight = Math.ceil(extent.bottom - extent.top + EDGE_PAD * 2);
+  const height = Math.round(innerHeight * scale);
+
+  svg.setAttribute('viewBox', `${view.x} ${top} ${view.width} ${innerHeight}`);
   svg.setAttribute('height', String(height));
+  svg.style.height = `${height}px`;
   return height;
 }
 

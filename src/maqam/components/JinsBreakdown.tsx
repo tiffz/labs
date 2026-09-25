@@ -1,5 +1,7 @@
+import { useEffect, useRef, useState } from 'react';
+
 import { spellingLabel } from '../notation/maqamAccidentals';
-import { scaleDegreeLabels, type MaqamPreset } from '../data/maqamPresets';
+import { type MaqamPreset } from '../data/maqamPresets';
 
 interface JinsBreakdownProps {
   preset: MaqamPreset;
@@ -11,18 +13,46 @@ interface JinsBreakdownProps {
  * Shown beside the staff rather than under it, because the ajnas ARE the
  * structure of the maqam — demoting them to a footnote is what made the first
  * version read as "a scale with odd accidentals".
+ *
+ * The maqam's own description lives here too. It used to sit under the melody
+ * controls as a second loose paragraph of grey text, so the left column ended
+ * in two unrelated explanations stacked on nothing, and the reader had to work
+ * out which one described the pattern and which the maqam. Every sentence about
+ * what this maqam IS is now in one region, beside its name.
+ *
+ * The scale line moved the other way, down to the keyboard: it names the keys
+ * that are lit, so reading it beside the board is one glance instead of two.
  */
 export default function JinsBreakdown({ preset }: JinsBreakdownProps) {
-  const degrees = scaleDegreeLabels(preset.scaleDegrees);
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const [overflowing, setOverflowing] = useState(false);
+
+  /**
+   * On a short window this panel is the part that scrolls, so it has to say so.
+   * Clipped flat at the boundary it read as a rendering fault — the user's own
+   * screenshot of it cut the Arabic name in half. CSS cannot ask whether an
+   * element overflows, so it measures itself and the fade follows.
+   */
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!panel || typeof ResizeObserver === 'undefined') return;
+    const measure = () => setOverflowing(panel.scrollHeight - panel.clientHeight > 1);
+    const observer = new ResizeObserver(measure);
+    observer.observe(panel);
+    measure();
+    return () => observer.disconnect();
+  }, [preset]);
 
   return (
-    <div className="maqam-jins">
+    <div className="maqam-jins" ref={panelRef} data-overflowing={overflowing}>
       <div className="maqam-jins__title">
         <span className="maqam-jins__arabic" lang="ar" dir="rtl">
           {preset.arabicName}
         </span>
         <span className="maqam-jins__translit">{preset.transliteration}</span>
       </div>
+
+      <p className="maqam-jins__lede">{preset.description}</p>
 
       <h2 className="maqam-eyebrow">Built from</h2>
 
@@ -51,7 +81,6 @@ export default function JinsBreakdown({ preset }: JinsBreakdownProps) {
         </p>
       )}
 
-      <p className="maqam-jins__scale">{degrees.join('  ')}</p>
       {!preset.repeatsAtOctave && (
         <p className="maqam-jins__note">
           Stops at the seventh. This maqam does not return to its tonic an octave up.

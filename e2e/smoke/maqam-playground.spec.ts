@@ -324,21 +324,63 @@ test.describe('Maqam Playground', () => {
     await page.goto('/maqam/?maqam=saba_d&melody=thirds');
     await expect(page.locator('.maqam-staff svg')).toBeVisible({ timeout: 15_000 });
 
-    // Saba in thirds reaches high enough for ledger lines and beams above the
-    // stave. The box used to be a constant, so they were clipped flat and the
-    // app showed notation that was quietly wrong.
-    const fits = await page.locator('.maqam-staff svg').evaluate((svg) => {
-      const box = (svg as SVGSVGElement).getBBox();
-      const view = (svg as SVGSVGElement).viewBox.baseVal;
-      return {
-        top: box.y - view.y,
-        bottom: view.y + view.height - (box.y + box.height),
-        hasViewBox: view.height > 0,
-      };
+    // Saba in thirds beams above the stave and hangs a three-quarter-flat below
+    // it. The box used to be a constant, so those were clipped flat and the app
+    // quietly showed notation that was wrong.
+    //
+    // `<text>` is excluded deliberately. SMuFL fonts declare an em box far
+    // larger than any glyph's ink — every notehead reports the same 161-unit
+    // height — so including them measures the font, not the drawing, and the
+    // assertion can never pass however much room the staff is given. What
+    // actually reaches the edges is geometry: stems, beams, staff lines and
+    // ledger lines, all of which are paths and rects.
+    const fit = await page.locator('.maqam-staff svg').evaluate((node) => {
+      const svg = node as SVGSVGElement;
+      const view = svg.viewBox.baseVal;
+      let above = Infinity;
+      let below = Infinity;
+      let measured = 0;
+      svg.querySelectorAll('path, rect, line, polygon').forEach((el) => {
+        const box = (el as SVGGraphicsElement).getBBox();
+        if (box.height <= 0 && box.width <= 0) return;
+        measured += 1;
+        above = Math.min(above, box.y - view.y);
+        below = Math.min(below, view.y + view.height - (box.y + box.height));
+      });
+      return { above, below, measured, height: view.height };
     });
-    expect(fits.hasViewBox).toBe(true);
-    expect(fits.top).toBeGreaterThanOrEqual(0);
-    expect(fits.bottom).toBeGreaterThanOrEqual(0);
+
+    // A viewBox with nothing in it would pass every margin assertion below.
+    expect(fit.measured).toBeGreaterThan(5);
+    expect(fit.height).toBeGreaterThan(0);
+    expect(fit.above).toBeGreaterThanOrEqual(0);
+    expect(fit.below).toBeGreaterThanOrEqual(0);
+  });
+
+  test('the staff box is the size of the music, not a constant', async ({ page }) => {
+    // The complaint this fixes: a line of notation floating in the top corner
+    // of a tall white card, because the height was a constant times the scale.
+    //
+    // Asserted as "the box changes with the music", which is precisely what a
+    // constant cannot do. A fill ratio would be the more direct statement, but
+    // it is not measurable here: what sets the vertical extent is the
+    // noteheads, and their SVG `<text>` reports the font's em box rather than
+    // any ink, so the ratio comes out wrong by a different amount per pattern.
+    const heightFor = async (query: string) => {
+      await page.goto(`/maqam/?${query}`);
+      await expect(page.locator('.maqam-staff svg')).toBeVisible({ timeout: 15_000 });
+      const canvas = page.getByTestId('maqam-staff-canvas');
+      await expect(canvas).toBeVisible();
+      return canvas.evaluate((el) => Math.round(el.getBoundingClientRect().height));
+    };
+
+    // Rast's plain ascending scale sits almost entirely inside the stave.
+    // Saba in thirds beams above it and hangs a three-quarter-flat below.
+    const plain = await heightFor('maqam=rast_c&melody=scale-up');
+    const tall = await heightFor('maqam=saba_d&melody=thirds');
+
+    expect(plain).toBeGreaterThan(0);
+    expect(tall).toBeGreaterThan(plain + 20);
   });
 
   test('portalled surfaces resolve the app tokens', async ({ page }) => {

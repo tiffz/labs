@@ -161,6 +161,26 @@ function badgeForCents(cents: number, accidental?: MaqamAccidentalCode): string 
   return formatCents(cents);
 }
 
+/**
+ * The maqam's scale, read back in degree order, spelled as it is tuned RIGHT
+ * NOW rather than as the preset wrote it.
+ *
+ * `scaleDegreeLabels` reads the preset, which is correct until someone bends a
+ * key: the board would then show an amber E natural while the line above it
+ * still said E half-flat. Same invariant as the staff and the keyboard — one
+ * matrix, one answer.
+ */
+export function liveScaleLabels(
+  preset: MaqamPreset | undefined,
+  tunings: KeyTuning[],
+): string[] {
+  if (!preset) return [];
+  return preset.scaleDegrees.map((degree) => {
+    const tuning = tunings[pitchClassOf(degree)];
+    return tuning?.label ?? spellingLabel(degree);
+  });
+}
+
 export function formatCents(cents: number): string {
   if (cents === 0) return '0c';
   return `${cents > 0 ? '+' : '−'}${Math.abs(cents)}c`;
