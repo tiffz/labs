@@ -320,41 +320,86 @@ test.describe('Maqam Playground', () => {
     await expect(page.locator('.maqam-staff svg')).toHaveAttribute('aria-hidden', 'true');
   });
 
-  test('the staff draws nothing outside its own viewport', async ({ page }) => {
-    await page.goto('/maqam/?maqam=saba_d&melody=thirds');
+  test('the staff draws nothing outside its own viewport, in any maqam', async ({ page }) => {
+    /*
+     * Derived, not enumerated.
+     *
+     * This test used to load ONE url — saba_d/thirds — and assert it fitted.
+     * It did. So did the guard, for months, while 29 of the 72 combinations
+     * clipped their stems, the default screen among them. The set it looked at
+     * was not the set it governed: `guardrails-must-be-falsifiable.md`, fourth
+     * shape. The maqamat and patterns now come from the app's own menus, so a
+     * new one is enrolled by existing rather than by someone remembering.
+     *
+     * `<text>` is excluded deliberately. SMuFL fonts declare an em box far
+     * larger than any glyph's ink — every notehead reports the same 161-unit
+     * height — so including them measures the font, not the drawing. What
+     * actually reaches the edges is geometry: stems, beams, staff lines and
+     * ledger lines, all paths and rects.
+     */
+    await page.goto('/maqam/');
     await expect(page.locator('.maqam-staff svg')).toBeVisible({ timeout: 15_000 });
 
-    // Saba in thirds beams above the stave and hangs a three-quarter-flat below
-    // it. The box used to be a constant, so those were clipped flat and the app
-    // quietly showed notation that was wrong.
-    //
-    // `<text>` is excluded deliberately. SMuFL fonts declare an em box far
-    // larger than any glyph's ink — every notehead reports the same 161-unit
-    // height — so including them measures the font, not the drawing, and the
-    // assertion can never pass however much room the staff is given. What
-    // actually reaches the edges is geometry: stems, beams, staff lines and
-    // ledger lines, all of which are paths and rects.
-    const fit = await page.locator('.maqam-staff svg').evaluate((node) => {
-      const svg = node as SVGSVGElement;
-      const view = svg.viewBox.baseVal;
-      let above = Infinity;
-      let below = Infinity;
-      let measured = 0;
-      svg.querySelectorAll('path, rect, line, polygon').forEach((el) => {
-        const box = (el as SVGGraphicsElement).getBBox();
-        if (box.height <= 0 && box.width <= 0) return;
-        measured += 1;
-        above = Math.min(above, box.y - view.y);
-        below = Math.min(below, view.y + view.height - (box.y + box.height));
-      });
-      return { above, below, measured, height: view.height };
+    const options = await page.evaluate(() => {
+      const values = (selector: string) =>
+        [...document.querySelectorAll<HTMLOptionElement>(`${selector} option`)].map((o) => o.value);
+      return {
+        maqamat: values('.maqam-topbar__picker select'),
+        melodies: values('.maqam-melodybar__pick select'),
+      };
+    });
+    expect(options.maqamat.length).toBeGreaterThan(5);
+    expect(options.melodies.length).toBeGreaterThan(5);
+
+    const clipped: string[] = [];
+    for (const maqam of options.maqamat) {
+      for (const melody of options.melodies) {
+        await page.goto(`/maqam/?maqam=${maqam}&melody=${melody}`);
+        await expect(page.locator('.maqam-staff svg')).toBeVisible({ timeout: 15_000 });
+
+        const fit = await page.locator('.maqam-staff svg').evaluate((node) => {
+          const svg = node as SVGSVGElement;
+          const view = svg.viewBox.baseVal;
+          let above = Infinity;
+          let below = Infinity;
+          let measured = 0;
+          svg.querySelectorAll('path, rect, line, polygon').forEach((el) => {
+            const box = (el as SVGGraphicsElement).getBBox();
+            if (box.height <= 0 && box.width <= 0) return;
+            measured += 1;
+            above = Math.min(above, box.y - view.y);
+            below = Math.min(below, view.y + view.height - (box.y + box.height));
+          });
+          return { above, below, measured };
+        });
+
+        // An empty viewBox would satisfy every margin assertion.
+        expect(fit.measured, `${maqam}/${melody} drew nothing`).toBeGreaterThan(5);
+        if (fit.above < 0 || fit.below < 0) {
+          clipped.push(`${maqam}/${melody} above=${fit.above.toFixed(1)} below=${fit.below.toFixed(1)}`);
+        }
+      }
+    }
+    expect(clipped, `clipped staves:\n${clipped.join('\n')}`).toEqual([]);
+  });
+
+  test('beamed notes lose their flags', async ({ page }) => {
+    // A beamed eighth has no flag of its own. Generating the beams after the
+    // voice had already drawn left every note painted with its flag AND a beam
+    // across the stems — invalid notation, on 5 of the 8 patterns.
+    await page.goto('/maqam/?maqam=rast_c&melody=thirds');
+    await expect(page.locator('.maqam-staff svg')).toBeVisible({ timeout: 15_000 });
+
+    const drawn = await page.locator('.maqam-staff svg').evaluate((svg) => {
+      const text = [...svg.querySelectorAll('text')].map((t) => t.textContent ?? '').join('');
+      // U+E240 flag8thUp, U+E241 flag8thDown.
+      const flags = [...text].filter((c) => c === '\uE240' || c === '\uE241').length;
+      return { flags, notes: svg.querySelectorAll('.vf-stavenote').length };
     });
 
-    // A viewBox with nothing in it would pass every margin assertion below.
-    expect(fit.measured).toBeGreaterThan(5);
-    expect(fit.height).toBeGreaterThan(0);
-    expect(fit.above).toBeGreaterThanOrEqual(0);
-    expect(fit.below).toBeGreaterThanOrEqual(0);
+    // "In thirds" is entirely paired eighth notes, so every one is beamed.
+    expect(drawn.notes).toBeGreaterThan(5);
+    expect(drawn.flags).toBe(0);
   });
 
   test('the staff box is the size of the music, not a constant', async ({ page }) => {

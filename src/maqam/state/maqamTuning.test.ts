@@ -121,7 +121,10 @@ describe('buildKeyTunings', () => {
     const tunings = buildKeyTunings(rast, toggleDetuneSlot(rastMatrix, 6)); // F#
     expect(tunings[6].role).toBe('outside');
     expect(tunings[6].isRetuned).toBe(true);
-    expect(tunings[6].label).toBe('F♯ 50 cents flat');
+    // Shown on a keycap, so compact. The spoken form lives in ariaLabel.
+    expect(tunings[6].label).toBe('F♯ \u221250');
+    expect(tunings[6].badge).toBe('\u221250');
+    expect(tunings[6].ariaLabel).toBe('F♯, outside the maqam, tuned 50 cents flat');
   });
 
   it('handles no preset at all', () => {
@@ -233,10 +236,33 @@ describe('bentPitchClasses', () => {
 });
 
 describe('formatCents', () => {
-  it('uses a real minus sign, not a hyphen', () => {
-    // Spoken as well as shown: "minus fifty c" was neither a unit nor English.
+  /**
+   * Spoken, so it spells the unit out. It used to render "−50c", which a
+   * screen reader says as "minus fifty c" — neither a unit nor English.
+   */
+  it('spells the unit and the direction', () => {
     expect(formatCents(-50)).toBe('50 cents flat');
     expect(formatCents(50)).toBe('50 cents sharp');
-    expect(formatCents(0)).toBe('in equal temperament');
+  });
+
+  /**
+   * Always a quantity, never a clause. Callers drop this inside a sentence, so
+   * a zero that returned "in equal temperament" would read as "tuned in equal
+   * temperament" — the `failure-as-valid-value` shape, in prose.
+   */
+  it('stays a quantity at zero', () => {
+    expect(formatCents(0)).toBe('0 cents');
+  });
+
+  /**
+   * The keycap has about 24px. The badge and the spoken form were briefly one
+   * function, which put the sentence "50 cents flat" on a piano key, where it
+   * overran the key and spilled onto its neighbour.
+   */
+  it('keeps the keycap badge short enough to fit a key', () => {
+    const rastMatrixWithBentCSharp = toggleDetuneSlot(rastMatrix, 1);
+    const badge = buildKeyTunings(rast, rastMatrixWithBentCSharp)[1].badge;
+    expect(badge).toBeDefined();
+    expect(badge!.length).toBeLessThanOrEqual(4);
   });
 });

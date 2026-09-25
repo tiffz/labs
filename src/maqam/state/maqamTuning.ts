@@ -112,9 +112,12 @@ export function buildKeyTunings(
     const badge = bent ? badgeForCents(cents, liveSpelling?.accidental) : undefined;
     // Screen readers get the accidental spelled out — "E half-flat", not the
     // "E½♭" that a speech engine reads as "E one slash two flat" or skips.
+    // The name only. `describeKey` appends the bend, so folding it in here too
+    // made a hand-bent key announce it twice: "C sharp 50 cents flat, outside
+    // the maqam, tuned 50 cents flat".
     const spokenName = liveSpelling
       ? spellingAriaLabel(liveSpelling)
-      : bentLabel(pitchClass, cents);
+      : bentSpokenName(pitchClass, cents);
 
     return {
       pitchClass,
@@ -150,15 +153,32 @@ const PITCH_CLASS_LETTERS = [
  */
 function bentLabel(pitchClass: number, cents: number): string | undefined {
   if (cents === 0) return undefined;
-  return `${PITCH_CLASS_LETTERS[pitchClass]} ${formatCents(cents)}`;
+  return `${PITCH_CLASS_LETTERS[pitchClass]} ${centsBadge(cents)}`;
+}
+
+/**
+ * Shown, not spoken. A keycap is about 24px wide.
+ *
+ * These are two different jobs and they were briefly the same function:
+ * spelling the cents out for a screen reader put the sentence "50 cents flat"
+ * on the keycap, where it overran the key and spilled onto its neighbour.
+ */
+function centsBadge(cents: number): string {
+  return `${cents > 0 ? '+' : '\u2212'}${Math.abs(cents)}`;
 }
 
 function badgeForCents(cents: number, accidental?: MaqamAccidentalCode): string {
-  // Prefer the maqam's own symbol so a half-flat reads ½♭ rather than -50c.
+  // Prefer the maqam's own symbol so a half-flat reads ½♭ rather than -50.
   if (accidental && MAQAM_ACCIDENTALS[accidental].isMicrotonal) {
     return MAQAM_ACCIDENTALS[accidental].symbol;
   }
-  return formatCents(cents);
+  return centsBadge(cents);
+}
+
+/** Spoken name for a key the maqam does not name — the hand-bent case. */
+function bentSpokenName(pitchClass: number, cents: number): string | undefined {
+  if (cents === 0) return undefined;
+  return PITCH_CLASS_LETTERS[pitchClass];
 }
 
 /**
@@ -191,7 +211,10 @@ export function liveScaleLabels(
  * like three different units to a reader still learning what a cent is.
  */
 export function formatCents(cents: number): string {
-  if (cents === 0) return 'in equal temperament';
+  // A quantity, always — never a phrase like "in equal temperament". Callers
+  // put this inside a sentence, and a fragment that reads as a whole clause is
+  // the shape that produces "tuned in equal temperament".
+  if (cents === 0) return '0 cents';
   return `${Math.abs(cents)} cents ${cents > 0 ? 'sharp' : 'flat'}`;
 }
 

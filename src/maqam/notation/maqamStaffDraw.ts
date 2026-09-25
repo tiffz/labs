@@ -132,12 +132,19 @@ function drawStaffNow(
   voice.addTickables(staveNotes);
 
   new Formatter().joinVoices([voice]).format([voice], Math.max(innerWidth - 80, 40));
-  voice.draw(context, stave);
 
-  // Beams after the voice draws, or the stems they attach to do not exist yet.
-  // Without these, a run of eighth notes renders as a row of flagged singletons
-  // and reads as unrelated notes rather than as a phrase.
+  /*
+   * Generate the beams BEFORE the voice draws, and draw them after.
+   *
+   * `Beam.generateBeams` is what clears each note's flag — a beamed eighth note
+   * has no flag of its own. Generating after `voice.draw()` left every note
+   * already painted with its flag, so the staff showed twelve flagged eighths
+   * AND a beam floating across their stems: notation a music student would be
+   * marked wrong for writing, on five of the eight patterns in all 9 families.
+   * The order is the one in .agents/rules/playback-ui-regressions.md.
+   */
   const beams = Beam.generateBeams(staveNotes);
+  voice.draw(context, stave);
   for (const beam of beams) {
     beam.setContext(context).draw();
   }
@@ -196,6 +203,7 @@ function verticalExtentOf(
     top = Math.min(top, box.getY());
     bottom = Math.max(bottom, box.getY() + box.getH());
   }
+
   if (bottom <= top) return undefined;
   return { top, bottom };
 }
