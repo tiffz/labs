@@ -874,6 +874,24 @@
   letter-spacing: 0.03em;
 }
 
+.maqam-jins__credit {
+  margin: var(--maqam-s4) 0 0;
+  padding-top: var(--maqam-s3);
+  border-top: 1px solid var(--m3-outline-variant);
+  font-size: var(--maqam-text-sm);
+  line-height: 1.5;
+  color: var(--m3-on-surface-variant);
+}
+
+.maqam-jins__credit a {
+  color: inherit;
+  text-underline-offset: 2px;
+}
+
+.maqam-jins__credit a:hover {
+  color: var(--maqam-tonic);
+}
+
 /* -------------------------------------------------------- retuning note -- */
 
 /* Quiet by design: this explains the app's strangest idea, and still must not

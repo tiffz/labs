@@ -121,6 +121,19 @@ export default function JinsBreakdown({ preset, isPresetTuning }: JinsBreakdownP
           Stops at the seventh. This maqam does not return to its tonic an octave up.
         </p>
       )}
+
+      {/*
+        Credit, and a way to check. Every interval in this panel was taken from
+        maqamworld.com, and the reason the first version of this data was wrong
+        for months is that there was nowhere for a reader to go and verify it.
+        A citation is the difference between teaching and asserting.
+      */}
+      <p className="maqam-jins__credit">
+        Intervals and ajnas from{' '}
+        <a href={preset.source} target="_blank" rel="noreferrer noopener">
+          {preset.transliteration} on maqamworld.com
+        </a>
+      </p>
     </div>
   );
 }

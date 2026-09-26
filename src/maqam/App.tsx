@@ -11,7 +11,7 @@ import MaqamKeyboard from './components/MaqamKeyboard';
 import MaqamStaff from './components/MaqamStaff';
 import MidiStatusBadge from './components/MidiStatusBadge';
 import RetuningNote from './components/RetuningNote';
-import { MAQAM_PRESETS, PITCH_CLASS_NAMES } from './data/maqamPresets';
+import { PITCH_CLASS_NAMES, maqamatByFamily } from './data/maqamPresets';
 import {
   GENERATED_MELODY_ID,
   MELODY_PATTERNS,
@@ -131,13 +131,25 @@ export default function App() {
             slotProps={{ select: { native: true } }}
           >
             {/*
-              A native select: 9 options is a list, not a menu, and the platform
-              picker is better on a phone than a rendered popover.
+              Grouped by family, because that is how maqamat are organised:
+              "Maqamat are classified into families based on sharing the same
+              first (root) jins" (maqamworld.com). The grouping is derived from
+              each maqam's root jins rather than authored, so a new maqam files
+              itself and a family can never disagree with the cell it is named
+              for.
+
+              Still a native select: the platform's own picker renders optgroups
+              properly on a phone, which a hand-rolled two-tier menu would have
+              to reimplement badly.
             */}
-            {MAQAM_PRESETS.map((option) => (
-              <option key={option.id} value={option.id}>
-                {option.name} · {option.transliteration}
-              </option>
+            {maqamatByFamily().map(({ family, maqamat }) => (
+              <optgroup key={family} label={`${family} family`}>
+                {maqamat.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.name} · {option.transliteration}
+                  </option>
+                ))}
+              </optgroup>
             ))}
           </TextField>
 

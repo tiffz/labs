@@ -21,8 +21,16 @@ export interface MaqamScaleDegree extends MaqamNoteSpelling {
  * `maqamPresets.test.ts` checks the two agree; a typo in either is caught by
  * the disagreement rather than by someone noticing the app sounds wrong.
  */
-/** Reference for every musical claim about a jins in this file. */
+/**
+ * Every musical claim in this file is checked against maqamworld.com, and says
+ * where. The app credits it on screen; see `MaqamCredit`.
+ *
+ * This is not politeness. The first version of this data was wrong in a way
+ * nobody could audit — pentachords stored as tetrachords — and the reason it
+ * survived review is that there was nowhere to go and check.
+ */
 const MAQAM_WORLD_JINS = 'https://www.maqamworld.com/en/jins/';
+const MAQAM_WORLD_MAQAM = 'https://www.maqamworld.com/en/maqam/';
 
 export interface Jins {
   id: string;
@@ -57,6 +65,11 @@ export interface MaqamPreset {
   /** The tonic, as written. */
   tonic: MaqamNoteSpelling;
   description: string;
+  /**
+   * This maqam's page on maqamworld.com, shown in the app as a credit and a
+   * way for a reader to check anything the app claims.
+   */
+  source: string;
   /**
    * The ascending scale. The detune matrix and the keyboard colouring are both
    * DERIVED from this — it is the one place a maqam's pitches are written down.
@@ -158,6 +171,44 @@ export function scalePitchClasses(degrees: MaqamScaleDegree[]): Set<number> {
 export function degreeAbsoluteCents(degree: MaqamScaleDegree, tonicOctave: number): number {
   const midi = midiNoteOf(degree, tonicOctave + degree.octaveOffset);
   return midi * 100 + microtonalCentsOf(degree);
+}
+
+/**
+ * The family a maqam belongs to, derived from its root jins.
+ *
+ * maqamworld.com: "Maqamat are classified into families based on sharing the
+ * same first (root) jins. The root jins plays the largest role in defining the
+ * maqam's character."
+ *
+ * So the family is not a field to author and keep in step. It is a reading of
+ * the root jins, which means a new maqam files itself, and a family can never
+ * disagree with the cell it is named for. Given "Jins Rast on C" this is
+ * "Rast"; given "Jins Upper Rast on G" it would be "Upper Rast", which is why
+ * only the ROOT jins is consulted.
+ */
+export function maqamFamily(preset: MaqamPreset): string {
+  const root = preset.primaryAjnas[0];
+  if (!root) return 'Other';
+  // "Jins Nahawand on C" -> "Nahawand".
+  const withoutPrefix = root.name.replace(/^Jins\s+/, '');
+  const withoutRoot = withoutPrefix.replace(/\s+on\s+.+$/, '');
+  return withoutRoot.trim() || 'Other';
+}
+
+/** Every family present, and the maqamat in each, for a two-tier picker. */
+export function maqamatByFamily(
+  presets: readonly MaqamPreset[] = MAQAM_PRESETS,
+): { family: string; maqamat: MaqamPreset[] }[] {
+  const families = new Map<string, MaqamPreset[]>();
+  for (const preset of presets) {
+    const family = maqamFamily(preset);
+    const members = families.get(family) ?? [];
+    members.push(preset);
+    families.set(family, members);
+  }
+  return [...families.entries()]
+    .map(([family, maqamat]) => ({ family, maqamat }))
+    .sort((a, b) => a.family.localeCompare(b.family));
 }
 
 /** Scale index a spelling sits at, or -1. */
@@ -270,6 +321,7 @@ export const MAQAM_PRESETS: MaqamPreset[] = [
     id: 'rast_c',
     name: 'Rast on C',
     transliteration: 'Maqam Rast',
+    source: `${MAQAM_WORLD_MAQAM}rast.php`,
     arabicName: 'راست',
     tonic: { letter: 'C', accidental: 'n' },
     description:
@@ -303,6 +355,7 @@ export const MAQAM_PRESETS: MaqamPreset[] = [
     id: 'bayati_d',
     name: 'Bayati on D',
     transliteration: 'Maqam Bayati',
+    source: `${MAQAM_WORLD_MAQAM}bayati.php`,
     arabicName: 'بياتي',
     tonic: { letter: 'D', accidental: 'n' },
     description:
@@ -333,6 +386,7 @@ export const MAQAM_PRESETS: MaqamPreset[] = [
     id: 'sikah_e',
     name: 'Sikah on E½♭',
     transliteration: 'Maqam Sikah',
+    source: `${MAQAM_WORLD_MAQAM}sikah.php`,
     arabicName: 'سيكاه',
     tonic: { letter: 'E', accidental: 'd' },
     description:
@@ -369,6 +423,7 @@ export const MAQAM_PRESETS: MaqamPreset[] = [
     id: 'saba_d',
     name: 'Saba on D',
     transliteration: 'Maqam Saba',
+    source: `${MAQAM_WORLD_MAQAM}saba.php`,
     arabicName: 'صبا',
     tonic: { letter: 'D', accidental: 'n' },
     description:
@@ -402,6 +457,7 @@ export const MAQAM_PRESETS: MaqamPreset[] = [
     id: 'hijaz_d',
     name: 'Hijaz on D',
     transliteration: 'Maqam Hijaz',
+    source: `${MAQAM_WORLD_MAQAM}hijaz.php`,
     arabicName: 'حجاز',
     tonic: { letter: 'D', accidental: 'n' },
     description:
@@ -429,6 +485,7 @@ export const MAQAM_PRESETS: MaqamPreset[] = [
     id: 'kurd_d',
     name: 'Kurd on D',
     transliteration: 'Maqam Kurd',
+    source: `${MAQAM_WORLD_MAQAM}kurd.php`,
     arabicName: 'كرد',
     tonic: { letter: 'D', accidental: 'n' },
     description:
@@ -456,6 +513,7 @@ export const MAQAM_PRESETS: MaqamPreset[] = [
     id: 'nahawand_c',
     name: 'Nahawand on C',
     transliteration: 'Maqam Nahawand',
+    source: `${MAQAM_WORLD_MAQAM}nahawand.php`,
     arabicName: 'نهاوند',
     tonic: { letter: 'C', accidental: 'n' },
     description:
@@ -484,6 +542,7 @@ export const MAQAM_PRESETS: MaqamPreset[] = [
     id: 'nikriz_c',
     name: 'Nikriz on C',
     transliteration: 'Maqam Nikriz',
+    source: `${MAQAM_WORLD_MAQAM}nikriz.php`,
     arabicName: 'نكريز',
     tonic: { letter: 'C', accidental: 'n' },
     description:
@@ -511,6 +570,7 @@ export const MAQAM_PRESETS: MaqamPreset[] = [
     id: 'ajam_bb',
     name: 'Ajam on B♭',
     transliteration: 'Maqam Ajam',
+    source: `${MAQAM_WORLD_MAQAM}ajam.php`,
     arabicName: 'عجم',
     tonic: { letter: 'B', accidental: 'b' },
     description:
