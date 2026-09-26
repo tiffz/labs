@@ -60,7 +60,16 @@ export interface MaqamState {
    * tried and the user heard nothing, and it is the only reason to put a line
    * of text on screen about sound.
    */
-  audioBlocked: boolean;
+  /**
+   * Which control was pressed when sound failed, or `null` when it has not.
+   *
+   * Not a boolean: the recovery differs. A blocked keypress wants "press a key
+   * again"; a blocked Play wants "press Play again", next to the Play button,
+   * which on a short window is 250px above where the keyboard message renders.
+   * Telling someone to press a key when they pressed Play, in a line they
+   * cannot see, is worse than saying nothing.
+   */
+  audioBlocked: 'keyboard' | 'playback' | null;
   selectPreset: (id: string) => void;
   toggleSlot: (pitchClass: number) => void;
   resetTuning: () => void;
@@ -86,7 +95,7 @@ export function useMaqamState(): MaqamState {
   const [melodySeed, setMelodySeed] = useState(initial.melodySeed);
   const [isPlaying, setIsPlaying] = useState(false);
   const [playingIndex, setPlayingIndex] = useState<number | null>(null);
-  const [audioBlocked, setAudioBlocked] = useState(false);
+  const [audioBlocked, setAudioBlocked] = useState<'keyboard' | 'playback' | null>(null);
 
   const preset = useMemo(() => findMaqamPreset(presetId), [presetId]);
   const synthRef = useRef<MaqamSynth | null>(null);
@@ -157,7 +166,7 @@ export function useMaqamState(): MaqamState {
       const synth = getSynth();
       void synth.resume().then((running) => {
         setAudioState(synth.getState());
-        setAudioBlocked(!running);
+        setAudioBlocked(running ? null : 'keyboard');
       });
       synth.noteOn(midiNote, cents);
       setAudioState(synth.getState());
@@ -284,10 +293,10 @@ export function useMaqamState(): MaqamState {
       if (!running || now === null) {
         // Say so. Silence that the app presents as normal is indistinguishable
         // from a broken instrument, and the user has no way to tell which.
-        setAudioBlocked(true);
+        setAudioBlocked('playback');
         return;
       }
-      setAudioBlocked(false);
+      setAudioBlocked(null);
 
       const timeline = buildMelodyTimeline(melody, MELODY_BPM);
       const startAt = now + PLAYBACK_LEAD_SECONDS;

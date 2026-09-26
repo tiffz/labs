@@ -10,10 +10,12 @@ import JinsBreakdown from './components/JinsBreakdown';
 import MaqamKeyboard from './components/MaqamKeyboard';
 import MaqamStaff from './components/MaqamStaff';
 import MidiStatusBadge from './components/MidiStatusBadge';
+import RetuningNote from './components/RetuningNote';
 import { MAQAM_PRESETS, PITCH_CLASS_NAMES } from './data/maqamPresets';
 import {
   GENERATED_MELODY_ID,
   MELODY_PATTERNS,
+  describeMelody,
   findMelodyDefinition,
 } from './melody/maqamMelody';
 import { bentPitchClasses, formatCents, liveScaleLabels } from './state/maqamTuning';
@@ -98,7 +100,10 @@ export default function App() {
   const melodyDescription =
     melodyId === GENERATED_MELODY_ID
       ? 'A phrase generated in this maqam: mostly stepwise, resolving to the tonic.'
-      : findMelodyDefinition(melodyId)?.description;
+      : (() => {
+          const pattern = findMelodyDefinition(melodyId);
+          return pattern && preset ? describeMelody(pattern, preset) : undefined;
+        })();
 
   const bentKeys = bentPitchClasses(matrix);
 
@@ -158,6 +163,18 @@ export default function App() {
               <MaqamStaff notes={staffNotes} highlighted={litNotes} />
             </Paper>
 
+            {/* Beside the control that failed, naming the action the user took.
+                It used to render under the keyboard and say "press a key
+                again" whichever control had failed, so someone who pressed
+                Play was told to do something else, in a line 250px below the
+                button and off-screen on a phone. */}
+            {audioBlocked === 'playback' && (
+              <p className="maqam-alert" role="status">
+                No sound yet. Your browser holds audio until you interact with the page. Press Play
+                again.
+              </p>
+            )}
+
             <div className="maqam-melodybar">
               <Button
                 variant="contained"
@@ -195,7 +212,7 @@ export default function App() {
 
           {preset && (
             <aside className="maqam-stage__jins">
-              <JinsBreakdown preset={preset} />
+              <JinsBreakdown preset={preset} isPresetTuning={isPresetTuning} />
             </aside>
           )}
         </div>
@@ -214,14 +231,10 @@ export default function App() {
             onNoteOff={noteOff}
           />
 
-          {/* Only ever rendered when sound was asked for and did not arrive.
-              A browser that has not been gestured at, or an exhausted audio
-              context, otherwise leaves the user pressing keys in silence with
-              the app showing every sign of working. */}
-          {audioBlocked && (
+          {audioBlocked === 'keyboard' && (
             <p className="maqam-alert" role="status">
-              No sound yet. Your browser holds audio until you interact with the
-              page, so press a key again.
+              No sound yet. Your browser holds audio until you interact with the page. Press a key
+              again.
             </p>
           )}
 
@@ -238,12 +251,14 @@ export default function App() {
             </p>
 
             {/* One entry per visual channel, in the order the eye meets them.
-                Membership is not one of them: the scale line directly above
-                names the maqam's notes, which explains the bright keys better
-                than a pair of 7px swatches ever did — and those rendered as two
-                near-identical outlined boxes, one sample of a two-sample
-                comparison. */}
+                Membership is back, because the swatch can now show it: cool
+                against warm is a difference you can see at 14px, which the
+                previous bright-against-dim pair was not. */}
             <p className="maqam-legend" aria-live="polite">
+              <span className="maqam-legend__item">
+                <span className="maqam-legend__swatch" aria-hidden="true" />
+                In this maqam
+              </span>
               <span className="maqam-legend__item">
                 <span className="maqam-legend__dot" aria-hidden="true" />
                 Tonic
@@ -262,6 +277,7 @@ export default function App() {
             </p>
 
             <div className="maqam-board__actions">
+              <RetuningNote onReadMore={() => setHelpOpen(true)} />
               {!isPresetTuning && preset && (
                 <Button variant="text" size="small" onClick={resetTuning}>
                   Reset

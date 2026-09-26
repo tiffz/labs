@@ -118,8 +118,18 @@ export function writeMaqamUrlSearch(
   if (state.melodyId === DEFAULT_MELODY_ID) params.delete(MELODY_PARAM);
   else params.set(MELODY_PARAM, state.melodyId);
 
-  if (state.melodyId === GENERATED_MELODY_ID) params.set(SEED_PARAM, String(state.melodySeed));
-  else params.delete(SEED_PARAM);
+  /*
+   * The seed survives switching away from the generated phrase.
+   *
+   * It used to be written only while "Generated phrase" was selected, so
+   * looking at another pattern and reloading threw away the phrase you had
+   * pressed New phrase until you liked. The seed is a thing the user chose;
+   * the selected pattern is a different thing they chose, and one should not
+   * silently discard the other. A default seed is still omitted, so a plain
+   * link stays short and a seed in the URL still means a choice.
+   */
+  if (state.melodySeed === DEFAULT_SEED) params.delete(SEED_PARAM);
+  else params.set(SEED_PARAM, String(state.melodySeed));
 
   const query = params.toString();
   return query ? `?${query}` : '';

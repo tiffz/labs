@@ -100,6 +100,59 @@ describe('readMaqamUrlState', () => {
   });
 });
 
+describe('the generated phrase survives looking at something else', () => {
+  /**
+   * The seed used to be written only while "Generated phrase" was selected, so
+   * switching to another pattern dropped it from the URL and a reload handed
+   * back seed 1 instead of the phrase you had pressed New phrase until you
+   * liked. Two separate choices, and one was silently discarding the other.
+   */
+  it('keeps a chosen seed in the URL while another pattern is selected', () => {
+    const search = writeMaqamUrlSearch(
+      {
+        presetId: 'rast_c',
+        matrix: rastMatrix,
+        melodyId: 'thirds',
+        melodySeed: 8421,
+      },
+      '',
+    );
+    expect(search).toContain('seed=8421');
+    expect(readMaqamUrlState(search).melodySeed).toBe(8421);
+  });
+
+  it('still omits the default seed, so a plain link stays short', () => {
+    const search = writeMaqamUrlSearch(
+      {
+        presetId: 'rast_c',
+        matrix: rastMatrix,
+        melodyId: 'thirds',
+        melodySeed: 1,
+      },
+      '',
+    );
+    expect(search).not.toContain('seed=');
+  });
+
+  it('round-trips the phrase through a reload', () => {
+    const chosen = writeMaqamUrlSearch(
+      {
+        presetId: 'rast_c',
+        matrix: rastMatrix,
+        melodyId: 'generated',
+        melodySeed: 999,
+      },
+      '',
+    );
+    // Look at another pattern, then reload: the seed is still there.
+    const browsedAway = writeMaqamUrlSearch(
+      { presetId: 'rast_c', matrix: rastMatrix, melodyId: 'qafla', melodySeed: 999 },
+      chosen,
+    );
+    expect(readMaqamUrlState(browsedAway).melodySeed).toBe(999);
+  });
+});
+
 describe('writeMaqamUrlSearch', () => {
   it('writes only the maqam when the tuning is untouched', () => {
     expect(writeMaqamUrlSearch({ presetId: 'rast_c', matrix: rastMatrix, ...plainMelody })).toBe(
@@ -148,7 +201,14 @@ describe('writeMaqamUrlSearch', () => {
     expect(search).toContain('seed=4242');
   });
 
-  it('drops the seed for a fixed pattern, where it means nothing', () => {
+  /**
+   * This used to assert the opposite, on the reasoning that a seed "means
+   * nothing" for a fixed pattern. It means the phrase the user pressed New
+   * phrase until they liked, and dropping it from the URL meant a glance at
+   * another pattern plus a reload threw that phrase away. Two separate
+   * choices; neither gets to discard the other.
+   */
+  it('keeps a chosen seed even while a fixed pattern is selected', () => {
     const search = writeMaqamUrlSearch({
       presetId: 'rast_c',
       matrix: rastMatrix,
@@ -156,6 +216,16 @@ describe('writeMaqamUrlSearch', () => {
       melodySeed: 99,
     });
     expect(search).toContain('melody=thirds');
+    expect(search).toContain('seed=99');
+  });
+
+  it('omits a seed the user never chose', () => {
+    const search = writeMaqamUrlSearch({
+      presetId: 'rast_c',
+      matrix: rastMatrix,
+      melodyId: 'thirds',
+      melodySeed: 1,
+    });
     expect(search).not.toContain('seed=');
   });
 

@@ -279,14 +279,35 @@ describe('useMaqamState under StrictMode', () => {
     );
 
     render(<Harness />);
-    expect(screen.getByTestId('audio-blocked').textContent).toBe('false');
+    expect(screen.getByTestId('audio-blocked').textContent).toBe('null');
 
     await act(async () => {
       screen.getByTestId('play-e').click();
     });
 
-    // The one thing worse than no sound is no sound and no explanation.
-    expect(screen.getByTestId('audio-blocked').textContent).toBe('true');
+    // The one thing worse than no sound is no sound and no explanation — and
+    // it names the control that failed, because the recovery differs.
+    expect(screen.getByTestId('audio-blocked').textContent).toBe('keyboard');
+  });
+
+  it('names Play, not the keyboard, when Play is what failed', async () => {
+    vi.stubGlobal(
+      'AudioContext',
+      class {
+        constructor() {
+          throw new Error('too many AudioContexts');
+        }
+      },
+    );
+
+    render(<Harness />);
+    await act(async () => {
+      screen.getByTestId('toggle-play').click();
+    });
+
+    // Telling someone to press a key when they pressed Play, in a line 250px
+    // below the button and off-screen on a phone, is worse than saying nothing.
+    expect(screen.getByTestId('audio-blocked').textContent).toBe('playback');
   });
 
   it('does not cry wolf when audio is working', async () => {
@@ -294,6 +315,6 @@ describe('useMaqamState under StrictMode', () => {
     await act(async () => {
       screen.getByTestId('play-e').click();
     });
-    expect(screen.getByTestId('audio-blocked').textContent).toBe('false');
+    expect(screen.getByTestId('audio-blocked').textContent).toBe('null');
   });
 });

@@ -4,6 +4,18 @@ import { ajnasJoin, scaleDegreeLabels, type MaqamPreset } from '../data/maqamPre
 
 interface JinsBreakdownProps {
   preset: MaqamPreset;
+  /**
+   * False once the user has bent a key away from the maqam's own tuning.
+   *
+   * The panel has to know, because every claim in it is about the maqam AS
+   * WRITTEN. Bend Rast's E and the board plays a 400-cent third while this
+   * column still says "its third and seventh sit half-flat" and prints
+   * "0 · 200 · 350 · 500 cents". A learner doing exactly the A/B the app
+   * invites hears a major third and reads that it is 350 cents, and concludes
+   * that 350 cents sounds like a major third — the precise opposite of the
+   * lesson, reached by following the app's own affordances.
+   */
+  isPresetTuning: boolean;
 }
 
 /**
@@ -22,7 +34,7 @@ interface JinsBreakdownProps {
  * The scale line moved the other way, down to the keyboard: it names the keys
  * that are lit, so reading it beside the board is one glance instead of two.
  */
-export default function JinsBreakdown({ preset }: JinsBreakdownProps) {
+export default function JinsBreakdown({ preset, isPresetTuning }: JinsBreakdownProps) {
   /**
    * Derived, not asserted. The panel used to say "Joined on G, where the first
    * cell ends and the second begins" for every maqam, printed directly under
@@ -63,7 +75,14 @@ export default function JinsBreakdown({ preset }: JinsBreakdownProps) {
 
       <p className="maqam-jins__lede">{preset.description}</p>
 
-      <h2 className="maqam-eyebrow">Built from</h2>
+      {!isPresetTuning && (
+        <p className="maqam-jins__stale" role="status">
+          You have retuned a key, so the keyboard no longer plays this maqam as written. Everything
+          below describes the written maqam. Press Reset to hear it again.
+        </p>
+      )}
+
+      <h2 className="maqam-eyebrow">{isPresetTuning ? 'Built from' : 'Built from, as written'}</h2>
 
       <ol className="maqam-jins__list">
         {preset.primaryAjnas.map((jins) => (

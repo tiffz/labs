@@ -43,8 +43,15 @@ export interface MelodyDefinition {
   id: string;
   name: string;
   kind: MelodyKind;
-  /** One line on what the pattern teaches. */
-  description: string;
+  /**
+   * One line on what the pattern teaches.
+   *
+   * A function where the honest answer depends on the maqam. "Each cell on its
+   * own" is true of the eight maqamat with two settled ajnas and false of Saba,
+   * which has one — and the panel beside the staff says so, so a fixed string
+   * had the app contradicting itself on the same screen.
+   */
+  description: string | ((preset: MaqamPreset) => string);
   build: (preset: MaqamPreset) => MelodyNote[];
 }
 
@@ -176,7 +183,10 @@ export const MELODY_PATTERNS: MelodyDefinition[] = [
     id: 'jins-by-jins',
     name: 'Jins by jins',
     kind: 'exercise',
-    description: 'Each cell on its own, so you hear where one ends and the next starts.',
+    description: (preset) =>
+      preset.primaryAjnas.length > 1
+        ? 'Each cell on its own, so you hear where one ends and the next starts.'
+        : 'This maqam has one settled cell. You hear it, then the rest of the scale above it.',
     build: jinsByJins,
   },
   {
@@ -217,6 +227,13 @@ export const GENERATED_MELODY_ID = 'generated';
 
 export function findMelodyDefinition(id: string): MelodyDefinition | undefined {
   return MELODY_PATTERNS.find((pattern) => pattern.id === id);
+}
+
+/** Resolve a pattern's line for the maqam it is being played in. */
+export function describeMelody(pattern: MelodyDefinition, preset: MaqamPreset): string {
+  return typeof pattern.description === 'function'
+    ? pattern.description(preset)
+    : pattern.description;
 }
 
 /**

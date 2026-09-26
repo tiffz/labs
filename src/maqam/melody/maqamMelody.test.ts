@@ -5,6 +5,7 @@ import {
   GENERATED_BEATS,
   MELODY_PATTERNS,
   durationForBeats,
+  describeMelody,
   findMelodyDefinition,
   generateMelody,
   melodyBeats,
@@ -149,7 +150,9 @@ describe('pattern descriptions', () => {
   it.each(everyPatternAndPreset)(
     '%s only claims an octave when it reaches one',
     (_label, pattern, preset) => {
-      if (!/\boctave\b/i.test(pattern.description)) return;
+      // The RESOLVED line, not the field: a description may be a function of
+      // the maqam, and regexing a function's source tests nothing.
+      if (!/\boctave\b/i.test(describeMelody(pattern, preset))) return;
       const top = preset.scaleDegrees[Math.max(...pattern.build(preset).map((n) => n.degree))];
       const tonic = preset.scaleDegrees[0];
       // The octave is the TONIC an octave up. `octaveOffset` alone is not that
@@ -163,6 +166,30 @@ describe('pattern descriptions', () => {
     },
   );
 });
+
+  it('never describes a single-jins maqam as having two cells', () => {
+    // The panel beside the staff says Saba's upper region is deliberately not
+    // named. A fixed "each cell on its own" had the app contradicting itself on
+    // the same screen, and a learner would conclude Saba has two settled cells.
+    const jinsByJins = findMelodyDefinition('jins-by-jins')!;
+
+    const saba = MAQAM_PRESETS_BY_ID.saba_d;
+    expect(saba.primaryAjnas).toHaveLength(1);
+    expect(describeMelody(jinsByJins, saba)).not.toMatch(/each cell/i);
+    expect(describeMelody(jinsByJins, saba)).toMatch(/one settled cell/i);
+
+    // And still says the true thing for the eight that do have two.
+    expect(describeMelody(jinsByJins, MAQAM_PRESETS_BY_ID.rast_c)).toMatch(/each cell/i);
+  });
+
+  it.each(MAQAM_PRESETS.map((p) => [p.id, p] as const))(
+    'gives %s a non-empty line for every pattern',
+    (_id, preset) => {
+      for (const pattern of MELODY_PATTERNS) {
+        expect(describeMelody(pattern, preset).trim().length, pattern.id).toBeGreaterThan(10);
+      }
+    },
+  );
 
 describe('generateMelody', () => {
   it('is reproducible from its seed', () => {

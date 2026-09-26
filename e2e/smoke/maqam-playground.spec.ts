@@ -577,6 +577,120 @@ test.describe('Maqam Playground', () => {
     }
   });
 
+  test('a key in the maqam is marked, even when every degree is a white key', async ({
+    page,
+  }) => {
+    /*
+     * The regression this exists for.
+     *
+     * Membership was once carried by presence alone: an in-maqam key at full
+     * strength, one outside it receding. On Rast every degree lands on a white
+     * key and all 5 black keys are out, so the in/out split coincided exactly
+     * with the white/black split and presence said nothing the piano had not
+     * already said. The default screen looked like an ordinary keyboard and the
+     * owner reported the feature as missing, correctly.
+     *
+     * Measured as colour DISTANCE, not contrast ratio. The two faces are
+     * deliberately close in value and far apart in hue — cool for in, warm for
+     * out — and a luminance ratio is blind to exactly that. Using the wrong
+     * instrument here would produce a guard that passes while the mark is
+     * invisible, which is how this shipped in the first place.
+     */
+    await page.goto('/maqam/?maqam=rast_c');
+    await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
+
+    const distance = await page.evaluate(() => {
+      const rgb = (value: string) => (value.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number);
+      // Gradients: the bottom stop is the key's own face, the part not covered
+      // by a black key and the part the eye actually reads.
+      const face = (el: Element) => {
+        const style = getComputedStyle(el);
+        const stops = style.backgroundImage.match(/rgba?\([^)]+\)/g);
+        return rgb(stops ? stops[stops.length - 1] : style.backgroundColor);
+      };
+      const inScale = face(
+        document.querySelector('.maqam-keyboard .shared-pk-white.maqam-key--in-scale')!,
+      );
+      // Against a PLAIN WHITE KEY, which is the actual question: does a key in
+      // the maqam look marked, or does it look like an ordinary piano?
+      //
+      // Comparing it against the out-of-scale token instead is the mistake that
+      // made the first version of this guard vacuous — the old encoding cleared
+      // that comparison easily and still failed on Rast, because Rast has no
+      // out-of-scale white key for the difference to show up on.
+      const plainKey = [255, 255, 255];
+
+      return Math.hypot(
+        inScale[0] - plainKey[0],
+        inScale[1] - plainKey[1],
+        inScale[2] - plainKey[2],
+      );
+    });
+
+    expect(
+      distance,
+      `an in-maqam key is only ${distance.toFixed(1)} from a plain white key, so it reads as unmarked`,
+    ).toBeGreaterThan(20);
+  });
+
+  test('the keyboard explains why it is retuned, without insisting', async ({ page }) => {
+    await page.goto('/maqam/?maqam=rast_c');
+    await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
+
+    // Quiet: a text button, never a callout, and nowhere near Play's weight.
+    const trigger = page.getByRole('button', { name: /Why these keys are retuned/ });
+    await expect(trigger).toBeVisible();
+
+    await trigger.click();
+    const detail = page.locator('.maqam-retuning__detail');
+    await expect(detail).toBeVisible();
+    await expect(detail).toContainText('12 fixed keys');
+
+    // Tokens must reach it: this renders in a portal at the end of <body>.
+    const headingColour = await detail
+      .locator('h3')
+      .evaluate((el) => getComputedStyle(el).color);
+    expect(headingColour).not.toBe('rgb(0, 0, 0)');
+
+    // And it leads somewhere for a reader who wants the rest.
+    await detail.getByRole('button', { name: /How maqamat work/ }).click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await expect(page.getByRole('dialog')).toContainText('7 notes is right');
+  });
+
+  test('the ajnas panel admits when the board no longer matches it', async ({ page }) => {
+    /*
+     * The last place the live tuning was not respected.
+     *
+     * The staff, the keyboard, the scale line and the audio all follow the
+     * matrix. This panel did not: bend Rast's E and the board plays a 400-cent
+     * third while the column still reads "its third and seventh sit half-flat"
+     * and prints "0 · 200 · 350 · 500 cents". A learner doing exactly the A/B
+     * the app invites hears a major third, reads that it is 350 cents, and
+     * concludes 350 cents sounds like a major third. That is the opposite of
+     * the lesson, reached by following the app's own affordances.
+     */
+    await page.goto('/maqam/?maqam=rast_c');
+    await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
+
+    const panel = page.locator('.maqam-jins');
+    await expect(panel).not.toContainText('as written');
+    await expect(page.locator('.maqam-jins__stale')).toHaveCount(0);
+
+    // Bend the maqam's own third away from what it is written as.
+    await page.getByRole('button', { name: /Tune keys/ }).click();
+    await page.getByRole('button', { name: /^E is tuned/ }).click();
+
+    // The board must now say so, in the panel making the claims.
+    await expect(page.locator('.maqam-jins__stale')).toBeVisible();
+    await expect(panel).toContainText('no longer plays this maqam as written');
+    await expect(panel).toContainText('as written');
+
+    // And take it back when the tuning returns to the preset.
+    await page.getByRole('button', { name: /^Reset$/ }).click();
+    await expect(page.locator('.maqam-jins__stale')).toHaveCount(0);
+  });
+
   test('the page itself never scrolls', async ({ page }) => {
     await page.goto('/maqam/');
     await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
