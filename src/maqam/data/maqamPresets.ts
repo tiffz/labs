@@ -382,6 +382,96 @@ export const MAQAM_PRESETS: MaqamPreset[] = [
       },
     ],
   },
+  /*
+   * Bayati Shuri and Muhayyar: the rest of the Bayati family.
+   *
+   * Both share Jins Bayati on D as their root jins, which is what puts them in
+   * this family — "Maqamat are classified into families based on sharing the
+   * same first (root) jins" — and both are notated on D because Jins Bayati
+   * itself is "notated here with its tonic on D".
+   *
+   * What differs is the cell on the 4th degree, and that is the whole lesson
+   * of a family: same opening, different continuation. Bayati takes Nahawand
+   * (or Rast), Bayati Shuri takes Hijaz, Muhayyar takes Rast.
+   */
+  {
+    id: 'bayati_shuri_d',
+    name: 'Bayati Shuri on D',
+    transliteration: 'Maqam Bayati Shuri',
+    source: `${MAQAM_WORLD_MAQAM}bayati_shuri.php`,
+    arabicName: 'بياتي شوري',
+    tonic: { letter: 'D', accidental: 'n' },
+    description:
+      'Bayati with Hijaz on top. The leap from A flat to B is what you hear, and it arrives exactly where Bayati would have gone somewhere gentler.',
+    repeatsAtOctave: true,
+    // Jins Bayati on D, then Jins Hijaz from G: G, A flat, B, C.
+    scaleDegrees: [n('D'), halfFlat('E'), n('F'), n('G'), flat('A'), n('B'), n('C', 1), n('D', 1)],
+    primaryAjnas: [
+      {
+        id: 'bayati_shuri_d__jins_bayati_d',
+        name: 'Jins Bayati on D',
+        root: { letter: 'D', accidental: 'n' },
+        intervalsInCents: [0, 150, 300, 500],
+        source: `${MAQAM_WORLD_JINS}bayati.php`,
+      },
+      {
+        // "starts with the root Jins Bayati on the tonic followed by Jins
+        // Hijaz on the 4th degree."
+        id: 'bayati_shuri_d__jins_hijaz_g',
+        name: 'Jins Hijaz on G',
+        root: { letter: 'G', accidental: 'n' },
+        intervalsInCents: [0, 100, 400, 500],
+        source: `${MAQAM_WORLD_JINS}hijaz.php`,
+      },
+    ],
+  },
+  {
+    id: 'muhayyar_d',
+    name: 'Muhayyar on D',
+    transliteration: 'Maqam Muhayyar',
+    source: `${MAQAM_WORLD_MAQAM}bayati.php`,
+    arabicName: 'محير',
+    tonic: { letter: 'D', accidental: 'n' },
+    /*
+     * Said plainly, because the thing that makes Muhayyar itself is the one
+     * thing this app does not model: it "is a version of Maqam Bayati whose
+     * sayr starts at the octave note", descending through Bayati's ajnas.
+     * The pitches here are right; the path is not shown, and claiming
+     * otherwise would be the kind of quiet falsehood this data set has
+     * already been caught in once.
+     */
+    description:
+      'Bayati approached from the top. Its scale is Bayati with Rast above, but what makes it Muhayyar is where the melody starts and how it comes down, which this app does not show.',
+    repeatsAtOctave: true,
+    // Jins Bayati on D, then Jins Rast from G: G, A, B half-flat, C, D.
+    scaleDegrees: [
+      n('D'),
+      halfFlat('E'),
+      n('F'),
+      n('G'),
+      n('A'),
+      halfFlat('B'),
+      n('C', 1),
+      n('D', 1),
+    ],
+    primaryAjnas: [
+      {
+        id: 'muhayyar_d__jins_bayati_d',
+        name: 'Jins Bayati on D',
+        root: { letter: 'D', accidental: 'n' },
+        intervalsInCents: [0, 150, 300, 500],
+        source: `${MAQAM_WORLD_JINS}bayati.php`,
+      },
+      {
+        // "often uses Jins Rast on the 4th degree to ascend".
+        id: 'muhayyar_d__jins_rast_g',
+        name: 'Jins Rast on G',
+        root: { letter: 'G', accidental: 'n' },
+        intervalsInCents: [0, 200, 350, 500, 700],
+        source: `${MAQAM_WORLD_JINS}rast.php`,
+      },
+    ],
+  },
   {
     id: 'sikah_e',
     name: 'Sikah on E½♭',

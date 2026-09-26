@@ -19,11 +19,13 @@ import { pitchClassOf, spellingLabel } from '../notation/maqamAccidentals';
 const TONIC_OCTAVE = 4;
 
 describe('preset integrity', () => {
-  it('ships the nine maqam families with unique ids', () => {
+  it('ships each family head plus its members, with unique ids', () => {
     const ids = MAQAM_PRESETS.map((p) => p.id);
     expect(ids).toEqual([
       'rast_c',
       'bayati_d',
+      'bayati_shuri_d',
+      'muhayyar_d',
       'sikah_e',
       'saba_d',
       'hijaz_d',
@@ -43,7 +45,14 @@ describe('preset integrity', () => {
   it('covers both microtonal and 12-TET families', () => {
     const micro = MAQAM_PRESETS.filter((p) => hasMicrotones(p.scaleDegrees)).map((p) => p.id);
     const plain = MAQAM_PRESETS.filter((p) => !hasMicrotones(p.scaleDegrees)).map((p) => p.id);
-    expect(micro).toEqual(['rast_c', 'bayati_d', 'sikah_e', 'saba_d']);
+    expect(micro).toEqual([
+      'rast_c',
+      'bayati_d',
+      'bayati_shuri_d',
+      'muhayyar_d',
+      'sikah_e',
+      'saba_d',
+    ]);
     expect(plain).toEqual(['hijaz_d', 'kurd_d', 'nahawand_c', 'nikriz_c', 'ajam_bb']);
   });
 
@@ -345,32 +354,50 @@ describe('ajnas agree with the scale they are drawn from', () => {
   });
 });
 
+/**
+ * Every shipped maqam, spelled out. The one place a reader can check the
+ * app's musical claims against a reference without running it.
+ */
+const SCALE_READBACK: [string, string][] = [
+  ['rast_c', 'C D E½♭ F G A B½♭ C'],
+  ['bayati_d', 'D E½♭ F G A B♭ C D'],
+  // Bayati's family: same Jins Bayati below, a different cell on the 4th.
+  ['bayati_shuri_d', 'D E½♭ F G A♭ B C D'],
+  ['muhayyar_d', 'D E½♭ F G A B½♭ C D'],
+  ['sikah_e', 'E½♭ F G A B½♭ C D E½♭'],
+  ['saba_d', 'D E½♭ F G♭ A B♭ C'],
+  ['hijaz_d', 'D E♭ F♯ G A B♭ C D'],
+  ['kurd_d', 'D E♭ F G A B♭ C D'],
+  ['nahawand_c', 'C D E♭ F G A♭ B♭ C'],
+  ['nikriz_c', 'C D E♭ F♯ G A B♭ C'],
+  ['ajam_bb', 'B♭ C D E♭ F G A B♭'],
+];
+
 describe('written scales read back as expected', () => {
   /**
-   * Every family spelled out. This is the one place a reader can check the
-   * app's musical claims against a reference without running it — so all nine
-   * belong here, not a sample.
+   * Every maqam spelled out. This is the one place a reader can check the
+   * app's musical claims against a reference without running it, so every
+   * shipped maqam belongs here, not a sample. The test below fails if one is
+   * added without a row.
    */
-  it.each([
-    ['rast_c', 'C D E½♭ F G A B½♭ C'],
-    ['bayati_d', 'D E½♭ F G A B♭ C D'],
-    ['sikah_e', 'E½♭ F G A B½♭ C D E½♭'],
-    ['saba_d', 'D E½♭ F G♭ A B♭ C'],
-    ['hijaz_d', 'D E♭ F♯ G A B♭ C D'],
-    ['kurd_d', 'D E♭ F G A B♭ C D'],
-    ['nahawand_c', 'C D E♭ F G A♭ B♭ C'],
-    ['nikriz_c', 'C D E♭ F♯ G A B♭ C'],
-    ['ajam_bb', 'B♭ C D E♭ F G A B♭'],
-  ])('%s', (id, expected) => {
+  it.each(SCALE_READBACK)('%s', (id, expected) => {
     expect(scaleDegreeLabels(MAQAM_PRESETS_BY_ID[id].scaleDegrees).join(' ')).toBe(expected);
   });
 
-  it('covers every shipped family in the readback table above', () => {
-    // A table that silently stops covering new families is the `guardrail-
-    // coverage-gap` shape: green, and blind to whatever was added last.
-    expect(MAQAM_PRESETS).toHaveLength(9);
+  it('covers every shipped maqam, by id rather than by count', () => {
+    /*
+     * The previous version asserted `MAQAM_PRESETS.toHaveLength(9)` as a stand
+     * in for "the table covers everything". That is a proxy: it fails when a
+     * maqam is added even if the row WAS added, and it would pass with a row
+     * for a maqam that does not exist. Compare the sets.
+     */
+    expect([...SCALE_READBACK.map(([id]) => id)].sort()).toEqual(
+      MAQAM_PRESETS.map((preset) => preset.id).sort(),
+    );
   });
+});
 
+describe('scale spellings', () => {
   it('puts Sikah on a tonic no untouched piano key can play', () => {
     const sikah = MAQAM_PRESETS_BY_ID.sikah_e;
     const { matrix } = deriveDetuneMatrix(sikah.scaleDegrees);

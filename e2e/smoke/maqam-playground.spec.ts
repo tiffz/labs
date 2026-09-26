@@ -66,10 +66,25 @@ test.describe('Maqam Playground', () => {
     expect(pageErrors).toEqual([]);
   });
 
-  test('CUJ-001: all nine families are offered', async ({ page }) => {
+  test('CUJ-001: every family is offered, grouped', async ({ page }) => {
     await page.goto('/maqam/');
     await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
-    await expect(page.locator('.maqam-topbar__picker option')).toHaveCount(9);
+
+    // Grouped by root jins, per maqamworld's own classification. Asserted as
+    // structure rather than as a count: a count goes stale every time a maqam
+    // is added, and says nothing about whether the grouping works.
+    const groups = page.locator('.maqam-topbar__picker optgroup');
+    await expect(groups.first()).toHaveAttribute('label', /family$/);
+    expect(await groups.count()).toBeGreaterThan(5);
+
+    // Every option sits inside a family; none dangle at the top level.
+    const total = await page.locator('.maqam-topbar__picker option').count();
+    const grouped = await page.locator('.maqam-topbar__picker optgroup option').count();
+    expect(grouped).toBe(total);
+
+    // And a family with more than one member actually groups them together.
+    const bayati = page.locator('.maqam-topbar__picker optgroup[label^="Bayati"] option');
+    expect(await bayati.count()).toBeGreaterThan(1);
   });
 
   test('CUJ-001: choosing a maqam with no microtones clears every retuned key', async ({
