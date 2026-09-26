@@ -1,46 +1,42 @@
 import { useState } from 'react';
 import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
 
 import AnchoredPopover from '../../shared/components/AnchoredPopover';
-
-interface RetuningNoteProps {
-  /** Opens the full explainer, for a reader who wants the rest of it. */
-  onReadMore: () => void;
-}
 
 /**
  * Why a familiar keyboard is playing unfamiliar pitches.
  *
- * A retuned keyboard is the app's strangest idea to anyone who already plays
- * one, and the explanation lived only behind "How maqamat work" in the topbar,
- * three sections down, which is nowhere near the keys it is about. This sits
- * beside the board and answers the question at the point it gets asked.
+ * A question mark, not a sentence. The label used to read "Why these keys are
+ * retuned", which is a lot of chrome for a note most people will open once,
+ * sitting beside the instrument it is about to explain.
  *
- * Deliberately quiet: a text button, no icon badge, no callout. The app is
- * usable without ever opening it, so it should not compete with Play. Anyone
- * who wants the rest of the story gets it in one more click.
+ * It answers in three sentences and then gets out of the way, handing off to
+ * maqamworld.com — which documents the physical oriental keyboards this app's
+ * whole conceit is borrowed from, and can speak with an authority this app
+ * should not claim.
  */
-export default function RetuningNote({ onReadMore }: RetuningNoteProps) {
+export default function RetuningNote() {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
 
   return (
     <>
-      <Button
-        variant="text"
+      <IconButton
         size="small"
         className="maqam-retuning__trigger"
         onClick={(event) => setAnchor(event.currentTarget)}
         aria-haspopup="dialog"
         aria-expanded={anchor !== null}
+        aria-label="Why these keys are retuned"
       >
-        Why these keys are retuned
-      </Button>
+        <span aria-hidden="true">?</span>
+      </IconButton>
 
       <AnchoredPopover
         open={anchor !== null}
         anchorEl={anchor}
         onClose={() => setAnchor(null)}
-        placement="top-start"
+        placement="top-end"
       >
         {/* `maqam-portal` carries the app's tokens into the portal, which
             renders at the end of <body>, outside `.maqam`. */}
@@ -52,14 +48,17 @@ export default function RetuningNote({ onReadMore }: RetuningNoteProps) {
           </p>
           <p>
             The keys keep their names and their places. Press E in Rast and you hear E half flat, 50
-            cents below where a piano puts it. Only the keys this maqam needs are bent, and the
-            marked ones show which.
+            cents below where a piano puts it. Only the keys this maqam needs are bent.
           </p>
-          <p className="maqam-retuning__note">
-            So you can play what your hands already know, and hear something they do not.
-          </p>
-          <Button variant="text" size="small" onClick={onReadMore}>
-            How maqamat work
+          <Button
+            variant="text"
+            size="small"
+            component="a"
+            href="https://www.maqamworld.com/en/instr/keyboard.php"
+            target="_blank"
+            rel="noreferrer noopener"
+          >
+            Oriental keyboards at maqamworld
           </Button>
         </div>
       </AnchoredPopover>

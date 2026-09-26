@@ -83,15 +83,15 @@ class FakeAudioContext {
 }
 
 function Harness() {
-  const { noteOn, noteOff, activeNotes, keyTunings, togglePlayback, selectMelody, isPlaying, audioBlocked } =
+  const { noteOn, noteOff, activeNotes, keyTunings, togglePlayback, toggleSlot, isPlaying, audioBlocked } =
     useMaqamState();
   return (
     <div>
       <button type="button" onClick={togglePlayback} data-testid="toggle-play">
         play melody
       </button>
-      <button type="button" onClick={() => selectMelody('scale-down')} data-testid="switch-melody">
-        switch melody
+      <button type="button" onClick={() => toggleSlot(4)} data-testid="retune">
+        retune E
       </button>
       <span data-testid="is-playing">{String(isPlaying)}</span>
       <span data-testid="audio-blocked">{String(audioBlocked)}</span>
@@ -258,10 +258,10 @@ describe('useMaqamState under StrictMode', () => {
     render(<Harness />);
     await act(async () => {
       screen.getByTestId('toggle-play').click();
-      // Changing the pattern stops playback. Before the generation check, the
-      // pending `.then` scheduled the old phrase anyway: it played on, with the
-      // UI insisting nothing was playing.
-      screen.getByTestId('switch-melody').click();
+      // Retuning a key stops playback. Before the generation check, the pending
+      // `.then` scheduled the old phrase anyway: it played on, at the old
+      // tuning, with the UI insisting nothing was playing.
+      screen.getByTestId('retune').click();
     });
 
     expect(startedSources).toBe(0);

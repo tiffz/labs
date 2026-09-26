@@ -88,7 +88,17 @@ export default function JinsBreakdown({ preset, isPresetTuning }: JinsBreakdownP
       <ol className="maqam-jins__list">
         {preset.primaryAjnas.map((jins) => (
           <li key={jins.id} className="maqam-jins__item">
-            <span className="maqam-jins__name">{jins.name}</span>
+            {/* Each cell links to its own page. The intervals below came from
+                there, and a reader who wants to know what a jins actually is
+                should be reading maqamworld, not us. */}
+            <a
+              className="maqam-jins__name"
+              href={jins.source}
+              target="_blank"
+              rel="noreferrer noopener"
+            >
+              {jins.name}
+            </a>
             <span className="maqam-jins__steps">
               {jins.intervalsInCents.join(' · ')}
               <span className="maqam-jins__unit"> cents</span>

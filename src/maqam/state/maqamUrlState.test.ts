@@ -7,11 +7,7 @@ import {
   writeMaqamUrlSearch,
 } from './maqamUrlState';
 import { MAQAM_PRESETS_BY_ID, deriveDetuneMatrix } from '../data/maqamPresets';
-import { DEFAULT_MELODY_ID, GENERATED_MELODY_ID } from '../melody/maqamMelody';
 import { toggleDetuneSlot } from './maqamTuning';
-
-/** The melody half of the state, defaulted, so tuning tests stay about tuning. */
-const plainMelody = { melodyId: DEFAULT_MELODY_ID, melodySeed: 1 };
 
 const rastMatrix = deriveDetuneMatrix(MAQAM_PRESETS_BY_ID.rast_c.scaleDegrees).matrix;
 const hijazMatrix = deriveDetuneMatrix(MAQAM_PRESETS_BY_ID.hijaz_d.scaleDegrees).matrix;
@@ -72,27 +68,11 @@ describe('readMaqamUrlState', () => {
     expect(state.matrix).toEqual(custom);
   });
 
-  it('defaults to the scale pattern', () => {
-    expect(readMaqamUrlState('').melodyId).toBe(DEFAULT_MELODY_ID);
-  });
-
-  it('reads a named pattern', () => {
-    expect(readMaqamUrlState('?melody=thirds').melodyId).toBe('thirds');
-  });
-
-  it('falls back to the scale for an unknown pattern rather than an empty staff', () => {
-    expect(readMaqamUrlState('?melody=not_a_pattern').melodyId).toBe(DEFAULT_MELODY_ID);
-  });
-
-  it('reads a generated phrase and its seed', () => {
-    const state = readMaqamUrlState(`?melody=${GENERATED_MELODY_ID}&seed=777`);
-    expect(state.melodyId).toBe(GENERATED_MELODY_ID);
-    expect(state.melodySeed).toBe(777);
-  });
-
-  it.each(['0', '-5', 'abc', '1.5'])('rejects seed %s rather than generating from it', (seed) => {
-    expect(readMaqamUrlState(`?melody=${GENERATED_MELODY_ID}&seed=${seed}`).melodySeed).toBe(1);
-  });
+  /*
+   * The melody and seed params are gone with the patterns and the generator.
+   * The URL now carries what the app actually has: which maqam, and how it is
+   * tuned.
+   */
 
   it('falls back to the maqam’s tuning when the custom one is corrupt', () => {
     const state = readMaqamUrlState('?maqam=rast_c&tuning=garbage');
@@ -100,76 +80,23 @@ describe('readMaqamUrlState', () => {
   });
 });
 
-describe('the generated phrase survives looking at something else', () => {
-  /**
-   * The seed used to be written only while "Generated phrase" was selected, so
-   * switching to another pattern dropped it from the URL and a reload handed
-   * back seed 1 instead of the phrase you had pressed New phrase until you
-   * liked. Two separate choices, and one was silently discarding the other.
-   */
-  it('keeps a chosen seed in the URL while another pattern is selected', () => {
-    const search = writeMaqamUrlSearch(
-      {
-        presetId: 'rast_c',
-        matrix: rastMatrix,
-        melodyId: 'thirds',
-        melodySeed: 8421,
-      },
-      '',
-    );
-    expect(search).toContain('seed=8421');
-    expect(readMaqamUrlState(search).melodySeed).toBe(8421);
-  });
-
-  it('still omits the default seed, so a plain link stays short', () => {
-    const search = writeMaqamUrlSearch(
-      {
-        presetId: 'rast_c',
-        matrix: rastMatrix,
-        melodyId: 'thirds',
-        melodySeed: 1,
-      },
-      '',
-    );
-    expect(search).not.toContain('seed=');
-  });
-
-  it('round-trips the phrase through a reload', () => {
-    const chosen = writeMaqamUrlSearch(
-      {
-        presetId: 'rast_c',
-        matrix: rastMatrix,
-        melodyId: 'generated',
-        melodySeed: 999,
-      },
-      '',
-    );
-    // Look at another pattern, then reload: the seed is still there.
-    const browsedAway = writeMaqamUrlSearch(
-      { presetId: 'rast_c', matrix: rastMatrix, melodyId: 'qafla', melodySeed: 999 },
-      chosen,
-    );
-    expect(readMaqamUrlState(browsedAway).melodySeed).toBe(999);
-  });
-});
-
 describe('writeMaqamUrlSearch', () => {
   it('writes only the maqam when the tuning is untouched', () => {
-    expect(writeMaqamUrlSearch({ presetId: 'rast_c', matrix: rastMatrix, ...plainMelody })).toBe(
+    expect(writeMaqamUrlSearch({ presetId: 'rast_c', matrix: rastMatrix })).toBe(
       '?maqam=rast_c',
     );
   });
 
   it('adds the tuning once it diverges from the preset', () => {
     const custom = toggleDetuneSlot(rastMatrix, 9);
-    const search = writeMaqamUrlSearch({ presetId: 'rast_c', matrix: custom, ...plainMelody });
+    const search = writeMaqamUrlSearch({ presetId: 'rast_c', matrix: custom });
     expect(search).toContain('maqam=rast_c');
     expect(search).toContain(`tuning=${encodeTuning(custom)}`);
   });
 
   it('drops a stale tuning param when the tuning returns to the preset', () => {
     const search = writeMaqamUrlSearch(
-      { presetId: 'rast_c', matrix: rastMatrix, ...plainMelody },
+      { presetId: 'rast_c', matrix: rastMatrix },
       '?maqam=rast_c&tuning=----d------d',
     );
     expect(search).toBe('?maqam=rast_c');
@@ -177,61 +104,16 @@ describe('writeMaqamUrlSearch', () => {
 
   it('preserves unrelated query params', () => {
     const search = writeMaqamUrlSearch(
-      { presetId: 'rast_c', matrix: rastMatrix, ...plainMelody },
+      { presetId: 'rast_c', matrix: rastMatrix },
       '?debug=1',
     );
     expect(search).toContain('debug=1');
     expect(search).toContain('maqam=rast_c');
   });
 
-  it('keeps the melody out of the URL until it differs from the default', () => {
-    expect(
-      writeMaqamUrlSearch({ presetId: 'rast_c', matrix: rastMatrix, ...plainMelody }),
-    ).not.toContain('melody=');
-  });
-
-  it('writes the melody and its seed once a phrase is generated', () => {
-    const search = writeMaqamUrlSearch({
-      presetId: 'rast_c',
-      matrix: rastMatrix,
-      melodyId: GENERATED_MELODY_ID,
-      melodySeed: 4242,
-    });
-    expect(search).toContain(`melody=${GENERATED_MELODY_ID}`);
-    expect(search).toContain('seed=4242');
-  });
-
-  /**
-   * This used to assert the opposite, on the reasoning that a seed "means
-   * nothing" for a fixed pattern. It means the phrase the user pressed New
-   * phrase until they liked, and dropping it from the URL meant a glance at
-   * another pattern plus a reload threw that phrase away. Two separate
-   * choices; neither gets to discard the other.
-   */
-  it('keeps a chosen seed even while a fixed pattern is selected', () => {
-    const search = writeMaqamUrlSearch({
-      presetId: 'rast_c',
-      matrix: rastMatrix,
-      melodyId: 'thirds',
-      melodySeed: 99,
-    });
-    expect(search).toContain('melody=thirds');
-    expect(search).toContain('seed=99');
-  });
-
-  it('omits a seed the user never chose', () => {
-    const search = writeMaqamUrlSearch({
-      presetId: 'rast_c',
-      matrix: rastMatrix,
-      melodyId: 'thirds',
-      melodySeed: 1,
-    });
-    expect(search).not.toContain('seed=');
-  });
-
   it('round-trips through readMaqamUrlState', () => {
     const custom = toggleDetuneSlot(hijazMatrix, 4);
-    const search = writeMaqamUrlSearch({ presetId: 'hijaz_d', matrix: custom, ...plainMelody });
+    const search = writeMaqamUrlSearch({ presetId: 'hijaz_d', matrix: custom });
     const state = readMaqamUrlState(search);
     expect(state.presetId).toBe('hijaz_d');
     expect(state.matrix).toEqual(custom);

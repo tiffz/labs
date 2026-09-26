@@ -1,18 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
+import { durationForBeats, resolveMelody, scaleOf } from './maqamMelody';
 import {
-  DEFAULT_MELODY_ID,
-  GENERATED_BEATS,
-  MELODY_PATTERNS,
-  durationForBeats,
-  describeMelody,
-  findMelodyDefinition,
-  generateMelody,
-  melodyBeats,
-  resolveMelody,
-} from './maqamMelody';
-import {
-  ajnasJoin,
   MAQAM_PRESETS,
   MAQAM_PRESETS_BY_ID,
   NEUTRAL_DETUNE_MATRIX,
@@ -22,270 +11,38 @@ import { detuneForMidiNote, midiNoteToFrequency } from '../audio/maqamSynth';
 import { pitchClassOf, spellingLabel } from '../notation/maqamAccidentals';
 
 const rast = MAQAM_PRESETS_BY_ID.rast_c;
-const saba = MAQAM_PRESETS_BY_ID.saba_d;
 const rastMatrix = deriveDetuneMatrix(rast.scaleDegrees).matrix;
 
-const everyPatternAndPreset = MELODY_PATTERNS.flatMap((pattern) =>
-  MAQAM_PRESETS.map((preset) => [`${pattern.id} / ${preset.id}`, pattern, preset] as const),
-);
-
-describe('melody patterns', () => {
-  it('ships the default', () => {
-    expect(findMelodyDefinition(DEFAULT_MELODY_ID)).toBeDefined();
-  });
-
-  it('returns undefined for an unknown id rather than a silent fallback', () => {
-    expect(findMelodyDefinition('nope')).toBeUndefined();
-  });
-
-  it('gives every pattern a unique id', () => {
-    const ids = MELODY_PATTERNS.map((p) => p.id);
-    expect(new Set(ids).size).toBe(ids.length);
-  });
-
-  /**
-   * The invariant that makes "write the pattern once, play it in 9 maqamat"
-   * safe: a pattern may only ever reference a degree the loaded maqam has.
-   * An off-by-one reaching past the end would resolve to nothing and the
-   * melody would silently lose a note.
-   */
-  it.each(everyPatternAndPreset)('%s only uses degrees the maqam has', (_label, pattern, preset) => {
-    const notes = pattern.build(preset);
-    expect(notes.length).toBeGreaterThan(0);
-    for (const item of notes) {
-      expect(item.degree, `${pattern.id} on ${preset.id}`).toBeGreaterThanOrEqual(0);
-      expect(item.degree).toBeLessThan(preset.scaleDegrees.length);
-      expect(item.beats).toBeGreaterThan(0);
-    }
-  });
-
-  it.each(everyPatternAndPreset)('%s resolves every note', (_label, pattern, preset) => {
-    const notes = pattern.build(preset);
-    // `resolveMelody` drops degrees it cannot resolve, so a shortfall here means
-    // a pattern pointed somewhere the maqam does not go.
-    expect(resolveMelody(preset, notes, 4, deriveDetuneMatrix(preset.scaleDegrees).matrix)).toHaveLength(notes.length);
-  });
-
-  it.each(everyPatternAndPreset)('%s starts on the tonic', (_label, pattern, preset) => {
-    // Every pattern is a study of this maqam, so it opens on home — except the
-    // descending scale and qafla, which arrive there instead.
-    const notes = pattern.build(preset);
-    const opensOrClosesOnTonic = notes[0].degree === 0 || notes[notes.length - 1].degree === 0;
-    expect(opensOrClosesOnTonic, pattern.id).toBe(true);
-  });
-
-  it('works on Saba, which has 7 degrees rather than 8', () => {
-    expect(saba.scaleDegrees).toHaveLength(7);
-    for (const pattern of MELODY_PATTERNS) {
-      const notes = pattern.build(saba);
-      expect(notes.length, pattern.id).toBeGreaterThan(0);
-      for (const item of notes) expect(item.degree).toBeLessThan(7);
-    }
-  });
-
-  it('plays the scale pattern as the plain ascending scale', () => {
-    const notes = findMelodyDefinition('scale-up')!.build(rast);
-    expect(notes.map((n) => n.degree)).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
-  });
-
-  it('plays the descending pattern backwards, ending long', () => {
-    const notes = findMelodyDefinition('scale-down')!.build(rast);
-    expect(notes.map((n) => n.degree)).toEqual([7, 6, 5, 4, 3, 2, 1, 0]);
-    expect(notes[notes.length - 1].beats).toBe(2);
-  });
-
-  it('pairs each degree with the one 2 above it in thirds', () => {
-    const notes = findMelodyDefinition('thirds')!.build(rast);
-    for (let i = 0; i + 1 < notes.length; i += 2) {
-      expect(notes[i + 1].degree - notes[i].degree).toBe(2);
-    }
-  });
-
-  /**
-   * Rast's cells meet on G, and the pattern lands there twice.
-   *
-   * This assertion has been wrong twice, in opposite directions, and both
-   * times because of the DATA rather than the logic. First it claimed the
-   * cells "share degree 3 (G)" when degree 3 was F. Then, once the join was
-   * derived rather than asserted, it claimed they do not touch at all: true of
-   * the data as authored, false of the music, because Jins Rast is a 5-note
-   * pentachord (maqamworld.com) that was stored here as a tetrachord.
-   *
-   * Written now against the interval data rather than a remembered shape.
-   */
-  it('plays Rast as two cells meeting on the shared degree', () => {
-    const degrees = findMelodyDefinition('jins-by-jins')!.build(rast).map((n) => n.degree);
-    const join = ajnasJoin(rast)!;
-
-    expect(join.shared, 'Rast is conjunct: Jins Rast reaches G, where the upper cell starts').toBe(
-      true,
-    );
-    // Up the lower cell to its top, then the upper cell from the same degree.
-    expect(degrees).toEqual([0, 1, 2, 3, 4, 4, 5, 6, 7]);
-    expect(degrees.filter((d) => d === join.ghammazIndex)).toHaveLength(2);
-  });
-
-  it('repeats the shared degree in a conjunct maqam', () => {
-    // Bayati's cells meet on G, degree 3, so the pattern lands there twice:
-    // once ending the lower cell, once beginning the upper.
-    const degrees = findMelodyDefinition('jins-by-jins')!
-      .build(MAQAM_PRESETS_BY_ID.bayati_d)
-      .map((n) => n.degree);
-    expect(degrees.filter((d) => d === 3)).toHaveLength(2);
-  });
-
-  it('climbs to the ghammaz the upper jins is rooted on', () => {
-    // Not to whatever the lower cell's note count happens to point at.
-    for (const preset of MAQAM_PRESETS) {
-      const upper = preset.primaryAjnas[1];
-      if (!upper) continue;
-      const expected = preset.scaleDegrees.findIndex(
-        (degree) =>
-          degree.letter === upper.root.letter && degree.accidental === upper.root.accidental,
-      );
-      const turn = findMelodyDefinition('ghammaz-turn')!.build(preset).map((n) => n.degree);
-      expect(Math.max(...turn), preset.id).toBe(expected);
-    }
-  });
-});
-
-/**
- * A pattern's description is shown beside the staff that renders it, so a word
- * like "octave" is a claim about the notes on screen. Saba has 7 degrees and
- * does not return to its tonic, and the arpeggio's description promised an
- * octave anyway — on the same screen as the panel saying it has none.
+/*
+ * The drill patterns and the procedural generator used to live here, with
+ * roughly 200 lines of tests. Both are gone: each made a claim about how this
+ * music moves, and those claims belong to the sayr, which nobody here is in a
+ * position to get right. What is left is the scale, which follows from the
+ * data alone.
  */
-describe('pattern descriptions', () => {
-  it.each(everyPatternAndPreset)(
-    '%s only claims an octave when it reaches one',
-    (_label, pattern, preset) => {
-      // The RESOLVED line, not the field: a description may be a function of
-      // the maqam, and regexing a function's source tests nothing.
-      if (!/\boctave\b/i.test(describeMelody(pattern, preset))) return;
-      const top = preset.scaleDegrees[Math.max(...pattern.build(preset).map((n) => n.degree))];
-      const tonic = preset.scaleDegrees[0];
-      // The octave is the TONIC an octave up. `octaveOffset` alone is not that
-      // test: Saba's seventh is also written in the next octave, so it passed
-      // an assertion that only looked at the offset while the claim stayed
-      // false.
-      expect(
-        { letter: top.letter, accidental: top.accidental, offset: top.octaveOffset },
-        `${pattern.id} on ${preset.id}`,
-      ).toEqual({ letter: tonic.letter, accidental: tonic.accidental, offset: 1 });
+
+describe('scaleOf', () => {
+  it.each(MAQAM_PRESETS.map((p) => [p.id, p] as const))(
+    'walks %s once, in order, with no gaps',
+    (_id, preset) => {
+      const degrees = scaleOf(preset).map((note) => note.degree);
+      expect(degrees).toEqual(preset.scaleDegrees.map((_, index) => index));
     },
   );
-});
 
-  it('never describes a single-jins maqam as having two cells', () => {
-    // The panel beside the staff says Saba's upper region is deliberately not
-    // named. A fixed "each cell on its own" had the app contradicting itself on
-    // the same screen, and a learner would conclude Saba has two settled cells.
-    const jinsByJins = findMelodyDefinition('jins-by-jins')!;
+  it('gives every note the same length, because a scale has no rhythm to claim', () => {
+    expect(new Set(scaleOf(rast).map((note) => note.beats)).size).toBe(1);
+  });
 
+  it('covers Saba, which stops at the seventh', () => {
     const saba = MAQAM_PRESETS_BY_ID.saba_d;
-    expect(saba.primaryAjnas).toHaveLength(1);
-    expect(describeMelody(jinsByJins, saba)).not.toMatch(/each cell/i);
-    expect(describeMelody(jinsByJins, saba)).toMatch(/one settled cell/i);
-
-    // And still says the true thing for the eight that do have two.
-    expect(describeMelody(jinsByJins, MAQAM_PRESETS_BY_ID.rast_c)).toMatch(/each cell/i);
-  });
-
-  it.each(MAQAM_PRESETS.map((p) => [p.id, p] as const))(
-    'gives %s a non-empty line for every pattern',
-    (_id, preset) => {
-      for (const pattern of MELODY_PATTERNS) {
-        expect(describeMelody(pattern, preset).trim().length, pattern.id).toBeGreaterThan(10);
-      }
-    },
-  );
-
-describe('generateMelody', () => {
-  it('is reproducible from its seed', () => {
-    expect(generateMelody(rast, 42)).toEqual(generateMelody(rast, 42));
-  });
-
-  it('gives different phrases for different seeds', () => {
-    expect(generateMelody(rast, 1)).not.toEqual(generateMelody(rast, 2));
-  });
-
-  it.each(MAQAM_PRESETS.map((p) => [p.id, p] as const))(
-    'fills exactly 2 bars in %s',
-    (_id, preset) => {
-      for (let seed = 1; seed <= 25; seed += 1) {
-        expect(melodyBeats(generateMelody(preset, seed)), `seed ${seed}`).toBeCloseTo(
-          GENERATED_BEATS,
-          6,
-        );
-      }
-    },
-  );
-
-  it.each(MAQAM_PRESETS.map((p) => [p.id, p] as const))(
-    'stays inside %s and resolves to the tonic',
-    (_id, preset) => {
-      for (let seed = 1; seed <= 25; seed += 1) {
-        const notes = generateMelody(preset, seed);
-        expect(notes[notes.length - 1].degree, `seed ${seed}`).toBe(0);
-        for (const item of notes) {
-          expect(item.degree).toBeGreaterThanOrEqual(0);
-          expect(item.degree).toBeLessThan(preset.scaleDegrees.length);
-        }
-      }
-    },
-  );
-
-  /**
-   * Conjunct motion is what makes it sound like a maqam rather than a random
-   * walk. Not every interval — the generator allows thirds and a leap to the
-   * ghammaz — but the bulk of them.
-   */
-  it('moves mostly by step', () => {
-    let steps = 0;
-    let total = 0;
-    for (let seed = 1; seed <= 60; seed += 1) {
-      const notes = generateMelody(rast, seed);
-      for (let i = 1; i < notes.length; i += 1) {
-        total += 1;
-        if (Math.abs(notes[i].degree - notes[i - 1].degree) <= 1) steps += 1;
-      }
-    }
-    expect(steps / total).toBeGreaterThan(0.5);
-  });
-
-  /**
-   * A stuck note is the one thing the generator must not do, and it did it in
-   * roughly half of all phrases: runs of 3, 4 and 5 identical degrees, against
-   * an on-screen description promising stepwise motion.
-   *
-   * Two causes, both now fixed. Clamping an out-of-range step pinned the degree
-   * to the boundary and repeated it. And the "jump to the ghammaz" branch was a
-   * self-transition whenever the phrase was already there, which the corrected
-   * ghammaz made more likely, since half of all phrases start on it.
-   */
-  it.each(MAQAM_PRESETS.map((p) => [p.id, p] as const))(
-    'never repeats a note in %s',
-    (_id, preset) => {
-      for (let seed = 1; seed <= 500; seed += 1) {
-        const degrees = generateMelody(preset, seed).map((n) => n.degree);
-        for (let i = 1; i < degrees.length; i += 1) {
-          expect(
-            degrees[i],
-            `seed ${seed} repeats degree ${degrees[i]}: ${degrees.join(' ')}`,
-          ).not.toBe(degrees[i - 1]);
-        }
-      }
-    },
-  );
-
-  it('survives a zero seed rather than dividing by it', () => {
-    expect(() => generateMelody(rast, 0)).not.toThrow();
-    expect(melodyBeats(generateMelody(rast, 0))).toBeCloseTo(GENERATED_BEATS, 6);
+    expect(saba.scaleDegrees).toHaveLength(7);
+    expect(scaleOf(saba)).toHaveLength(7);
   });
 });
 
 describe('resolveMelody', () => {
-  it('spells Rast’s third as the half-flat the maqam writes', () => {
+  it('spells Rast\u2019s third as the half-flat the maqam writes', () => {
     const resolved = resolveMelody(rast, [{ degree: 2, beats: 1 }], 4, rastMatrix);
     expect(spellingLabel(resolved[0].staff)).toBe('E½♭');
     expect(resolved[0].cents).toBe(-50);
@@ -293,48 +50,35 @@ describe('resolveMelody', () => {
   });
 
   /**
-   * The end-to-end check: a melody note must sound at the pitch it is written
-   * at, through the same detune matrix the keyboard uses. This is the app's
-   * core invariant, asserted on the playback path rather than only the scale.
+   * The app's core invariant, asserted on the playback path: a note must sound
+   * at the pitch it is written at, through the same matrix the keyboard uses.
    */
   it.each(MAQAM_PRESETS.map((p) => [p.id, p] as const))(
-    'sounds every %s melody note at its written pitch',
+    'sounds every %s scale note at its written pitch',
     (_id, preset) => {
       const { matrix } = deriveDetuneMatrix(preset.scaleDegrees);
-      for (const pattern of MELODY_PATTERNS) {
-        for (const item of resolveMelody(preset, pattern.build(preset), 4, matrix)) {
-          const written = midiNoteToFrequency(item.midiNote, item.cents);
-          const sounded = midiNoteToFrequency(
-            item.midiNote,
-            detuneForMidiNote(item.midiNote, matrix),
-          );
-          expect(Math.abs(sounded - written) / written).toBeLessThan(1e-9);
-        }
+      for (const item of resolveMelody(preset, scaleOf(preset), 4, matrix)) {
+        const written = midiNoteToFrequency(item.midiNote, item.cents);
+        const sounded = midiNoteToFrequency(item.midiNote, detuneForMidiNote(item.midiNote, matrix));
+        expect(Math.abs(sounded - written) / written).toBeLessThan(1e-9);
       }
     },
   );
 
   /**
-   * The regression this argument exists for.
-   *
-   * `resolveMelody` used to take the bend from the preset's spelling while the
-   * keyboard took it from the live matrix, so editing the tuning made Play and
-   * the keys disagree about the pitch of one written note — and the staff kept
-   * announcing the preset's. The old test could not catch it: it built the
-   * matrix from the same preset it was checking, so both sides always agreed.
+   * The regression the matrix argument exists for. `resolveMelody` used to
+   * take the bend from the preset's spelling while the keyboard took it from
+   * the live matrix, so editing the tuning made Play and the keys disagree.
    */
   it('follows the live matrix when it contradicts the preset spelling', () => {
     const neutral = [...NEUTRAL_DETUNE_MATRIX];
     const [third] = resolveMelody(rast, [{ degree: 2, beats: 1 }], 4, neutral);
-
-    // Rast writes its third as E half-flat, but this tuning bends nothing.
     expect(third.cents).toBe(0);
     expect(spellingLabel(third.staff)).toBe('E');
     expect(third.midiNote).toBe(64);
   });
 
   it('re-bends the staff when a key outside the preset is bent by hand', () => {
-    // A is unbent in Rast; bending it must change what the staff draws.
     const bentA = [...deriveDetuneMatrix(rast.scaleDegrees).matrix];
     bentA[9] = -50;
     const [sixth] = resolveMelody(rast, [{ degree: 5, beats: 1 }], 4, bentA);
@@ -343,16 +87,16 @@ describe('resolveMelody', () => {
   });
 
   it('keeps each note on the key its spelling names', () => {
-    for (const item of resolveMelody(rast, findMelodyDefinition('scale-up')!.build(rast), 4, rastMatrix)) {
+    for (const item of resolveMelody(rast, scaleOf(rast), 4, rastMatrix)) {
       expect(item.midiNote % 12).toBe(pitchClassOf(item.staff));
     }
   });
 
-  it('drops nothing for a melody it can resolve, and does not invent notes', () => {
-    const notes = [{ degree: 0, beats: 1 }, { degree: 99, beats: 1 }];
-    // Out-of-range degrees are skipped rather than clamped onto a wrong pitch —
-    // a wrong note is worse than a missing one, and the pattern tests above
-    // guarantee shipped patterns never produce them.
+  it('drops an out-of-range degree rather than clamping it onto a wrong pitch', () => {
+    const notes = [
+      { degree: 0, beats: 1 },
+      { degree: 99, beats: 1 },
+    ];
     expect(resolveMelody(rast, notes, 4, rastMatrix)).toHaveLength(1);
   });
 });

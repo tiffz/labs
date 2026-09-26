@@ -5,19 +5,12 @@ import TextField from '@mui/material/TextField';
 
 import SkipToMain from '../shared/components/SkipToMain';
 import DetuneMatrixBar from './components/DetuneMatrixBar';
-import HowMaqamsWork from './components/HowMaqamsWork';
 import JinsBreakdown from './components/JinsBreakdown';
 import MaqamKeyboard from './components/MaqamKeyboard';
 import MaqamStaff from './components/MaqamStaff';
 import MidiStatusBadge from './components/MidiStatusBadge';
 import RetuningNote from './components/RetuningNote';
 import { PITCH_CLASS_NAMES, maqamatByFamily } from './data/maqamPresets';
-import {
-  GENERATED_MELODY_ID,
-  MELODY_PATTERNS,
-  describeMelody,
-  findMelodyDefinition,
-} from './melody/maqamMelody';
 import { bentPitchClasses, formatCents, liveScaleLabels } from './state/maqamTuning';
 import { useMaqamState } from './state/useMaqamState';
 
@@ -48,17 +41,13 @@ export default function App() {
     resetTuning,
     noteOn,
     noteOff,
-    melodyId,
     melody,
     isPlaying,
     playingIndex,
-    selectMelody,
-    shuffleMelody,
     togglePlayback,
   } = useMaqamState();
 
   const [tuningOpen, setTuningOpen] = useState(false);
-  const [helpOpen, setHelpOpen] = useState(false);
 
   const staffNotes = useMemo(
     () => melody.map((note) => ({ ...note.staff, duration: note.duration })),
@@ -96,14 +85,6 @@ export default function App() {
     () => (playingIndex === null ? undefined : melody[playingIndex]?.midiNote),
     [melody, playingIndex],
   );
-
-  const melodyDescription =
-    melodyId === GENERATED_MELODY_ID
-      ? 'A phrase generated in this maqam: mostly stepwise, resolving to the tonic.'
-      : (() => {
-          const pattern = findMelodyDefinition(melodyId);
-          return pattern && preset ? describeMelody(pattern, preset) : undefined;
-        })();
 
   const bentKeys = bentPitchClasses(matrix);
 
@@ -153,11 +134,21 @@ export default function App() {
             ))}
           </TextField>
 
-          <Button variant="text" onClick={() => setHelpOpen(true)}>
-            How maqamat work
+          {/*
+            The explainer this replaced was several screens of our own prose
+            about a tradition nobody here is expert in. Linking out is the
+            honest version: maqamworld.com is where every interval in this app
+            came from, and it can say what a maqam is far better than we can.
+          */}
+          <Button
+            variant="text"
+            component="a"
+            href="https://www.maqamworld.com/en/maqam.php"
+            target="_blank"
+            rel="noreferrer noopener"
+          >
+            Learn maqamat at maqamworld
           </Button>
-
-          <MidiStatusBadge supported={midiSupported} devices={midiDevices} />
         </header>
 
         <div className="maqam-stage">
@@ -196,30 +187,8 @@ export default function App() {
               >
                 {isPlaying ? 'Stop' : 'Play'}
               </Button>
-
-              <TextField
-                select
-                size="small"
-                label="Pattern"
-                value={melodyId}
-                onChange={(event) => selectMelody(event.target.value)}
-                className="maqam-melodybar__pick"
-                slotProps={{ select: { native: true } }}
-              >
-                {MELODY_PATTERNS.map((pattern) => (
-                  <option key={pattern.id} value={pattern.id}>
-                    {pattern.name}
-                  </option>
-                ))}
-                <option value={GENERATED_MELODY_ID}>Generated phrase</option>
-              </TextField>
-
-              <Button variant="outlined" size="small" disableElevation onClick={shuffleMelody}>
-                New phrase
-              </Button>
             </div>
 
-            {melodyDescription && <p className="maqam-description">{melodyDescription}</p>}
           </section>
 
           {preset && (
@@ -289,7 +258,11 @@ export default function App() {
             </p>
 
             <div className="maqam-board__actions">
-              <RetuningNote onReadMore={() => setHelpOpen(true)} />
+              {/* Beside the keyboard, because that is the thing it is about:
+                  a controller plays THIS board, retuned. In the topbar it read
+                  as app chrome and answered a question nobody had yet. */}
+              <MidiStatusBadge supported={midiSupported} devices={midiDevices} />
+              <RetuningNote />
               {!isPresetTuning && preset && (
                 <Button variant="text" size="small" onClick={resetTuning}>
                   Reset
@@ -312,8 +285,6 @@ export default function App() {
           )}
         </section>
       </div>
-
-      <HowMaqamsWork open={helpOpen} onClose={() => setHelpOpen(false)} />
     </main>
   );
 }

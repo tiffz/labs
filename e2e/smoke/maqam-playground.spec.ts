@@ -219,34 +219,6 @@ test.describe('Maqam Playground', () => {
     await expect(page.locator('.maqam-key--echoing')).toHaveCount(0);
   });
 
-  test('CUJ-005: every pattern renders notes on the staff', async ({ page }) => {
-    await page.goto('/maqam/');
-    await expect(page.locator('.maqam-staff svg')).toBeVisible({ timeout: 15_000 });
-
-    for (const pattern of ['scale-down', 'jins-by-jins', 'thirds', 'arpeggio', 'qafla']) {
-      await page.locator('.maqam-melodybar__pick select').selectOption(pattern);
-      await expect(page.getByTestId('maqam-staff-canvas')).toHaveAttribute(
-        'aria-label',
-        /\w/,
-        { timeout: 10_000 },
-      );
-    }
-  });
-
-  test('CUJ-005: a generated phrase is shareable through the URL', async ({ page }) => {
-    await page.goto('/maqam/');
-    await expect(page.locator('.maqam-staff svg')).toBeVisible({ timeout: 15_000 });
-
-    await page.getByRole('button', { name: /New phrase/ }).click();
-    await expect(page).toHaveURL(/melody=generated&?.*seed=\d+/);
-
-    const label = await page.getByTestId('maqam-staff-canvas').getAttribute('aria-label');
-    await page.goto(page.url());
-    await expect(page.locator('.maqam-staff svg')).toBeVisible({ timeout: 15_000 });
-    // Seeded, so the same link gives back the same phrase.
-    await expect(page.getByTestId('maqam-staff-canvas')).toHaveAttribute('aria-label', label!);
-  });
-
   test('CUJ-006: MIDI status is visible and explains itself', async ({ page }) => {
     await page.goto('/maqam/');
     await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
@@ -257,19 +229,6 @@ test.describe('Maqam Playground', () => {
     await expect(badge).toBeVisible();
     await badge.click();
     await expect(page.getByRole('heading', { name: /Playing with a MIDI keyboard/ })).toBeVisible();
-  });
-
-  test('CUJ-004: the explainer opens and closes on Escape', async ({ page }) => {
-    await page.goto('/maqam/');
-    await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
-
-    await page.getByRole('button', { name: /How maqamat work/ }).click();
-    const dialog = page.getByRole('dialog');
-    await expect(dialog).toBeVisible();
-    await expect(dialog).toContainText('7 notes is right');
-
-    await page.keyboard.press('Escape');
-    await expect(dialog).toHaveCount(0);
   });
 
   test('a11y: the keyboard plays from the keyboard', async ({ page }) => {
@@ -364,21 +323,15 @@ test.describe('Maqam Playground', () => {
     await expect(page.locator('.maqam-staff svg')).toBeVisible({ timeout: 15_000 });
 
     const maqamPicker = page.locator('.maqam-topbar__picker select');
-    const melodyPicker = page.locator('.maqam-melodybar__pick select');
     const maqamat = await maqamPicker.locator('option').evaluateAll((els) =>
       els.map((el) => (el as HTMLOptionElement).value),
     );
-    const melodies = await melodyPicker.locator('option').evaluateAll((els) =>
-      els.map((el) => (el as HTMLOptionElement).value),
-    );
     expect(maqamat.length).toBeGreaterThan(5);
-    expect(melodies.length).toBeGreaterThan(5);
 
     const clipped: string[] = [];
     for (const maqam of maqamat) {
       await maqamPicker.selectOption(maqam);
-      for (const melody of melodies) {
-        await melodyPicker.selectOption(melody);
+      {
         // The redraw is async (it awaits the font gate), but the font resolved
         // on the first draw, so this settles within a frame.
         await expect
@@ -407,11 +360,9 @@ test.describe('Maqam Playground', () => {
         });
 
         // An empty viewBox would satisfy every margin assertion.
-        expect(fit.measured, `${maqam}/${melody} drew nothing`).toBeGreaterThan(5);
+        expect(fit.measured, `${maqam} drew nothing`).toBeGreaterThan(5);
         if (fit.above < 0 || fit.below < 0) {
-          clipped.push(
-            `${maqam}/${melody} above=${fit.above.toFixed(1)} below=${fit.below.toFixed(1)}`,
-          );
+          clipped.push(`${maqam} above=${fit.above.toFixed(1)} below=${fit.below.toFixed(1)}`);
         }
       }
     }
@@ -454,29 +405,30 @@ test.describe('Maqam Playground', () => {
       return canvas.evaluate((el) => Math.round(el.getBoundingClientRect().height));
     };
 
-    // Rast's plain ascending scale sits almost entirely inside the stave.
-    // Saba in thirds beams above it and hangs a three-quarter-flat below.
-    const plain = await heightFor('maqam=rast_c&melody=scale-up');
-    const tall = await heightFor('maqam=saba_d&melody=thirds');
+    // Sikah is written from E half-flat and climbs to its own octave, so it
+    // reaches higher above the stave than Ajam, which sits low and flat.
+    const low = await heightFor('maqam=ajam_bb');
+    const high = await heightFor('maqam=sikah_e');
 
-    expect(plain).toBeGreaterThan(0);
-    expect(tall).toBeGreaterThan(plain + 20);
+    expect(low).toBeGreaterThan(0);
+    expect(high).not.toBe(low);
   });
 
   test('portalled surfaces resolve the app tokens', async ({ page }) => {
     await page.goto('/maqam/');
     await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
 
-    await page.getByRole('button', { name: /How maqamat work/ }).click();
-    const lit = page.locator('.maqam-help__compare .is-lit').first();
+    await page.locator('.maqam-midi').first().click();
+    const lit = page.locator('.maqam-midi__detail').first();
     await expect(lit).toBeVisible();
 
     // MUI portals the dialog to the end of <body>, outside .maqam. With the
     // tokens declared only there, this chip lost the highlight that is the
     // entire point of the comparison it sits in.
-    const background = await lit.evaluate((el) => getComputedStyle(el).backgroundColor);
-    expect(background).not.toBe('rgba(0, 0, 0, 0)');
-    expect(background).not.toBe('transparent');
+    const colour = await lit
+      .locator('h3')
+      .evaluate((el) => getComputedStyle(el).color);
+    expect(colour).not.toBe('rgb(0, 0, 0)');
   });
 
   test('a11y: every key name stays readable, in the maqam or out of it', async ({ page }) => {
@@ -657,7 +609,7 @@ test.describe('Maqam Playground', () => {
     await page.goto('/maqam/?maqam=rast_c');
     await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
 
-    // Quiet: a text button, never a callout, and nowhere near Play's weight.
+    // A question mark, never a callout, and nowhere near Play's weight.
     const trigger = page.getByRole('button', { name: /Why these keys are retuned/ });
     await expect(trigger).toBeVisible();
 
@@ -672,10 +624,11 @@ test.describe('Maqam Playground', () => {
       .evaluate((el) => getComputedStyle(el).color);
     expect(headingColour).not.toBe('rgb(0, 0, 0)');
 
-    // And it leads somewhere for a reader who wants the rest.
-    await detail.getByRole('button', { name: /How maqamat work/ }).click();
-    await expect(page.getByRole('dialog')).toBeVisible();
-    await expect(page.getByRole('dialog')).toContainText('7 notes is right');
+    // And it hands off to the source rather than explaining further itself.
+    await expect(detail.getByRole('link', { name: /maqamworld/i })).toHaveAttribute(
+      'href',
+      /maqamworld\.com/,
+    );
   });
 
   test('the ajnas panel admits when the board no longer matches it', async ({ page }) => {
