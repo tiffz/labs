@@ -12,6 +12,7 @@ import {
   resolveMelody,
 } from './maqamMelody';
 import {
+  ajnasJoin,
   MAQAM_PRESETS,
   MAQAM_PRESETS_BY_ID,
   NEUTRAL_DETUNE_MATRIX,
@@ -101,19 +102,27 @@ describe('melody patterns', () => {
   });
 
   /**
-   * This test used to assert the bug and mislabel it in the same breath. The
-   * comment read "Rast's lower jins is 4 notes, so the cells share degree 3
-   * (G)" — but degree 3 of C D E half-flat F G A B half-flat C is F, and
-   * Rast's cells share nothing at all. It stayed green while the pattern
-   * rested twice on a note neither jins is rooted on.
+   * Rast's cells meet on G, and the pattern lands there twice.
+   *
+   * This assertion has been wrong twice, in opposite directions, and both
+   * times because of the DATA rather than the logic. First it claimed the
+   * cells "share degree 3 (G)" when degree 3 was F. Then, once the join was
+   * derived rather than asserted, it claimed they do not touch at all: true of
+   * the data as authored, false of the music, because Jins Rast is a 5-note
+   * pentachord (maqamworld.com) that was stored here as a tetrachord.
+   *
+   * Written now against the interval data rather than a remembered shape.
    */
-  it('plays Rast as two cells that do not touch', () => {
-    // Jins Rast on C is C D E half-flat F. Jins Rast on G starts a whole tone
-    // above, so the pattern steps from one cell to the next.
+  it('plays Rast as two cells meeting on the shared degree', () => {
     const degrees = findMelodyDefinition('jins-by-jins')!.build(rast).map((n) => n.degree);
-    expect(degrees).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
-    // Nothing repeats, because there is no shared degree to land on twice.
-    expect(new Set(degrees).size).toBe(degrees.length);
+    const join = ajnasJoin(rast)!;
+
+    expect(join.shared, 'Rast is conjunct: Jins Rast reaches G, where the upper cell starts').toBe(
+      true,
+    );
+    // Up the lower cell to its top, then the upper cell from the same degree.
+    expect(degrees).toEqual([0, 1, 2, 3, 4, 4, 5, 6, 7]);
+    expect(degrees.filter((d) => d === join.ghammazIndex)).toHaveLength(2);
   });
 
   it('repeats the shared degree in a conjunct maqam', () => {

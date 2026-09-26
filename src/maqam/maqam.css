@@ -72,8 +72,11 @@
    * octave of the note sounding, a full fill for the note itself. Amber still
    * means bent off equal temperament and nothing else.
    */
-  --maqam-scale-wash: #dfebf6;
-  --maqam-scale-wash-black: #2b3440;
+  --maqam-scale-wash: #cadff0;
+  --maqam-scale-wash-black: #24313f;
+  /* The octaves of the note sounding: a step above membership, below the note
+     itself, so "which key is that" still has one loud answer. */
+  --maqam-echo: #7fb2d6;
   --maqam-key-ink: #3d352c;
   --maqam-key-black: #272320;
   /*
@@ -649,7 +652,7 @@
  * readable, which the previous three-competing-fills model made impossible.
  */
 .maqam-key.maqam-key--in-scale {
-  background: linear-gradient(180deg, #f6fafd 0%, var(--maqam-scale-wash) 100%);
+  background: linear-gradient(180deg, #e8f2fa 0%, var(--maqam-scale-wash) 100%);
 }
 
 /* Tonic: shape, so it survives a colour-blind reading and stacks with a bend. */
@@ -736,7 +739,7 @@
  * secondary tier so "which key is that" has one loud answer.
  */
 .maqam-key.maqam-key--echoing {
-  background: var(--maqam-tonic-soft);
+  background: var(--maqam-echo);
 }
 
 .shared-pk-black.maqam-key--echoing {

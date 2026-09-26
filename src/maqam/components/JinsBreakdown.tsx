@@ -40,7 +40,8 @@ export default function JinsBreakdown({ preset, isPresetTuning }: JinsBreakdownP
    * cell ends and the second begins" for every maqam, printed directly under
    * the intervals that disprove it: Rast's lower jins is C D E½♭ F, so it ends
    * on F and the second cell starts a whole tone above. Rast, Nahawand and
-   * Ajam are disjunct, and the app taught the opposite by default.
+   * Ajam looked disjunct, from cell sizes that were themselves wrong. Derived,
+   * the panel followed the data to the right answer once the data was fixed.
    */
   const join = ajnasJoin(preset);
   const labels = scaleDegreeLabels(preset.scaleDegrees);

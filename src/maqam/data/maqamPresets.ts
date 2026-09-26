@@ -21,6 +21,9 @@ export interface MaqamScaleDegree extends MaqamNoteSpelling {
  * `maqamPresets.test.ts` checks the two agree; a typo in either is caught by
  * the disagreement rather than by someone noticing the app sounds wrong.
  */
+/** Reference for every musical claim about a jins in this file. */
+const MAQAM_WORLD_JINS = 'https://www.maqamworld.com/en/jins/';
+
 export interface Jins {
   id: string;
   name: string;
@@ -28,6 +31,13 @@ export interface Jins {
   root: MaqamNoteSpelling;
   /** Cents above the root, ascending, starting at 0. */
   intervalsInCents: number[];
+  /**
+   * Where this cell's size and intervals were checked. Required, because the
+   * app teaches theory off a screen that looks authoritative and the first
+   * version of this data was wrong in a way nobody could audit: every root
+   * jins that is a 5-note pentachord was authored as a 4-note tetrachord.
+   */
+  source: string;
 }
 
 export interface MaqamPreset {
@@ -164,8 +174,10 @@ function degreeIndexOf(preset: MaqamPreset, spelling: MaqamNoteSpelling): number
  * first cell ends and the second begins" for every maqam, directly under the
  * intervals that disprove it: Rast's lower jins is 0-200-350-500, which is
  * C D E½♭ F, so it ends on F and the upper jins starts a whole tone above on
- * G. Rast, Nahawand and Ajam are DISJUNCT — the cells do not touch — and the
- * app taught the opposite on the screen that loads by default.
+ * G. Deriving it matters more than the answer: when the cell sizes were later
+ * corrected against maqamworld.com, every maqam here turned out to be
+ * conjunct, and the panel, the ghammaz and the melody patterns all corrected
+ * themselves with no prose to chase.
  *
  * Separately, the ghammaz here is read from the upper jins's root rather than
  * guessed from the lower jins's note count. The guess was right only for the
@@ -269,13 +281,21 @@ export const MAQAM_PRESETS: MaqamPreset[] = [
         id: 'rast_c__jins_rast_c',
         name: 'Jins Rast on C',
         root: { letter: 'C', accidental: 'n' },
-        intervalsInCents: [0, 200, 350, 500],
+        // "Jins Rast is a widely popular 5-note jins ... notated here with its
+        // tonic on C and its ghammaz on G." Authored here as a tetrachord
+        // ending on F, which made Rast read as disjunct when it is not.
+        intervalsInCents: [0, 200, 350, 500, 700],
+        source: `${MAQAM_WORLD_JINS}rast.php`,
       },
       {
-        id: 'rast_c__jins_rast_g',
-        name: 'Jins Rast on G',
+        id: 'rast_c__jins_upper_rast_g',
+        // Not "Jins Rast on G": Maqam Rast's scale "starts with the root Jins
+        // Rast on the tonic, followed on the 5th degree by either Jins Upper
+        // Rast (with its tonic up on the 8th degree) or Jins Nahawand".
+        name: 'Jins Upper Rast on G',
         root: { letter: 'G', accidental: 'n' },
         intervalsInCents: [0, 200, 350, 500],
+        source: `${MAQAM_WORLD_JINS}upper-rast.php`,
       },
     ],
   },
@@ -295,6 +315,7 @@ export const MAQAM_PRESETS: MaqamPreset[] = [
         name: 'Jins Bayati on D',
         root: { letter: 'D', accidental: 'n' },
         intervalsInCents: [0, 150, 300, 500],
+        source: `${MAQAM_WORLD_JINS}bayati.php`,
       },
       {
         // The spec rooted this on A, where Bayati's B-flat makes the authored
@@ -303,7 +324,8 @@ export const MAQAM_PRESETS: MaqamPreset[] = [
         id: 'bayati_d__jins_nahawand_g',
         name: 'Jins Nahawand on G',
         root: { letter: 'G', accidental: 'n' },
-        intervalsInCents: [0, 200, 300, 500],
+        intervalsInCents: [0, 200, 300, 500, 700],
+        source: `${MAQAM_WORLD_JINS}nahawand.php`,
       },
     ],
   },
@@ -332,12 +354,14 @@ export const MAQAM_PRESETS: MaqamPreset[] = [
         name: 'Jins Sikah on E½♭',
         root: { letter: 'E', accidental: 'd' },
         intervalsInCents: [0, 150, 350],
+        source: `${MAQAM_WORLD_JINS}sikah.php`,
       },
       {
         id: 'sikah_e__jins_rast_g',
         name: 'Jins Rast on G',
         root: { letter: 'G', accidental: 'n' },
         intervalsInCents: [0, 200, 350, 500],
+        source: `${MAQAM_WORLD_JINS}rast.php`,
       },
     ],
   },
@@ -370,6 +394,7 @@ export const MAQAM_PRESETS: MaqamPreset[] = [
         name: 'Jins Saba on D',
         root: { letter: 'D', accidental: 'n' },
         intervalsInCents: [0, 150, 300, 400],
+        source: `${MAQAM_WORLD_JINS}saba.php`,
       },
     ],
   },
@@ -389,12 +414,14 @@ export const MAQAM_PRESETS: MaqamPreset[] = [
         name: 'Jins Hijaz on D',
         root: { letter: 'D', accidental: 'n' },
         intervalsInCents: [0, 100, 400, 500],
+        source: `${MAQAM_WORLD_JINS}hijaz.php`,
       },
       {
         id: 'hijaz_d__jins_nahawand_g',
         name: 'Jins Nahawand on G',
         root: { letter: 'G', accidental: 'n' },
-        intervalsInCents: [0, 200, 300, 500],
+        intervalsInCents: [0, 200, 300, 500, 700],
+        source: `${MAQAM_WORLD_JINS}nahawand.php`,
       },
     ],
   },
@@ -414,12 +441,14 @@ export const MAQAM_PRESETS: MaqamPreset[] = [
         name: 'Jins Kurd on D',
         root: { letter: 'D', accidental: 'n' },
         intervalsInCents: [0, 100, 300, 500],
+        source: `${MAQAM_WORLD_JINS}kurd.php`,
       },
       {
         id: 'kurd_d__jins_nahawand_g',
         name: 'Jins Nahawand on G',
         root: { letter: 'G', accidental: 'n' },
         intervalsInCents: [0, 200, 300, 500],
+        source: `${MAQAM_WORLD_JINS}nahawand.php`,
       },
     ],
   },
@@ -438,13 +467,16 @@ export const MAQAM_PRESETS: MaqamPreset[] = [
         id: 'nahawand_c__jins_nahawand_c',
         name: 'Jins Nahawand on C',
         root: { letter: 'C', accidental: 'n' },
-        intervalsInCents: [0, 200, 300, 500],
+        // "Jins Nahawand is a 5-note jins ... tonic on C and its ghammaz on G."
+        intervalsInCents: [0, 200, 300, 500, 700],
+        source: `${MAQAM_WORLD_JINS}nahawand.php`,
       },
       {
         id: 'nahawand_c__jins_kurd_g',
         name: 'Jins Kurd on G',
         root: { letter: 'G', accidental: 'n' },
         intervalsInCents: [0, 100, 300, 500],
+        source: `${MAQAM_WORLD_JINS}kurd.php`,
       },
     ],
   },
@@ -464,12 +496,14 @@ export const MAQAM_PRESETS: MaqamPreset[] = [
         name: 'Jins Nikriz on C',
         root: { letter: 'C', accidental: 'n' },
         intervalsInCents: [0, 200, 300, 600, 700],
+        source: `${MAQAM_WORLD_JINS}nikriz.php`,
       },
       {
         id: 'nikriz_c__jins_nahawand_g',
         name: 'Jins Nahawand on G',
         root: { letter: 'G', accidental: 'n' },
         intervalsInCents: [0, 200, 300, 500],
+        source: `${MAQAM_WORLD_JINS}nahawand.php`,
       },
     ],
   },
@@ -497,13 +531,17 @@ export const MAQAM_PRESETS: MaqamPreset[] = [
         id: 'ajam_bb__jins_ajam_bb',
         name: 'Jins Ajam on B♭',
         root: { letter: 'B', accidental: 'b' },
-        intervalsInCents: [0, 200, 400, 500],
+        // "The 5-note version of Jins 'Ajam is the most common version",
+        // ghammaz on the 5th.
+        intervalsInCents: [0, 200, 400, 500, 700],
+        source: `${MAQAM_WORLD_JINS}ajam.php`,
       },
       {
         id: 'ajam_bb__jins_ajam_f',
         name: 'Jins Ajam on F',
         root: { letter: 'F', accidental: 'n' },
         intervalsInCents: [0, 200, 400, 500],
+        source: `${MAQAM_WORLD_JINS}ajam.php`,
       },
     ],
   },

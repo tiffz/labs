@@ -67,12 +67,10 @@ function note(degree: number, beats: number): MelodyNote {
 /**
  * Where the second jins starts — the degree maqam phrases rest on.
  *
- * Read from the upper jins's root. This used to be guessed from the LOWER
- * jins's note count, which is only the same answer when the two cells share a
- * degree. Rast, Nahawand and Ajam are disjunct, so all three rested a whole
- * tone below their real ghammaz: in Rast, the pattern whose description says
- * the cells "meet on the degree they share" sat twice on F, which neither cell
- * is rooted on.
+ * Read from the upper jins's root, never guessed from the lower jins's note
+ * count. The guess happened to agree while the cell sizes were wrong, and
+ * would disagree again the moment a maqam's cells did not meet — reading the
+ * root is right either way, and costs nothing.
  */
 function ghammazDegree(preset: MaqamPreset): number {
   return ghammazDegreeIndex(preset);
@@ -121,8 +119,8 @@ function arpeggio(preset: MaqamPreset): MelodyNote[] {
  * This is the pattern that shows what a maqam actually is: two cells, rather
  * than a row of 7 notes. It plays the cells the maqam really has — the lower
  * one from the tonic to its own top degree, then the upper one from the
- * ghammaz — so a conjunct maqam repeats the degree they share and a disjunct
- * one steps up to reach the second cell. Hearing that difference is the point.
+ * ghammaz — so the shared degree sounds twice, once closing the lower cell and
+ * once opening the upper. Hearing that seam is the point.
  *
  * It used to run the first cell all the way to the pivot and start the second
  * there, which for Rast meant a first "cell" of C D E½♭ F G: a five-note run

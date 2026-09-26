@@ -290,14 +290,36 @@ describe('ajnas agree with the scale they are drawn from', () => {
   );
 
   /**
-   * Pins the three the app got wrong, by name. A maqam moving between these
-   * lists is a real editorial change and should have to be made on purpose.
+   * Every maqam here is conjunct: its cells meet on one shared degree.
+   *
+   * This test previously pinned rast_c, nahawand_c and ajam_bb as DISJUNCT,
+   * which was an artefact of wrong data rather than a fact about the music.
+   * Each of those three has a 5-note pentachord as its root jins — Jins Rast,
+   * Jins Nahawand and Jins 'Ajam are all "5-note jins" per maqamworld.com,
+   * with the ghammaz on the 5th — and all three were authored here as 4-note
+   * tetrachords stopping on the 4th. That made the lower cell end one degree
+   * short, so it no longer reached the upper cell's root and the derivation
+   * correctly reported cells that do not touch, from data that was wrong.
+   *
+   * The lesson survives and is worth keeping: the join is DERIVED, so
+   * correcting the cell sizes corrected the panel, the ghammaz, the melody
+   * patterns and this list together, with no prose to chase. The failure was
+   * treating the repo's own data as ground truth for a claim about the world.
    */
-  it('knows which maqamat are disjunct', () => {
+  it('has no disjunct maqamat, because every cell reaches its ghammaz', () => {
     const disjunct = MAQAM_PRESETS.filter((preset) => ajnasJoin(preset)?.shared === false)
       .map((preset) => preset.id)
       .sort();
-    expect(disjunct).toEqual(['ajam_bb', 'nahawand_c', 'rast_c']);
+    expect(disjunct).toEqual([]);
+  });
+
+  /** Every jins cites where its size and intervals were checked. */
+  it('sources every musical claim', () => {
+    for (const preset of MAQAM_PRESETS) {
+      for (const jins of preset.primaryAjnas) {
+        expect(jins.source, `${jins.id} has no source`).toMatch(/^https:\/\//);
+      }
+    }
   });
 
   it('starts every jins at its root', () => {

@@ -65,9 +65,9 @@ export default function HowMaqamsWork({ open, onClose }: HowMaqamsWorkProps) {
           <h3>A maqam is 2 cells, not a run of notes.</h3>
           <p>
             Each is built from 2 <em>ajnas</em> (singular <em>jins</em>): small cells of 3, 4, or 5
-            notes. Sometimes the cells meet on one degree they both claim. Sometimes they sit a step
-            apart, as Rast&apos;s do. Melodies move cell to cell, and a maqam modulates into its
-            neighbours by swapping the upper jins.
+            notes. They meet on one degree that both cells claim, the <em>ghammaz</em>, which is
+            where the lower cell ends and the upper one starts. Melodies move cell to cell, and a
+            maqam modulates into its neighbours by swapping the upper jins.
           </p>
         </section>
 
