@@ -416,14 +416,14 @@ const THEMES: Record<AppThemeId, Theme> = {
     // from there, and the two disagreeing is what made Play stay blue after
     // the palette changed.
     primary: '#922c40',
-    secondary: '#b06a22',
-    backgroundDefault: '#fffdf5',
-    backgroundPaper: '#fffcf2',
-    textPrimary: '#1e2640',
-    textSecondary: '#4c5470',
+    secondary: '#475569',
+    backgroundDefault: '#f8fafc',
+    backgroundPaper: '#ffffff',
+    textPrimary: '#1e293b',
+    textSecondary: '#64748b',
     // Hairlines are the exception, not the default: M3 separates with tonal
     // surface steps, so this stays faint enough to disappear unless needed.
-    divider: 'rgba(30, 38, 64, 0.12)',
+    divider: '#e2e8f0',
     radius: 12,
     spacingBase: 8,
     readable: true,

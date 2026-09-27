@@ -63,11 +63,26 @@ describe.each(MAQAM_DESIGN_THEMES)('$label', (theme) => {
     expect(ratio, `white on ${faceToken} is ${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(4.5);
   });
 
-  it('keeps the board a visible step from the page', () => {
-    const ratio = contrastRatio(t['--maqam-board'], t['--m3-surface']);
-    expect(ratio, `the board against the page is ${ratio.toFixed(3)}:1`).toBeGreaterThanOrEqual(
-      1.15,
-    );
+  /*
+   * The keyboard has to have an EDGE, which is a different requirement from
+   * the one this used to make.
+   *
+   * It asserted that the board sat a visible step below the page — a floor
+   * that is meaningless now that there is no board: the keys sit on the page,
+   * and `--maqam-board` resolves to the page itself. Left as it was, the
+   * assertion would have been comparing a colour with itself and passing
+   * whatever anyone did to the keyboard.
+   *
+   * With nothing behind them, a white key on a near-white page is 1.03:1, so
+   * the silhouette is entirely the key's outline. That is the thing to guard.
+   */
+  it('gives the keys an edge against whatever is behind them', () => {
+    const ratio = contrastRatio(t['--maqam-key-edge'], t['--maqam-board']);
+    expect(
+      ratio,
+      `the key outline is only ${ratio.toFixed(2)}:1 on what is behind it, so the ` +
+        'keyboard has no silhouette',
+    ).toBeGreaterThanOrEqual(1.8);
   });
 
   /*
@@ -127,13 +142,19 @@ describe.each(MAQAM_DESIGN_THEMES)('$label', (theme) => {
   it('fades both halves toward the board, not toward one end of the scale', (ctx) => {
     const board = luminance(t['--maqam-board']);
     /*
-     * Only on a light board. On a dark one a black key is already the board's
-     * luminance, so "recede toward it" has nowhere to go — and the direction
-     * that does have room (lifting) is the one that keeps the white note name
-     * readable. Scoped rather than deleted: this is the rule that makes the
-     * white/black asymmetry deliberate instead of a bug someone will "fix".
+     * Only where there is a board to recede toward, and only a light one.
+     *
+     * A look that leaves the keys on the page has nothing behind them, so
+     * "recede toward the board" is not a statement about anything. And on a
+     * DARK board a black key is already the board's luminance, so the rule has
+     * nowhere to go — the direction that does have room (lifting) is the one
+     * that keeps the white note name readable.
+     *
+     * Scoped rather than deleted: this is the rule that makes the white/black
+     * asymmetry deliberate instead of a bug someone will "fix".
      */
     if (board < 0.4) return ctx.skip();
+    if (contrastRatio(t['--maqam-board'], t['--m3-surface']) < 1.1) return ctx.skip();
     const gap = (token: string) => Math.abs(luminance(t[token]) - board);
     const report = (outToken: string, inToken: string) =>
       `out ${t[outToken]} is ${gap(outToken).toFixed(3)} from the board ` +

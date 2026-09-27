@@ -277,6 +277,16 @@ export function buildThemeTokens(seed: MaqamThemeSeed): MaqamThemeTokens {
    * test enforces: 3:1 from the lit state, 1.15:1 from the board it sits on.
    */
   const switchOff = bestSwitchOff(stage, tertiary);
+  /*
+   * The key's edge, derived against the stage rather than off the ink ramp.
+   *
+   * Once a look leaves the keys on the page, this hairline IS the keyboard's
+   * silhouette — and it has to read against two things at once: whatever is
+   * behind the instrument, and the white key it divides. A fixed step from the
+   * ink satisfies neither on a saturated board (Citrus's deep green put it at
+   * 1.34:1), so it is searched against both.
+   */
+  const keyEdge = bestSwitchOff(stage, keyFace);
 
   return {
     '--m3-surface': ground,
@@ -313,6 +323,7 @@ export function buildThemeTokens(seed: MaqamThemeSeed): MaqamThemeTokens {
     '--maqam-switch-border': mix(switchOff, stageInk, 0.42),
 
     /* Keyboard. Membership is the numeral; these carry one step of support. */
+    '--maqam-key-edge': keyEdge,
     '--maqam-key-face': keyFace,
     '--maqam-scale-wash': keyFace,
     /*
@@ -334,7 +345,7 @@ export function buildThemeTokens(seed: MaqamThemeSeed): MaqamThemeTokens {
      * makes a receding key look like it is sinking into this particular board
      * rather than turning grey.
      */
-    '--maqam-key-face-dim': mix(mix(keyFace, stage, 0.22), '#000000', 0.15),
+    '--maqam-key-face-dim': mix(mix(keyFace, stage, 0.22), '#000000', 0.17),
     '--maqam-key-ink': keyInk,
     '--maqam-key-face-dim-ink': keyInk,
     /*

@@ -28,16 +28,19 @@ import {
  */
 const SEEDS: MaqamThemeSeed[] = [
   {
-    id: 'sahara',
-    label: 'Sahara',
-    tagline: 'Warm sand and garnet. The quiet one, and the current default.',
+    id: 'labs',
+    label: 'Labs',
+    tagline: 'The site\u2019s own slate and white. One accent, meaning only.',
     mode: 'light',
-    ground: '#fdf8f2',
-    ink: '#1e2640',
+    /* Mirrors the block in maqam.css, which is what actually ships for this
+       one — `applyMaqamTheme` injects nothing for the default. Kept in step so
+       the picker's swatch shows the look a click would produce. */
+    ground: '#f8fafc',
+    ink: '#1e293b',
     primary: '#922c40',
-    secondary: '#454d6d',
-    tertiary: '#8a5115',
-    stage: '#e4dccd',
+    secondary: '#475569',
+    tertiary: '#334155',
+    stage: '#f1f5f9',
     shape: 'soft',
   },
   {
@@ -210,7 +213,7 @@ export const MAQAM_DESIGN_THEMES: MaqamDesignTheme[] = SEEDS.map(toTheme);
 export const MAQAM_DESIGN_THEMES_BY_ID: Record<string, MaqamDesignTheme> =
   Object.fromEntries(MAQAM_DESIGN_THEMES.map((theme) => [theme.id, theme]));
 
-export const DEFAULT_MAQAM_THEME_ID = 'sahara';
+export const DEFAULT_MAQAM_THEME_ID = 'labs';
 
 const STORAGE_KEY = 'maqam.designTheme';
 

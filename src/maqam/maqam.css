@@ -24,131 +24,58 @@
 .maqam,
 .maqam-portal {
   /*
-   * ---------------------------------------------------------------- M3 roles
+   * ------------------------------------------------- the Labs house palette
    *
-   * A tonal system, not a list of favourite colours. The five hues this app was
-   * given — saffron #e5c100, terracotta #dc9750, garnet #922c40, indigo #1e2640,
-   * sand #f3eac0 — are ACCENTS. The previous version used sand as
-   * `surface-container` and then filled a 1200x390 board and a text field with
-   * it, which is how a palette meant for detail became the loudest thing on
-   * screen. M3's answer is the one used here: every large area is a near-neutral
-   * step of one warm ramp, and chroma is spent only where meaning lives.
+   * Measured off the other apps on this site rather than invented here:
    *
-   * Surfaces are a single warm neutral at four tones. Depth is a tonal step, not
-   * a hue change and not a shadow — that is what makes the page read as one
-   * material instead of as three unrelated cards.
+   *   page      #f8fafc     cards  #ffffff, 1px #e2e8f0, radius 16, NO shadow
+   *   ink       #1e293b     quiet  #64748b
+   *   accent    one colour per app  (Scales is green, Chords indigo)
+   *
+   * Eleven bespoke palettes preceded this one and none of them landed. The
+   * brief that did: make /maqam look like it belongs to the site, and spend
+   * colour on meaning only. So the surfaces are the site's slate ramp, and
+   * garnet is this app's one accent — the same relationship Scales has with
+   * its green.
+   *
+   * What garnet is allowed to mean: the note that is sounding, the note that
+   * is home, and the one primary button. Everything that used to be coloured
+   * for decoration — the jins rules, the Arabic name, the bracket labels, the
+   * degree numerals above 1 — is slate now.
    */
-  --m3-surface: #fdf8f2;
+  --m3-surface: #f8fafc;
   --m3-surface-container-lowest: #ffffff;
-  --m3-surface-container-low: #f8f2ea;
-  --m3-surface-container: #f4ece3;
-  --m3-surface-container-high: #efe7dc;
-  --m3-surface-container-highest: #eae1d5;
+  --m3-surface-container-low: #ffffff;
+  --m3-surface-container: #f1f5f9;
+  --m3-surface-container-high: #e2e8f0;
+  --m3-surface-container-highest: #cbd5e1;
 
-  /* Ink is indigo rather than black: it is the one place the palette's cool
-     hue belongs, and it warms nothing else. */
-  --m3-on-surface: #1e2640;
-  --m3-on-surface-variant: #545a72;
-  --m3-outline: #7c8098;
-  --m3-outline-variant: #d8d1c2;
+  --m3-on-surface: #1e293b;
+  --m3-on-surface-variant: #64748b;
+  --m3-outline: #94a3b8;
+  --m3-outline-variant: #e2e8f0;
 
-  /* Primary: garnet. Says "sounding, or home", and carries the one CTA. */
+  /* The accent. One colour, three jobs: sounding, home, and Play. */
   --m3-primary: #922c40;
   --m3-on-primary: #ffffff;
-  --m3-primary-container: #ffd9dd;
-  --m3-on-primary-container: #3b0a17;
+  --m3-primary-container: #fae8ec;
+  --m3-on-primary-container: #4c0f1e;
 
-  /* Secondary: indigo. Structure — selection, the rail, quiet chrome. */
-  --m3-secondary: #454d6d;
-  --m3-secondary-container: #dfe1f4;
-  --m3-on-secondary-container: #151b34;
+  /* Structure. Not an accent — slate, so it cannot compete. */
+  --m3-secondary: #475569;
+  --m3-secondary-container: #e2e8f0;
+  --m3-on-secondary-container: #1e293b;
 
-  /* Tertiary: terracotta. Says "bent off equal temperament", and nothing else.
-     Darkened from #b06a22 to clear 4.5:1 as text on every surface above. */
-  --m3-tertiary: #8a5115;
+  /*
+   * "On", for a control. Deliberately NOT a second hue: a lit quarter-tone
+   * switch is a selection state, and giving it terracotta meant the board
+   * carried two accents competing with the one that means something musical.
+   * A strong slate fill reads as on without spending a colour.
+   */
+  --m3-tertiary: #334155;
   --m3-on-tertiary: #ffffff;
-  /* Two steps darker than #ffdcbe, which measured 1.00:1 against the rail's
-     unlit fill — identical luminance, hue only. The lit switches read as faint
-     smudges because "bent off equal temperament" owned no value step. */
-  --m3-tertiary-container: #f7c99a;
-  --m3-on-tertiary-container: #2f1600;
-
-  /* Saffron survives as one hairline of warmth, used at hairline scale only. */
-  --m3-accent-saffron: #e5c100;
-
-  /*
-   * The notation's three inks.
-   *
-   * VexFlow paints with JS colour strings, so the stylesheet cannot reach it —
-   * every renderer in this repo ended up with a hex literal its theme knew
-   * nothing about. `maqamStaffDraw` reads these, which is what lets a look
-   * apply to the staff as well as to the page.
-   */
-  --maqam-staff-ink: #241d16;
-  --maqam-staff-lit: #922c40;
-  --maqam-bracket-ink: #6f4450;
-
-  /* A display face, for the looks that use one. */
-  --maqam-title-font: inherit;
-
-  /*
-   * The board is its own surface, not the fourth step of the page ramp.
-   *
-   * It is the largest coloured area in the app — the stage the instrument
-   * stands on — and tying it to `surface-container-high` meant it could only
-   * ever be one tonal step away from the page, which is what kept the whole
-   * screen inside a 1.16:1 span and reading as drab. Named separately, a look
-   * can make it a colour without dragging every panel with it.
-   */
-  /*
-   * The keyboard sits ON THE PAGE. There is no board.
-   *
-   * Three versions of a coloured slab behind the keys were tried — saffron
-   * sand, a neutral tonal step, then a saturated stage — and each was
-   * rejected for the same reason: it is the largest block of colour on the
-   * screen, and it made an instrument that should read as part of the page
-   * outweigh everything else on it. The realism argument ("a real keyboard
-   * has a body") lost to the layout one. These tokens stay because the switch
-   * and key colours are measured against whatever is behind the keys, and
-   * that is now simply the page.
-   */
-  --maqam-board: var(--m3-surface);
-  --maqam-board-ink: #1e2640;
-  --maqam-board-ink-quiet: #545a72;
-
-  /*
-   * The quarter-tone switches. Off is a recess you can see; on is the full
-   * tertiary, not its container.
-   *
-   * Off measured 1.06:1 against the board and on measured 1.18:1 against off —
-   * a control that was invisible in both states and whose two states were
-   * indistinguishable from each other. A switch has to look like a switch
-   * before its state can mean anything.
-   */
-  --maqam-switch-off: #ffffff;
-  --maqam-switch-border: #9aa0b4;
-
-  /*
-   * The shared popover shell (`.labs-popover-surface`) paints from these, and
-   * this app never set them — so the glossary, the keyboard note and the theme
-   * picker were white cards whatever the page behind them looked like. Most
-   * visible on a dark look, where a white slab opened over a dark page.
-   *
-   * They are declared here AND written into every theme, because the element
-   * they style is MUI's Paper, which is the PARENT of `.maqam-portal` — a
-   * custom property declared on the portal cannot reach it.
-   */
-  --labs-popover-bg: var(--m3-surface-container-lowest);
-  --labs-popover-border: 1px solid var(--m3-outline-variant);
-  --labs-popover-radius: var(--maqam-radius-m);
-
-  /*
-   * State layers, M3's own opacities. Hover 8%, focus/press 10%, on the role
-   * colour rather than a hand-picked hover fill per control — which is what
-   * made hover states differ between the rail, the keys and the buttons.
-   */
-  --m3-state-hover: 0.08;
-  --m3-state-press: 0.1;
+  --m3-tertiary-container: #e2e8f0;
+  --m3-on-tertiary-container: #1e293b;
 
   --maqam-tonic: var(--m3-primary);
   --maqam-tonic-soft: var(--m3-primary-container);
@@ -156,57 +83,76 @@
   --maqam-microtonal-soft: var(--m3-tertiary-container);
 
   /*
-   * Membership is a NUMERAL on the key, not a colour of the key.
+   * Membership is a NUMERAL on the key; the face carries one step of support.
    *
-   * Three models before this one painted it as a tint or a fade computed
-   * against the other keys, and all three were invisible on Rast, whose seven
-   * degrees are the seven white keys — a relative mark with nothing to
-   * contrast against. The user reported "the highlighting is broken" four
-   * times and every time it was working as built. The faces below still carry
-   * one gentle step of recession that reinforces the numeral; they no longer
-   * carry the fact on their own.
+   * Three earlier models painted it as a tint computed against the other keys
+   * and all three were invisible on Rast, whose seven degrees are the seven
+   * white keys. The step here is 1.59:1 — the version before it measured
+   * 1.33:1 and was reported as "very hard to read".
    */
   --maqam-key-face: #ffffff;
-  /*
-   * A key the maqam does not use is OBVIOUSLY out.
-   *
-   * This was #e6dfd2, which measures 1.33:1 against a white key — present, and
-   * reported as "very hard to read". The numeral carries the fact and the face
-   * was treated as a whisper supporting it; at 1.33:1 the whisper was
-   * inaudible, and the numeral alone asks the reader to scan 21 keys for
-   * absence. 1.55:1 is a step you see without looking for it, and the key name
-   * on it still measures 7.4:1, well clear of AA.
-   */
-  --maqam-key-face-dim: #d5cab3;
+  --maqam-key-face-dim: #cbd5e1;
   --maqam-scale-wash: #ffffff;
-  --maqam-scale-wash-black: #171d31;
-  /* The octaves of the note sounding: a step above membership, below the note
-     itself, so "which key is that" still has one loud answer. */
+  --maqam-scale-wash-black: #1e293b;
+  --maqam-key-black-dim: #64748b;
+  --maqam-key-ink: #1e293b;
+  --maqam-key-face-dim-ink: #1e293b;
+  /* The octaves of the note sounding: below the note itself, so "which key is
+     that" keeps one loud answer. */
   --maqam-echo: #d3a3ad;
-  --maqam-key-ink: #2c3350;
+
   /*
-   * Recession lives in the FACE, never in the ink.
+   * The keyboard sits ON THE PAGE. There is no board.
    *
-   * Dimming the label too put out-of-maqam note names at 2.36:1 on white keys
-   * and 4.34:1 on black ones, both under AA — so on Saba the six key names a
-   * learner most needs to read ("the ones this maqam does not use") were the
-   * least readable things on screen. Full-strength ink on the dim face is
-   * 8.1:1, and the face alone still carries the distinction.
+   * Three coloured slabs were tried behind the keys — saffron sand, a neutral
+   * tonal step, then a saturated stage — and each was rejected for the same
+   * reason: it is the largest block of colour on the screen, and it made an
+   * instrument that should read as part of the page outweigh everything else.
+   * These tokens remain because the key and switch colours are measured
+   * against whatever is behind them, and that is now the page.
    */
-  --maqam-key-face-dim-ink: var(--maqam-key-ink);
-  /* A black key is black. 15 of the 18 are outside the maqam on most maqamat,
-     and a slate grey read as a slab laid over the instrument rather than as
-     the accidentals of a piano. Lifted from #3d4560 so the in/out step on the
-     black keys matches the one on the white keys — both were too fine. */
-  --maqam-key-black-dim: #5a6285;
+  --maqam-board: var(--m3-surface);
+  --maqam-board-ink: #1e293b;
+  --maqam-board-ink-quiet: #64748b;
+
+  /* A quarter-tone switch: a white chip with a slate rim, filled when on. */
+  --maqam-key-edge: #94a3b8;
+  --maqam-switch-off: #ffffff;
+  --maqam-switch-border: #cbd5e1;
+
+  /*
+   * The notation's three inks.
+   *
+   * VexFlow paints with JS colour strings, so the stylesheet cannot reach it —
+   * every renderer in this repo ended up with a hex literal its theme knew
+   * nothing about. `maqamStaffDraw` reads these, which is what lets a look
+   * apply to the staff as well as to the page. The bracket label is slate: it
+   * is a label about the music, not a fact about a note.
+   */
+  --maqam-staff-ink: #1e293b;
+  --maqam-staff-lit: #922c40;
+  --maqam-bracket-ink: #64748b;
+
+  /* A display face, for the looks that use one. */
+  --maqam-title-font: inherit;
+
+  /*
+   * The shared popover shell (`.labs-popover-surface`) paints from these, and
+   * this app never set them — so every popover was a white card whatever the
+   * page behind it looked like. Declared here AND in every theme, because the
+   * element they style is MUI's Paper, the PARENT of `.maqam-portal`, and a
+   * custom property declared on the portal cannot reach it.
+   */
+  --labs-popover-bg: var(--m3-surface-container-lowest);
+  --labs-popover-border: 1px solid var(--m3-outline-variant);
+  --labs-popover-radius: var(--maqam-radius-m);
 
   /*
    * ------------------------------------------------------------- M3 type
    *
-   * The M3 scale, named as M3 names it, so a size is chosen by what the text IS
-   * rather than by how big it should look. Six ad-hoc rem values preceded this
-   * and nothing said which to use where, which is most of what read as
-   * inconsistent.
+   * Named as M3 names it, so a size is chosen by what the text IS rather than
+   * by how big it should look. Six ad-hoc rem values preceded this and nothing
+   * said which to use where, which is most of what read as inconsistent.
    */
   --m3-headline-small: 1.5rem; /* 24/32 — the app title */
   --m3-title-medium: 1rem; /* 16/24 w500 — a jins name */
@@ -216,7 +162,7 @@
   --m3-label-large: 0.875rem; /* 14 w500 — buttons */
   --m3-label-medium: 0.75rem; /* 12 w500 — eyebrows, key names */
   --m3-label-small: 0.6875rem; /* 11 w500 — the smallest mark on a keycap */
-  --maqam-text-arabic: 1.75rem;
+  --maqam-text-arabic: 1.25rem;
 
   /* Space, on M3's 4dp grid. */
   --maqam-s1: 4px;
@@ -227,7 +173,7 @@
   --maqam-s6: 32px;
   --maqam-gap: var(--maqam-s5);
 
-  /* M3 shape scale: 4 / 8 / 12 / 16 / full. */
+  /* Shape, matching the site: cards at 16, controls at 8. */
   --maqam-radius-xs: 4px;
   --maqam-radius-s: 8px;
   --maqam-radius-m: 12px;
@@ -601,7 +547,7 @@
  * closed the hole that used to sit under the Play button.
  */
 .maqam-stage__jins {
-  background: var(--m3-surface-container-low);
+  background: var(--m3-surface-container-lowest);
   border: 1px solid var(--m3-outline-variant);
   border-radius: var(--maqam-radius-l);
   padding: var(--maqam-s4);
@@ -666,7 +612,8 @@
   flex-direction: column;
   gap: 1px;
   padding-left: 12px;
-  border-left: 3px solid var(--maqam-tonic);
+  /* Slate. A rule beside a list item is structure, not a fact about a note. */
+  border-left: 3px solid var(--m3-outline-variant);
   border-radius: var(--maqam-radius-s);
 }
 
@@ -938,7 +885,10 @@
 }
 
 .maqam-keyboard .shared-pk-white {
-  border-color: var(--m3-outline-variant);
+  /* Its own token, not `outline-variant`. With no board behind it the
+     keyboard's whole silhouette is this hairline, and the card-weight one
+     measured 1.09:1 against the page — an instrument with no edges. */
+  border-color: var(--maqam-key-edge);
   border-radius: 0 0 var(--maqam-radius-m) var(--maqam-radius-m);
   /* Every key starts outside the maqam; membership tints it. */
   background: var(--maqam-key-face-dim);
@@ -1098,11 +1048,14 @@
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   line-height: 1;
-  color: var(--maqam-tonic);
+  /* Slate. The numeral says WHICH degree; only degree 1 says "home", and that
+     is the one that earns the accent. Colouring all seven spent the app's one
+     colour on 21 keys and left nothing for the note that is sounding. */
+  color: var(--m3-on-surface-variant);
   pointer-events: none;
 }
 
-/* Home is degree 1 at one more step of weight, not a separate dot beside a
+/* Home is degree 1, in the accent and filled — not a separate dot beside a
    numeral that already says it. */
 .maqam-key--home .shared-pk-mark {
   background: var(--maqam-tonic);
