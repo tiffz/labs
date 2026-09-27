@@ -1,7 +1,8 @@
+import AppTooltip from '../../shared/components/AppTooltip';
 import { PITCH_CLASS_NAMES, type DetuneMatrix } from '../data/maqamPresets';
 import { formatCents } from '../state/maqamTuning';
 
-/** Mirrors the shared keyboard's own layout, so a switch sits over its key. */
+/** Mirrors the shared keyboard's own layout, so the bank keeps piano shape. */
 const WHITE_OFFSETS = [0, 2, 4, 5, 7, 9, 11];
 const BLACK_KEYS = [
   { offset: 1, afterWhite: 0 },
@@ -12,94 +13,94 @@ const BLACK_KEYS = [
 ];
 
 interface KeyTuningRailProps {
-  octaves: number[];
   matrix: DetuneMatrix;
   onToggle: (pitchClass: number) => void;
 }
 
 /**
- * A quarter-tone switch directly above every key, aligned to it.
+ * Twelve levers, one per note name — not one per key.
  *
- * The position IS the label. The previous version was a separate row of twelve
- * switches that each had to name their note ("C", "C#", "D"...) because
- * nothing about where they sat said which key they governed — the reader had
- * to match a name to a name. Putting the switch over its key makes the
- * mapping spatial, so the names come off.
+ * The app's model is a HARP's pedals, not a qanun's levers: one action per
+ * pitch class, applying to every octave at once. It was built as a qanun — one
+ * lever per string — which meant 36 objects doing 12 jobs, in an app where 5
+ * of the 9 maqamat never light a single one. Three separate reports of "messy"
+ * and "cluttered" came from that surplus, and the last of them was a real
+ * geometric fault it caused: a black chip is 18px wide and the gap it sits in
+ * between two white chips is 17px, so every black chip overlapped its
+ * neighbours by a pixel — and by nine at a coarse pointer, where it grows to
+ * 26px. What looked like a clipping bug was one control drawn on top of
+ * another.
  *
- * There is one switch per KEY rather than per note name, and all three octaves
- * of a pitch class light together when any of them is thrown. That is not
- * redundancy: bending C bends every C, and seeing the other two switches move
- * is the clearest way to say so.
+ * Twelve levers in piano geometry cannot overlap, because the black levers own
+ * the gaps instead of being squeezed into them.
  *
- * Geometry is copied from `OnscreenPianoKeyboard`: white keys flex evenly,
- * black keys sit at `((afterWhite + 1) / 7) * 100%` of the octave. If that
- * component's layout changes, this drifts, which is why
- * `keyTuningRailAlignment` in the e2e measures the two against each other
- * rather than trusting them to agree.
+ * Position is still the label, which was the win over the ORIGINAL version: a
+ * flat row of twelve pills that had to spell out "C", "C#", "D" because
+ * nothing about where they sat said which note they governed. The shape is
+ * what labels them — seven wide, five narrow, at piano offsets. A piano is
+ * recognisable from its silhouette, and this is that silhouette.
+ *
+ * The readout stays on the keys. A lit lever used to be echoed by all three of
+ * its keycaps, which is one fact three times; the keycap already prints the
+ * live spelling (`E½♭3`), so the lever only has to be the control.
  */
-export default function KeyTuningRail({
-  octaves,
-  matrix,
-  onToggle,
-}: KeyTuningRailProps) {
-  const switchFor = (
-    pitchClass: number,
-    octave: number,
-    className: string,
-    style?: React.CSSProperties,
-  ) => {
+export default function KeyTuningRail({ matrix, onToggle }: KeyTuningRailProps) {
+  const lever = (pitchClass: number, className: string, style?: React.CSSProperties) => {
     const cents = matrix[pitchClass] ?? 0;
     const bent = cents !== 0;
     const name = PITCH_CLASS_NAMES[pitchClass];
 
     return (
-      <button
-        type="button"
-        key={`${className}-${octave}-${pitchClass}`}
-        className={[className, bent ? 'is-bent' : ''].filter(Boolean).join(' ')}
-        style={style}
-        aria-pressed={bent}
-        onClick={() => onToggle(pitchClass)}
-        /* Named by key, not by note, because there are three of each on
-           screen and a screen reader would otherwise read the same label
-           three times with no way to tell them apart. That one switch bends
-           all three octaves is said once, on the group. */
-        aria-label={`${name}${octave}, ${bent ? formatCents(cents) : 'equal temperament'}`}
-        /* Hovering a switch should teach what it is, not restate the key's
-           own name. Someone meeting this app has never seen a quarter-tone
-           switch and there is nothing else on screen that explains one. */
+      /* A real tooltip, not `title`: the native one never appears on keyboard
+         focus, so the only explanation of the app's least familiar control was
+         invisible to anyone not using a mouse. */
+      <AppTooltip
+        key={`lever-${pitchClass}`}
         title={
           bent
             ? `${name} is lowered a quarter tone, in every octave. Click to restore it.`
             : `Lower ${name} a quarter tone, in every octave.`
         }
       >
-        {/* In BOTH states. An unlabelled chip is a control that only says
-            what it does after you press it — and "it is hard to tell what
-            these buttons do" was the report. */}
-        <span aria-hidden="true">½♭</span>
-      </button>
+        <button
+          type="button"
+          className={[className, bent ? 'is-bent' : ''].filter(Boolean).join(' ')}
+          style={style}
+          aria-pressed={bent}
+          onClick={() => onToggle(pitchClass)}
+          /* One lever per note, so the name IS the note — there is no octave
+             left to disambiguate, which is the only reason the 36-chip version
+             had to say "E3, E4, E5". That it applies to every octave is stated
+             once, on the group. */
+          aria-label={`${name}, ${bent ? formatCents(cents) : 'equal temperament'}`}
+        >
+          <span aria-hidden="true">{bent ? '½♭' : ''}</span>
+        </button>
+      </AppTooltip>
     );
   };
 
   return (
     <div
-      className="maqam-rail"
+      className="maqam-tuningbank"
       role="group"
-      aria-label="Quarter-tone switches. Each one bends every octave of its note."
+      aria-label="Quarter-tone levers. Each one lowers its note a quarter tone, in every octave."
     >
-      {octaves.map((octave) => (
-        <div className="maqam-rail__octave" key={octave}>
-          {WHITE_OFFSETS.map((offset) =>
-            switchFor(offset, octave, 'maqam-rail__switch maqam-rail__switch--white'),
-          )}
-          {BLACK_KEYS.map(({ offset, afterWhite }) =>
-            switchFor(offset, octave, 'maqam-rail__switch maqam-rail__switch--black', {
-              left: `${((afterWhite + 1) / 7) * 100}%`,
-            }),
-          )}
-        </div>
-      ))}
+      {/* The unit, printed ONCE — the way a desk prints dB at the head of a
+          fader bank rather than on every fader. Thirty-six copies of "½♭" made
+          the loudest type on the page out of a control the README calls the
+          exception. */}
+      <span className="maqam-tuningbank__unit" aria-hidden="true">
+        ½♭
+      </span>
+      <div className="maqam-tuningbank__keys">
+        {WHITE_OFFSETS.map((offset) => lever(offset, 'maqam-lever maqam-lever--white'))}
+        {BLACK_KEYS.map(({ offset, afterWhite }) =>
+          lever(offset, 'maqam-lever maqam-lever--black', {
+            left: `${((afterWhite + 1) / 7) * 100}%`,
+          }),
+        )}
+      </div>
     </div>
   );
 }

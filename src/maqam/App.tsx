@@ -234,8 +234,12 @@ export default function App() {
             Keyboard
           </h2>
 
+          {/* Twelve levers, outside the scroll host: inside it, bending B on a
+              phone meant scrolling the keyboard sideways to reach its switch. */}
+          <KeyTuningRail matrix={matrix} onToggle={toggleSlot} />
+
           {/*
-            The rail and the keys scroll as ONE surface.
+            The keys scroll on their own now.
             Three octaves of fingertip-sized keys do not fit 390px, so the
             instrument scrolls sideways — but only the keys did, while the
             rail of switches above them kept its full width and pushed the
@@ -247,9 +251,6 @@ export default function App() {
             className="maqam-instrument"
             data-labs-allow-horizontal-scroll
           >
-            {/* One switch per key, sitting over it. Position is the label. */}
-            <KeyTuningRail octaves={KEYBOARD_OCTAVES} matrix={matrix} onToggle={toggleSlot} />
-
             <MaqamKeyboard
               keyTunings={keyTunings}
               activeNotes={activeNotes}

@@ -204,7 +204,7 @@ test.describe('Maqam Playground', () => {
     await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
 
     // A is untouched in Rast, so bending it prepares rather than alters.
-    await page.getByRole('button', { name: /^A4, equal temperament$/ }).click();
+    await page.getByRole('button', { name: /^A, equal temperament$/ }).click();
     await expect(page).toHaveURL(/tuning=/);
 
     await page.goto(page.url());
@@ -230,14 +230,14 @@ test.describe('Maqam Playground', () => {
     await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
 
     // F♯ is not in Rast. Bending it changes nothing about the maqam.
-    await page.getByRole('button', { name: /^F♯4, equal temperament$/ }).click();
+    await page.getByRole('button', { name: /^F♯, equal temperament$/ }).click();
     await expect(page.locator('.maqam-badge')).toHaveCount(0);
     await expect(page.locator('.maqam-eyebrow[data-stale="true"]')).toHaveCount(0);
     await expect(page.getByRole('button', { name: /^Reset$/ })).toHaveCount(0);
 
     // E IS in Rast, and it is the note that makes Rast Rast. Changing it
     // alters the maqam, and the app has to say so.
-    await page.getByRole('button', { name: /^E4, 50 cents flat$/ }).click();
+    await page.getByRole('button', { name: /^E, 50 cents flat$/ }).click();
     await expect(page.locator('.maqam-badge')).toHaveCount(1);
     await expect(page.locator('.maqam-eyebrow[data-stale="true"]')).toBeVisible();
     await expect(page.getByRole('button', { name: /^Reset$/ })).toBeVisible();
@@ -248,7 +248,7 @@ test.describe('Maqam Playground', () => {
     await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
 
     // A corrupt tuning falls back to the maqam's own, so bend a degree by hand.
-    await page.getByRole('button', { name: /^E4, 50 cents flat$/ }).click();
+    await page.getByRole('button', { name: /^E, 50 cents flat$/ }).click();
     await expect(page.getByRole('button', { name: /^Reset$/ })).toBeVisible();
 
     await page.getByRole('button', { name: /^Reset$/ }).click();
@@ -918,7 +918,7 @@ test.describe('Maqam Playground', () => {
     await expect(page.locator('.maqam-eyebrow[data-stale="true"]')).toHaveCount(0);
 
     // Bend the maqam's own third away from what it is written as.
-    await page.getByRole('button', { name: /^E4, 50 cents flat$/ }).click();
+    await page.getByRole('button', { name: /^E, 50 cents flat$/ }).click();
 
     // The board must now say so, in the panel making the claims.
     await expect(page.locator('.maqam-eyebrow[data-stale="true"]')).toBeVisible();
@@ -1093,57 +1093,101 @@ test.describe('Maqam Playground', () => {
     expect(marks.slice(0, 7).map((k) => k.mark).join('')).toBe('1234567');
   });
 
-  test('every tuning switch sits over the key it retunes', async ({ page }) => {
+  test('the quarter-tone bank is twelve levers in piano shape, none overlapping', async ({
+    page,
+  }) => {
     /*
-     * The switch rail duplicates the keyboard's geometry — octaves flexing
-     * evenly, white keys flexing within an octave, black keys at a percentage
-     * of it — because the shared keyboard has no slot to render into. Two
-     * copies of a layout drift, and when this one drifts the switches stop
-     * being labelled by their position, which is the whole design.
+     * This replaced a test that asserted one switch per KEY — 36 of them, each
+     * sitting over its own key across three octaves. That design is gone: the
+     * action is per note NAME and applies to every octave, so three copies of
+     * each were three controls for one job.
      *
-     * Measured, not eyeballed: centre against centre, every key.
+     * It is also what caused the fault that got reported as a clipping bug. A
+     * black chip was 18px wide and the gap it sat in between two white chips
+     * was 17px, so every black chip was drawn over its neighbours — by nine
+     * pixels at a coarse pointer, where it grew to 26. The old test could not
+     * see it: it measured each switch against its key and never two switches
+     * against each other.
+     *
+     * So the invariant is not "aligned" any more, it is "twelve, shaped like a
+     * piano, and not on top of one another".
      */
-    await page.goto('/maqam/?maqam=rast_c');
+    await page.goto('/maqam/?maqam=muhayyar_d');
     await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
 
-    const alignment = await page.evaluate(() => {
-      const centre = (el: Element) => {
-        const r = el.getBoundingClientRect();
-        return r.left + r.width / 2;
-      };
-      const pair = (keySelector: string, switchSelector: string) => {
-        const keys = [...document.querySelectorAll(keySelector)];
-        const switches = [...document.querySelectorAll(switchSelector)];
-        if (keys.length === 0 || keys.length !== switches.length) {
-          return { count: keys.length, matched: switches.length, worst: Infinity };
+    const bank = await page.evaluate(() => {
+      const levers = [...document.querySelectorAll('.maqam-lever')].map((el) => {
+        const box = el.getBoundingClientRect();
+        return {
+          black: el.classList.contains('maqam-lever--black'),
+          box: { left: box.left, right: box.right, top: box.top, bottom: box.bottom },
+          size: Math.min(box.width, box.height),
+          centre: box.left + box.width / 2,
+        };
+      });
+
+      let overlaps = 0;
+      for (let i = 0; i < levers.length; i += 1) {
+        for (let j = i + 1; j < levers.length; j += 1) {
+          const a = levers[i].box;
+          const b = levers[j].box;
+          if (a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom) {
+            overlaps += 1;
+          }
         }
-        const worst = Math.max(
-          ...keys.map((key, i) => Math.abs(centre(switches[i]) - centre(key))),
-        );
-        return { count: keys.length, matched: switches.length, worst };
-      };
+      }
+
+      const whites = levers.filter((l) => !l.black);
+      const blacks = levers.filter((l) => l.black);
+      /*
+       * A black lever belongs on the seam between two white ones. Measured
+       * against the white levers actually on screen, so the bank cannot drift
+       * out of piano shape without this failing.
+       */
+      const seams = whites.slice(0, -1).map((white, i) => (white.box.right + whites[i + 1].box.left) / 2);
+      const worstSeam = Math.max(
+        ...blacks.map((black) => Math.min(...seams.map((seam) => Math.abs(seam - black.centre)))),
+      );
 
       return {
-        white: pair('.maqam-keyboard .shared-pk-white', '.maqam-rail__switch--white'),
-        black: pair('.maqam-keyboard .shared-pk-black', '.maqam-rail__switch--black'),
+        whites: whites.length,
+        blacks: blacks.length,
+        overlaps,
+        smallest: Math.min(...levers.map((l) => l.size)),
+        worstSeam,
       };
     });
 
-    // 3 octaves: 21 white keys and 15 black ones, each with its own switch.
-    expect(alignment.white.count).toBe(21);
-    expect(alignment.black.count).toBe(15);
-    expect(alignment.white.matched).toBe(alignment.white.count);
-    expect(alignment.black.matched).toBe(alignment.black.count);
+    expect(bank.whites).toBe(7);
+    expect(bank.blacks).toBe(5);
+    expect(
+      bank.overlaps,
+      `${bank.overlaps} pairs of levers are drawn on top of each other`,
+    ).toBe(0);
+    expect(
+      bank.worstSeam,
+      `a black lever is ${bank.worstSeam.toFixed(1)}px off the seam it belongs on`,
+    ).toBeLessThanOrEqual(2);
+    // The floor a fine pointer needs; the coarse-pointer bump is larger still.
+    expect(bank.smallest).toBeGreaterThanOrEqual(22);
+  });
 
-    // A switch more than 2px off its key no longer reads as belonging to it.
-    expect(
-      alignment.white.worst,
-      `a white switch is ${alignment.white.worst.toFixed(1)}px off its key`,
-    ).toBeLessThanOrEqual(2);
-    expect(
-      alignment.black.worst,
-      `a black switch is ${alignment.black.worst.toFixed(1)}px off its key`,
-    ).toBeLessThanOrEqual(2);
+  test('a lever bends its note in every octave at once', async ({ page }) => {
+    /*
+     * The reason there are twelve and not thirty-six. Muhayyar writes E and B
+     * half-flat, so both levers open thrown and all six of those keys — three
+     * octaves of each — are already retuned.
+     */
+    await page.goto('/maqam/?maqam=muhayyar_d');
+    await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
+
+    await expect(page.locator('.maqam-lever.is-bent')).toHaveCount(2);
+    await expect(page.locator('.maqam-key--retuned')).toHaveCount(6);
+
+    // One lever, three keys.
+    await page.getByRole('button', { name: /^E, 50 cents flat$/ }).click();
+    await expect(page.locator('.maqam-lever.is-bent')).toHaveCount(1);
+    await expect(page.locator('.maqam-key--retuned')).toHaveCount(3);
   });
 
   test('the page itself never scrolls', async ({ page }) => {

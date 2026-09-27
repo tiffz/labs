@@ -2,6 +2,13 @@
 
 Retune a 12-key piano keyboard to an Arabic _maqam_, see its structure, and play the quarter-tones between the keys.
 
+**Nothing on screen is in a script the author cannot read.** The maqam's name
+in Arabic was shown beside the transliteration and was removed on a standing
+rule worth keeping: every other claim here — an interval, a cell size, a join —
+can be checked against the `source` URL by someone who reads English, and a
+name in Arabic script could only be taken on trust. Each preset still carries
+its maqamworld page, which has the Arabic.
+
 **Stage:** in development (not listed on the public directory) · **Route:** `/maqam/` · **Tier:** experimental
 
 ## What it is for
@@ -58,15 +65,27 @@ A maqam's pitches are written down exactly once — in `scaleDegrees`. [`deriveD
 
 ## Layout
 
-| Region     | Job                                                           |
-| ---------- | ------------------------------------------------------------- |
-| Topbar     | Maqam picker (the primary action) and the explainer.          |
-| The scale  | One stave. Pressing a key lights that degree.                 |
-| Built from | The two ajnas and the degree they share — the real structure. |
-| Keyboard   | The instrument, with home dot and retuned badges.             |
-| Tune keys  | The 12-key matrix, **collapsed** — the escape hatch.          |
+| Region     | Job                                                               |
+| ---------- | ----------------------------------------------------------------- |
+| Topbar     | Maqam picker (the primary action) and the explainer.              |
+| The scale  | One stave. Pressing a key lights that degree.                     |
+| Built from | The two ajnas and the degree they share — the real structure.     |
+| Keyboard   | The instrument, with home dot and retuned badges.                 |
+| Tune keys  | Twelve levers in a bank, left of the keyboard — the escape hatch. |
 
-The matrix is collapsed deliberately. Two co-equal ways to set tuning would be `ux-journey-overload`; picking a maqam is the journey, hand-editing is the exception.
+Hand-tuning is deliberately the quieter of the two. Two co-equal ways to set
+tuning would be `ux-journey-overload`; picking a maqam is the journey.
+
+**Twelve levers, not thirty-six.** The action is per note NAME and applies to
+every octave at once — a harp's pedals, not a qanun's levers — so one switch
+per key meant 36 objects doing 12 jobs. It also did not fit: a black chip was
+18px wide in a 17px gap, so every one was drawn over its neighbours, which is
+what finally got reported as a clipping bug. The bank keeps piano shape (seven
+wide, five narrow above, at piano offsets) because that silhouette is what
+labels the levers — the version before the per-key one was a flat row of twelve
+pills that had to spell out "C", "C#", "D". It sits outside the keyboard's
+scroll host, so bending B on a phone no longer means scrolling the instrument
+sideways to reach its switch.
 
 The ajnas panel sits beside the staff rather than under it because the ajnas **are** the structure of a maqam. Demoting them to a footnote is what made the first version read as "a scale with two odd accidentals".
 

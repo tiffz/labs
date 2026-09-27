@@ -66,8 +66,8 @@ export default function KeyboardNote({ supported, devices }: KeyboardNoteProps) 
         <div className="maqam-portal maqam-midi__detail">
           <h3>Why the keys are retuned</h3>
           <p>
-            A piano octave has 12 fixed keys. Maqam music uses pitches between them, so the switches
-            above each key bend it a quarter tone flat.
+            A piano octave has 12 fixed keys. Maqam music uses pitches between them, so the levers
+            left of the keyboard bend a note a quarter tone flat, in every octave.
           </p>
 
           <h3>Playing it with your own keyboard</h3>
