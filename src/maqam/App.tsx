@@ -4,12 +4,13 @@ import Paper from '@mui/material/Paper';
 import TextField from '@mui/material/TextField';
 
 import SkipToMain from '../shared/components/SkipToMain';
+import GlossaryMenu from './components/GlossaryMenu';
 import KeyTuningRail from './components/KeyTuningRail';
 import JinsBreakdown from './components/JinsBreakdown';
 import MaqamKeyboard from './components/MaqamKeyboard';
 import MaqamStaff from './components/MaqamStaff';
 import KeyboardNote from './components/KeyboardNote';
-import { MAQAM_PRESETS, maqamatByFamily } from './data/maqamPresets';
+import { MAQAM_PRESETS, ajnasSpans, maqamatByFamily } from './data/maqamPresets';
 import { describeTuning, liveScaleLabels } from './state/maqamTuning';
 import { useMaqamState } from './state/useMaqamState';
 
@@ -46,6 +47,25 @@ export default function App() {
   const staffNotes = useMemo(
     () => melody.map((note) => ({ ...note.staff, duration: note.duration })),
     [melody],
+  );
+
+  /*
+   * The brackets over the staff, which is the one place the app draws a maqam
+   * as what it is: cells joined at a shared degree. The staff shows the same
+   * ascending scale the melody does, so a cell's scale indices are its note
+   * indices — but only while that stays true, which is what the guard in the
+   * e2e checks by counting brackets against the panel.
+   */
+  const brackets = useMemo(
+    () =>
+      preset
+        ? ajnasSpans(preset).map((span) => ({
+            label: span.name,
+            from: span.fromIndex,
+            to: span.toIndex,
+          }))
+        : undefined,
+    [preset],
   );
 
   /**
@@ -135,20 +155,14 @@ export default function App() {
           </TextField>
 
           {/*
-            The explainer this replaced was several screens of our own prose
-            about a tradition nobody here is expert in. Linking out is the
-            honest version: maqamworld.com is where every interval in this app
-            came from, and it can say what a maqam is far better than we can.
+            A glossary, not a link out to a homepage. Every word on this screen
+            — maqam, jins, ghammaz — is a word a Western-trained reader meets
+            here for the first time, and "Learn maqamat at maqamworld" answered
+            a question nobody arrives with. Each term still links to
+            maqamworld, which is where every interval in this app came from and
+            can teach the tradition far better than we can.
           */}
-          <Button
-            variant="text"
-            component="a"
-            href="https://www.maqamworld.com/en/maqam.php"
-            target="_blank"
-            rel="noreferrer noopener"
-          >
-            Learn maqamat at maqamworld
-          </Button>
+          <GlossaryMenu />
         </header>
 
         <div className="maqam-stage">
@@ -161,7 +175,7 @@ export default function App() {
             </h2>
 
             <Paper elevation={0} className="maqam-staff-surface">
-              <MaqamStaff notes={staffNotes} highlighted={litNotes} />
+              <MaqamStaff notes={staffNotes} highlighted={litNotes} brackets={brackets} />
             </Paper>
 
             {/* Beside the control that failed, naming the action the user took.
@@ -204,17 +218,31 @@ export default function App() {
             Keyboard
           </h2>
 
-          {/* One switch per key, sitting over it. Position is the label. */}
-          <KeyTuningRail octaves={KEYBOARD_OCTAVES} matrix={matrix} onToggle={toggleSlot} />
+          {/*
+            The rail and the keys scroll as ONE surface.
+            Three octaves of fingertip-sized keys do not fit 390px, so the
+            instrument scrolls sideways — but only the keys did, while the
+            rail of switches above them kept its full width and pushed the
+            whole page 71px wider than the phone. It also meant scrolling the
+            keys slid them out from under the switches that label them, which
+            is the entire design of the rail.
+          */}
+          <div
+            className="maqam-instrument"
+            data-labs-allow-horizontal-scroll
+          >
+            {/* One switch per key, sitting over it. Position is the label. */}
+            <KeyTuningRail octaves={KEYBOARD_OCTAVES} matrix={matrix} onToggle={toggleSlot} />
 
-          <MaqamKeyboard
-            keyTunings={keyTunings}
-            activeNotes={activeNotes}
-            octaves={KEYBOARD_OCTAVES}
-            playingMidiNote={playingNote}
-            onNoteOn={noteOn}
-            onNoteOff={noteOff}
-          />
+            <MaqamKeyboard
+              keyTunings={keyTunings}
+              activeNotes={activeNotes}
+              octaves={KEYBOARD_OCTAVES}
+              playingMidiNote={playingNote}
+              onNoteOn={noteOn}
+              onNoteOff={noteOff}
+            />
+          </div>
 
           {audioBlocked === 'keyboard' && (
             <p className="maqam-alert" role="status">
@@ -235,27 +263,16 @@ export default function App() {
               ))}
             </p>
 
-            {/* Two marks, two lines. The half-flat used to have a third,
-                naming every bent key and its cents — redundant with the glyph
-                sitting on each of those keys, and with the switch above it. */}
-            <p className="maqam-legend" aria-live="polite">
-              <span className="maqam-legend__item">
-                <span className="maqam-legend__swatch" aria-hidden="true" />
-                In this maqam
-              </span>
-              <span className="maqam-legend__item">
-                <span className="maqam-legend__dot" aria-hidden="true" />
-                Tonic
-              </span>
+            {/* No legend. It existed to decode a colour, and the board does
+                not use one any more: each key in the maqam carries its degree,
+                and degree 1 is filled. A line of prose explaining two swatches
+                was the app narrating a mark the mark already makes. */}
+
+            <div className="maqam-board__actions">
               {tuning.kind === 'spells' && (
                 <span className="maqam-badge">Now spells {tuning.name}</span>
               )}
-              {tuning.kind === 'unnamed' && (
-                <span className="maqam-badge">Not a named maqam</span>
-              )}
-            </p>
-
-            <div className="maqam-board__actions">
+              {tuning.kind === 'unnamed' && <span className="maqam-badge">Not a named maqam</span>}
               {/* One control: why the keys are retuned, and how to play them
                   with a real keyboard. Two chips in one corner asked the
                   reader to work out they were the same conversation. */}

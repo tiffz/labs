@@ -35,6 +35,24 @@ export interface DrawStaffOptions {
   highlighted?: ReadonlySet<number>;
   /** Colour for lit noteheads. Defaults to the app's retuned amber. */
   highlightColor?: string;
+  /**
+   * Ajnas to bracket above the staff, as inclusive index ranges into `notes`.
+   *
+   * This is the one place the app draws a cell rather than listing it. A maqam
+   * is not a scale with a name; it is two or three ajnas joined at a shared
+   * degree, and until the brackets were here the reader had a panel saying
+   * "Jins Rast on C, Jins Upper Rast on G" beside eight undifferentiated
+   * noteheads, with nothing connecting the two.
+   */
+  brackets?: StaffBracket[];
+}
+
+export interface StaffBracket {
+  label: string;
+  /** Inclusive index into `notes`. */
+  from: number;
+  /** Inclusive index into `notes`. */
+  to: number;
 }
 
 /** Breathing room kept above and below the drawn extent, in CSS px. */
@@ -157,8 +175,150 @@ function drawStaffNow(
     beam.setContext(context).draw();
   }
 
+  const extent = verticalExtentOf(stave, [...staveNotes, ...beams]);
+  const bracketTop = drawAjnasBrackets(
+    container,
+    stave,
+    staveNotes,
+    options.brackets ?? [],
+    extent,
+  );
+
   applyStaffAccessibility(container, notes);
-  return fitToDrawnExtent(container, verticalExtentOf(stave, [...staveNotes, ...beams]));
+  return fitToDrawnExtent(
+    container,
+    bracketTop === undefined || extent === undefined
+      ? extent
+      : { top: Math.min(extent.top, bracketTop), bottom: extent.bottom },
+  );
+}
+
+/**
+ * Square brackets over the staff, one per jins, the way maqamworld draws them.
+ *
+ * Geometry is in staff spaces rather than pixels, so it survives the canvas
+ * scale the layout applies: rule 0.18 spaces thick, end ticks 0.55 spaces
+ * deep, label one space above the rule. Those are measured off maqamworld's
+ * own jins diagrams.
+ *
+ * Two cells that share exactly one degree — the ghammaz, which is how nearly
+ * every maqam here is put together — both terminate ON that notehead, because
+ * that shared note IS the fact. Cells that overlap by two or more get their
+ * own row, so the overlap reads as an overlap instead of as one long rule.
+ *
+ * The labels are plain text, not links. The same jins name is a link to
+ * maqamworld in the panel three inches to the right; a second copy of one link
+ * inside an `aria-hidden` image would be a duplicate the screen reader could
+ * not reach anyway.
+ *
+ * @returns the topmost y the brackets occupy, so the SVG viewport can grow to
+ * hold them — or `undefined` when nothing was drawn.
+ */
+function drawAjnasBrackets(
+  container: HTMLDivElement,
+  stave: Stave,
+  staveNotes: StaveNote[],
+  brackets: StaffBracket[],
+  extent: VerticalExtent | undefined,
+): number | undefined {
+  const svg = container.querySelector('svg');
+  if (!svg || brackets.length === 0 || extent === undefined) return undefined;
+
+  const space = stave.getSpacingBetweenLines();
+  const rows = assignBracketRows(brackets);
+  const rowHeight = space * 2.6;
+  // Clear of the highest ink on the staff, whichever bracket sits lowest.
+  const baseY = Math.min(extent.top, stave.getYForLine(0)) - space * 1.4;
+
+  const group = document.createElementNS(SVG_NS, 'g');
+  group.setAttribute('class', 'maqam-staff__ajnas');
+  let topmost = baseY;
+
+  brackets.forEach((bracket, index) => {
+    const first = staveNotes[bracket.from];
+    const last = staveNotes[bracket.to];
+    if (!first || !last) return;
+
+    const x1 = noteCentreX(first);
+    const x2 = noteCentreX(last);
+    if (!Number.isFinite(x1) || !Number.isFinite(x2) || x2 <= x1) return;
+
+    const y = baseY - rows[index] * rowHeight;
+    const tick = space * 0.55;
+
+    group.appendChild(
+      svgNode('path', {
+        d: `M ${x1} ${y + tick} L ${x1} ${y} L ${x2} ${y} L ${x2} ${y + tick}`,
+        fill: 'none',
+        stroke: BRACKET_INK,
+        'stroke-width': String(space * 0.18),
+        'stroke-linecap': 'square',
+      }),
+    );
+
+    const label = svgNode('text', {
+      x: String((x1 + x2) / 2),
+      y: String(y - space * 0.55),
+      'text-anchor': 'middle',
+      fill: BRACKET_INK,
+      'font-size': String(space * 1.1),
+      /*
+       * Named, not inherited. VexFlow sets a serif music family on the <svg>
+       * root, so `inherit` drew the jins names in Bravura's text face —
+       * cramped, and reading as part of the notation rather than as a label
+       * on it.
+       */
+      'font-family': BRACKET_FONT,
+      'font-weight': '600',
+      'letter-spacing': String(space * 0.02),
+    });
+    label.textContent = bracket.label;
+    group.appendChild(label);
+
+    topmost = Math.min(topmost, y - space * 1.9);
+  });
+
+  if (group.childNodes.length === 0) return undefined;
+  svg.appendChild(group);
+  return topmost;
+}
+
+/**
+ * Which row each bracket draws on.
+ *
+ * Sharing one degree is the normal case and stays on a single row — the two
+ * rules meet at the ghammaz and the seam is visible. Sharing two or more
+ * degrees means the cells genuinely overlap, and drawing that on one row would
+ * render two different facts as one continuous rule.
+ */
+function assignBracketRows(brackets: StaffBracket[]): number[] {
+  const rows: number[] = [];
+  brackets.forEach((bracket, index) => {
+    let row = 0;
+    for (let other = 0; other < index; other += 1) {
+      const overlap =
+        Math.min(bracket.to, brackets[other].to) - Math.max(bracket.from, brackets[other].from) + 1;
+      if (overlap >= 2 && rows[other] === row) row += 1;
+    }
+    rows.push(row);
+  });
+  return rows;
+}
+
+/** Centre of a notehead, ignoring the accidental hanging off its left. */
+function noteCentreX(note: StaveNote): number {
+  return (note.getNoteHeadBeginX() + note.getNoteHeadEndX()) / 2;
+}
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+const BRACKET_INK = '#7a4250';
+const BRACKET_FONT =
+  'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+
+function svgNode(tag: string, attributes: Record<string, string>): SVGElement {
+  const node = document.createElementNS(SVG_NS, tag);
+  for (const [name, value] of Object.entries(attributes)) node.setAttribute(name, value);
+  return node;
 }
 
 /**

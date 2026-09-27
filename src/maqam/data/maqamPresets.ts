@@ -287,6 +287,37 @@ export function ajnasJoin(preset: MaqamPreset): AjnasJoin | undefined {
   return ajnasJoins(preset)[0];
 }
 
+/** Which scale degrees each cell covers, for the brackets drawn over the staff. */
+export interface AjnasSpan {
+  id: string;
+  name: string;
+  /** Scale index of the cell's root. */
+  fromIndex: number;
+  /** Scale index of its top note. */
+  toIndex: number;
+}
+
+/**
+ * Where each jins sits in the written scale.
+ *
+ * Derived from the cell's root and its own interval count, like every other
+ * fact about the seam — so a cell corrected from a tetrachord to a pentachord
+ * moves its bracket without anyone editing a second number. A cell rooted on a
+ * degree the scale does not contain (a descending-form cell, say) is left out
+ * rather than drawn at index 0, which is what `findIndex` returning -1 would
+ * otherwise produce: a bracket starting at the tonic for no reason.
+ */
+export function ajnasSpans(preset: MaqamPreset): AjnasSpan[] {
+  const lastIndex = preset.scaleDegrees.length - 1;
+  return preset.primaryAjnas.flatMap((jins) => {
+    const fromIndex = degreeIndexOf(preset, jins.root);
+    if (fromIndex < 0) return [];
+    const toIndex = Math.min(fromIndex + jins.intervalsInCents.length - 1, lastIndex);
+    if (toIndex <= fromIndex) return [];
+    return [{ id: jins.id, name: jins.name, fromIndex, toIndex }];
+  });
+}
+
 /**
  * The degree a maqam's phrases rest on, as a scale index.
  *

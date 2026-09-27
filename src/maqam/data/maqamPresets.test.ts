@@ -6,6 +6,7 @@ import {
   DEFAULT_MAQAM_ID,
   ajnasJoin,
   ajnasJoins,
+  ajnasSpans,
   degreeAbsoluteCents,
   ghammazDegreeIndex,
   deriveDetuneMatrix,
@@ -13,6 +14,7 @@ import {
   hasMicrotones,
   scaleDegreeLabels,
   scalePitchClasses,
+  type Jins,
   type MaqamPreset,
 } from './maqamPresets';
 import { pitchClassOf, spellingLabel } from '../notation/maqamAccidentals';
@@ -435,5 +437,61 @@ describe('scale spellings', () => {
     const sikah = MAQAM_PRESETS_BY_ID.sikah_e;
     const { matrix } = deriveDetuneMatrix(sikah.scaleDegrees);
     expect(matrix[pitchClassOf(sikah.tonic)]).toBe(-50);
+  });
+});
+
+describe('ajnasSpans', () => {
+  /**
+   * What the brackets over the staff are drawn from. Derived from each cell's
+   * root and its own interval count, so a cell corrected from a tetrachord to
+   * a pentachord — which is the correction this whole dataset needed once —
+   * moves its bracket with no second number to remember.
+   */
+  it('covers every cell, ending each one on its own top note', () => {
+    for (const preset of MAQAM_PRESETS) {
+      for (const span of ajnasSpans(preset)) {
+        const jins = preset.primaryAjnas.find((cell) => cell.id === span.id);
+        expect(jins, `${preset.id} has no cell ${span.id}`).toBeDefined();
+        expect(span.toIndex - span.fromIndex + 1, `${preset.id} / ${span.id}`).toBe(
+          Math.min(jins!.intervalsInCents.length, preset.scaleDegrees.length - span.fromIndex),
+        );
+        expect(span.toIndex).toBeLessThan(preset.scaleDegrees.length);
+      }
+    }
+  });
+
+  it('meets the ghammaz exactly where the join says it does', () => {
+    for (const preset of MAQAM_PRESETS) {
+      const spans = ajnasSpans(preset);
+      ajnasJoins(preset).forEach((join, index) => {
+        const lower = spans[index];
+        const upper = spans[index + 1];
+        if (!lower || !upper) return;
+        expect(lower.toIndex, `${preset.id} lower cell`).toBe(join.lowerTopIndex);
+        expect(upper.fromIndex, `${preset.id} upper cell`).toBe(join.ghammazIndex);
+      });
+    }
+  });
+
+  /*
+   * A cell rooted on a degree the scale does not contain must be left OUT, not
+   * drawn from index 0. `findIndex` returns -1 there, and -1 reads as a
+   * perfectly plausible bracket starting on the tonic.
+   */
+  it('drops a cell whose root is not a degree of this maqam', () => {
+    const rast = MAQAM_PRESETS_BY_ID.rast_c;
+    // F sharp is not a degree of Rast, so this cell has nowhere to sit.
+    const orphan: Jins = {
+      ...rast.primaryAjnas[0],
+      id: 'not_in_this_scale',
+      root: { letter: 'F', accidental: '#' },
+    };
+    const invented: MaqamPreset = {
+      ...rast,
+      primaryAjnas: [...rast.primaryAjnas, orphan],
+    };
+    expect(ajnasSpans(invented).map((span) => span.id)).toEqual(
+      ajnasSpans(rast).map((span) => span.id),
+    );
   });
 });

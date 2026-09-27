@@ -55,30 +55,25 @@
   --maqam-microtonal-soft: var(--m3-tertiary-container);
 
   /*
-   * Membership is carried by presence, not by hue: a key in the maqam is a
-   * full-strength key, and a key outside it recedes toward the board. That is
-   * how the fact actually behaves — the other notes are still there, they are
-   * just not part of this maqam — and it leaves colour free to mean one thing.
+   * Membership is a NUMERAL on the key, not a colour of the key.
+   *
+   * Three models before this one painted it as a tint or a fade computed
+   * against the other keys, and all three were invisible on Rast, whose seven
+   * degrees are the seven white keys — a relative mark with nothing to
+   * contrast against. The user reported "the highlighting is broken" four
+   * times and every time it was working as built. `--maqam-key-face-dim` and
+   * its black-key twin still exist, one gentle step of recession that
+   * reinforces the numeral; they no longer carry the fact on their own, which
+   * is why the step could come down from a grey slab to a warm shade.
+   *
+   * Tinting the in-maqam keys INSTEAD was tried too, and turned the board into
+   * a lavender slab: on Rast all 21 white keys went the same colour and it
+   * stopped looking like a piano at all.
    */
   --maqam-key-face: #fffdf6;
-  --maqam-key-face-dim: #ddd5bd;
-  /*
-   * Membership is FADE, and the fade is on the notes the maqam does not use.
-   *
-   * Tinting the in-maqam keys instead turned the board into a lavender slab:
-   * on Rast, where every white key is in the maqam, all 21 went the same
-   * colour and it stopped looking like a piano at all. A key in the maqam is
-   * an ordinary key; a key outside it is visibly greyed, the way a disabled
-   * stop on an instrument is. That reads on Rast too — the faded keys are the
-   * black ones, and "this maqam is the white keys" is exactly right.
-   *
-   * Membership is brightness, not hue: a key in the maqam is at full
-   * strength and one outside it recedes toward the board. Garnet then means
-   * "sounding, or home" at three intensities, and terracotta means "bent off
-   * equal temperament". Two hues, each with one job.
-   */
+  --maqam-key-face-dim: #e7e0cd;
   --maqam-scale-wash: #fffdf6;
-  --maqam-scale-wash-black: #242a3d;
+  --maqam-scale-wash-black: #1c2237;
   /* The octaves of the note sounding: a step above membership, below the note
      itself, so "which key is that" still has one loud answer. */
   --maqam-echo: #d3a3ad;
@@ -94,7 +89,11 @@
    * 8.1:1, and the face alone still carries the distinction.
    */
   --maqam-key-face-dim-ink: var(--maqam-key-ink);
-  --maqam-key-black-dim: #6e7689;
+  /* A black key is black. 15 of the 18 are outside the maqam on most maqamat,
+     and at #6e7689 they read as a slate slab laid over the instrument rather
+     than as the accidentals of a piano. One step of lift off the in-maqam
+     black is enough now that the numeral says which is which. */
+  --maqam-key-black-dim: #3d4560;
 
   /* Type scale. Six sizes, because a screen this small cannot justify more. */
   --maqam-text-xs: 0.6875rem;
@@ -533,6 +532,21 @@
   text-underline-offset: 3px;
 }
 
+/*
+ * A fingertip on the links out to maqamworld. They are inline text, so they
+ * come out 20-23px tall and fail the 24px floor on a touch screen — and these
+ * are the app's one route to the source every number in it came from.
+ */
+@media (pointer: coarse) {
+  .maqam-jins__translit,
+  .maqam-jins__name,
+  .maqam-jins__alt a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+  }
+}
+
 .maqam-jins__steps {
   font-size: var(--maqam-text-sm);
   color: var(--m3-on-surface-variant);
@@ -605,14 +619,51 @@
   font-weight: 700;
 }
 
+/*
+ * The BUTTON is as wide as its key; the pill drawn inside it is not.
+ *
+ * The gutters used to be margins, which made the button itself 10px wide — a
+ * 10x18 tap target, and a rail whose `min-content` no longer matched the
+ * keyboard's, so inside the shared scroll host the switches collapsed to 2px
+ * and slid off their keys. An inset pseudo-element gives the same narrow pill
+ * over a full-width, fingertip-sized target.
+ */
 .maqam-rail__switch--white {
-  /* Narrower than its key, with real gutters, so twenty-one switches read as
-     twenty-one objects rather than as one continuous strip. */
-  flex: 1;
+  position: relative;
+  flex: 1 0 var(--maqam-key-width, 36px);
   min-width: 0;
-  height: 18px;
+  height: 22px;
+  border: 0;
+  background: none;
+}
+
+.maqam-rail__switch--white::before {
+  content: '';
+  position: absolute;
   /* Narrow, with wide gutters: a switch over its key, not a tile filling it. */
-  margin: 0 min(15px, 22%);
+  inset: 0 min(15px, 22%);
+  border-radius: var(--maqam-radius-s);
+  background: rgba(30, 38, 64, 0.07);
+  border: 1px solid rgba(30, 38, 64, 0.1);
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease;
+}
+
+/* An absolutely positioned ::before paints over in-flow content, so the glyph
+   has to be lifted out of it. */
+.maqam-rail__switch--white > span {
+  position: relative;
+  z-index: 1;
+}
+
+.maqam-rail__switch--white:hover::before {
+  border-color: var(--maqam-microtonal);
+}
+
+.maqam-rail__switch--white.is-bent::before {
+  background: var(--maqam-microtonal-soft);
+  border-color: var(--maqam-microtonal);
 }
 
 .maqam-rail__switch--black {
@@ -639,6 +690,10 @@
   .maqam-rail__switch--black {
     height: 28px;
   }
+
+  .maqam-rail__switch--black {
+    width: 26px;
+  }
 }
 
 /* ----------------------------------------------------------------- board -- */
@@ -650,35 +705,55 @@
   flex-shrink: 0;
   padding: var(--maqam-s5);
   border-radius: var(--maqam-radius-l);
-  /* The instrument gets the warmest surface in the app — it is the hero, and a
-     flat panel made it read as a control strip. */
   /*
-   * A recessed well, not another pale card. Four surfaces within 1.13:1 of each
-   * other gave the page no value ladder at all, so nothing had weight and the
-   * eye had no entry point. Dropping the board below the page is what gives the
-   * white keys an edge to sit against.
+   * A recessed well, not a slab of gold.
+   *
+   * The board needs to sit BELOW the page so the white keys have an edge to
+   * rest against — four surfaces within 1.13:1 of each other gave the page no
+   * value ladder at all. But it took that depth from `--m3-surface-container`,
+   * the saffron sand, and the result was the loudest thing on screen: a
+   * 1200x390 gold rectangle directly under a page of near-white. Sand is a
+   * page ground, not a panel fill, at that size.
+   *
+   * Depth now comes from value and a rim, not from hue. Same recession, and
+   * the keys are what you look at.
    */
-  background: linear-gradient(
-    168deg,
-    var(--m3-surface-container) 0%,
-    #ebdfab 100%
-  );
-  box-shadow: inset 0 1px 3px rgba(32, 27, 22, 0.1);
+  background: linear-gradient(168deg, #eee9da 0%, #e4ddc7 100%);
+  box-shadow:
+    inset 0 1px 3px rgba(32, 27, 22, 0.12),
+    inset 0 0 0 1px rgba(30, 38, 64, 0.06);
 }
 
-.maqam-keyboard {
-  /* The one surface allowed to scroll sideways: 3 octaves of fingertip-sized
-     keys will not fit 390px, and shrinking them below a fingertip is worse than
-     scrolling. Per .agents/rules/layout-no-horizontal-scroll.md. */
+/*
+ * The one surface allowed to scroll sideways: 3 octaves of fingertip-sized keys
+ * will not fit 390px, and shrinking them below a fingertip is worse than
+ * scrolling. Tagged at source per .agents/rules/layout-no-horizontal-scroll.md.
+ *
+ * It wraps the switch rail AND the keys, because the rail is positioned by
+ * mirroring the keyboard's geometry: scrolling one without the other slides
+ * every switch off the key it labels. Scrolling only the keys also left the
+ * rail at full width, and that was what pushed the page itself 71px past a
+ * 390px phone.
+ */
+.maqam-instrument {
   overflow-x: auto;
   /* Room for the focus ring (3px + 2px offset). Without it the scroll container
      clipped the top edge of the ring on the key the user had just tabbed to. */
   padding: 6px 0;
 }
 
+.maqam-instrument > * {
+  min-width: min-content;
+}
+
 .maqam-keyboard .shared-pk-container {
   min-width: min-content;
   justify-content: center;
+  /* One scroll surface, not two. The shared keyboard scrolls itself, which is
+     right when it is used alone; here `.maqam-instrument` scrolls it together
+     with the switch rail, and leaving both meant the keys could slide out from
+     under the switches that label them. */
+  overflow-x: visible;
 }
 
 .maqam-keyboard .shared-pk-white {
@@ -693,6 +768,16 @@
 }
 
 @media (min-width: 640px) {
+  .maqam-board {
+    --maqam-key-width: 46px;
+  }
+
+  .maqam-keyboard {
+    --maqam-mark-bottom: 26px;
+    --maqam-mark-bottom-black: 24px;
+    --maqam-badge-bottom: 46px;
+  }
+
   .maqam-keyboard .shared-pk-white {
     width: 46px;
     height: 150px;
@@ -721,6 +806,18 @@
   .maqam-keyboard .shared-pk-octave {
     flex: 1;
     min-width: 0;
+  }
+
+  /* The keys stop having a fixed width here and divide the row instead, so the
+     switches must stop reserving one too or the rail outruns the keyboard. */
+  .maqam-rail__switch--white {
+    flex: 1;
+  }
+
+  .maqam-keyboard {
+    --maqam-mark-bottom: 34px;
+    --maqam-mark-bottom-black: 30px;
+    --maqam-badge-bottom: 58px;
   }
 
   .maqam-keyboard .shared-pk-white {
@@ -777,23 +874,56 @@
   box-shadow: inset 0 -2px 0 rgba(30, 38, 64, 0.07);
 }
 
-/* Tonic: shape, so it survives a colour-blind reading and stacks with a bend. */
-.maqam-key.maqam-key--home::after {
-  content: '';
+/*
+ * The degree numeral. This is what membership is drawn with.
+ *
+ * Three previous models painted membership as a tint or a fade RELATIVE to the
+ * other keys, and all three were invisible on Rast, whose seven degrees are the
+ * seven white keys — nothing to contrast against. A numeral is absolute: it
+ * reads the same on Rast as on Saba, and it answers a second question the tint
+ * never could, which is *which* note of the maqam a key is.
+ */
+.maqam-keyboard .shared-pk-mark {
   position: absolute;
-  bottom: 26px;
+  /*
+   * In the strip of white key that no black key covers — which is 44px tall on
+   * a phone and 80px on a desktop, so the offsets scale with the keys rather
+   * than being one number that fits the largest. Pinned at 54px it landed
+   * behind the black keys at 390px, where the numerals ran through the
+   * accidentals' names.
+   */
+  bottom: var(--maqam-mark-bottom, 24px);
   left: 50%;
   transform: translateX(-50%);
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: var(--maqam-tonic);
+  min-width: 17px;
+  height: 17px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--maqam-radius-pill);
+  font-size: var(--maqam-text-sm);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: var(--maqam-tonic);
   pointer-events: none;
 }
 
-.shared-pk-black.maqam-key--home::after {
-  bottom: 26px;
+/* Home is degree 1 at one more step of weight, not a separate dot beside a
+   numeral that already says it. */
+.maqam-key--home .shared-pk-mark {
+  background: var(--maqam-tonic);
+  color: #fffdf6;
+}
+
+.shared-pk-black .shared-pk-mark {
+  bottom: var(--maqam-mark-bottom-black, 22px);
+  color: #f0d7dd;
+}
+
+.shared-pk-black.maqam-key--home .shared-pk-mark {
   background: #ffffff;
+  color: var(--maqam-tonic);
 }
 
 /*
@@ -812,12 +942,27 @@
 .shared-pk-white.maqam-key--retuned .shared-pk-badge {
   /* Grouped with the note name at the foot of the key, not orphaned at the top. */
   top: auto;
-  bottom: 32px;
+  bottom: var(--maqam-badge-bottom, 42px);
   padding: 1px var(--maqam-s1);
   border-radius: var(--maqam-radius-s);
   background: var(--maqam-microtonal-soft);
   color: var(--m3-on-tertiary-container);
   font-size: var(--maqam-text-sm);
+}
+
+/*
+ * On a phone there is room for ONE mark above the note name — the strip of
+ * white key no black key covers is 44px tall — and the degree is the one that
+ * has to be there. Drawn anyway, the ½♭ pill came out sliced in half by the
+ * accidentals above it.
+ *
+ * Nothing is lost: the switch directly over that key is lit and reads ½♭, and
+ * the scale line under the board spells the degree out in full.
+ */
+@media (max-width: 639px) {
+  .shared-pk-white.maqam-key--retuned .shared-pk-badge {
+    display: none;
+  }
 }
 
 /* A black key's whole top edge is exposed, so the cap works there. */
@@ -836,6 +981,7 @@
  */
 .maqam-keyboard .shared-pk-black {
   background: var(--maqam-key-black-dim);
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.25);
 }
 
 .shared-pk-black.maqam-key--in-scale .shared-pk-black-label {
@@ -845,7 +991,7 @@
 .shared-pk-black.maqam-key--in-scale {
   background: linear-gradient(
     180deg,
-    #39405c 0%,
+    #2a3148 0%,
     var(--maqam-scale-wash-black) 100%
   );
 }
@@ -874,8 +1020,13 @@
   color: rgba(255, 255, 255, 0.96);
 }
 
-.maqam-key.maqam-key--sounding.maqam-key--home::after {
+/* Sounding paints the whole key garnet, so the numeral has to invert with it
+   or degree 1 becomes a garnet chip on a garnet key. */
+.maqam-key.maqam-key--sounding .shared-pk-mark,
+.maqam-keyboard .shared-pk-white.active .shared-pk-mark,
+.maqam-keyboard .shared-pk-black.active .shared-pk-mark {
   background: #ffffff;
+  color: var(--maqam-tonic);
 }
 
 /* The pressed state must beat the role colours, or a held key looks unplayed. */
@@ -918,57 +1069,36 @@
   gap: 8px;
 }
 
-.maqam-legend {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px 14px;
+/* -------------------------------------------------------------- glossary -- */
+
+.maqam-glossary__trigger.MuiButton-root {
+  /* Quieter than the maqam picker beside it. Choosing a maqam is the journey;
+     looking a word up is the thing you do once, on your first visit. */
+  color: var(--m3-on-surface-variant);
+  font-weight: 500;
+  text-transform: none;
+}
+
+.maqam-glossary {
+  max-width: 24rem;
+  padding: var(--maqam-s4) var(--maqam-s5);
+}
+
+.maqam-glossary__list {
   margin: 0;
+  display: grid;
+  gap: var(--maqam-s3);
+}
+
+.maqam-glossary__row dt {
+  font-size: var(--maqam-text-md);
+  font-weight: 700;
+}
+
+.maqam-glossary__row dd {
+  margin: 2px 0 0;
   font-size: var(--maqam-text-md);
   color: var(--m3-on-surface-variant);
-}
-
-.maqam-legend__item {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-/*
- * Two miniature keys, cool beside warm — the board's own distinction at legend
- * size. The previous version was bright-white beside dim-cream at 1.30:1, two
- * near-identical outlined boxes that read as tofu. A hue difference survives
- * being 14px tall; a value difference that small does not.
- */
-.maqam-legend__swatch {
-  display: inline-flex;
-  gap: 2px;
-}
-
-.maqam-legend__swatch::before,
-.maqam-legend__swatch::after {
-  content: '';
-  width: 8px;
-  height: 15px;
-  border-radius: 0 0 3px 3px;
-  border: 1px solid var(--m3-outline-variant);
-}
-
-.maqam-legend__swatch::before {
-  background: var(--maqam-scale-wash);
-  border-color: var(--maqam-tonic);
-}
-
-.maqam-legend__swatch::after {
-  background: var(--maqam-key-face-dim);
-}
-
-.maqam-legend__dot {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--maqam-tonic);
 }
 
 .maqam-badge {

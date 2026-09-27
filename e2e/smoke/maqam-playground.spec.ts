@@ -312,11 +312,23 @@ test.describe('Maqam Playground', () => {
 
     // The scroll container has to leave room for it, or the ring is sheared off
     // along the top edge of the key the user just tabbed to.
-    const clipped = await key.evaluate((el) => {
-      const host = el.closest('.maqam-keyboard') as HTMLElement;
-      return el.getBoundingClientRect().top - host.getBoundingClientRect().top;
+    //
+    // The host is FOUND, not named: it moved once already, from the keyboard to
+    // the wrapper that scrolls the switch rail with it, and a hardcoded
+    // `.maqam-keyboard` would then have measured an element that no longer
+    // clips anything and passed on a padding it does not own.
+    const pad = await key.evaluate((el) => {
+      let host = el.parentElement;
+      while (host && getComputedStyle(host).overflowX !== 'auto') host = host.parentElement;
+      if (!host) return null;
+      const box = host.getBoundingClientRect();
+      const first = host.firstElementChild!.getBoundingClientRect();
+      const last = host.lastElementChild!.getBoundingClientRect();
+      return { top: first.top - box.top, bottom: box.bottom - last.bottom };
     });
-    expect(clipped).toBeGreaterThanOrEqual(5);
+    expect(pad, 'no scrolling ancestor clips the keys').not.toBeNull();
+    expect(pad!.top, 'the scroll host shears the top of the ring').toBeGreaterThanOrEqual(5);
+    expect(pad!.bottom, 'the scroll host shears the bottom of the ring').toBeGreaterThanOrEqual(5);
   });
 
   test('a11y: the staff has exactly one accessible name', async ({ page }) => {
@@ -444,6 +456,59 @@ test.describe('Maqam Playground', () => {
 
     expect(low).toBeGreaterThan(0);
     expect(high).not.toBe(low);
+  });
+
+  test('the staff brackets the ajnas the panel lists, meeting on the ghammaz', async ({
+    page,
+  }) => {
+    /*
+     * A maqam is cells joined at a shared degree, and until these brackets
+     * existed the app said so only in prose beside eight undifferentiated
+     * noteheads.
+     *
+     * The expected labels are read from the app's OWN ajnas panel rather than
+     * written here, so a maqam whose cells are corrected cannot leave the
+     * brackets behind: the two have to agree or this fails. Enumerating them
+     * would make this a constant-against-constant test.
+     */
+    await page.goto('/maqam/?maqam=rast_c');
+    await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('.maqam-staff svg')).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('.maqam-staff__ajnas text').first()).toBeVisible();
+
+    const panelNames = await page.locator('.maqam-jins__name').allTextContents();
+    const drawn = await page.locator('.maqam-staff__ajnas text').allTextContents();
+    expect(drawn.length).toBeGreaterThan(0);
+    expect(drawn).toEqual(panelNames);
+
+    const geometry = await page.evaluate(() => {
+      const paths = [...document.querySelectorAll('.maqam-staff__ajnas path')];
+      const staffTop = document
+        .querySelector('.maqam-staff svg')!
+        .querySelector('*')!
+        .getBoundingClientRect().top;
+      return {
+        rules: paths.map((path) => {
+          const box = path.getBoundingClientRect();
+          return { left: box.left, right: box.right, bottom: box.bottom };
+        }),
+        staffTop,
+      };
+    });
+
+    expect(geometry.rules).toHaveLength(panelNames.length);
+    // Rast's two cells share their G. Both rules must terminate on that one
+    // notehead — a gap or an overlap there would draw the seam as a fact it is
+    // not. Within a notehead's width of each other, in device pixels.
+    const [lower, upper] = geometry.rules;
+    expect(
+      Math.abs(lower.right - upper.left),
+      'the two cells do not meet on the same notehead',
+    ).toBeLessThan(6);
+    // Above the music, not through it.
+    for (const rule of geometry.rules) {
+      expect(rule.bottom).toBeLessThanOrEqual(geometry.staffTop + 1);
+    }
   });
 
   test('portalled surfaces resolve the app tokens', async ({ page }) => {
@@ -778,9 +843,11 @@ test.describe('Maqam Playground', () => {
     ).toBeGreaterThanOrEqual(1.15);
   });
 
-  test('the legend stays readable on the board', async ({ page }) => {
-    // 14px body text on the board's own fill. It measured 4.28:1 when the
-    // board was a darker khaki, under the 4.5:1 AA floor.
+  test('the scale line stays readable on the board', async ({ page }) => {
+    // The board's own fill under the text sitting on it. It measured 4.28:1
+    // when the board was a darker khaki, under the 4.5:1 AA floor. The legend
+    // this used to measure is gone — the keys carry their degree, so there is
+    // nothing left to decode — and the scale line is what sits there now.
     await page.goto('/maqam/');
     await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
 
@@ -797,14 +864,51 @@ test.describe('Maqam Playground', () => {
       const style = getComputedStyle(board);
       const stops = style.backgroundImage.match(/rgba?\([^)]+\)/g);
       const fill = stops ? stops[stops.length - 1] : style.backgroundColor;
-      const ink = getComputedStyle(document.querySelector('.maqam-legend')!).color;
+      const ink = getComputedStyle(document.querySelector('.maqam-scaleline')!).color;
       const [hi, lo] = [luminance(ink), luminance(fill)].sort((x, y) => y - x);
       return (hi + 0.05) / (lo + 0.05);
     });
 
-    expect(ratio, `legend text on the board is only ${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(
-      4.5,
-    );
+    expect(
+      ratio,
+      `the scale line on the board is only ${ratio.toFixed(2)}:1`,
+    ).toBeGreaterThanOrEqual(4.5);
+  });
+
+  test('every degree of the maqam is numbered on the key that plays it', async ({
+    page,
+  }) => {
+    /*
+     * Membership, as the user sees it. The previous three models painted it as
+     * a tint or a fade computed against the other keys, and all three were
+     * INVISIBLE on Rast — its seven degrees are the seven white keys, so a
+     * relative mark had nothing to contrast against. "The maqam highlighting is
+     * broken" was reported four times against a board that was working exactly
+     * as built.
+     *
+     * So the guard runs on Rast, the maqam that falsified every earlier
+     * version, and it counts marks rather than comparing colours: one numeral
+     * per degree per octave, and the numerals actually spell the maqam.
+     */
+    await page.goto('/maqam/?maqam=rast_c');
+    await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('.maqam-keyboard .shared-pk-white').first()).toBeVisible();
+
+    const marks = await page.evaluate(() => {
+      const keys = [...document.querySelectorAll('.maqam-keyboard .shared-pk-white')];
+      return keys.map((key) => ({
+        inScale: key.classList.contains('maqam-key--in-scale'),
+        mark: key.querySelector('.shared-pk-mark')?.textContent ?? '',
+      }));
+    });
+
+    // Rast is all seven white keys, over three octaves.
+    expect(marks.filter((k) => k.inScale)).toHaveLength(21);
+    // Not one key in the maqam without its degree, and not one outside it with one.
+    expect(marks.filter((k) => k.inScale && k.mark === '')).toHaveLength(0);
+    expect(marks.filter((k) => !k.inScale && k.mark !== '')).toHaveLength(0);
+    // And the numerals read as the maqam does, rather than being 21 copies of "1".
+    expect(marks.slice(0, 7).map((k) => k.mark).join('')).toBe('1234567');
   });
 
   test('every tuning switch sits over the key it retunes', async ({ page }) => {

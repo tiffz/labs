@@ -36,9 +36,9 @@ export default function MaqamKeyboard({
       const tuning = keyTunings[((midi % 12) + 12) % 12];
       if (!tuning) return undefined;
       const octave = Math.floor(midi / 12) - 1;
-      // One class per independent fact. Fill says "in the maqam", the dot says
-      // "home", the amber mark says "retuned" — so a key that is all three
-      // (Sikah's E½♭) shows all three instead of one winning.
+      // One class per independent fact. The degree numeral says "in the maqam,
+      // and which note of it"; the amber badge says "retuned" — so a key that
+      // is both (Sikah's E½♭) shows both instead of one winning.
       return {
         className: [
           'maqam-key',
@@ -57,6 +57,9 @@ export default function MaqamKeyboard({
           .filter(Boolean)
           .join(' '),
         badge: tuning.badge,
+        // The numeral IS the membership mark. It is legible on Rast, where
+        // every white key belongs and a relative tint therefore says nothing.
+        mark: tuning.degree ? String(tuning.degree) : undefined,
         ariaLabel: `${tuning.ariaLabel}, octave ${octave}`,
       };
     },

@@ -48,6 +48,15 @@ export interface PianoKeyDecoration {
   className?: string;
   /** Short badge rendered on the keycap, e.g. `½♭`. */
   badge?: string;
+  /**
+   * A second short mark on the keycap, for a fact the badge is not already
+   * carrying. Maqam Playground draws the scale degree here, so a key can say
+   * both "third of this maqam" and "bent a quarter tone" at once.
+   *
+   * Decorative: it is `aria-hidden`, so whatever it says must also be in
+   * `ariaLabel`.
+   */
+  mark?: string;
   /** Replaces the default accessible name for the key. */
   ariaLabel?: string;
 }
@@ -195,6 +204,9 @@ export default function OnscreenPianoKeyboard({
                 {decoration?.badge && (
                   <span className="shared-pk-badge" aria-hidden="true">{decoration.badge}</span>
                 )}
+                {decoration?.mark && (
+                  <span className="shared-pk-mark" aria-hidden="true">{decoration.mark}</span>
+                )}
               </button>
             );
           })}
@@ -222,6 +234,9 @@ export default function OnscreenPianoKeyboard({
                 )}
                 {decoration?.badge && (
                   <span className="shared-pk-badge" aria-hidden="true">{decoration.badge}</span>
+                )}
+                {decoration?.mark && (
+                  <span className="shared-pk-mark" aria-hidden="true">{decoration.mark}</span>
                 )}
               </button>
             );

@@ -31,11 +31,24 @@ export interface KeyTuning {
   pitchClass: number;
   role: KeyRole;
   /**
-   * Whether this key is the maqam's home note. Drawn as a dot: shape rather
-   * than colour, so it survives a colour-blind reading and stacks with the
-   * others.
+   * Whether this key is the maqam's home note. Drawn as degree 1 in a filled
+   * chip — the same channel as every other degree, one step louder, rather
+   * than a separate dot saying a thing the numeral already says.
    */
   isTonic: boolean;
+  /**
+   * Where this key falls in the maqam, counting the tonic as 1. Absent for a
+   * key the maqam does not use.
+   *
+   * This is what membership is drawn with, and it is drawn POSITIVELY on
+   * purpose. Three earlier models tinted or faded keys *relative* to each
+   * other, which says nothing on Rast: every white key is in Rast, so a
+   * relative mark had nothing to contrast against and the board looked
+   * unmarked. The user reported "the highlighting is broken" four times, and
+   * every time it was working exactly as built. A numeral on the key is true
+   * whether the maqam uses seven white keys or three.
+   */
+  degree?: number;
   /** Whether this key is bent off the 12-TET grid. Drawn as an amber mark. */
   isRetuned: boolean;
   /** Cents this key is bent by. 0 for every key in equal temperament. */
@@ -72,14 +85,16 @@ export function buildKeyTunings(
   matrix: DetuneMatrix,
 ): KeyTuning[] {
   const spellingByPitchClass = new Map<number, MaqamScaleDegree>();
+  const degreeByPitchClass = new Map<number, number>();
   if (preset) {
-    for (const degree of preset.scaleDegrees) {
+    preset.scaleDegrees.forEach((degree, index) => {
       // First spelling wins, so an octave-repeated tonic does not overwrite the
-      // one the maqam opens on.
+      // one the maqam opens on — and the home key reads 1, not 8.
       if (!spellingByPitchClass.has(pitchClassOf(degree))) {
         spellingByPitchClass.set(pitchClassOf(degree), degree);
+        degreeByPitchClass.set(pitchClassOf(degree), index + 1);
       }
-    }
+    });
   }
   const tonicPitchClass = preset ? pitchClassOf(preset.tonic) : null;
 
@@ -124,11 +139,19 @@ export function buildKeyTunings(
       pitchClass,
       role,
       isTonic,
+      degree: degreeByPitchClass.get(pitchClass),
       isRetuned: bent,
       cents,
       label,
       badge,
-      ariaLabel: describeKey(spokenName, role, cents, isTonic, bent),
+      ariaLabel: describeKey(
+        spokenName,
+        role,
+        cents,
+        isTonic,
+        bent,
+        degreeByPitchClass.get(pitchClass),
+      ),
     };
   });
 }
@@ -287,11 +310,20 @@ function describeKey(
   cents: number,
   isTonic: boolean,
   isRetuned: boolean,
+  degree?: number,
 ): string {
   const name = label ?? 'key';
   if (role === 'outside' && !isRetuned) return `${name}, outside the maqam`;
 
-  const parts = [role === 'in-scale' ? 'in the maqam' : 'outside the maqam'];
+  // The numeral on the keycap is `aria-hidden`, so the degree has to be spoken
+  // here or a screen-reader user loses the one mark membership is drawn with.
+  const parts = [
+    role === 'in-scale'
+      ? degree
+        ? `degree ${degree} of the maqam`
+        : 'in the maqam'
+      : 'outside the maqam',
+  ];
   if (isTonic) parts.push('home note');
   if (isRetuned) parts.push(`tuned ${formatCents(cents)}`);
   return `${name}, ${parts.join(', ')}`;
