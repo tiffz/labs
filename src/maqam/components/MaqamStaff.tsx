@@ -32,9 +32,9 @@ const MIN_WIDTH = 240;
  * page is about; at 460 it is drawn at the size that says so, and the two
  * columns come out level without stretching an empty box to fake it.
  */
-const COMFORTABLE_WIDTH = 460;
+const COMFORTABLE_WIDTH = 400;
 /** Past this the noteheads look inflated rather than generous. */
-const MAX_SCALE = 1.9;
+const MAX_SCALE = 2.2;
 
 /**
  * A single stave, sized from its width.

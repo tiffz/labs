@@ -24,58 +24,49 @@
 .maqam,
 .maqam-portal {
   /*
-   * ------------------------------------------------- the Labs house palette
+   * ------------------------------------------------------------------ Citrus
    *
-   * Measured off the other apps on this site rather than invented here:
+   * Chosen from the picker after eleven palettes that were not. Cream ground,
+   * deep-green structure, burnt-orange accent.
    *
-   *   page      #f8fafc     cards  #ffffff, 1px #e2e8f0, radius 16, NO shadow
-   *   ink       #1e293b     quiet  #64748b
-   *   accent    one colour per app  (Scales is green, Chords indigo)
+   * These are the exact values the Citrus seed derives, copied here rather
+   * than re-derived, so the thing that ships is the thing that was picked —
+   * `applyMaqamTheme` injects nothing for the default, and this block is what
+   * every reader gets.
    *
-   * Eleven bespoke palettes preceded this one and none of them landed. The
-   * brief that did: make /maqam look like it belongs to the site, and spend
-   * colour on meaning only. So the surfaces are the site's slate ramp, and
-   * garnet is this app's one accent — the same relationship Scales has with
-   * its green.
-   *
-   * What garnet is allowed to mean: the note that is sounding, the note that
-   * is home, and the one primary button. Everything that used to be coloured
-   * for decoration — the jins rules, the Arabic name, the bracket labels, the
-   * degree numerals above 1 — is slate now.
+   * Colour still means one thing: burnt orange is the note that is sounding,
+   * the note that is home, and the one primary button. The greens are
+   * structure. Nothing is coloured for decoration.
    */
-  --m3-surface: #f8fafc;
-  --m3-surface-container-lowest: #ffffff;
-  --m3-surface-container-low: #ffffff;
-  --m3-surface-container: #f1f5f9;
-  --m3-surface-container-high: #e2e8f0;
-  --m3-surface-container-highest: #cbd5e1;
+  --m3-surface: #fffbe8;
+  --m3-surface-container-lowest: #fffef9;
+  --m3-surface-container-low: #f8f4e1;
+  --m3-surface-container: #f2eedc;
+  --m3-surface-container-high: #ebe7d5;
+  --m3-surface-container-highest: #e2decd;
 
-  --m3-on-surface: #1e293b;
-  --m3-on-surface-variant: #64748b;
-  --m3-outline: #94a3b8;
-  --m3-outline-variant: #e2e8f0;
+  --m3-on-surface: #1d2b1f;
+  --m3-on-surface-variant: #5c6557;
+  --m3-outline: #8e9384;
+  --m3-outline-variant: #cdcdbc;
 
   /* The accent. One colour, three jobs: sounding, home, and Play. */
-  --m3-primary: #922c40;
+  --m3-primary: #b4400c;
   --m3-on-primary: #ffffff;
-  --m3-primary-container: #fae8ec;
-  --m3-on-primary-container: #4c0f1e;
+  --m3-primary-container: #f2d9c0;
+  --m3-on-primary-container: #511d05;
 
-  /* Structure. Not an accent — slate, so it cannot compete. */
-  --m3-secondary: #475569;
-  --m3-secondary-container: #e2e8f0;
-  --m3-on-secondary-container: #1e293b;
+  /* Structure — deep green. Not an accent, so it cannot compete. */
+  --m3-secondary: #1f5f3f;
+  --m3-secondary-container: #dbe2cd;
+  --m3-on-secondary-container: #0e2b1c;
 
-  /*
-   * "On", for a control. Deliberately NOT a second hue: a lit quarter-tone
-   * switch is a selection state, and giving it terracotta meant the board
-   * carried two accents competing with the one that means something musical.
-   * A strong slate fill reads as on without spending a colour.
-   */
-  --m3-tertiary: #334155;
+  /* "On", for a control. A switch being lit is a selection state, not a fact
+     about a note, so it takes the olive rather than the accent. */
+  --m3-tertiary: #8a6d00;
   --m3-on-tertiary: #ffffff;
-  --m3-tertiary-container: #e2e8f0;
-  --m3-on-tertiary-container: #1e293b;
+  --m3-tertiary-container: #e8dfba;
+  --m3-on-tertiary-container: #372c00;
 
   --maqam-tonic: var(--m3-primary);
   --maqam-tonic-soft: var(--m3-primary-container);
@@ -84,41 +75,35 @@
 
   /*
    * Membership is a NUMERAL on the key; the face carries one step of support.
-   *
-   * Three earlier models painted it as a tint computed against the other keys
-   * and all three were invisible on Rast, whose seven degrees are the seven
-   * white keys. The step here is 1.59:1 — the version before it measured
-   * 1.33:1 and was reported as "very hard to read".
+   * White against sage is 1.75:1 — the version that was reported as "very hard
+   * to read" measured 1.33:1.
    */
   --maqam-key-face: #ffffff;
-  --maqam-key-face-dim: #cbd5e1;
+  --maqam-key-face-dim: #abbcb3;
   --maqam-scale-wash: #ffffff;
-  --maqam-scale-wash-black: #1e293b;
-  --maqam-key-black-dim: #64748b;
-  --maqam-key-ink: #1e293b;
-  --maqam-key-face-dim-ink: #1e293b;
+  --maqam-scale-wash-black: #0e2b1c;
+  --maqam-key-black-dim: #284b39;
+  --maqam-key-ink: #1a261b;
+  --maqam-key-face-dim-ink: #1a261b;
+  --maqam-key-edge: #2d3f33;
   /* The octaves of the note sounding: below the note itself, so "which key is
      that" keeps one loud answer. */
-  --maqam-echo: #d3a3ad;
+  --maqam-echo: #d6946f;
 
   /*
-   * The keyboard sits ON THE PAGE. There is no board.
-   *
-   * Three coloured slabs were tried behind the keys — saffron sand, a neutral
-   * tonal step, then a saturated stage — and each was rejected for the same
-   * reason: it is the largest block of colour on the screen, and it made an
-   * instrument that should read as part of the page outweigh everything else.
-   * These tokens remain because the key and switch colours are measured
-   * against whatever is behind them, and that is now the page.
+   * The keyboard sits in a card, like everything else on the page — not on a
+   * coloured slab. Three of those were tried and rejected; without one the
+   * instrument then read as floating, which is the opposite failure. A white
+   * card with the same hairline as the staff and the maqam panel puts it in
+   * the same family as its neighbours instead of inventing a third idiom.
    */
-  --maqam-board: var(--m3-surface);
-  --maqam-board-ink: #1e293b;
-  --maqam-board-ink-quiet: #64748b;
+  --maqam-board: var(--m3-surface-container-lowest);
+  --maqam-board-ink: #1d2b1f;
+  --maqam-board-ink-quiet: #5c6557;
 
-  /* A quarter-tone switch: a white chip with a slate rim, filled when on. */
-  --maqam-key-edge: #94a3b8;
-  --maqam-switch-off: #ffffff;
-  --maqam-switch-border: #cbd5e1;
+  /* A quarter-tone switch: a pale chip with a rim, filled olive when on. */
+  --maqam-switch-off: #f3f6f0;
+  --maqam-switch-border: #b9c2b2;
 
   /*
    * The notation's three inks.
@@ -126,14 +111,20 @@
    * VexFlow paints with JS colour strings, so the stylesheet cannot reach it —
    * every renderer in this repo ended up with a hex literal its theme knew
    * nothing about. `maqamStaffDraw` reads these, which is what lets a look
-   * apply to the staff as well as to the page. The bracket label is slate: it
-   * is a label about the music, not a fact about a note.
+   * apply to the staff as well as to the page.
    */
-  --maqam-staff-ink: #1e293b;
-  --maqam-staff-lit: #922c40;
-  --maqam-bracket-ink: #64748b;
+  --maqam-staff-ink: #19251a;
+  --maqam-staff-lit: #b4400c;
+  --maqam-bracket-ink: #5c6557;
 
-  /* A display face, for the looks that use one. */
+  /* Each cell of a maqam gets one of these, in order, so a jins is the same
+     colour in its chip, its bracket and its notes. Two is enough for every
+     maqam in the catalogue; a third is here for the three-cell case. */
+  --maqam-jins-1: #1f5f3f;
+  --maqam-jins-2: #b4400c;
+  --maqam-jins-3: #8a6d00;
+
+  /* A display face for the app's name. */
   --maqam-title-font: inherit;
 
   /*
@@ -151,17 +142,16 @@
    * ------------------------------------------------------------- M3 type
    *
    * Named as M3 names it, so a size is chosen by what the text IS rather than
-   * by how big it should look. Six ad-hoc rem values preceded this and nothing
-   * said which to use where, which is most of what read as inconsistent.
+   * by how big it should look.
    */
-  --m3-headline-small: 1.5rem; /* 24/32 — the app title */
-  --m3-title-medium: 1rem; /* 16/24 w500 — a jins name */
-  --m3-title-small: 0.875rem; /* 14/20 w500 */
-  --m3-body-medium: 0.875rem; /* 14/20 — running text */
-  --m3-body-small: 0.75rem; /* 12/16 — supporting detail */
-  --m3-label-large: 0.875rem; /* 14 w500 — buttons */
-  --m3-label-medium: 0.75rem; /* 12 w500 — eyebrows, key names */
-  --m3-label-small: 0.6875rem; /* 11 w500 — the smallest mark on a keycap */
+  --m3-headline-small: 1.5rem;
+  --m3-title-medium: 1rem;
+  --m3-title-small: 0.875rem;
+  --m3-body-medium: 0.875rem;
+  --m3-body-small: 0.75rem;
+  --m3-label-large: 0.875rem;
+  --m3-label-medium: 0.75rem;
+  --m3-label-small: 0.6875rem;
   --maqam-text-arabic: 1.25rem;
 
   /* Space, on M3's 4dp grid. */
@@ -173,11 +163,11 @@
   --maqam-s6: 32px;
   --maqam-gap: var(--maqam-s5);
 
-  /* Shape, matching the site: cards at 16, controls at 8. */
-  --maqam-radius-xs: 4px;
-  --maqam-radius-s: 8px;
-  --maqam-radius-m: 12px;
-  --maqam-radius-l: 16px;
+  /* Citrus is the round one. */
+  --maqam-radius-xs: 8px;
+  --maqam-radius-s: 14px;
+  --maqam-radius-m: 20px;
+  --maqam-radius-l: 28px;
   --maqam-radius-pill: 999px;
 }
 
@@ -264,14 +254,35 @@
   flex-shrink: 0;
 }
 
+/*
+ * The app's name, set as a name.
+ *
+ * It was one 24px bold string doing the job of a label. Two words at two
+ * weights is the cheapest way to make a wordmark out of type you already have
+ * — the noun carries the weight, the qualifier steps back — and it reads as
+ * deliberate at a glance, which "Maqam Playground" in the body font did not.
+ */
 .maqam-topbar__title {
+  display: flex;
+  align-items: baseline;
+  gap: 0.34em;
   margin: 0;
   font-family: var(--maqam-title-font, inherit);
-  font-size: var(--m3-headline-small);
-  font-weight: 700;
-  letter-spacing: -0.015em;
-  line-height: 1.2;
+  font-size: 1.625rem;
+  line-height: 1.1;
   white-space: nowrap;
+}
+
+.maqam-topbar__word {
+  font-weight: 700;
+  letter-spacing: -0.028em;
+  color: var(--m3-on-surface);
+}
+
+.maqam-topbar__word--light {
+  font-weight: 400;
+  letter-spacing: -0.005em;
+  color: var(--m3-on-surface-variant);
 }
 
 .maqam-topbar__picker {
@@ -323,51 +334,12 @@
     flex: 1 1 100%;
   }
 
-  .maqam-jins {
+  .maqam-card {
     padding: 0;
-  }
-
-  .maqam-jins__lede {
-    margin: 0 0 var(--maqam-s4);
-    font-size: var(--m3-body-medium);
-    line-height: 1.55;
-    color: var(--m3-on-surface-variant);
   }
 
   /* Terracotta, because this is the "bent off the written tuning" fact, and
    that is what terracotta means everywhere else in the app. */
-  .maqam-jins__stale {
-    margin: 0 0 var(--maqam-s4);
-    padding: var(--maqam-s2) var(--maqam-s3);
-    border-radius: var(--maqam-radius-s);
-    background: var(--maqam-microtonal-soft);
-    color: var(--m3-on-tertiary-container);
-    font-size: var(--m3-label-medium);
-    line-height: 1.5;
-  }
-
-  .maqam-jins__list {
-    gap: 8px;
-    margin: 6px 0 8px;
-  }
-
-  .maqam-jins__alt {
-    font-size: var(--m3-label-medium);
-    color: var(--m3-on-surface-variant);
-  }
-
-  .maqam-jins__alt a {
-    color: inherit;
-    text-underline-offset: 2px;
-  }
-
-  .maqam-jins__alt a:hover {
-    color: var(--maqam-tonic);
-  }
-
-  .maqam-jins__note {
-    margin-bottom: 8px;
-  }
 
   .maqam-description {
     margin-top: 8px;
@@ -415,7 +387,10 @@
 
 @media (min-width: 900px) {
   .maqam-stage {
-    grid-template-columns: minmax(0, 1fr) 20rem;
+    /* The music is the subject and the keyboard is the tool, so the staff gets
+       the width. 20rem left the notation at 70% of the keyboard's span, which
+       is what read as misproportioned. */
+    grid-template-columns: minmax(0, 1fr) 18.5rem;
     /*
      * Stretch, so the two columns are two blocks of equal mass. Aligned to the
      * top instead, the left column ran out of content halfway down and left a
@@ -447,7 +422,7 @@
   min-height: 0;
 }
 
-.maqam-jins {
+.maqam-card {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
@@ -456,7 +431,7 @@
 
 /* The fade is applied only while there is something below the fold. CSS cannot
    ask whether an element overflows, so the panel measures itself and says so. */
-.maqam-jins[data-overflowing='true'] {
+.maqam-card[data-overflowing='true'] {
   -webkit-mask-image: linear-gradient(
     180deg,
     #000 calc(100% - 32px),
@@ -534,8 +509,6 @@
   line-height: 1.5;
 }
 
-/* ----------------------------------------------------------------- ajnas -- */
-
 /*
  * The same card as the staff, one tone down: the notation is paper, the
  * reference beside it is a panel.
@@ -553,84 +526,11 @@
   padding: var(--maqam-s4);
 }
 
-.maqam-jins {
-  padding: 0;
-}
-
-.maqam-jins__title {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 12px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--m3-outline-variant);
-}
-
-/*
- * The name the music is taught under, kept beside the English one rather than
- * above it. Still large enough to be read rather than used as a texture — M3
- * title-medium against the heading's headline-small.
- */
-.maqam-jins__arabic {
-  font-size: 1.25rem;
-  /* Arabic ascenders and the hamza sit well above the Latin cap height, so a
-     tight line box shears the top off the name. */
-  line-height: 1.6;
-  font-weight: 500;
-  color: var(--m3-on-surface-variant);
-}
-
-/* The heading of the panel, and the way out to the source. */
-.maqam-jins__translit {
-  font-size: var(--m3-headline-small);
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  line-height: 1.25;
-  color: var(--m3-on-surface);
-  text-decoration: none;
-  border-bottom: 2px solid var(--m3-outline-variant);
-}
-
-.maqam-jins__translit:hover,
-.maqam-jins__translit:focus-visible {
-  color: var(--maqam-tonic);
-  border-bottom-color: currentColor;
-}
-
-.maqam-jins__list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin: 8px 0 10px;
-  padding: 0;
-  list-style: none;
-}
-
-.maqam-jins__item {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  padding-left: 12px;
-  /* Slate. A rule beside a list item is structure, not a fact about a note. */
-  border-left: 3px solid var(--m3-outline-variant);
-  border-radius: var(--maqam-radius-s);
-}
-
-/* A link, but a quiet one: the jins name is a heading first and a way out
-   second. Default link blue was the only cold colour left on the page. */
-.maqam-jins__name {
-  font-size: var(--m3-body-medium);
-  font-weight: 600;
-  color: var(--m3-on-surface);
-  text-decoration: none;
-}
-
-.maqam-jins__name:hover,
-.maqam-jins__name:focus-visible {
-  color: var(--maqam-tonic);
-  text-decoration: underline;
-  text-underline-offset: 3px;
+.maqam-card {
+  /* `overflow-y: auto` above makes this a clipping box, and an outlined
+     field's floating label sits ABOVE its input — so without this the word
+     "Maqam" is sheared off by the card's own scroll edge. */
+  padding: 8px 0 0;
 }
 
 /*
@@ -639,49 +539,6 @@
  * are the app's one route to the source every number in it came from.
  */
 @media (pointer: coarse) {
-  .maqam-jins__translit,
-  .maqam-jins__name,
-  .maqam-jins__alt a {
-    display: inline-flex;
-    align-items: center;
-    min-height: 24px;
-  }
-}
-
-/*
- * The alternative cell ("or Jins Nahawand on G").
- *
- * These declarations existed ONLY inside the narrow-screen media query, so at
- * every desktop width the link fell back to the user agent's blue with a blue
- * underline — brighter than anything else on the page and answering to no M3
- * role. A rule that only applies under 900px is not a style, it is a gap.
- */
-.maqam-jins__alt a {
-  color: var(--m3-primary);
-  text-decoration: none;
-  border-bottom: 1px solid var(--m3-outline-variant);
-}
-
-.maqam-jins__alt a:hover,
-.maqam-jins__alt a:focus-visible {
-  border-bottom-color: currentColor;
-}
-
-.maqam-jins__steps {
-  font-size: var(--m3-label-medium);
-  color: var(--m3-on-surface-variant);
-  font-variant-numeric: tabular-nums;
-}
-
-.maqam-jins__unit {
-  font-variant-numeric: normal;
-}
-
-.maqam-jins__note {
-  margin: 0 0 10px;
-  font-size: var(--m3-label-medium);
-  line-height: 1.45;
-  color: var(--m3-on-surface-variant);
 }
 
 /* ------------------------------------------------------------------ rail -- */
@@ -833,7 +690,10 @@
   flex-direction: column;
   gap: var(--maqam-s3);
   flex-shrink: 0;
-  padding: 0;
+  padding: var(--maqam-s4) var(--maqam-s5) var(--maqam-s5);
+  background: var(--maqam-board);
+  border: 1px solid var(--m3-outline-variant);
+  border-radius: var(--maqam-radius-l);
   /*
    * A recessed well, not a slab of gold.
    *
@@ -1408,7 +1268,7 @@
     height: 86px;
   }
 
-  .maqam-jins {
+  .maqam-card {
     padding: 0;
   }
 }
@@ -1525,4 +1385,263 @@
 .maqam-themepicker__tagline {
   font-size: var(--m3-body-small);
   color: var(--m3-on-surface-variant);
+}
+
+/* ------------------------------------------------------------- maqam card -- */
+
+/*
+ * Which maqam, what it is called, what it is built from, and the words — one
+ * card, because choosing a maqam and reading about the one you chose is one
+ * activity. It used to be a picker in the app bar, a glossary button beside
+ * it, and a panel over here that repeated the maqam's name.
+ */
+.maqam-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--maqam-s3);
+}
+
+.maqam-card__picker {
+  width: 100%;
+  /* An outlined field's floating label sits ABOVE the input's box, so at the
+     top of a card it is sheared off by the card's own edge. */
+  margin-top: 6px;
+}
+
+.maqam-card__picker .MuiOutlinedInput-root {
+  background: var(--m3-surface);
+  border-radius: var(--maqam-radius-s);
+  min-height: 40px;
+}
+
+.maqam-card__picker select {
+  font-size: var(--m3-body-medium);
+  font-weight: 500;
+}
+
+.maqam-card__title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--maqam-s3);
+  padding-bottom: var(--maqam-s2);
+  border-bottom: 1px solid var(--m3-outline-variant);
+}
+
+/* The heading of the card, and the way out to the source. */
+.maqam-card__name {
+  font-size: var(--m3-headline-small);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+  color: var(--m3-on-surface);
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+}
+
+.maqam-card__name:hover,
+.maqam-card__name:focus-visible {
+  color: var(--m3-primary);
+  border-bottom-color: currentColor;
+}
+
+/* Beside the English name, not above it. Arabic ascenders sit well above the
+   Latin cap height, so a tight line box shears the top off the name. */
+.maqam-card__arabic {
+  font-size: var(--maqam-text-arabic);
+  line-height: 1.6;
+  font-weight: 500;
+  color: var(--m3-on-surface-variant);
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------- jins chips -- */
+
+/*
+ * One chip per cell, in the cell's own colour — the same colour its bracket
+ * and its notes take. Pointing at one draws only that bracket.
+ */
+.maqam-card__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--maqam-s2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.maqam-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--maqam-s2);
+  min-height: 36px;
+  padding: 0 var(--maqam-s3);
+  border: 1px solid var(--m3-outline-variant);
+  border-radius: var(--maqam-radius-pill);
+  background: var(--m3-surface);
+  color: var(--m3-on-surface);
+  font: inherit;
+  font-size: var(--m3-label-large);
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease;
+}
+
+.maqam-chip:hover {
+  border-color: var(--maqam-chip-tone);
+}
+
+/* M3 selection: the container tone plus its own edge, not a second colour. */
+.maqam-chip[aria-pressed='true'] {
+  border-color: var(--maqam-chip-tone);
+  background: var(--m3-surface-container);
+}
+
+.maqam-chip[data-jins='1'] {
+  --maqam-chip-tone: var(--maqam-jins-1);
+}
+
+.maqam-chip[data-jins='2'] {
+  --maqam-chip-tone: var(--maqam-jins-2);
+}
+
+.maqam-chip[data-jins='3'] {
+  --maqam-chip-tone: var(--maqam-jins-3);
+}
+
+/* The swatch is the whole point of the chip: it is how a name on the right
+   connects to a bracket on the left. */
+.maqam-chip__swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--maqam-chip-tone);
+  flex: 0 0 auto;
+}
+
+.maqam-chip__degrees {
+  color: var(--m3-on-surface-variant);
+  font-variant-numeric: tabular-nums;
+  font-weight: 400;
+}
+
+/* The intervals, only for the cell being pointed at. Printed under every cell
+   at all times it was four lines of digits for a fact that matters once you
+   are asking about one of them. */
+.maqam-card__detail {
+  margin: 0;
+  font-size: var(--m3-body-small);
+  color: var(--m3-on-surface-variant);
+}
+
+.maqam-card__detail a {
+  color: var(--m3-primary);
+  text-decoration: none;
+  border-bottom: 1px solid var(--m3-outline-variant);
+}
+
+.maqam-card__detail a:hover,
+.maqam-card__detail a:focus-visible {
+  border-bottom-color: currentColor;
+}
+
+.maqam-card__steps {
+  font-variant-numeric: tabular-nums;
+}
+
+.maqam-card__note {
+  margin: 0;
+  font-size: var(--m3-body-small);
+  line-height: 1.45;
+  color: var(--m3-on-surface-variant);
+}
+
+.maqam-card__foot {
+  margin-top: auto;
+  padding-top: var(--maqam-s2);
+}
+
+/* ----------------------------------------------------------- voice picker -- */
+
+.maqam-voice__trigger.MuiButton-root {
+  border-radius: var(--maqam-radius-pill);
+  color: var(--m3-on-surface-variant);
+  font-size: var(--m3-label-large);
+  font-weight: 500;
+  letter-spacing: 0.006em;
+  text-transform: none;
+}
+
+.maqam-voice {
+  width: 21rem;
+  max-width: calc(100vw - 32px);
+  padding: var(--maqam-s3);
+}
+
+.maqam-voice__list {
+  display: grid;
+  gap: 2px;
+  margin: 0 0 var(--maqam-s2);
+  padding: 0;
+  list-style: none;
+}
+
+.maqam-voice__option {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  width: 100%;
+  padding: var(--maqam-s2);
+  border: 0;
+  border-radius: var(--maqam-radius-s);
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.maqam-voice__option:hover {
+  background: var(--m3-surface-container);
+}
+
+.maqam-voice__option[aria-pressed='true'] {
+  background: var(--m3-secondary-container);
+}
+
+.maqam-voice__label {
+  font-size: var(--m3-title-small);
+  font-weight: 500;
+  color: var(--m3-on-surface);
+}
+
+.maqam-voice__description {
+  font-size: var(--m3-body-small);
+  color: var(--m3-on-surface-variant);
+}
+
+.maqam-voice__note {
+  margin: 0;
+  padding: var(--maqam-s2);
+  border-top: 1px solid var(--m3-outline-variant);
+  font-size: var(--m3-body-small);
+  line-height: 1.45;
+  color: var(--m3-on-surface-variant);
+}
+
+/* ------------------------------------------------- keys, by pointed-at jins -- */
+
+/*
+ * Pointing at a cell in the card lights the keys it covers and quiets the
+ * rest. The shared degree lights for BOTH cells, one after the other, which is
+ * what makes the overlap legible on the instrument as well as on the staff.
+ */
+.maqam-keyboard .maqam-key--out-of-jins {
+  opacity: 0.4;
+}
+
+.maqam-keyboard .maqam-key--in-jins .shared-pk-mark {
+  background: var(--m3-primary);
+  color: var(--m3-on-primary);
 }

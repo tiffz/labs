@@ -415,15 +415,15 @@ const THEMES: Record<AppThemeId, Theme> = {
     // src/maqam/maqam.css; MUI controls read from here, everything else reads
     // from there, and the two disagreeing is what made Play stay blue after
     // the palette changed.
-    primary: '#922c40',
-    secondary: '#475569',
-    backgroundDefault: '#f8fafc',
-    backgroundPaper: '#ffffff',
-    textPrimary: '#1e293b',
-    textSecondary: '#64748b',
+    primary: '#b4400c',
+    secondary: '#1f5f3f',
+    backgroundDefault: '#fffbe8',
+    backgroundPaper: '#fffef9',
+    textPrimary: '#1d2b1f',
+    textSecondary: '#5c6557',
     // Hairlines are the exception, not the default: M3 separates with tonal
     // surface steps, so this stays faint enough to disappear unless needed.
-    divider: '#e2e8f0',
+    divider: '#cdcdbc',
     radius: 12,
     spacingBase: 8,
     readable: true,

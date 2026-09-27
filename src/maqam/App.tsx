@@ -1,18 +1,18 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import Button from '@mui/material/Button';
 import Paper from '@mui/material/Paper';
-import TextField from '@mui/material/TextField';
 
 import SkipToMain from '../shared/components/SkipToMain';
-import GlossaryMenu from './components/GlossaryMenu';
 import MaqamThemePicker from './components/MaqamThemePicker';
 import { isDesignPreviewEnabled } from './design/designPreview';
 import KeyTuningRail from './components/KeyTuningRail';
-import JinsBreakdown from './components/JinsBreakdown';
+import MaqamCard from './components/MaqamCard';
 import MaqamKeyboard from './components/MaqamKeyboard';
 import MaqamStaff from './components/MaqamStaff';
 import KeyboardNote from './components/KeyboardNote';
-import { MAQAM_PRESETS, ajnasSpans, maqamatByFamily } from './data/maqamPresets';
+import VoicePicker from './components/VoicePicker';
+import { MAQAM_PRESETS, ajnasSpans } from './data/maqamPresets';
+import { pitchClassOf } from './notation/maqamAccidentals';
 import { describeTuning, liveScaleLabels } from './state/maqamTuning';
 import { useMaqamState } from './state/useMaqamState';
 
@@ -43,7 +43,20 @@ export default function App() {
     isPlaying,
     playingIndex,
     togglePlayback,
+    voiceId,
+    setVoice,
   } = useMaqamState();
+
+  /**
+   * The jins the reader is pointing at in the maqam card, or `null`.
+   *
+   * One piece of state drives three surfaces: which bracket is drawn over the
+   * staff, which noteheads are emphasised, and which keys keep their degree
+   * numeral. Two brackets drawn at once cannot answer "which of you owns the
+   * shared note"; one at a time, pointed at in turn, answers it by
+   * construction.
+   */
+  const [activeJinsId, setActiveJinsId] = useState<string | null>(null);
 
 
   const staffNotes = useMemo(
@@ -61,14 +74,40 @@ export default function App() {
   const brackets = useMemo(
     () =>
       preset
-        ? ajnasSpans(preset).map((span) => ({
+        ? ajnasSpans(preset).map((span, index) => ({
+            id: span.id,
             label: span.name,
             from: span.fromIndex,
             to: span.toIndex,
+            /* 1-based, so it lines up with the `--maqam-jins-N` tokens and
+               with the chip's own `data-jins`. */
+            tone: index + 1,
+            active: activeJinsId === null || activeJinsId === span.id,
           }))
         : undefined,
-    [preset],
+    [preset, activeJinsId],
   );
+
+  /** The scale degrees of the jins being pointed at, for the keyboard. */
+  const activeSpan = useMemo(() => {
+    if (!preset || !activeJinsId) return undefined;
+    return ajnasSpans(preset).find((span) => span.id === activeJinsId);
+  }, [preset, activeJinsId]);
+
+  /**
+   * Which pitch classes that jins covers. Pitch classes rather than scale
+   * indices because the keyboard has three octaves of each, and a jins that
+   * spans the octave (Nahawand on Kurd's 4th) must light both its Ds.
+   */
+  const activePitchClasses = useMemo(() => {
+    if (!preset || !activeSpan) return undefined;
+    const classes = new Set<number>();
+    for (let index = activeSpan.fromIndex; index <= activeSpan.toIndex; index += 1) {
+      const degree = preset.scaleDegrees[index];
+      if (degree) classes.add(pitchClassOf(degree));
+    }
+    return classes;
+  }, [preset, activeSpan]);
 
   /**
    * Which staff notes to light.
@@ -122,53 +161,15 @@ export default function App() {
       */}
       <div className="maqam-shell">
         <header className="maqam-topbar">
-          <h1 className="maqam-topbar__title">Maqam Playground</h1>
+          {/* The app's name, set as a name rather than as a label. The maqam
+              picker and the glossary used to sit beside it; both are about the
+              maqam, so both moved into the card that is about the maqam. */}
+          <h1 className="maqam-topbar__title">
+            <span className="maqam-topbar__word">Maqam</span>
+            <span className="maqam-topbar__word maqam-topbar__word--light">Playground</span>
+          </h1>
 
-          <TextField
-            select
-            size="small"
-            label="Maqam"
-            value={presetId}
-            onChange={(event) => selectPreset(event.target.value)}
-            className="maqam-topbar__picker"
-            slotProps={{ select: { native: true } }}
-          >
-            {/*
-              Grouped by family, because that is how maqamat are organised:
-              "Maqamat are classified into families based on sharing the same
-              first (root) jins" (maqamworld.com). The grouping is derived from
-              each maqam's root jins rather than authored, so a new maqam files
-              itself and a family can never disagree with the cell it is named
-              for.
-
-              Still a native select: the platform's own picker renders optgroups
-              properly on a phone, which a hand-rolled two-tier menu would have
-              to reimplement badly.
-            */}
-            {maqamatByFamily().map(({ family, maqamat }) => (
-              <optgroup key={family} label={`${family} family`}>
-                {maqamat.map((option) => (
-                  <option key={option.id} value={option.id}>
-                    {option.name} · {option.transliteration}
-                  </option>
-                ))}
-              </optgroup>
-            ))}
-          </TextField>
-
-          {/*
-            A glossary, not a link out to a homepage. Every word on this screen
-            — maqam, jins, ghammaz — is a word a Western-trained reader meets
-            here for the first time, and "Learn maqamat at maqamworld" answered
-            a question nobody arrives with. Each term still links to
-            maqamworld, which is where every interval in this app came from and
-            can teach the tradition far better than we can.
-          */}
-          <GlossaryMenu />
-
-          {/* Preview only: dev, or `?designPreview`. Ten looks to choose
-              between; the winner gets folded into the stylesheet and the rest
-              deleted. */}
+          {/* Preview only: dev, or `?designPreview`. */}
           {isDesignPreviewEnabled() && <MaqamThemePicker />}
         </header>
 
@@ -201,6 +202,7 @@ export default function App() {
               )}
 
               <div className="maqam-melodybar">
+                <VoicePicker onChange={setVoice} voiceId={voiceId} />
                 <Button
                   variant="contained"
                   disableElevation
@@ -215,9 +217,13 @@ export default function App() {
 
           {preset && (
             <aside className="maqam-stage__jins">
-              <JinsBreakdown
+              <MaqamCard
                 preset={preset}
+                presetId={presetId}
+                onSelectPreset={selectPreset}
                 isPresetTuning={tuning.kind === 'preset' || tuning.kind === 'prepared'}
+                activeJinsId={activeJinsId}
+                onActiveJinsChange={setActiveJinsId}
               />
             </aside>
           )}
@@ -249,6 +255,7 @@ export default function App() {
               activeNotes={activeNotes}
               octaves={KEYBOARD_OCTAVES}
               playingMidiNote={playingNote}
+              inJinsPitchClasses={activePitchClasses}
               onNoteOn={noteOn}
               onNoteOff={noteOff}
             />

@@ -11,6 +11,14 @@ interface MaqamKeyboardProps {
   octaves: number[];
   /** The exact note the melody is sounding right now, if any. */
   playingMidiNote?: number;
+  /**
+   * Pitch classes of the jins the reader is pointing at in the maqam card.
+   *
+   * `undefined` means "no cell is being pointed at", which is not the same as
+   * an empty set — an empty set would mean "a cell with no notes", and would
+   * correctly dim the entire keyboard.
+   */
+  inJinsPitchClasses?: ReadonlySet<number>;
   onNoteOn: (midi: number) => void;
   onNoteOff: (midi: number) => void;
 }
@@ -28,6 +36,7 @@ export default function MaqamKeyboard({
   activeNotes,
   octaves,
   playingMidiNote,
+  inJinsPitchClasses,
   onNoteOn,
   onNoteOff,
 }: MaqamKeyboardProps) {
@@ -44,6 +53,14 @@ export default function MaqamKeyboard({
           'maqam-key',
           `maqam-key--${tuning.role}`,
           tuning.isTonic ? 'maqam-key--home' : '',
+          // Pointing at a jins in the card lights the keys it covers and
+          // quiets the rest, so "which notes are this cell" is answered on the
+          // instrument as well as on the staff.
+          inJinsPitchClasses
+            ? inJinsPitchClasses.has(tuning.pitchClass)
+              ? 'maqam-key--in-jins'
+              : 'maqam-key--out-of-jins'
+            : '',
           tuning.isRetuned ? 'maqam-key--retuned' : '',
           // Two tiers: the octave actually sounding, and the octaves that
           // share its pitch class. One fact each, one weight each.
@@ -79,7 +96,7 @@ export default function MaqamKeyboard({
         ariaLabel: `${tuning.ariaLabel}, octave ${octave}`,
       };
     },
-    [keyTunings, playingMidiNote],
+    [keyTunings, playingMidiNote, inJinsPitchClasses],
   );
 
   return (

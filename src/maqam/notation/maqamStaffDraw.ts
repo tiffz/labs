@@ -53,11 +53,24 @@ export interface DrawStaffOptions {
 }
 
 export interface StaffBracket {
+  id: string;
   label: string;
   /** Inclusive index into `notes`. */
   from: number;
   /** Inclusive index into `notes`. */
   to: number;
+  /** 1-based, matching the `--maqam-jins-N` tokens and the chip's swatch. */
+  tone: number;
+  /**
+   * False when another cell is being pointed at.
+   *
+   * Two brackets drawn at once cannot answer "which of you owns the note where
+   * we meet" — stacking them shows THAT they overlap, and ringing the shared
+   * note shows WHERE, but neither shows whose it is. Drawing one at a time, as
+   * the reader points at each chip in turn, answers it by construction: the
+   * shared note lights up for both cells, one after the other.
+   */
+  active: boolean;
 }
 
 /** Breathing room kept above and below the drawn extent, in CSS px. */
@@ -86,11 +99,15 @@ const INK = '#241d16';
  * The literals above remain as fallbacks for a container that resolves nothing
  * — a detached node under test, or a draw that races the stylesheet.
  */
-function staffInks(container: HTMLElement): {
+interface StaffInks {
   ink: string;
   lit: string;
   bracket: string;
-} {
+  fadedInk: string;
+  jins: (tone: number) => string;
+}
+
+function staffInks(container: HTMLElement): StaffInks {
   const read = (name: string, fallback: string) => {
     if (typeof getComputedStyle !== 'function') return fallback;
     const value = getComputedStyle(container).getPropertyValue(name).trim();
@@ -100,6 +117,14 @@ function staffInks(container: HTMLElement): {
     ink: read('--maqam-staff-ink', INK),
     lit: read('--maqam-staff-lit', DEFAULT_HIGHLIGHT),
     bracket: read('--maqam-bracket-ink', BRACKET_INK),
+    /* Notes outside the cell being pointed at. Quiet enough to recede, dark
+       enough to still read as notation rather than as a rendering fault. */
+    fadedInk: read('--m3-outline', '#8e9384'),
+    /* One colour per cell, so a jins is the same colour in its chip, its
+       bracket and its notes. Falls back to the bracket ink, which is the
+       colour every bracket had before they were told apart. */
+    jins: (tone: number) =>
+      read(`--maqam-jins-${tone}`, read('--maqam-bracket-ink', BRACKET_INK)),
   };
 }
 const EMPTY_HIGHLIGHT: ReadonlySet<number> = new Set<number>();
@@ -163,6 +188,15 @@ function drawStaffNow(
   const lit = options.highlighted ?? EMPTY_HIGHLIGHT;
   const litColor = options.highlightColor ?? inks.lit;
 
+  /*
+   * The cell being pointed at, if any, and the notes it covers. Its notes take
+   * its colour so the chip, the bracket and the noteheads are one object.
+   */
+  const brackets = options.brackets ?? [];
+  const pointed = brackets.length > 0 && brackets.some((bracket) => !bracket.active)
+    ? brackets.find((bracket) => bracket.active)
+    : undefined;
+
   const staveNotes = notes.map((note, index) => {
     const staveNote = new StaveNote({
       keys: [vexflowKey(note, note.octave)],
@@ -171,7 +205,24 @@ function drawStaffNow(
     if (note.accidental !== 'n') {
       staveNote.addModifier(new Accidental(note.accidental), 0);
     }
-    if (lit.has(index)) {
+    const inPointedCell =
+      pointed !== undefined && index >= pointed.from && index <= pointed.to;
+    if (pointed !== undefined && !inPointedCell && !lit.has(index)) {
+      /* Quieted, not hidden. The rest of the scale is still the context the
+         cell sits in; removing it would make a four-note fragment look like
+         the whole maqam. */
+      const faded = inks.fadedInk;
+      staveNote.setStyle({ fillStyle: faded, strokeStyle: faded });
+      staveNote
+        .getModifiers()
+        .forEach((modifier) => modifier.setStyle({ fillStyle: faded, strokeStyle: faded }));
+    } else if (inPointedCell && !lit.has(index)) {
+      const tone = inks.jins(pointed.tone);
+      staveNote.setStyle({ fillStyle: tone, strokeStyle: tone });
+      staveNote
+        .getModifiers()
+        .forEach((modifier) => modifier.setStyle({ fillStyle: tone, strokeStyle: tone }));
+    } else if (lit.has(index)) {
       // Colour the whole note — head, stem and accidental — so a lit degree
       // reads at a glance rather than needing a hunt for a tinted notehead.
       staveNote.setStyle({ fillStyle: litColor, strokeStyle: litColor });
@@ -211,14 +262,7 @@ function drawStaffNow(
   }
 
   const extent = verticalExtentOf(stave, [...staveNotes, ...beams]);
-  const bracketTop = drawAjnasBrackets(
-    container,
-    stave,
-    staveNotes,
-    options.brackets ?? [],
-    extent,
-    inks.bracket,
-  );
+  const bracketTop = drawAjnasBrackets(container, stave, staveNotes, brackets, extent, inks);
 
   applyStaffAccessibility(container, notes);
   return fitToDrawnExtent(
@@ -270,7 +314,7 @@ function drawAjnasBrackets(
   staveNotes: StaveNote[],
   brackets: StaffBracket[],
   extent: VerticalExtent | undefined,
-  bracketInk: string,
+  inks: StaffInks,
 ): number | undefined {
   const svg = container.querySelector('svg');
   if (!svg || brackets.length === 0 || extent === undefined) return undefined;
@@ -288,10 +332,17 @@ function drawAjnasBrackets(
   // in real pixels; everything else here is in staff spaces.
   const px = vexFlowUserUnitsPerPixel(svg);
 
+  const anyPointed = brackets.some((bracket) => !bracket.active);
+
   brackets.forEach((bracket, index) => {
     const first = staveNotes[bracket.from];
     const last = staveNotes[bracket.to];
     if (!first || !last) return;
+    /* Pointing at one cell hides the others rather than dimming them. A dimmed
+       bracket still draws a line over the same notes, which is the ambiguity
+       this whole interaction exists to remove. */
+    if (anyPointed && !bracket.active) return;
+    const bracketInk = anyPointed ? inks.jins(bracket.tone) : inks.bracket;
 
     const x1 = noteCentreX(first);
     const x2 = noteCentreX(last);

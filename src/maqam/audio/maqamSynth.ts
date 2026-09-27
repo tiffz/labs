@@ -4,19 +4,22 @@ import {
 } from '../../shared/playback/audioContextLifecycle';
 import type { DetuneMatrix } from '../data/maqamPresets';
 import { renderPluckedString, renderRoomImpulse } from './pluckedString';
+import {
+  DEFAULT_MAQAM_VOICE_ID,
+  findMaqamVoice,
+  type MaqamVoice,
+} from './maqamVoices';
 
 /** A4 = 440 Hz, MIDI note 69 — the anchor every other frequency is derived from. */
 const A4_HZ = 440;
 const A4_MIDI = 69;
 
 /**
- * Oud-ish voicing. Gut and nylon strings lose energy faster than steel, and the
- * body is woody rather than bright, so sustain sits below a guitar's and the
- * tone control is well into the dark half.
+ * The instrument, which is a set of numbers rather than a set of samples —
+ * see `maqamVoices.ts`. Held here so a note renders with whatever is selected
+ * at the time it is first heard.
  */
-const PLUCK_SECONDS = 2.6;
-const PLUCK_SUSTAIN = 0.9965;
-const PLUCK_TONE = 0.62;
+const DEFAULT_VOICE = findMaqamVoice(DEFAULT_MAQAM_VOICE_ID)!;
 
 /**
  * An oud's strings are doubled — each "string" is a course of two, tuned a few
@@ -88,8 +91,16 @@ export class MaqamSynth {
   private master: GainNode | null = null;
   private reverbSend: GainNode | null = null;
   private readonly voices = new Map<number, Voice>();
-  /** Rendered plucks, keyed by note and bend. A pluck costs ~5ms to render. */
+  /**
+   * Rendered strings, keyed by note, bend AND voice. A render costs ~5ms.
+   *
+   * The voice is part of the key rather than a reason to clear the cache:
+   * switching back to an instrument you have already heard should be
+   * instantaneous, and A/B-ing two voices on one note is exactly what someone
+   * comparing them will do.
+   */
   private readonly buffers = new Map<string, AudioBuffer>();
+  private voice: MaqamVoice = DEFAULT_VOICE;
   /** Sources queued by `scheduleNote`, so a stop can cancel a whole phrase. */
   private scheduled: AudioBufferSourceNode[] = [];
   private disposed = false;
@@ -135,9 +146,18 @@ export class MaqamSynth {
     return { context: this.managed.context, master: this.master };
   }
 
-  /** Render (or reuse) the plucked string for one pitch. */
+  /** Which instrument new notes render as. Sounding notes keep their voice. */
+  setVoice(id: string): void {
+    this.voice = findMaqamVoice(id) ?? DEFAULT_VOICE;
+  }
+
+  getVoice(): MaqamVoice {
+    return this.voice;
+  }
+
+  /** Render (or reuse) the string for one pitch, in the current voice. */
   private bufferFor(context: AudioContext, midiNote: number, cents: number): AudioBuffer | null {
-    const key = voiceKey(midiNote, cents);
+    const key = `${this.voice.id}:${voiceKey(midiNote, cents)}`;
     const cached = this.buffers.get(key);
     if (cached) return cached;
 
@@ -145,9 +165,9 @@ export class MaqamSynth {
     const samples = renderPluckedString({
       sampleRate: context.sampleRate,
       frequency,
-      seconds: PLUCK_SECONDS,
-      sustain: PLUCK_SUSTAIN,
-      tone: PLUCK_TONE,
+      seconds: this.voice.seconds,
+      sustain: this.voice.sustain,
+      tone: this.voice.tone,
       // Seeded from the pitch so a given note always sounds identical, and two
       // different notes do not share the same excitation noise.
       seed: Math.round(frequency * 100) || 1,
@@ -204,7 +224,9 @@ export class MaqamSynth {
     const sources: AudioBufferSourceNode[] = [];
     for (const [rate, when, level] of [
       [1, 0, 1],
-      [COURSE_DETUNE_RATIO, COURSE_DELAY_SECONDS, COURSE_GAIN],
+      ...(this.voice.course
+        ? [[COURSE_DETUNE_RATIO, COURSE_DELAY_SECONDS, COURSE_GAIN] as const]
+        : []),
     ] as const) {
       const source = context.createBufferSource();
       source.buffer = buffer;
@@ -312,7 +334,9 @@ export class MaqamSynth {
 
     for (const [rate, delay, level] of [
       [1, 0, 1],
-      [COURSE_DETUNE_RATIO, COURSE_DELAY_SECONDS, COURSE_GAIN],
+      ...(this.voice.course
+        ? [[COURSE_DETUNE_RATIO, COURSE_DELAY_SECONDS, COURSE_GAIN] as const]
+        : []),
     ] as const) {
       const source = context.createBufferSource();
       source.buffer = buffer;

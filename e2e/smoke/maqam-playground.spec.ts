@@ -82,17 +82,17 @@ test.describe('Maqam Playground', () => {
     // Grouped by root jins, per maqamworld's own classification. Asserted as
     // structure rather than as a count: a count goes stale every time a maqam
     // is added, and says nothing about whether the grouping works.
-    const groups = page.locator('.maqam-topbar__picker optgroup');
+    const groups = page.locator('.maqam-card__picker optgroup');
     await expect(groups.first()).toHaveAttribute('label', /family$/);
     expect(await groups.count()).toBeGreaterThan(5);
 
     // Every option sits inside a family; none dangle at the top level.
-    const total = await page.locator('.maqam-topbar__picker option').count();
-    const grouped = await page.locator('.maqam-topbar__picker optgroup option').count();
+    const total = await page.locator('.maqam-card__picker option').count();
+    const grouped = await page.locator('.maqam-card__picker optgroup option').count();
     expect(grouped).toBe(total);
 
     // And a family with more than one member actually groups them together.
-    const bayati = page.locator('.maqam-topbar__picker optgroup[label^="Bayati"] option');
+    const bayati = page.locator('.maqam-card__picker optgroup[label^="Bayati"] option');
     expect(await bayati.count()).toBeGreaterThan(1);
   });
 
@@ -102,7 +102,7 @@ test.describe('Maqam Playground', () => {
     await page.goto('/maqam/');
     await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
 
-    await page.locator('.maqam-topbar__picker select').selectOption('hijaz_d');
+    await page.locator('.maqam-card__picker select').selectOption('hijaz_d');
 
     // Hijaz is entirely in 12-TET — its drama is the augmented second, not a
     // quarter-tone. Nothing should be painted amber.
@@ -375,7 +375,7 @@ test.describe('Maqam Playground', () => {
     await page.goto('/maqam/');
     await expect(page.locator('.maqam-staff svg')).toBeVisible({ timeout: 15_000 });
 
-    const maqamPicker = page.locator('.maqam-topbar__picker select');
+    const maqamPicker = page.locator('.maqam-card__picker select');
     const maqamat = await maqamPicker.locator('option').evaluateAll((els) =>
       els.map((el) => (el as HTMLOptionElement).value),
     );
@@ -485,7 +485,7 @@ test.describe('Maqam Playground', () => {
     await expect(page.locator('.maqam-staff svg')).toBeVisible({ timeout: 15_000 });
     await expect(page.locator('.maqam-staff__ajnas text').first()).toBeVisible();
 
-    const panelNames = await page.locator('.maqam-jins__name').allTextContents();
+    const panelNames = await page.locator('.maqam-chip__name').allTextContents();
     const drawn = await page.locator('.maqam-staff__ajnas text').allTextContents();
     expect(drawn.length).toBeGreaterThan(0);
     expect(drawn).toEqual(panelNames);
@@ -549,6 +549,56 @@ test.describe('Maqam Playground', () => {
       Math.abs(lower.top - upper.top),
       'the two cells are drawn on one row, so their shared note reads as a seam',
     ).toBeGreaterThan(4);
+  });
+
+  test('pointing at a jins shows only that cell, on the staff and the keys', async ({
+    page,
+  }) => {
+    /*
+     * The answer to "which of you owns the note where you meet".
+     *
+     * Two brackets drawn at once cannot say. Stacking them shows THAT they
+     * overlap and ringing the shared note shows WHERE, but neither says whose
+     * it is — three attempts, all rejected. Showing one cell at a time, as the
+     * reader points at each chip in turn, answers it by construction: the
+     * shared degree lights up for both cells, one after the other.
+     *
+     * Kurd is the case to test. Its cells are Kurd (D-G) and Nahawand (G-D),
+     * which share G — and Nahawand is the cell that was stored a note short,
+     * so this also pins that its bracket reaches the octave.
+     */
+    await page.goto('/maqam/?maqam=kurd_d');
+    await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('.maqam-staff__ajnas path')).toHaveCount(2);
+
+    const chips = page.locator('.maqam-chip');
+    await expect(chips).toHaveCount(2);
+
+    /* Sorted, because the shared keyboard renders every white key and then
+       every black one, so DOM order is not pitch order. */
+    const litKeyNames = async () =>
+      page.locator('.maqam-keyboard .maqam-key--in-jins').evaluateAll((keys) =>
+        keys
+          .map((key) => key.querySelector('.shared-pk-white-label, .shared-pk-black-label'))
+          .map((label) => label?.textContent ?? '')
+          .filter((name) => name.endsWith('4'))
+          .sort(),
+      );
+
+    await chips.nth(0).hover();
+    await expect(page.locator('.maqam-staff__ajnas path')).toHaveCount(1);
+    await expect(page.locator('.maqam-staff__ajnas text')).toHaveText(['Jins Kurd on D']);
+    expect(await litKeyNames()).toEqual(['D4', 'E♭4', 'F4', 'G4'].sort());
+
+    await chips.nth(1).hover();
+    await expect(page.locator('.maqam-staff__ajnas text')).toHaveText(['Jins Nahawand on G']);
+    // G is in BOTH, and the octave D is the note the short tetrachord lost.
+    expect(await litKeyNames()).toEqual(['A4', 'B♭4', 'C4', 'D4', 'G4'].sort());
+
+    // Pointing away puts every cell back.
+    await page.locator('.maqam-topbar__title').hover();
+    await expect(page.locator('.maqam-staff__ajnas path')).toHaveCount(2);
+    await expect(page.locator('.maqam-keyboard .maqam-key--in-jins')).toHaveCount(0);
   });
 
   test('portalled surfaces resolve the app tokens', async ({ page }) => {
@@ -669,14 +719,25 @@ test.describe('Maqam Playground', () => {
       };
       const pick = (selector: string) => document.querySelector(selector)!;
 
+      /*
+       * The cards are separated from the page by their EDGE, not their fill.
+       *
+       * This measured the keyboard card's background against the page and
+       * wanted 1.15:1 — a floor that made sense when the keyboard sat on a
+       * coloured slab, and that no card in this app can meet now that all
+       * three are near-white with a hairline. Measuring the fill of an
+       * outlined card is measuring the wrong thing: the reason you can see
+       * where it ends is the 1px border.
+       */
       const page_ = fill(pick('.maqam'));
-      const board = fill(pick('.maqam-board'));
+      const edge = (selector: string) => getComputedStyle(pick(selector)).borderTopColor;
       return {
-        'board against the page': ratio(board, page_),
+        'the keyboard card edge against the page': ratio(edge('.maqam-board'), page_),
+        'the staff card edge against the page': ratio(edge('.maqam-staff-surface'), page_),
       };
     });
 
-    expect(Object.keys(steps)).toHaveLength(1);
+    expect(Object.keys(steps)).toHaveLength(2);
     for (const [what, value] of Object.entries(steps)) {
       expect(value, `${what} is only ${value.toFixed(3)}:1`).toBeGreaterThanOrEqual(1.15);
     }
@@ -795,7 +856,7 @@ test.describe('Maqam Playground', () => {
     await page.goto('/maqam/?maqam=rast_c');
     await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
 
-    const panel = page.locator('.maqam-jins');
+    const panel = page.locator('.maqam-card');
     await expect(panel).not.toContainText('as written');
     await expect(page.locator('.maqam-eyebrow[data-stale="true"]')).toHaveCount(0);
 
@@ -861,12 +922,20 @@ test.describe('Maqam Playground', () => {
       const b = rgb(fill(outside));
       return {
         apart: Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]),
-        // A key IN the maqam must also stand out from the board it sits on.
-        // A key outside it is allowed to recede into that board: that is the
-        // encoding, not a defect.
-        inScaleAgainstBoard: (() => {
-          const hi = Math.max(luminance(fill(inScale)), luminance(fill(board)));
-          const lo = Math.min(luminance(fill(inScale)), luminance(fill(board)));
+        /*
+         * A key must be visible against the card it sits on — and since both
+         * are near-white, what makes it visible is its EDGE.
+         *
+         * This compared the key's fill with the card's and wanted 1.15:1,
+         * which a white key on a white card can never reach. It was a floor
+         * written for a keyboard on a coloured slab; three of those were tried
+         * and all three were rejected, so the floor outlived the design it
+         * described and would have forced the slab back.
+         */
+        keyEdgeAgainstBoard: (() => {
+          const edge = getComputedStyle(inScale).borderTopColor;
+          const hi = Math.max(luminance(edge), luminance(fill(board)));
+          const lo = Math.min(luminance(edge), luminance(fill(board)));
           return (hi + 0.05) / (lo + 0.05);
         })(),
       };
@@ -879,9 +948,10 @@ test.describe('Maqam Playground', () => {
       `in-maqam and out-of-maqam keys are only ${membership!.apart.toFixed(1)} apart`,
     ).toBeGreaterThan(30);
     expect(
-      membership!.inScaleAgainstBoard,
-      `an in-maqam key is only ${membership!.inScaleAgainstBoard.toFixed(3)}:1 against the board it sits on`,
-    ).toBeGreaterThanOrEqual(1.15);
+      membership!.keyEdgeAgainstBoard,
+      `a key's edge is only ${membership!.keyEdgeAgainstBoard.toFixed(2)}:1 against the card it ` +
+        'sits on, so the keyboard has no silhouette',
+    ).toBeGreaterThanOrEqual(1.8);
   });
 
   test('the scale line stays readable behind the keyboard', async ({ page }) => {

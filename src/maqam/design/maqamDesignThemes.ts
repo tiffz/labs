@@ -213,7 +213,7 @@ export const MAQAM_DESIGN_THEMES: MaqamDesignTheme[] = SEEDS.map(toTheme);
 export const MAQAM_DESIGN_THEMES_BY_ID: Record<string, MaqamDesignTheme> =
   Object.fromEntries(MAQAM_DESIGN_THEMES.map((theme) => [theme.id, theme]));
 
-export const DEFAULT_MAQAM_THEME_ID = 'labs';
+export const DEFAULT_MAQAM_THEME_ID = 'citrus';
 
 const STORAGE_KEY = 'maqam.designTheme';
 
