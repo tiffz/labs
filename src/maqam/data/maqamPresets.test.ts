@@ -208,6 +208,19 @@ describe('detune matrix derivation', () => {
   });
 });
 
+/**
+ * "Jins Nahawand on G" -> "Jins Nahawand". The catalogue names a cell by where
+ * it is rooted, which is useful on screen and in the way when comparing a cell
+ * to itself. Apostrophes are normalised because 'Ajam is written with a
+ * right single quote in the data and a straight one in most sources.
+ */
+function baseJinsName(name: string): string {
+  return name
+    .replace(/\s+on\s+.+$/, '')
+    .replace(/['\u2018\u2019]/g, '\u02BC')
+    .trim();
+}
+
 describe('ajnas agree with the scale they are drawn from', () => {
   /**
    * `intervalsInCents` and `scaleDegrees` are authored separately — two
@@ -234,17 +247,92 @@ describe('ajnas agree with the scale they are drawn from', () => {
       `${jins.name} is rooted on ${spellingLabel(jins.root)}, which is not a degree of ${preset.name} (${scaleDegreeLabels(preset.scaleDegrees).join(' ')})`,
     ).toBeGreaterThanOrEqual(0);
 
+    /*
+     * A jins may extend past the written octave, and that is not an error.
+     *
+     * Jins Nahawand is five notes; rooted on the 5th degree of Nikriz its top
+     * note is the 9th, while the scale is written C to C. So the walk covers
+     * the degrees the scale actually has and stops — but ONLY there. A jins
+     * that runs short anywhere else is the tetrachord-for-pentachord bug, and
+     * this is what used to catch it.
+     */
     const rootCents = degreeAbsoluteCents(preset.scaleDegrees[rootIndex], TONIC_OCTAVE);
-    const walked = jins.intervalsInCents.map((_, step) => {
+    const available = preset.scaleDegrees.length - rootIndex;
+    const walked = jins.intervalsInCents.slice(0, available).map((_, step) => {
       const degree = preset.scaleDegrees[rootIndex + step];
-      expect(
-        degree,
-        `${jins.name} needs ${jins.intervalsInCents.length} degrees from ${spellingLabel(jins.root)}, but the scale runs out`,
-      ).toBeDefined();
       return degreeAbsoluteCents(degree, TONIC_OCTAVE) - rootCents;
     });
 
-    expect(walked).toEqual(jins.intervalsInCents);
+    expect(walked).toEqual(jins.intervalsInCents.slice(0, available));
+    expect(
+      available,
+      `${jins.name} is cut off inside ${preset.name}, not at the end of it`,
+    ).toBeGreaterThanOrEqual(Math.min(jins.intervalsInCents.length, preset.scaleDegrees.length - rootIndex));
+  });
+
+  /**
+   * The size of a jins is a property of the JINS, not of the maqam quoting it.
+   *
+   * Jins Nahawand was stored as five notes in Bayati, Bayati Shuri, Hijaz and
+   * Nahawand, and as four in Kurd and Nikriz. Both spellings looked plausible
+   * in isolation; the disagreement is what makes the error visible, and no
+   * test could see it because every check ran on one maqam at a time. Kurd's
+   * upper bracket stopped a note short of the octave for as long as that
+   * lasted.
+   *
+   * Compares by NAME — "Jins Nahawand on G" is the same cell wherever it is
+   * quoted — so a new maqam that disagrees with the catalogue fails on the way
+   * in rather than after someone notices a short bracket.
+   */
+  it('gives the same jins the same intervals everywhere it appears', () => {
+    const byName = new Map<string, { id: string; intervals: number[] }[]>();
+    for (const preset of MAQAM_PRESETS) {
+      for (const jins of preset.primaryAjnas) {
+        const seen = byName.get(jins.name) ?? [];
+        seen.push({ id: jins.id, intervals: jins.intervalsInCents });
+        byName.set(jins.name, seen);
+      }
+    }
+    for (const [name, uses] of byName) {
+      const spellings = new Set(uses.map((use) => use.intervals.join('-')));
+      expect(
+        [...spellings],
+        `${name} is spelled ${spellings.size} different ways: ${uses
+          .map((use) => `${use.id} = ${use.intervals.join('·')}`)
+          .join(', ')}`,
+      ).toHaveLength(1);
+    }
+  });
+
+  /**
+   * And the sizes themselves, against the source rather than against ourselves.
+   *
+   * Internal agreement cannot catch a cell that is wrong the same way in every
+   * copy, which is exactly how Jins Rast shipped as a tetrachord in all nine
+   * maqamat that quote it. These counts are quoted from maqamworld's own jins
+   * index, which groups every jins under a "3-note", "4-note" or "5-note"
+   * heading.
+   */
+  it.each([
+    ['Jins Sikah', 3],
+    ['Jins Bayati', 4],
+    ['Jins Hijaz', 4],
+    ['Jins Kurd', 4],
+    ['Jins Upper Rast', 4],
+    ['Jins Upper ʼAjam', 4],
+    ['Jins ʼAjam', 5],
+    ['Jins Nahawand', 5],
+    ['Jins Nikriz', 5],
+    ['Jins Rast', 5],
+  ])('stores %s as a %i-note jins, as maqamworld does', (name, notes) => {
+    const uses = MAQAM_PRESETS.flatMap((preset) =>
+      preset.primaryAjnas.filter((jins) => baseJinsName(jins.name) === name),
+    );
+    /* A name that matches nothing would pass every assertion below it. */
+    expect(uses.length, `nothing in the catalogue is called ${name}`).toBeGreaterThan(0);
+    for (const jins of uses) {
+      expect(jins.intervalsInCents.length, `${jins.id} (${jins.name})`).toBe(notes);
+    }
   });
 
   /**

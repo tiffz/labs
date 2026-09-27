@@ -100,7 +100,19 @@
    * screen inside a 1.16:1 span and reading as drab. Named separately, a look
    * can make it a colour without dragging every panel with it.
    */
-  --maqam-board: #e4dccd;
+  /*
+   * The keyboard sits ON THE PAGE. There is no board.
+   *
+   * Three versions of a coloured slab behind the keys were tried — saffron
+   * sand, a neutral tonal step, then a saturated stage — and each was
+   * rejected for the same reason: it is the largest block of colour on the
+   * screen, and it made an instrument that should read as part of the page
+   * outweigh everything else on it. The realism argument ("a real keyboard
+   * has a body") lost to the layout one. These tokens stay because the switch
+   * and key colours are measured against whatever is behind the keys, and
+   * that is now simply the page.
+   */
+  --maqam-board: var(--m3-surface);
   --maqam-board-ink: #1e2640;
   --maqam-board-ink-quiet: #545a72;
 
@@ -113,8 +125,8 @@
    * indistinguishable from each other. A switch has to look like a switch
    * before its state can mean anything.
    */
-  --maqam-switch-off: #f7f2e7;
-  --maqam-switch-border: #a9a08c;
+  --maqam-switch-off: #ffffff;
+  --maqam-switch-border: #9aa0b4;
 
   /*
    * The shared popover shell (`.labs-popover-surface`) paints from these, and
@@ -609,22 +621,29 @@
   border-bottom: 1px solid var(--m3-outline-variant);
 }
 
-/* The name the music is actually taught under. Large enough to be read, not
-   used as a texture. */
+/*
+ * The name the music is taught under, kept beside the English one rather than
+ * above it. Still large enough to be read rather than used as a texture — M3
+ * title-medium against the heading's headline-small.
+ */
 .maqam-jins__arabic {
-  font-size: var(--maqam-text-arabic);
+  font-size: 1.25rem;
   /* Arabic ascenders and the hamza sit well above the Latin cap height, so a
      tight line box shears the top off the name. */
-  line-height: 1.5;
-  font-weight: 600;
-  color: var(--m3-primary);
+  line-height: 1.6;
+  font-weight: 500;
+  color: var(--m3-on-surface-variant);
 }
 
+/* The heading of the panel, and the way out to the source. */
 .maqam-jins__translit {
-  font-size: var(--m3-label-medium);
-  color: var(--m3-on-surface-variant);
+  font-size: var(--m3-headline-small);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+  color: var(--m3-on-surface);
   text-decoration: none;
-  border-bottom: 1px solid var(--m3-outline-variant);
+  border-bottom: 2px solid var(--m3-outline-variant);
 }
 
 .maqam-jins__translit:hover,
@@ -748,6 +767,10 @@
   align-items: center;
   justify-content: center;
   padding: 0;
+  /* The glyph is on the switch in BOTH states — faint when off, solid when on.
+     An off switch used to be an empty chip, which is a control that does not
+     say what it does until after you have pressed it. */
+  color: var(--m3-on-surface-variant);
   border: 1px solid var(--m3-outline-variant);
   border-radius: var(--maqam-radius-s);
   /* Recessed when off, lit when on — a switch panel, not a row of labels. */
@@ -795,7 +818,7 @@
   content: '';
   position: absolute;
   /* Narrow, with wide gutters: a switch over its key, not a tile filling it. */
-  inset: 0 min(15px, 22%);
+  inset: 0 min(12px, 16%);
   border-radius: var(--maqam-radius-s);
   background: var(--maqam-switch-off);
   border: 1px solid var(--maqam-switch-border);
@@ -863,8 +886,7 @@
   flex-direction: column;
   gap: var(--maqam-s3);
   flex-shrink: 0;
-  padding: var(--maqam-s5);
-  border-radius: var(--maqam-radius-l);
+  padding: 0;
   /*
    * A recessed well, not a slab of gold.
    *
@@ -878,7 +900,6 @@
    * Depth now comes from value and a rim, not from hue. Same recession, and
    * the keys are what you look at.
    */
-  background: var(--maqam-board);
   color: var(--maqam-board-ink);
 }
 
@@ -984,8 +1005,28 @@
 
 /* Key labels: big enough to read, which the 0.6rem shared default is not once
    the keys are this size. */
+/*
+ * A keycap name can be five glyphs wide once the maqam spells it — `E½♭3`,
+ * and `C½♭3` on a hand-bent key. At a fixed 12px those overran the 46px key
+ * and collided with the neighbouring name, which is most of what "the UI gets
+ * really buggy when I press them" was describing.
+ *
+ * `max-content` width with a clamp: the label shrinks to fit its key rather
+ * than the key growing to fit the label, because the keys have to stay aligned
+ * with the switch rail above them.
+ */
+.maqam-keyboard .shared-pk-white-label,
+.maqam-keyboard .shared-pk-black-label {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: clip;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
 .maqam-keyboard .shared-pk-white-label {
-  font-size: var(--m3-label-medium);
+  font-size: clamp(0.5625rem, 2.1vw, var(--m3-label-medium));
   font-weight: 500;
   /* The name of a note outside the maqam is lighter in WEIGHT, not in ink:
      fading the ink put it under AA on an already-greyed key. */

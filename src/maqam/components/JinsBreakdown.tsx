@@ -71,12 +71,19 @@ export default function JinsBreakdown({ preset, isPresetTuning }: JinsBreakdownP
 
   return (
     <div className="maqam-jins" ref={panelRef} data-overflowing={overflowing}>
+      {/*
+        The English name leads.
+        This app is written in English for a reader who does not yet know these
+        maqamat, and the Arabic was set at 28px in the accent colour while the
+        name they can actually read sat at 12px in grey — the panel announced
+        itself in the one script most of its readers cannot use. The Arabic is
+        still here, and still first in the reading order for anyone who does
+        read it; it is simply no longer the headline.
+
+        The name is also the link out. A separate "Source:" line said the same
+        thing twice and spent a whole row doing it.
+      */}
       <div className="maqam-jins__title">
-        <span className="maqam-jins__arabic" lang="ar" dir="rtl">
-          {preset.arabicName}
-        </span>
-        {/* The name is the link. A separate "Source:" line said the same thing
-            twice and spent a whole row doing it. */}
         <a
           className="maqam-jins__translit"
           href={preset.source}
@@ -85,15 +92,25 @@ export default function JinsBreakdown({ preset, isPresetTuning }: JinsBreakdownP
         >
           {preset.transliteration}
         </a>
+        <span className="maqam-jins__arabic" lang="ar" dir="rtl">
+          {preset.arabicName}
+        </span>
       </div>
 
-      {!isPresetTuning && (
-        <p className="maqam-jins__stale" role="status">
-          Retuned. Below is the maqam as written, not what the keys now play.
-        </p>
-      )}
+      {/*
+        No paragraph. It said in a sentence what the eyebrow under it already
+        says in three words — and because it INSERTED into the panel, pressing
+        a quarter-tone switch grew the taller of the two stage columns and
+        shoved the keyboard 33px down the page. A control that moves the
+        instrument when you touch it reads as broken, which is what "the UI
+        gets really buggy when I press them" was describing.
 
-      <h2 className="maqam-eyebrow">{isPresetTuning ? 'Built from' : 'Built from, as written'}</h2>
+        The state is still stated twice, where saying it costs no layout: here,
+        and on the badge beside the scale line.
+      */}
+      <h2 className="maqam-eyebrow" data-stale={!isPresetTuning}>
+        {isPresetTuning ? 'Built from' : 'Built from, as written'}
+      </h2>
 
       <ol className="maqam-jins__list">
         {preset.primaryAjnas.map((jins) => (

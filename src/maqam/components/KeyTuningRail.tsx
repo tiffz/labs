@@ -74,7 +74,10 @@ export default function KeyTuningRail({
             : `Lower ${name} a quarter tone, in every octave.`
         }
       >
-        <span aria-hidden="true">{bent ? '½♭' : ''}</span>
+        {/* In BOTH states. An unlabelled chip is a control that only says
+            what it does after you press it — and "it is hard to tell what
+            these buttons do" was the report. */}
+        <span aria-hidden="true">½♭</span>
       </button>
     );
   };

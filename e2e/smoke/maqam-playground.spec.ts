@@ -208,14 +208,14 @@ test.describe('Maqam Playground', () => {
     // F♯ is not in Rast. Bending it changes nothing about the maqam.
     await page.getByRole('button', { name: /^F♯4, equal temperament$/ }).click();
     await expect(page.locator('.maqam-badge')).toHaveCount(0);
-    await expect(page.locator('.maqam-jins__stale')).toHaveCount(0);
+    await expect(page.locator('.maqam-eyebrow[data-stale="true"]')).toHaveCount(0);
     await expect(page.getByRole('button', { name: /^Reset$/ })).toHaveCount(0);
 
     // E IS in Rast, and it is the note that makes Rast Rast. Changing it
     // alters the maqam, and the app has to say so.
     await page.getByRole('button', { name: /^E4, 50 cents flat$/ }).click();
     await expect(page.locator('.maqam-badge')).toHaveCount(1);
-    await expect(page.locator('.maqam-jins__stale')).toBeVisible();
+    await expect(page.locator('.maqam-eyebrow[data-stale="true"]')).toBeVisible();
     await expect(page.getByRole('button', { name: /^Reset$/ })).toBeVisible();
   });
 
@@ -231,7 +231,7 @@ test.describe('Maqam Playground', () => {
 
     // Derived, not remembered: undoing the edit must clear every trace.
     await expect(page.locator('.maqam-badge')).toHaveCount(0);
-    await expect(page.locator('.maqam-jins__stale')).toHaveCount(0);
+    await expect(page.locator('.maqam-eyebrow[data-stale="true"]')).toHaveCount(0);
     await expect(page.locator('.maqam-key--retuned')).toHaveCount(6);
   });
 
@@ -501,10 +501,6 @@ test.describe('Maqam Playground', () => {
           const box = path.getBoundingClientRect();
           return { left: box.left, right: box.right, top: box.top };
         }),
-        rings: [...document.querySelectorAll('.maqam-staff__ajnas circle')].map((ring) => {
-          const box = ring.getBoundingClientRect();
-          return { cx: box.left + box.width / 2, cy: box.top + box.height / 2 };
-        }),
         /* Every notehead VexFlow drew, by its own centre — the thing the
            brackets claim to line up with. */
         heads: [...document.querySelectorAll('.maqam-staff svg text')]
@@ -542,16 +538,17 @@ test.describe('Maqam Playground', () => {
     }
 
     /*
-     * The ghammaz ring. Two rules meeting at a point read as "one ends and the
-     * next begins", which is the disjunct case and the opposite of what is
-     * true of Rast — the G belongs to BOTH cells. Nothing else on the staff
-     * says so.
+     * And they are STACKED, which is how the shared degree is shown.
+     *
+     * Two rules meeting end-to-end on one row read as "this is where one stops
+     * and the next starts" — the disjunct case, and the opposite of what is
+     * true of Rast, whose G belongs to both cells. On separate rows the shared
+     * notehead carries a tick from each, and the overlap is simply visible.
      */
-    expect(geometry.rings, 'the shared degree is not marked').toHaveLength(1);
     expect(
-      Math.abs(geometry.rings[0].cx - lower.right),
-      'the ring is not on the note the two cells share',
-    ).toBeLessThan(2);
+      Math.abs(lower.top - upper.top),
+      'the two cells are drawn on one row, so their shared note reads as a seam',
+    ).toBeGreaterThan(4);
   });
 
   test('portalled surfaces resolve the app tokens', async ({ page }) => {
@@ -800,19 +797,18 @@ test.describe('Maqam Playground', () => {
 
     const panel = page.locator('.maqam-jins');
     await expect(panel).not.toContainText('as written');
-    await expect(page.locator('.maqam-jins__stale')).toHaveCount(0);
+    await expect(page.locator('.maqam-eyebrow[data-stale="true"]')).toHaveCount(0);
 
     // Bend the maqam's own third away from what it is written as.
     await page.getByRole('button', { name: /^E4, 50 cents flat$/ }).click();
 
     // The board must now say so, in the panel making the claims.
-    await expect(page.locator('.maqam-jins__stale')).toBeVisible();
-    await expect(panel).toContainText('not what the keys now play');
+    await expect(page.locator('.maqam-eyebrow[data-stale="true"]')).toBeVisible();
     await expect(panel).toContainText('as written');
 
     // And take it back when the tuning returns to the preset.
     await page.getByRole('button', { name: /^Reset$/ }).click();
-    await expect(page.locator('.maqam-jins__stale')).toHaveCount(0);
+    await expect(page.locator('.maqam-eyebrow[data-stale="true"]')).toHaveCount(0);
   });
 
   test('a key in the maqam is brighter than one outside it', async ({ page }) => {
@@ -888,11 +884,15 @@ test.describe('Maqam Playground', () => {
     ).toBeGreaterThanOrEqual(1.15);
   });
 
-  test('the scale line stays readable on the board', async ({ page }) => {
-    // The board's own fill under the text sitting on it. It measured 4.28:1
-    // when the board was a darker khaki, under the 4.5:1 AA floor. The legend
-    // this used to measure is gone — the keys carry their degree, so there is
-    // nothing left to decode — and the scale line is what sits there now.
+  test('the scale line stays readable behind the keyboard', async ({ page }) => {
+    /*
+     * Whatever is actually behind the scale line, which is now the page: the
+     * keyboard has no board. Three coloured slabs were tried behind it and all
+     * three were rejected for outweighing the rest of the layout, so this
+     * measures the surface the text is really on rather than a container that
+     * no longer paints. Reading the empty container gave 1.41:1 against
+     * transparent black — a failure that described the test, not the app.
+     */
     await page.goto('/maqam/');
     await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
 
@@ -905,10 +905,20 @@ test.describe('Maqam Playground', () => {
         const [r, g, b] = (value.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number);
         return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
       };
-      const board = document.querySelector('.maqam-board')!;
-      const style = getComputedStyle(board);
-      const stops = style.backgroundImage.match(/rgba?\([^)]+\)/g);
-      const fill = stops ? stops[stops.length - 1] : style.backgroundColor;
+      /* Walk up until something actually paints, the way the eye does. */
+      let node: Element | null = document.querySelector('.maqam-scaleline');
+      let fill = 'rgb(255, 255, 255)';
+      while (node) {
+        const style = getComputedStyle(node);
+        const stops = style.backgroundImage.match(/rgba?\([^)]+\)/g);
+        const candidate = stops ? stops[stops.length - 1] : style.backgroundColor;
+        const alpha = Number((candidate.match(/[\d.]+/g) ?? [])[3] ?? '1');
+        if (alpha > 0) {
+          fill = candidate;
+          break;
+        }
+        node = node.parentElement;
+      }
       const ink = getComputedStyle(document.querySelector('.maqam-scaleline')!).color;
       const [hi, lo] = [luminance(ink), luminance(fill)].sort((x, y) => y - x);
       return (hi + 0.05) / (lo + 0.05);
@@ -916,7 +926,7 @@ test.describe('Maqam Playground', () => {
 
     expect(
       ratio,
-      `the scale line on the board is only ${ratio.toFixed(2)}:1`,
+      `the scale line is only ${ratio.toFixed(2)}:1 on what is behind it`,
     ).toBeGreaterThanOrEqual(4.5);
   });
 

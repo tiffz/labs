@@ -246,11 +246,15 @@ export const MAQAM_PRESETS: MaqamPreset[] = [
         source: `${MAQAM_WORLD_JINS}sikah.php`,
       },
       {
-        id: 'sikah_e__jins_rast_g',
-        name: 'Jins Rast on G',
+        id: 'sikah_e__jins_upper_rast_g',
+        // "followed by Jins Upper Rast on the 3rd degree" (maqamworld).
+        // Filed here as "Jins Rast", whose own page says it is a 5-note jins —
+        // so this entry claimed a cell that is a pentachord and stored four
+        // notes of it. Upper Rast IS the 4-note cell; only the name was wrong.
+        name: 'Jins Upper Rast on G',
         root: { letter: 'G', accidental: 'n' },
         intervalsInCents: [0, 200, 350, 500],
-        source: `${MAQAM_WORLD_JINS}rast.php`,
+        source: `${MAQAM_WORLD_JINS}upper_rast.php`,
       },
     ],
   },
@@ -339,7 +343,11 @@ export const MAQAM_PRESETS: MaqamPreset[] = [
         id: 'kurd_d__jins_nahawand_g',
         name: 'Jins Nahawand on G',
         root: { letter: 'G', accidental: 'n' },
-        intervalsInCents: [0, 200, 300, 500],
+        // 5 notes: "Jins Nahawand is a 5-note jins ... tonic on C and its
+        // ghammaz on G" (maqamworld). Stored as a tetrachord here and in
+        // Nikriz, which is why Kurd's upper bracket stopped one note short of
+        // the octave — the same tetrachord-for-pentachord error that Rast had.
+        intervalsInCents: [0, 200, 300, 500, 700],
         source: `${MAQAM_WORLD_JINS}nahawand.php`,
       },
     ],
@@ -396,7 +404,9 @@ export const MAQAM_PRESETS: MaqamPreset[] = [
         id: 'nikriz_c__jins_nahawand_g',
         name: 'Jins Nahawand on G',
         root: { letter: 'G', accidental: 'n' },
-        intervalsInCents: [0, 200, 300, 500],
+        // 5 notes, as in every other maqam here. Its fifth degree sits above
+        // Nikriz's written octave, so the bracket covers what fits.
+        intervalsInCents: [0, 200, 300, 500, 700],
         source: `${MAQAM_WORLD_JINS}nahawand.php`,
       },
     ],
