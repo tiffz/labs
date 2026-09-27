@@ -1,23 +1,17 @@
 import { describe, expect, it } from 'vitest';
 
 import { buildMelodyTimeline, noteIndexAt } from './melodyTimeline';
-import { MELODY_PATTERNS, resolveMelody } from './maqamMelody';
+import { resolveMelody, scaleOf } from './maqamMelody';
 import { MAQAM_PRESETS_BY_ID, deriveDetuneMatrix } from '../data/maqamPresets';
 
 const rast = MAQAM_PRESETS_BY_ID.rast_c;
 const rastMatrix = deriveDetuneMatrix(rast.scaleDegrees).matrix;
 
-const resolved = (patternId: string) =>
-  resolveMelody(
-    rast,
-    MELODY_PATTERNS.find((p) => p.id === patternId)!.build(rast),
-    4,
-    rastMatrix,
-  );
+const resolved = () => resolveMelody(rast, scaleOf(rast), 4, rastMatrix);
 
 describe('buildMelodyTimeline', () => {
   it('places notes end to end', () => {
-    const notes = resolved('scale-up');
+    const notes = resolved();
     const timeline = buildMelodyTimeline(notes, 60);
     // 8 quarter notes at 60bpm is 8 seconds, one per second.
     expect(timeline.totalSeconds).toBeCloseTo(8, 6);
@@ -25,23 +19,17 @@ describe('buildMelodyTimeline', () => {
   });
 
   it('scales with tempo', () => {
-    const notes = resolved('scale-up');
+    const notes = resolved();
     expect(buildMelodyTimeline(notes, 120).totalSeconds).toBeCloseTo(4, 6);
     expect(buildMelodyTimeline(notes, 30).totalSeconds).toBeCloseTo(16, 6);
   });
 
   it('holds each note a little short of its value', () => {
-    const [first] = buildMelodyTimeline(resolved('scale-up'), 60).entries;
+    const [first] = buildMelodyTimeline(resolved(), 60).entries;
     expect(first.holdSeconds).toBeLessThan(1);
     expect(first.holdSeconds).toBeGreaterThan(0.8);
   });
 
-  it('gives a longer note more time', () => {
-    // The descending pattern ends on a half note.
-    const timeline = buildMelodyTimeline(resolved('scale-down'), 60);
-    const last = timeline.entries[timeline.entries.length - 1];
-    expect(last.holdSeconds).toBeGreaterThan(1.5);
-  });
 
   /**
    * A nonsense tempo must not produce an infinite or zero-length phrase, which
@@ -50,7 +38,7 @@ describe('buildMelodyTimeline', () => {
   it.each([0, -120, Number.NaN, Number.POSITIVE_INFINITY])(
     'falls back to a usable tempo for %p bpm',
     (bpm) => {
-      const timeline = buildMelodyTimeline(resolved('scale-up'), bpm);
+      const timeline = buildMelodyTimeline(resolved(), bpm);
       expect(Number.isFinite(timeline.totalSeconds)).toBe(true);
       expect(timeline.totalSeconds).toBeGreaterThan(0);
     },
@@ -62,23 +50,10 @@ describe('buildMelodyTimeline', () => {
     expect(timeline.totalSeconds).toBe(0);
   });
 
-  it.each(MELODY_PATTERNS.map((p) => [p.id] as const))(
-    '%s lays out with no gaps or overlaps',
-    (id) => {
-      const notes = resolved(id);
-      const timeline = buildMelodyTimeline(notes, 90);
-      let expected = 0;
-      timeline.entries.forEach((entry, index) => {
-        expect(entry.startSeconds).toBeCloseTo(expected, 6);
-        expected += notes[index].beats * (60 / 90);
-      });
-      expect(timeline.totalSeconds).toBeCloseTo(expected, 6);
-    },
-  );
 });
 
 describe('noteIndexAt', () => {
-  const timeline = buildMelodyTimeline(resolved('scale-up'), 60);
+  const timeline = buildMelodyTimeline(resolved(), 60);
 
   it('reports the note sounding at a given moment', () => {
     expect(noteIndexAt(timeline, 0)).toBe(0);

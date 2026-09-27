@@ -38,9 +38,61 @@ function walk(dir, out = []) {
   return out;
 }
 
-function isCommentLine(line) {
-  const trimmed = line.trim();
-  return trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*');
+/**
+ * Which physical lines are inside a comment.
+ *
+ * Tested per line, this asked "does the line START with a comment marker",
+ * which is true of `//`, of `/*`, and of the `*` that convention puts down the
+ * left of a JSDoc block — and false of every interior line of a JSX comment,
+ * which is written as `{/*` on one line and prose on the next:
+ *
+ *     {/*
+ *       what a reader needs here is "these two things"   <- flagged as UI copy
+ *     ... and then the comment closes
+ *
+ * So a rule about user-visible copy was policing the wording of source
+ * comments, twice in one session, and both times the fix was to reword a
+ * comment nobody reads to satisfy a check about text everybody reads. Scanning
+ * for the SPAN rather than the line start is the difference.
+ *
+ * (The sketch above stops before the closing brace on purpose: spelling it in
+ * full would close THIS comment, which is the same class of bug one level up.)
+ */
+function commentLineNumbers(content) {
+  const inComment = new Set();
+  const lines = content.split('\n');
+  let open = false;
+  lines.forEach((line, index) => {
+    if (open) inComment.add(index);
+    let rest = line;
+    let consumed = 0;
+    for (;;) {
+      if (open) {
+        const close = rest.indexOf('*/');
+        if (close === -1) {
+          inComment.add(index);
+          return;
+        }
+        open = false;
+        consumed += close + 2;
+        rest = rest.slice(close + 2);
+        continue;
+      }
+      const lineComment = rest.indexOf('//');
+      const blockOpen = rest.indexOf('/*');
+      if (lineComment !== -1 && (blockOpen === -1 || lineComment < blockOpen)) {
+        // Only the tail of the line is comment; the head was already checked.
+        if (consumed === 0 && rest.trim().startsWith('//')) inComment.add(index);
+        return;
+      }
+      if (blockOpen === -1) return;
+      if (consumed === 0 && rest.slice(0, blockOpen).trim() === '') inComment.add(index);
+      open = true;
+      consumed += blockOpen + 2;
+      rest = rest.slice(blockOpen + 2);
+    }
+  });
+  return inComment;
 }
 
 /**
@@ -177,8 +229,9 @@ for (const file of walk(srcRoot)) {
 
   const content = fs.readFileSync(file, 'utf8');
   const lines = content.split('\n');
+  const commentLines = commentLineNumbers(content);
   lines.forEach((rawLine, index) => {
-    if (isCommentLine(rawLine)) return;
+    if (commentLines.has(index)) return;
     // Strip JS spread syntax (`...ident`, `...[`) so it can't false-positive the "..." tell.
     const line = rawLine.replace(/\.\.\.(?=[A-Za-z_$[(])/g, '');
     for (const tell of TELLS) {

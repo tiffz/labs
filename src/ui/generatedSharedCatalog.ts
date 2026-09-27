@@ -35740,6 +35740,73 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-vexflow-vexflowannotation-ts-createvexflowannotation",
+    "name": "createVexFlowAnnotation",
+    "path": "src/shared/vexflow/vexFlowAnnotation.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "A `<text>` node in the host app's own typeface, sized in real pixels. Not appended anywhere — the caller decides which group it belongs to and in what order, which matters because VexFlow redraws by replacing children.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-vexflow-vexflowannotation-ts-createvexflowrule",
+    "name": "createVexFlowRule",
+    "path": "src/shared/vexflow/vexFlowAnnotation.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "A `<path>` in the same coordinate space, with a stroke width in real pixels.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-vexflow-vexflowannotation-ts-vexflowannotationfontfamily",
+    "name": "vexFlowAnnotationFontFamily",
+    "path": "src/shared/vexflow/vexFlowAnnotation.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "The font family the host page is set in. Walks up from the SVG until it finds an element whose computed family is not one of VexFlow's music faces — the SVG's own family is always Bravura, and its parent is the app.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-vexflow-vexflowannotation-ts-vexflowannotationoptions",
+    "name": "VexFlowAnnotationOptions",
+    "path": "src/shared/vexflow/vexFlowAnnotation.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "A font stack to fall back to when the host has not resolved one yet.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-vexflow-vexflowannotation-ts-vexflowuserunitsperpixel",
+    "name": "vexFlowUserUnitsPerPixel",
+    "path": "src/shared/vexflow/vexFlowAnnotation.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "The scale `SVGContext` is currently drawing at: user units per CSS pixel. Read from the SVG rather than passed in, because the caller's `scale` option and the scale VexFlow actually applied have come apart before — the staff clip bug was exactly that. The element on the page is the only honest source. Returns 1 when the SVG has no usable viewBox, which draws at 1:1 rather than dividing by zero and collapsing the text to nothing.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-vexflow-vexflowfontexport-ts-buildvexflowsvgfontstyles",
     "name": "buildVexFlowSvgFontStyles",
     "path": "src/shared/vexflow/vexFlowFontExport.ts",

@@ -409,15 +409,21 @@ const THEMES: Record<AppThemeId, Theme> = {
   // M3 shape and type rhythm via `materialPolish`, matching Encore.
   maqam: buildTheme({
     mode: 'light',
-    primary: '#1d5b82',
-    secondary: '#8a5a12',
-    backgroundDefault: '#fdf8f3',
-    backgroundPaper: '#fffbf7',
-    textPrimary: '#201b16',
-    textSecondary: '#52463a',
+    // Saffron, terracotta, garnet, indigo, sand. Garnet carries "sounding or
+    // home", terracotta carries "bent off equal temperament", and ink is
+    // indigo rather than black. Kept in step with the `--m3-*` tokens in
+    // src/maqam/maqam.css; MUI controls read from here, everything else reads
+    // from there, and the two disagreeing is what made Play stay blue after
+    // the palette changed.
+    primary: '#b4400c',
+    secondary: '#1f5f3f',
+    backgroundDefault: '#fffbe8',
+    backgroundPaper: '#fffef9',
+    textPrimary: '#1d2b1f',
+    textSecondary: '#5c6557',
     // Hairlines are the exception, not the default: M3 separates with tonal
     // surface steps, so this stays faint enough to disappear unless needed.
-    divider: 'rgba(32, 27, 22, 0.08)',
+    divider: '#cdcdbc',
     radius: 12,
     spacingBase: 8,
     readable: true,

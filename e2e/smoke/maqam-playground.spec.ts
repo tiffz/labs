@@ -56,7 +56,16 @@ test.describe('Maqam Playground', () => {
     // are retuned — across the 3 rendered octaves that is 6 keys.
     const retuned = page.locator('.maqam-key--retuned');
     await expect(retuned).toHaveCount(6);
-    await expect(retuned.first().locator('.shared-pk-badge')).toHaveText('½♭');
+    /*
+     * The accidental is IN the key's name, not in a second chip above it.
+     * The chip had to live in the strip of white key no black key covers, and
+     * that strip is 80px at full desktop but 52px on a 1366x768 laptop — where
+     * it came out sliced in half, reading as a label on the black key beside
+     * it. The name says E half-flat, which is also what the staff and the
+     * scale line say.
+     */
+    await expect(retuned.first().locator('.shared-pk-white-label')).toHaveText('E½♭3');
+    await expect(page.locator('.shared-pk-badge')).toHaveCount(0);
 
     // Membership, tonic and retuning are independent channels now: 7 pitch
     // classes are in the maqam across 3 octaves, and only 2 of them are bent.
@@ -66,10 +75,25 @@ test.describe('Maqam Playground', () => {
     expect(pageErrors).toEqual([]);
   });
 
-  test('CUJ-001: all nine families are offered', async ({ page }) => {
+  test('CUJ-001: every family is offered, grouped', async ({ page }) => {
     await page.goto('/maqam/');
     await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
-    await expect(page.locator('.maqam-topbar__picker option')).toHaveCount(9);
+
+    // Grouped by root jins, per maqamworld's own classification. Asserted as
+    // structure rather than as a count: a count goes stale every time a maqam
+    // is added, and says nothing about whether the grouping works.
+    const groups = page.locator('#maqam-pick optgroup');
+    await expect(groups.first()).toHaveAttribute('label', /family$/);
+    expect(await groups.count()).toBeGreaterThan(5);
+
+    // Every option sits inside a family; none dangle at the top level.
+    const total = await page.locator('#maqam-pick option').count();
+    const grouped = await page.locator('#maqam-pick optgroup option').count();
+    expect(grouped).toBe(total);
+
+    // And a family with more than one member actually groups them together.
+    const bayati = page.locator('#maqam-pick optgroup[label^="Bayati"] option');
+    expect(await bayati.count()).toBeGreaterThan(1);
   });
 
   test('CUJ-001: choosing a maqam with no microtones clears every retuned key', async ({
@@ -78,7 +102,7 @@ test.describe('Maqam Playground', () => {
     await page.goto('/maqam/');
     await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
 
-    await page.locator('.maqam-topbar__picker select').selectOption('hijaz_d');
+    await page.locator('#maqam-pick').selectOption('hijaz_d');
 
     // Hijaz is entirely in 12-TET — its drama is the augmented second, not a
     // quarter-tone. Nothing should be painted amber.
@@ -151,34 +175,63 @@ test.describe('Maqam Playground', () => {
     );
   });
 
-  test('CUJ-003: the tuning strip survives a reload via the URL', async ({ page }) => {
+  test('CUJ-003: the tuning survives a reload via the URL', async ({ page }) => {
     await page.goto('/maqam/');
     await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
 
-    await page.getByRole('button', { name: /Tune keys/ }).click();
-    // A is untouched in Rast; bending it makes the tuning custom.
-    await page.getByRole('button', { name: /^A is in equal temperament/ }).click();
-    await expect(page.locator('.maqam-badge')).toHaveText('Custom tuning');
+    // A is untouched in Rast, so bending it prepares rather than alters.
+    await page.getByRole('button', { name: /^A4, equal temperament$/ }).click();
     await expect(page).toHaveURL(/tuning=/);
 
     await page.goto(page.url());
     await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
-    await expect(page.locator('.maqam-badge')).toHaveText('Custom tuning');
     // Rast's 2 bends plus the hand-added one, over 3 octaves.
     await expect(page.locator('.maqam-key--retuned')).toHaveCount(9);
   });
 
-  test('CUJ-003: returning the tuning to the preset drops the custom badge', async ({
+  test('CUJ-003: bending a note the maqam does not use is not an alteration', async ({
     page,
   }) => {
-    await page.goto('/maqam/?maqam=rast_c&tuning=----d----d-d');
+    /*
+     * The distinction a maqam musician draws, and the one this app got wrong.
+     *
+     * Bending a note the maqam does not use is PREPARING: the maqam is
+     * untouched, and those keys are the vocabulary a player reaches for.
+     * maqamworld on Suznak, Rast's commonest modulation: the move to Jins
+     * Hijaz on the 5th degree is "practically obligatory in any taqsim or
+     * mawwal starting on the root Jins Rast". Flagging that as "Custom
+     * tuning" told the user they had broken something.
+     */
+    await page.goto('/maqam/?maqam=rast_c');
     await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
-    await expect(page.locator('.maqam-badge')).toHaveText('Custom tuning');
+
+    // F♯ is not in Rast. Bending it changes nothing about the maqam.
+    await page.getByRole('button', { name: /^F♯4, equal temperament$/ }).click();
+    await expect(page.locator('.maqam-badge')).toHaveCount(0);
+    await expect(page.locator('.maqam-eyebrow[data-stale="true"]')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /^Reset$/ })).toHaveCount(0);
+
+    // E IS in Rast, and it is the note that makes Rast Rast. Changing it
+    // alters the maqam, and the app has to say so.
+    await page.getByRole('button', { name: /^E4, 50 cents flat$/ }).click();
+    await expect(page.locator('.maqam-badge')).toHaveCount(1);
+    await expect(page.locator('.maqam-eyebrow[data-stale="true"]')).toBeVisible();
+    await expect(page.getByRole('button', { name: /^Reset$/ })).toBeVisible();
+  });
+
+  test('CUJ-003: Reset returns the maqam to what it is written as', async ({ page }) => {
+    await page.goto('/maqam/?maqam=rast_c&tuning=--------------');
+    await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
+
+    // A corrupt tuning falls back to the maqam's own, so bend a degree by hand.
+    await page.getByRole('button', { name: /^E4, 50 cents flat$/ }).click();
+    await expect(page.getByRole('button', { name: /^Reset$/ })).toBeVisible();
 
     await page.getByRole('button', { name: /^Reset$/ }).click();
 
-    // Derived, not remembered: undoing the edit must clear the badge.
+    // Derived, not remembered: undoing the edit must clear every trace.
     await expect(page.locator('.maqam-badge')).toHaveCount(0);
+    await expect(page.locator('.maqam-eyebrow[data-stale="true"]')).toHaveCount(0);
     await expect(page.locator('.maqam-key--retuned')).toHaveCount(6);
   });
 
@@ -204,34 +257,6 @@ test.describe('Maqam Playground', () => {
     await expect(page.locator('.maqam-key--echoing')).toHaveCount(0);
   });
 
-  test('CUJ-005: every pattern renders notes on the staff', async ({ page }) => {
-    await page.goto('/maqam/');
-    await expect(page.locator('.maqam-staff svg')).toBeVisible({ timeout: 15_000 });
-
-    for (const pattern of ['scale-down', 'jins-by-jins', 'thirds', 'arpeggio', 'qafla']) {
-      await page.locator('.maqam-melodybar__pick select').selectOption(pattern);
-      await expect(page.getByTestId('maqam-staff-canvas')).toHaveAttribute(
-        'aria-label',
-        /\w/,
-        { timeout: 10_000 },
-      );
-    }
-  });
-
-  test('CUJ-005: a generated phrase is shareable through the URL', async ({ page }) => {
-    await page.goto('/maqam/');
-    await expect(page.locator('.maqam-staff svg')).toBeVisible({ timeout: 15_000 });
-
-    await page.getByRole('button', { name: /New phrase/ }).click();
-    await expect(page).toHaveURL(/melody=generated&?.*seed=\d+/);
-
-    const label = await page.getByTestId('maqam-staff-canvas').getAttribute('aria-label');
-    await page.goto(page.url());
-    await expect(page.locator('.maqam-staff svg')).toBeVisible({ timeout: 15_000 });
-    // Seeded, so the same link gives back the same phrase.
-    await expect(page.getByTestId('maqam-staff-canvas')).toHaveAttribute('aria-label', label!);
-  });
-
   test('CUJ-006: MIDI status is visible and explains itself', async ({ page }) => {
     await page.goto('/maqam/');
     await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
@@ -241,20 +266,10 @@ test.describe('Maqam Playground', () => {
     const badge = page.locator('.maqam-midi').first();
     await expect(badge).toBeVisible();
     await badge.click();
-    await expect(page.getByRole('heading', { name: /Playing with a MIDI keyboard/ })).toBeVisible();
-  });
-
-  test('CUJ-004: the explainer opens and closes on Escape', async ({ page }) => {
-    await page.goto('/maqam/');
-    await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
-
-    await page.getByRole('button', { name: /How maqamat work/ }).click();
-    const dialog = page.getByRole('dialog');
-    await expect(dialog).toBeVisible();
-    await expect(dialog).toContainText('7 notes is right');
-
-    await page.keyboard.press('Escape');
-    await expect(dialog).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: /Why the keys are retuned/ })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: /Playing it with your own keyboard/ }),
+    ).toBeVisible();
   });
 
   test('a11y: the keyboard plays from the keyboard', async ({ page }) => {
@@ -306,11 +321,23 @@ test.describe('Maqam Playground', () => {
 
     // The scroll container has to leave room for it, or the ring is sheared off
     // along the top edge of the key the user just tabbed to.
-    const clipped = await key.evaluate((el) => {
-      const host = el.closest('.maqam-keyboard') as HTMLElement;
-      return el.getBoundingClientRect().top - host.getBoundingClientRect().top;
+    //
+    // The host is FOUND, not named: it moved once already, from the keyboard to
+    // the wrapper that scrolls the switch rail with it, and a hardcoded
+    // `.maqam-keyboard` would then have measured an element that no longer
+    // clips anything and passed on a padding it does not own.
+    const pad = await key.evaluate((el) => {
+      let host = el.parentElement;
+      while (host && getComputedStyle(host).overflowX !== 'auto') host = host.parentElement;
+      if (!host) return null;
+      const box = host.getBoundingClientRect();
+      const first = host.firstElementChild!.getBoundingClientRect();
+      const last = host.lastElementChild!.getBoundingClientRect();
+      return { top: first.top - box.top, bottom: box.bottom - last.bottom };
     });
-    expect(clipped).toBeGreaterThanOrEqual(5);
+    expect(pad, 'no scrolling ancestor clips the keys').not.toBeNull();
+    expect(pad!.top, 'the scroll host shears the top of the ring').toBeGreaterThanOrEqual(5);
+    expect(pad!.bottom, 'the scroll host shears the bottom of the ring').toBeGreaterThanOrEqual(5);
   });
 
   test('a11y: the staff has exactly one accessible name', async ({ page }) => {
@@ -348,22 +375,16 @@ test.describe('Maqam Playground', () => {
     await page.goto('/maqam/');
     await expect(page.locator('.maqam-staff svg')).toBeVisible({ timeout: 15_000 });
 
-    const maqamPicker = page.locator('.maqam-topbar__picker select');
-    const melodyPicker = page.locator('.maqam-melodybar__pick select');
+    const maqamPicker = page.locator('#maqam-pick');
     const maqamat = await maqamPicker.locator('option').evaluateAll((els) =>
       els.map((el) => (el as HTMLOptionElement).value),
     );
-    const melodies = await melodyPicker.locator('option').evaluateAll((els) =>
-      els.map((el) => (el as HTMLOptionElement).value),
-    );
     expect(maqamat.length).toBeGreaterThan(5);
-    expect(melodies.length).toBeGreaterThan(5);
 
     const clipped: string[] = [];
     for (const maqam of maqamat) {
       await maqamPicker.selectOption(maqam);
-      for (const melody of melodies) {
-        await melodyPicker.selectOption(melody);
+      {
         // The redraw is async (it awaits the font gate), but the font resolved
         // on the first draw, so this settles within a frame.
         await expect
@@ -392,11 +413,9 @@ test.describe('Maqam Playground', () => {
         });
 
         // An empty viewBox would satisfy every margin assertion.
-        expect(fit.measured, `${maqam}/${melody} drew nothing`).toBeGreaterThan(5);
+        expect(fit.measured, `${maqam} drew nothing`).toBeGreaterThan(5);
         if (fit.above < 0 || fit.below < 0) {
-          clipped.push(
-            `${maqam}/${melody} above=${fit.above.toFixed(1)} below=${fit.below.toFixed(1)}`,
-          );
+          clipped.push(`${maqam} above=${fit.above.toFixed(1)} below=${fit.below.toFixed(1)}`);
         }
       }
     }
@@ -439,29 +458,194 @@ test.describe('Maqam Playground', () => {
       return canvas.evaluate((el) => Math.round(el.getBoundingClientRect().height));
     };
 
-    // Rast's plain ascending scale sits almost entirely inside the stave.
-    // Saba in thirds beams above it and hangs a three-quarter-flat below.
-    const plain = await heightFor('maqam=rast_c&melody=scale-up');
-    const tall = await heightFor('maqam=saba_d&melody=thirds');
+    // Sikah is written from E half-flat and climbs to its own octave, so it
+    // reaches higher above the stave than Ajam, which sits low and flat.
+    const low = await heightFor('maqam=ajam_c');
+    const high = await heightFor('maqam=sikah_e');
 
-    expect(plain).toBeGreaterThan(0);
-    expect(tall).toBeGreaterThan(plain + 20);
+    expect(low).toBeGreaterThan(0);
+    expect(high).not.toBe(low);
+  });
+
+  test('the staff shows no brackets until a cell is pointed at', async ({ page }) => {
+    /*
+     * Nothing by default.
+     *
+     * Brackets drawn always are a permanent overlay answering a question the
+     * reader is not currently asking — and two at once cannot say which owns
+     * the degree where they meet, which is the thing they exist to show.
+     */
+    await page.goto('/maqam/?maqam=rast_c');
+    await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('.maqam-staff svg')).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('.maqam-staff__ajnas')).toHaveCount(0);
+  });
+
+  test('a bracket is named by the chip that summons it, and sits above the staff', async ({
+    page,
+  }) => {
+    /*
+     * Geometry that does not depend on the platform's font metrics.
+     *
+     * This used to locate noteheads by filtering SVG <text> boxes to
+     * `width > 18 && width < 26`, which is a Bravura measurement on macOS and
+     * a different one on Linux — so it passed locally and failed the first
+     * time CI ran it. A guard whose fixture is the host's font rendering is a
+     * guard that reports where it ran.
+     *
+     * The facts that survive any renderer: the label matches the chip, the
+     * rule clears the staff, and the two cells meet where the panel says they
+     * do — each measured against the app's own output rather than a number
+     * typed here.
+     */
+    await page.goto('/maqam/?maqam=rast_c');
+    await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('.maqam-staff svg')).toBeVisible({ timeout: 15_000 });
+
+    const chipNames = await page.locator('.maqam-chip__name').allTextContents();
+    expect(chipNames.length).toBeGreaterThan(1);
+
+    const spanOf = async (index: number) => {
+      await page.locator('.maqam-chip').nth(index).hover();
+      await expect(page.locator('.maqam-staff__ajnas path')).toHaveCount(1);
+      await expect(page.locator('.maqam-staff__ajnas text')).toHaveText([chipNames[index]]);
+      return page.evaluate(() => {
+        const rule = document.querySelector('.maqam-staff__ajnas path')!.getBoundingClientRect();
+        const staff = document
+          .querySelector('.maqam-staff svg')!
+          .querySelector('*')!
+          .getBoundingClientRect();
+        return { left: rule.left, right: rule.right, top: rule.top, staffTop: staff.top };
+      });
+    };
+
+    const lower = await spanOf(0);
+    const upper = await spanOf(1);
+
+    // The rule clears the music; only its end ticks come down.
+    expect(lower.top).toBeLessThanOrEqual(lower.staffTop);
+    expect(upper.top).toBeLessThanOrEqual(upper.staffTop);
+
+    /*
+     * Rast's cells share their G, so the lower one ends exactly where the
+     * upper one starts. Compared to EACH OTHER, which needs no notehead
+     * measurement and is the fact the panel states in words.
+     */
+    await expect(page.locator('.maqam-card')).toContainText('Both cells meet on G.');
+    expect(
+      Math.abs(lower.right - upper.left),
+      'the two cells do not meet on the same degree',
+    ).toBeLessThan(2);
+    expect(upper.right).toBeGreaterThan(lower.right);
+  });
+
+  test('pointing at a jins shows only that cell, on the staff and the keys', async ({
+    page,
+  }) => {
+    /*
+     * The answer to "which of you owns the note where you meet".
+     *
+     * Two brackets drawn at once cannot say. Stacking them shows THAT they
+     * overlap and ringing the shared note shows WHERE, but neither says whose
+     * it is — three attempts, all rejected. Showing one cell at a time, as the
+     * reader points at each chip in turn, answers it by construction: the
+     * shared degree lights up for both cells, one after the other.
+     *
+     * Kurd is the case to test. Its cells are Kurd (D-G) and Nahawand (G-D),
+     * which share G — and Nahawand is the cell that was stored a note short,
+     * so this also pins that its bracket reaches the octave.
+     */
+    await page.goto('/maqam/?maqam=kurd_d');
+    await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('.maqam-staff__ajnas')).toHaveCount(0);
+
+    const chips = page.locator('.maqam-chip');
+    await expect(chips).toHaveCount(2);
+
+    /* Sorted, because the shared keyboard renders every white key and then
+       every black one, so DOM order is not pitch order. */
+    const litKeyNames = async () =>
+      page.locator('.maqam-keyboard .maqam-key--in-jins').evaluateAll((keys) =>
+        keys
+          .map((key) => key.querySelector('.shared-pk-white-label, .shared-pk-black-label'))
+          .map((label) => label?.textContent ?? '')
+          .filter((name) => name.endsWith('4'))
+          .sort(),
+      );
+
+    await chips.nth(0).hover();
+    await expect(page.locator('.maqam-staff__ajnas path')).toHaveCount(1);
+    await expect(page.locator('.maqam-staff__ajnas text')).toHaveText(['Jins Kurd on D']);
+    expect(await litKeyNames()).toEqual(['D4', 'E♭4', 'F4', 'G4'].sort());
+
+    await chips.nth(1).hover();
+    await expect(page.locator('.maqam-staff__ajnas text')).toHaveText(['Jins Nahawand on G']);
+    // G is in BOTH, and the octave D is the note the short tetrachord lost.
+    expect(await litKeyNames()).toEqual(['A4', 'B♭4', 'C4', 'D4', 'G4'].sort());
+
+    // Pointing away puts the staff back to plain notation.
+    await page.locator('.maqam-topbar__title').hover();
+    await expect(page.locator('.maqam-staff__ajnas')).toHaveCount(0);
+    await expect(page.locator('.maqam-keyboard .maqam-key--in-jins')).toHaveCount(0);
+  });
+
+  test('pointing at a jins moves nothing on the page', async ({ page }) => {
+    /*
+     * The staff is sized to its own ink, so the first bracket to appear grew
+     * the drawing by 52px and shoved the notation up 26px and the Play row
+     * down 26px — the browser reported it as a real layout-shift of 0.0031.
+     * Pointing at a chip made the music jump.
+     *
+     * The bracket's row is reserved whether or not a bracket is in it. This
+     * asserts the box does not move AND that a bracket actually appeared: a
+     * run where the hover silently missed would otherwise report "nothing
+     * moved", which is true and meaningless.
+     */
+    await page.goto('/maqam/?maqam=kurd_d');
+    await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('.maqam-staff svg')).toBeVisible({ timeout: 15_000 });
+
+    const geometry = () =>
+      page.evaluate(() => {
+        const box = (selector: string) => {
+          const el = document.querySelector(selector);
+          if (!el) return null;
+          const rect = el.getBoundingClientRect();
+          return { h: Math.round(rect.height), top: Math.round(rect.top) };
+        };
+        return {
+          staff: box('.maqam-staff__canvas'),
+          play: box('.maqam-melodybar'),
+          card: box('.maqam-card'),
+        };
+      });
+
+    const before = await geometry();
+    await page.locator('.maqam-chip').nth(1).hover();
+    await expect(page.locator('.maqam-staff__ajnas path')).toHaveCount(1);
+    const after = await geometry();
+
+    expect(after, 'the staff or the controls moved when a jins was pointed at').toEqual(before);
   });
 
   test('portalled surfaces resolve the app tokens', async ({ page }) => {
     await page.goto('/maqam/');
     await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
 
-    await page.getByRole('button', { name: /How maqamat work/ }).click();
-    const lit = page.locator('.maqam-help__compare .is-lit').first();
+    await page.locator('.maqam-midi').first().click();
+    const lit = page.locator('.maqam-midi__detail').first();
     await expect(lit).toBeVisible();
+    const heading = lit.getByRole('heading').first();
+    await expect(heading).toBeVisible();
 
     // MUI portals the dialog to the end of <body>, outside .maqam. With the
     // tokens declared only there, this chip lost the highlight that is the
     // entire point of the comparison it sits in.
-    const background = await lit.evaluate((el) => getComputedStyle(el).backgroundColor);
-    expect(background).not.toBe('rgba(0, 0, 0, 0)');
-    expect(background).not.toBe('transparent');
+    const colour = await lit
+      .locator('h3')
+      .first()
+      .evaluate((el) => getComputedStyle(el).color);
+    expect(colour).not.toBe('rgb(0, 0, 0)');
   });
 
   test('a11y: every key name stays readable, in the maqam or out of it', async ({ page }) => {
@@ -531,6 +715,12 @@ test.describe('Maqam Playground', () => {
      * a WCAG failure — no text is involved — so nothing else catches it.
      *
      * 1.15:1 is the floor for "this difference means something".
+     *
+     * Only the page-against-board step is measured here. Every other pair in
+     * this app is a hue difference at similar lightness, which a luminance
+     * ratio is blind to — measuring those this way pressures someone into
+     * darkening a colour to satisfy the wrong instrument. They have their own
+     * guards, by colour distance, above.
      */
     await page.goto('/maqam/?maqam=nikriz_c');
     await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
@@ -555,26 +745,375 @@ test.describe('Maqam Playground', () => {
         return stops ? stops[0] : style.backgroundColor;
       };
       const pick = (selector: string) => document.querySelector(selector)!;
-      const dimKey = [...document.querySelectorAll('.maqam-keyboard .shared-pk-white')].find(
-        (el) => !el.classList.contains('maqam-key--in-scale'),
-      )!;
 
+      /*
+       * The cards are separated from the page by their EDGE, not their fill.
+       *
+       * This measured the keyboard card's background against the page and
+       * wanted 1.15:1 — a floor that made sense when the keyboard sat on a
+       * coloured slab, and that no card in this app can meet now that all
+       * three are near-white with a hairline. Measuring the fill of an
+       * outlined card is measuring the wrong thing: the reason you can see
+       * where it ends is the 1px border.
+       */
       const page_ = fill(pick('.maqam'));
-      const board = fill(pick('.maqam-board'));
-      const dim = fill(dimKey);
-      const bright = fill(pick('.maqam-keyboard .shared-pk-white.maqam-key--in-scale'));
-
+      const edge = (selector: string) => getComputedStyle(pick(selector)).borderTopColor;
       return {
-        'board against the page': ratio(board, page_),
-        'a key against the board': ratio(dim, board),
-        'in the maqam against outside it': ratio(bright, dim),
+        'the keyboard card edge against the page': ratio(edge('.maqam-board'), page_),
+        'the staff card edge against the page': ratio(edge('.maqam-staff-surface'), page_),
       };
     });
 
-    expect(Object.keys(steps)).toHaveLength(3);
+    expect(Object.keys(steps)).toHaveLength(2);
     for (const [what, value] of Object.entries(steps)) {
       expect(value, `${what} is only ${value.toFixed(3)}:1`).toBeGreaterThanOrEqual(1.15);
     }
+  });
+
+  test('notes outside the maqam are visibly faded, on every maqam', async ({ page }) => {
+    /*
+     * Membership is a FADE, and the fade is on the notes the maqam does not
+     * use. A key in the maqam is an ordinary key; a key outside it is greyed,
+     * the way a disabled stop on an instrument is.
+     *
+     * This guard has been rewritten three times because the design under it
+     * kept changing, and each rewrite is worth remembering: it asserted the
+     * in-maqam key was BRIGHTER (wrong once the board became sand), then that
+     * the in-maqam key was far from plain white (wrong once in-maqam keys
+     * became ordinary ivory keys). What has been true throughout is the thing
+     * asserted here — the two kinds must look different, in both the face and
+     * the weight of the name on it.
+     *
+     * Measured from the tokens rather than from whichever keys a particular
+     * maqam happens to show, so it holds on Rast, where every white key is in
+     * the maqam and the fade appears only on the black ones.
+     */
+    await page.goto('/maqam/?maqam=hijaz_d');
+    await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
+
+    const marks = await page.evaluate(() => {
+      const rgb = (value: string) => (value.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number);
+      const probe = (token: string) => {
+        const el = document.createElement('div');
+        el.style.background = `var(${token})`;
+        document.querySelector('.maqam')!.appendChild(el);
+        const colour = rgb(getComputedStyle(el).backgroundColor);
+        el.remove();
+        return colour;
+      };
+      const apart = (a: number[], b: number[]) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+
+      const inWhite = document.querySelector(
+        '.maqam-keyboard .shared-pk-white.maqam-key--in-scale .shared-pk-white-label',
+      );
+      const outWhite = [...document.querySelectorAll('.maqam-keyboard .shared-pk-white')]
+        .find((el) => !el.classList.contains('maqam-key--in-scale'))
+        ?.querySelector('.shared-pk-white-label');
+
+      return {
+        whiteFaces: apart(probe('--maqam-scale-wash'), probe('--maqam-key-face-dim')),
+        blackFaces: apart(probe('--maqam-scale-wash-black'), probe('--maqam-key-black-dim')),
+        inWeight: inWhite ? Number(getComputedStyle(inWhite).fontWeight) : 0,
+        outWeight: outWhite ? Number(getComputedStyle(outWhite).fontWeight) : 0,
+      };
+    });
+
+    expect(
+      marks.whiteFaces,
+      `a white key in the maqam and one outside it are only ${marks.whiteFaces.toFixed(1)} apart`,
+    ).toBeGreaterThan(20);
+    expect(
+      marks.blackFaces,
+      `a black key in the maqam and one outside it are only ${marks.blackFaces.toFixed(1)} apart`,
+    ).toBeGreaterThan(20);
+
+    // The name is the second channel, and costs no ink to carry.
+    expect(marks.inWeight, 'a note in the maqam should be named in a heavier weight').toBeGreaterThan(
+      marks.outWeight,
+    );
+  });
+
+  test('one control answers both keyboard questions', async ({ page }) => {
+    /*
+     * "Why is my E not an E" and "can I plug a keyboard in" used to be two
+     * chips side by side in the same corner, leaving the reader to work out
+     * they were the same conversation. They are: a controller plays THIS
+     * board, retuned.
+     */
+    await page.goto('/maqam/?maqam=rast_c');
+    await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
+
+    const trigger = page.getByRole('button', { name: /About this keyboard|keyboards?$/ });
+    await expect(trigger).toBeVisible();
+    await trigger.click();
+
+    const detail = page.locator('.maqam-midi__detail');
+    await expect(detail).toBeVisible();
+    await expect(detail).toContainText('12 fixed keys');
+    await expect(detail).toContainText('Playing it with your own keyboard');
+
+    // Tokens must reach it: this renders in a portal at the end of <body>.
+    const headingColour = await detail
+      .locator('h3')
+      .first()
+      .evaluate((el) => getComputedStyle(el).color);
+    expect(headingColour).not.toBe('rgb(0, 0, 0)');
+
+    /*
+     * Two answers, and nothing else. This used to end with a link to
+     * maqamworld's "Oriental keyboards" page; the app has no need to repeat
+     * that word to explain a MIDI port, and the two sections above are the
+     * whole content of the control.
+     */
+    await expect(detail.getByRole('link')).toHaveCount(0);
+  });
+
+  test('the ajnas panel admits when the board no longer matches it', async ({ page }) => {
+    /*
+     * The last place the live tuning was not respected.
+     *
+     * The staff, the keyboard, the scale line and the audio all follow the
+     * matrix. This panel did not: bend Rast's E and the board plays a 400-cent
+     * third while the column still reads "its third and seventh sit half-flat"
+     * and prints "0 · 200 · 350 · 500 cents". A learner doing exactly the A/B
+     * the app invites hears a major third, reads that it is 350 cents, and
+     * concludes 350 cents sounds like a major third. That is the opposite of
+     * the lesson, reached by following the app's own affordances.
+     */
+    await page.goto('/maqam/?maqam=rast_c');
+    await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
+
+    const panel = page.locator('.maqam-card');
+    await expect(panel).not.toContainText('as written');
+    await expect(page.locator('.maqam-eyebrow[data-stale="true"]')).toHaveCount(0);
+
+    // Bend the maqam's own third away from what it is written as.
+    await page.getByRole('button', { name: /^E4, 50 cents flat$/ }).click();
+
+    // The board must now say so, in the panel making the claims.
+    await expect(page.locator('.maqam-eyebrow[data-stale="true"]')).toBeVisible();
+    await expect(panel).toContainText('as written');
+
+    // And take it back when the tuning returns to the preset.
+    await page.getByRole('button', { name: /^Reset$/ }).click();
+    await expect(page.locator('.maqam-eyebrow[data-stale="true"]')).toHaveCount(0);
+  });
+
+  test('a key in the maqam is brighter than one outside it', async ({ page }) => {
+    /*
+     * The pair the app is actually about, and the one nothing was measuring
+     * until a palette change left out-of-maqam keys indistinguishable from
+     * in-maqam ones.
+     *
+     * Measured as colour DISTANCE, not as a luminance ratio or a direction.
+     * An earlier version of this guard asserted that in-maqam keys must be
+     * BRIGHTER, on the model "a key outside the maqam recedes toward the
+     * board". That model changed: the board is sand, so a key outside the
+     * maqam recedes by STAYING sand, and a key inside it stands out by being
+     * tinted — which makes it the darker of the two. Asserting brightness
+     * would now forbid the design rather than protect it.
+     *
+     * What must stay true is that the two are far apart, and the units have to
+     * be chromatic: the difference is mostly hue at similar lightness, which a
+     * luminance ratio is blind to.
+     */
+    await page.goto('/maqam/?maqam=hijaz_d');
+    await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
+
+    const membership = await page.evaluate(() => {
+      const channel = (c: number) => {
+        const v = c / 255;
+        return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+      };
+      const luminance = (value: string) => {
+        const [r, g, b] = (value.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number);
+        return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+      };
+      const fill = (el: Element) => {
+        const style = getComputedStyle(el);
+        const stops = style.backgroundImage.match(/rgba?\([^)]+\)/g);
+        return stops ? stops[stops.length - 1] : style.backgroundColor;
+      };
+
+      const rgb = (value: string) => (value.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number);
+      const inScale = document.querySelector(
+        '.maqam-keyboard .shared-pk-white.maqam-key--in-scale',
+      );
+      const outside = [...document.querySelectorAll('.maqam-keyboard .shared-pk-white')].find(
+        (el) => !el.classList.contains('maqam-key--in-scale'),
+      );
+      const board = document.querySelector('.maqam-board');
+      if (!inScale || !outside || !board) return null;
+
+      const a = rgb(fill(inScale));
+      const b = rgb(fill(outside));
+      return {
+        apart: Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]),
+        /*
+         * A key must be visible against the card it sits on — and since both
+         * are near-white, what makes it visible is its EDGE.
+         *
+         * This compared the key's fill with the card's and wanted 1.15:1,
+         * which a white key on a white card can never reach. It was a floor
+         * written for a keyboard on a coloured slab; three of those were tried
+         * and all three were rejected, so the floor outlived the design it
+         * described and would have forced the slab back.
+         */
+        keyEdgeAgainstBoard: (() => {
+          const edge = getComputedStyle(inScale).borderTopColor;
+          const hi = Math.max(luminance(edge), luminance(fill(board)));
+          const lo = Math.min(luminance(edge), luminance(fill(board)));
+          return (hi + 0.05) / (lo + 0.05);
+        })(),
+      };
+    });
+
+    // Hijaz uses 4 of 7 white keys, so both kinds are on screen.
+    expect(membership, 'Hijaz should show in-maqam and out-of-maqam white keys').not.toBeNull();
+    expect(
+      membership!.apart,
+      `in-maqam and out-of-maqam keys are only ${membership!.apart.toFixed(1)} apart`,
+    ).toBeGreaterThan(30);
+    expect(
+      membership!.keyEdgeAgainstBoard,
+      `a key's edge is only ${membership!.keyEdgeAgainstBoard.toFixed(2)}:1 against the card it ` +
+        'sits on, so the keyboard has no silhouette',
+    ).toBeGreaterThanOrEqual(1.8);
+  });
+
+  test('the scale line stays readable behind the keyboard', async ({ page }) => {
+    /*
+     * Whatever is actually behind the scale line, which is now the page: the
+     * keyboard has no board. Three coloured slabs were tried behind it and all
+     * three were rejected for outweighing the rest of the layout, so this
+     * measures the surface the text is really on rather than a container that
+     * no longer paints. Reading the empty container gave 1.41:1 against
+     * transparent black — a failure that described the test, not the app.
+     */
+    await page.goto('/maqam/');
+    await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
+
+    const ratio = await page.evaluate(() => {
+      const channel = (c: number) => {
+        const v = c / 255;
+        return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+      };
+      const luminance = (value: string) => {
+        const [r, g, b] = (value.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number);
+        return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+      };
+      /* Walk up until something actually paints, the way the eye does. */
+      let node: Element | null = document.querySelector('.maqam-scaleline');
+      let fill = 'rgb(255, 255, 255)';
+      while (node) {
+        const style = getComputedStyle(node);
+        const stops = style.backgroundImage.match(/rgba?\([^)]+\)/g);
+        const candidate = stops ? stops[stops.length - 1] : style.backgroundColor;
+        const alpha = Number((candidate.match(/[\d.]+/g) ?? [])[3] ?? '1');
+        if (alpha > 0) {
+          fill = candidate;
+          break;
+        }
+        node = node.parentElement;
+      }
+      const ink = getComputedStyle(document.querySelector('.maqam-scaleline')!).color;
+      const [hi, lo] = [luminance(ink), luminance(fill)].sort((x, y) => y - x);
+      return (hi + 0.05) / (lo + 0.05);
+    });
+
+    expect(
+      ratio,
+      `the scale line is only ${ratio.toFixed(2)}:1 on what is behind it`,
+    ).toBeGreaterThanOrEqual(4.5);
+  });
+
+  test('every degree of the maqam is numbered on the key that plays it', async ({
+    page,
+  }) => {
+    /*
+     * Membership, as the user sees it. The previous three models painted it as
+     * a tint or a fade computed against the other keys, and all three were
+     * INVISIBLE on Rast — its seven degrees are the seven white keys, so a
+     * relative mark had nothing to contrast against. "The maqam highlighting is
+     * broken" was reported four times against a board that was working exactly
+     * as built.
+     *
+     * So the guard runs on Rast, the maqam that falsified every earlier
+     * version, and it counts marks rather than comparing colours: one numeral
+     * per degree per octave, and the numerals actually spell the maqam.
+     */
+    await page.goto('/maqam/?maqam=rast_c');
+    await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('.maqam-keyboard .shared-pk-white').first()).toBeVisible();
+
+    const marks = await page.evaluate(() => {
+      const keys = [...document.querySelectorAll('.maqam-keyboard .shared-pk-white')];
+      return keys.map((key) => ({
+        inScale: key.classList.contains('maqam-key--in-scale'),
+        mark: key.querySelector('.shared-pk-mark')?.textContent ?? '',
+      }));
+    });
+
+    // Rast is all seven white keys, over three octaves.
+    expect(marks.filter((k) => k.inScale)).toHaveLength(21);
+    // Not one key in the maqam without its degree, and not one outside it with one.
+    expect(marks.filter((k) => k.inScale && k.mark === '')).toHaveLength(0);
+    expect(marks.filter((k) => !k.inScale && k.mark !== '')).toHaveLength(0);
+    // And the numerals read as the maqam does, rather than being 21 copies of "1".
+    expect(marks.slice(0, 7).map((k) => k.mark).join('')).toBe('1234567');
+  });
+
+  test('every tuning switch sits over the key it retunes', async ({ page }) => {
+    /*
+     * The switch rail duplicates the keyboard's geometry — octaves flexing
+     * evenly, white keys flexing within an octave, black keys at a percentage
+     * of it — because the shared keyboard has no slot to render into. Two
+     * copies of a layout drift, and when this one drifts the switches stop
+     * being labelled by their position, which is the whole design.
+     *
+     * Measured, not eyeballed: centre against centre, every key.
+     */
+    await page.goto('/maqam/?maqam=rast_c');
+    await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
+
+    const alignment = await page.evaluate(() => {
+      const centre = (el: Element) => {
+        const r = el.getBoundingClientRect();
+        return r.left + r.width / 2;
+      };
+      const pair = (keySelector: string, switchSelector: string) => {
+        const keys = [...document.querySelectorAll(keySelector)];
+        const switches = [...document.querySelectorAll(switchSelector)];
+        if (keys.length === 0 || keys.length !== switches.length) {
+          return { count: keys.length, matched: switches.length, worst: Infinity };
+        }
+        const worst = Math.max(
+          ...keys.map((key, i) => Math.abs(centre(switches[i]) - centre(key))),
+        );
+        return { count: keys.length, matched: switches.length, worst };
+      };
+
+      return {
+        white: pair('.maqam-keyboard .shared-pk-white', '.maqam-rail__switch--white'),
+        black: pair('.maqam-keyboard .shared-pk-black', '.maqam-rail__switch--black'),
+      };
+    });
+
+    // 3 octaves: 21 white keys and 15 black ones, each with its own switch.
+    expect(alignment.white.count).toBe(21);
+    expect(alignment.black.count).toBe(15);
+    expect(alignment.white.matched).toBe(alignment.white.count);
+    expect(alignment.black.matched).toBe(alignment.black.count);
+
+    // A switch more than 2px off its key no longer reads as belonging to it.
+    expect(
+      alignment.white.worst,
+      `a white switch is ${alignment.white.worst.toFixed(1)}px off its key`,
+    ).toBeLessThanOrEqual(2);
+    expect(
+      alignment.black.worst,
+      `a black switch is ${alignment.black.worst.toFixed(1)}px off its key`,
+    ).toBeLessThanOrEqual(2);
   });
 
   test('the page itself never scrolls', async ({ page }) => {

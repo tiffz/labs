@@ -83,15 +83,15 @@ class FakeAudioContext {
 }
 
 function Harness() {
-  const { noteOn, noteOff, activeNotes, keyTunings, togglePlayback, selectMelody, isPlaying, audioBlocked } =
+  const { noteOn, noteOff, activeNotes, keyTunings, togglePlayback, toggleSlot, isPlaying, audioBlocked } =
     useMaqamState();
   return (
     <div>
       <button type="button" onClick={togglePlayback} data-testid="toggle-play">
         play melody
       </button>
-      <button type="button" onClick={() => selectMelody('scale-down')} data-testid="switch-melody">
-        switch melody
+      <button type="button" onClick={() => toggleSlot(4)} data-testid="retune">
+        retune E
       </button>
       <span data-testid="is-playing">{String(isPlaying)}</span>
       <span data-testid="audio-blocked">{String(audioBlocked)}</span>
@@ -258,10 +258,10 @@ describe('useMaqamState under StrictMode', () => {
     render(<Harness />);
     await act(async () => {
       screen.getByTestId('toggle-play').click();
-      // Changing the pattern stops playback. Before the generation check, the
-      // pending `.then` scheduled the old phrase anyway: it played on, with the
-      // UI insisting nothing was playing.
-      screen.getByTestId('switch-melody').click();
+      // Retuning a key stops playback. Before the generation check, the pending
+      // `.then` scheduled the old phrase anyway: it played on, at the old
+      // tuning, with the UI insisting nothing was playing.
+      screen.getByTestId('retune').click();
     });
 
     expect(startedSources).toBe(0);
@@ -279,14 +279,35 @@ describe('useMaqamState under StrictMode', () => {
     );
 
     render(<Harness />);
-    expect(screen.getByTestId('audio-blocked').textContent).toBe('false');
+    expect(screen.getByTestId('audio-blocked').textContent).toBe('null');
 
     await act(async () => {
       screen.getByTestId('play-e').click();
     });
 
-    // The one thing worse than no sound is no sound and no explanation.
-    expect(screen.getByTestId('audio-blocked').textContent).toBe('true');
+    // The one thing worse than no sound is no sound and no explanation — and
+    // it names the control that failed, because the recovery differs.
+    expect(screen.getByTestId('audio-blocked').textContent).toBe('keyboard');
+  });
+
+  it('names Play, not the keyboard, when Play is what failed', async () => {
+    vi.stubGlobal(
+      'AudioContext',
+      class {
+        constructor() {
+          throw new Error('too many AudioContexts');
+        }
+      },
+    );
+
+    render(<Harness />);
+    await act(async () => {
+      screen.getByTestId('toggle-play').click();
+    });
+
+    // Telling someone to press a key when they pressed Play, in a line 250px
+    // below the button and off-screen on a phone, is worse than saying nothing.
+    expect(screen.getByTestId('audio-blocked').textContent).toBe('playback');
   });
 
   it('does not cry wolf when audio is working', async () => {
@@ -294,6 +315,6 @@ describe('useMaqamState under StrictMode', () => {
     await act(async () => {
       screen.getByTestId('play-e').click();
     });
-    expect(screen.getByTestId('audio-blocked').textContent).toBe('false');
+    expect(screen.getByTestId('audio-blocked').textContent).toBe('null');
   });
 });

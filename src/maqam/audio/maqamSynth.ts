@@ -13,6 +13,12 @@ const A4_MIDI = 69;
  * Oud-ish voicing. Gut and nylon strings lose energy faster than steel, and the
  * body is woody rather than bright, so sustain sits below a guitar's and the
  * tone control is well into the dark half.
+ *
+ * Three selectable voices lived here briefly — oud, qanun and santur — and came
+ * out again. They are one string model at three settings and they sounded like
+ * it: a picker offering three near-identical timbres is three ways to be unsure
+ * which one you are hearing. A second instrument has to be a second
+ * GENERATOR — something bowed or blown — to be worth choosing between.
  */
 const PLUCK_SECONDS = 2.6;
 const PLUCK_SUSTAIN = 0.9965;
@@ -88,7 +94,14 @@ export class MaqamSynth {
   private master: GainNode | null = null;
   private reverbSend: GainNode | null = null;
   private readonly voices = new Map<number, Voice>();
-  /** Rendered plucks, keyed by note and bend. A pluck costs ~5ms to render. */
+  /**
+   * Rendered strings, keyed by note, bend AND voice. A render costs ~5ms.
+   *
+   * The voice is part of the key rather than a reason to clear the cache:
+   * switching back to an instrument you have already heard should be
+   * instantaneous, and A/B-ing two voices on one note is exactly what someone
+   * comparing them will do.
+   */
   private readonly buffers = new Map<string, AudioBuffer>();
   /** Sources queued by `scheduleNote`, so a stop can cancel a whole phrase. */
   private scheduled: AudioBufferSourceNode[] = [];

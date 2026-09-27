@@ -5,6 +5,8 @@ import {
   MAQAM_PRESETS_BY_ID,
   DEFAULT_MAQAM_ID,
   ajnasJoin,
+  ajnasJoins,
+  ajnasSpans,
   degreeAbsoluteCents,
   ghammazDegreeIndex,
   deriveDetuneMatrix,
@@ -12,6 +14,7 @@ import {
   hasMicrotones,
   scaleDegreeLabels,
   scalePitchClasses,
+  type Jins,
   type MaqamPreset,
 } from './maqamPresets';
 import { pitchClassOf, spellingLabel } from '../notation/maqamAccidentals';
@@ -19,18 +22,20 @@ import { pitchClassOf, spellingLabel } from '../notation/maqamAccidentals';
 const TONIC_OCTAVE = 4;
 
 describe('preset integrity', () => {
-  it('ships the nine maqam families with unique ids', () => {
+  it('ships each family head plus its members, with unique ids', () => {
     const ids = MAQAM_PRESETS.map((p) => p.id);
     expect(ids).toEqual([
       'rast_c',
       'bayati_d',
+      'bayati_shuri_d',
+      'muhayyar_d',
       'sikah_e',
       'saba_d',
       'hijaz_d',
       'kurd_d',
       'nahawand_c',
       'nikriz_c',
-      'ajam_bb',
+      'ajam_c',
     ]);
     expect(new Set(ids).size).toBe(ids.length);
   });
@@ -43,8 +48,15 @@ describe('preset integrity', () => {
   it('covers both microtonal and 12-TET families', () => {
     const micro = MAQAM_PRESETS.filter((p) => hasMicrotones(p.scaleDegrees)).map((p) => p.id);
     const plain = MAQAM_PRESETS.filter((p) => !hasMicrotones(p.scaleDegrees)).map((p) => p.id);
-    expect(micro).toEqual(['rast_c', 'bayati_d', 'sikah_e', 'saba_d']);
-    expect(plain).toEqual(['hijaz_d', 'kurd_d', 'nahawand_c', 'nikriz_c', 'ajam_bb']);
+    expect(micro).toEqual([
+      'rast_c',
+      'bayati_d',
+      'bayati_shuri_d',
+      'muhayyar_d',
+      'sikah_e',
+      'saba_d',
+    ]);
+    expect(plain).toEqual(['hijaz_d', 'kurd_d', 'nahawand_c', 'nikriz_c', 'ajam_c']);
   });
 
   it('resolves the default id', () => {
@@ -196,6 +208,19 @@ describe('detune matrix derivation', () => {
   });
 });
 
+/**
+ * "Jins Nahawand on G" -> "Jins Nahawand". The catalogue names a cell by where
+ * it is rooted, which is useful on screen and in the way when comparing a cell
+ * to itself. Apostrophes are normalised because 'Ajam is written with a
+ * right single quote in the data and a straight one in most sources.
+ */
+function baseJinsName(name: string): string {
+  return name
+    .replace(/\s+on\s+.+$/, '')
+    .replace(/['\u2018\u2019]/g, '\u02BC')
+    .trim();
+}
+
 describe('ajnas agree with the scale they are drawn from', () => {
   /**
    * `intervalsInCents` and `scaleDegrees` are authored separately — two
@@ -222,17 +247,92 @@ describe('ajnas agree with the scale they are drawn from', () => {
       `${jins.name} is rooted on ${spellingLabel(jins.root)}, which is not a degree of ${preset.name} (${scaleDegreeLabels(preset.scaleDegrees).join(' ')})`,
     ).toBeGreaterThanOrEqual(0);
 
+    /*
+     * A jins may extend past the written octave, and that is not an error.
+     *
+     * Jins Nahawand is five notes; rooted on the 5th degree of Nikriz its top
+     * note is the 9th, while the scale is written C to C. So the walk covers
+     * the degrees the scale actually has and stops — but ONLY there. A jins
+     * that runs short anywhere else is the tetrachord-for-pentachord bug, and
+     * this is what used to catch it.
+     */
     const rootCents = degreeAbsoluteCents(preset.scaleDegrees[rootIndex], TONIC_OCTAVE);
-    const walked = jins.intervalsInCents.map((_, step) => {
+    const available = preset.scaleDegrees.length - rootIndex;
+    const walked = jins.intervalsInCents.slice(0, available).map((_, step) => {
       const degree = preset.scaleDegrees[rootIndex + step];
-      expect(
-        degree,
-        `${jins.name} needs ${jins.intervalsInCents.length} degrees from ${spellingLabel(jins.root)}, but the scale runs out`,
-      ).toBeDefined();
       return degreeAbsoluteCents(degree, TONIC_OCTAVE) - rootCents;
     });
 
-    expect(walked).toEqual(jins.intervalsInCents);
+    expect(walked).toEqual(jins.intervalsInCents.slice(0, available));
+    expect(
+      available,
+      `${jins.name} is cut off inside ${preset.name}, not at the end of it`,
+    ).toBeGreaterThanOrEqual(Math.min(jins.intervalsInCents.length, preset.scaleDegrees.length - rootIndex));
+  });
+
+  /**
+   * The size of a jins is a property of the JINS, not of the maqam quoting it.
+   *
+   * Jins Nahawand was stored as five notes in Bayati, Bayati Shuri, Hijaz and
+   * Nahawand, and as four in Kurd and Nikriz. Both spellings looked plausible
+   * in isolation; the disagreement is what makes the error visible, and no
+   * test could see it because every check ran on one maqam at a time. Kurd's
+   * upper bracket stopped a note short of the octave for as long as that
+   * lasted.
+   *
+   * Compares by NAME — "Jins Nahawand on G" is the same cell wherever it is
+   * quoted — so a new maqam that disagrees with the catalogue fails on the way
+   * in rather than after someone notices a short bracket.
+   */
+  it('gives the same jins the same intervals everywhere it appears', () => {
+    const byName = new Map<string, { id: string; intervals: number[] }[]>();
+    for (const preset of MAQAM_PRESETS) {
+      for (const jins of preset.primaryAjnas) {
+        const seen = byName.get(jins.name) ?? [];
+        seen.push({ id: jins.id, intervals: jins.intervalsInCents });
+        byName.set(jins.name, seen);
+      }
+    }
+    for (const [name, uses] of byName) {
+      const spellings = new Set(uses.map((use) => use.intervals.join('-')));
+      expect(
+        [...spellings],
+        `${name} is spelled ${spellings.size} different ways: ${uses
+          .map((use) => `${use.id} = ${use.intervals.join('·')}`)
+          .join(', ')}`,
+      ).toHaveLength(1);
+    }
+  });
+
+  /**
+   * And the sizes themselves, against the source rather than against ourselves.
+   *
+   * Internal agreement cannot catch a cell that is wrong the same way in every
+   * copy, which is exactly how Jins Rast shipped as a tetrachord in all nine
+   * maqamat that quote it. These counts are quoted from maqamworld's own jins
+   * index, which groups every jins under a "3-note", "4-note" or "5-note"
+   * heading.
+   */
+  it.each([
+    ['Jins Sikah', 3],
+    ['Jins Bayati', 4],
+    ['Jins Hijaz', 4],
+    ['Jins Kurd', 4],
+    ['Jins Upper Rast', 4],
+    ['Jins Upper ʼAjam', 4],
+    ['Jins ʼAjam', 5],
+    ['Jins Nahawand', 5],
+    ['Jins Nikriz', 5],
+    ['Jins Rast', 5],
+  ])('stores %s as a %i-note jins, as maqamworld does', (name, notes) => {
+    const uses = MAQAM_PRESETS.flatMap((preset) =>
+      preset.primaryAjnas.filter((jins) => baseJinsName(jins.name) === name),
+    );
+    /* A name that matches nothing would pass every assertion below it. */
+    expect(uses.length, `nothing in the catalogue is called ${name}`).toBeGreaterThan(0);
+    for (const jins of uses) {
+      expect(jins.intervalsInCents.length, `${jins.id} (${jins.name})`).toBe(notes);
+    }
   });
 
   /**
@@ -290,14 +390,68 @@ describe('ajnas agree with the scale they are drawn from', () => {
   );
 
   /**
-   * Pins the three the app got wrong, by name. A maqam moving between these
-   * lists is a real editorial change and should have to be made on purpose.
+   * Every maqam here is conjunct: its cells meet on one shared degree.
+   *
+   * This test previously pinned rast_c, nahawand_c and ajam as DISJUNCT,
+   * which was an artefact of wrong data rather than a fact about the music.
+   * Each of those three has a 5-note pentachord as its root jins — Jins Rast,
+   * Jins Nahawand and Jins 'Ajam are all "5-note jins" per maqamworld.com,
+   * with the ghammaz on the 5th — and all three were authored here as 4-note
+   * tetrachords stopping on the 4th. That made the lower cell end one degree
+   * short, so it no longer reached the upper cell's root and the derivation
+   * correctly reported cells that do not touch, from data that was wrong.
+   *
+   * The lesson survives and is worth keeping: the join is DERIVED, so
+   * correcting the cell sizes corrected the panel, the ghammaz, the melody
+   * patterns and this list together, with no prose to chase. The failure was
+   * treating the repo's own data as ground truth for a claim about the world.
    */
-  it('knows which maqamat are disjunct', () => {
+  /**
+   * A maqam is not limited to two cells — maqamworld draws three over Maqam
+   * Rast, the third covering the descending form. The join logic used to read
+   * `primaryAjnas[0]` and `[1]` and ignore the rest, so a third cell would be
+   * stored, listed in the panel, and left out of every sentence about how the
+   * cells meet. Built from a synthetic 3-cell preset, because none of the
+   * shipped maqamat has one yet and a guard that waits for real data to appear
+   * is a guard that is not running.
+   */
+  it('describes every seam, not just the first', () => {
+    const rast = MAQAM_PRESETS_BY_ID.rast_c;
+    const threeCells: MaqamPreset = {
+      ...rast,
+      primaryAjnas: [
+        ...rast.primaryAjnas,
+        {
+          id: 'synthetic__third',
+          name: 'Jins Nahawand on C',
+          // Rooted on the upper tonic, closing the scale.
+          root: { letter: 'C', accidental: 'n' },
+          intervalsInCents: [0],
+          source: 'https://www.maqamworld.com/en/jins/nahawand.php',
+        },
+      ],
+    };
+
+    expect(ajnasJoins(rast)).toHaveLength(1);
+    expect(ajnasJoins(threeCells)).toHaveLength(2);
+    // And the maqam's own ghammaz is still the first seam.
+    expect(ajnasJoin(threeCells)).toEqual(ajnasJoins(threeCells)[0]);
+  });
+
+  it('has no disjunct maqamat, because every cell reaches its ghammaz', () => {
     const disjunct = MAQAM_PRESETS.filter((preset) => ajnasJoin(preset)?.shared === false)
       .map((preset) => preset.id)
       .sort();
-    expect(disjunct).toEqual(['ajam_bb', 'nahawand_c', 'rast_c']);
+    expect(disjunct).toEqual([]);
+  });
+
+  /** Every jins cites where its size and intervals were checked. */
+  it('sources every musical claim', () => {
+    for (const preset of MAQAM_PRESETS) {
+      for (const jins of preset.primaryAjnas) {
+        expect(jins.source, `${jins.id} has no source`).toMatch(/^https:\/\//);
+      }
+    }
   });
 
   it('starts every jins at its root', () => {
@@ -323,35 +477,109 @@ describe('ajnas agree with the scale they are drawn from', () => {
   });
 });
 
+/**
+ * Every shipped maqam, spelled out. The one place a reader can check the
+ * app's musical claims against a reference without running it.
+ */
+const SCALE_READBACK: [string, string][] = [
+  ['rast_c', 'C D E½♭ F G A B½♭ C'],
+  ['bayati_d', 'D E½♭ F G A B♭ C D'],
+  // Bayati's family: same Jins Bayati below, a different cell on the 4th.
+  ['bayati_shuri_d', 'D E½♭ F G A♭ B C D'],
+  ['muhayyar_d', 'D E½♭ F G A B½♭ C D'],
+  ['sikah_e', 'E½♭ F G A B½♭ C D E½♭'],
+  ['saba_d', 'D E½♭ F G♭ A B♭ C'],
+  ['hijaz_d', 'D E♭ F♯ G A B♭ C D'],
+  ['kurd_d', 'D E♭ F G A B♭ C D'],
+  ['nahawand_c', 'C D E♭ F G A♭ B♭ C'],
+  ['nikriz_c', 'C D E♭ F♯ G A B♭ C'],
+  ['ajam_c', 'C D E F G A B C'],
+];
+
 describe('written scales read back as expected', () => {
   /**
-   * Every family spelled out. This is the one place a reader can check the
-   * app's musical claims against a reference without running it — so all nine
-   * belong here, not a sample.
+   * Every maqam spelled out. This is the one place a reader can check the
+   * app's musical claims against a reference without running it, so every
+   * shipped maqam belongs here, not a sample. The test below fails if one is
+   * added without a row.
    */
-  it.each([
-    ['rast_c', 'C D E½♭ F G A B½♭ C'],
-    ['bayati_d', 'D E½♭ F G A B♭ C D'],
-    ['sikah_e', 'E½♭ F G A B½♭ C D E½♭'],
-    ['saba_d', 'D E½♭ F G♭ A B♭ C'],
-    ['hijaz_d', 'D E♭ F♯ G A B♭ C D'],
-    ['kurd_d', 'D E♭ F G A B♭ C D'],
-    ['nahawand_c', 'C D E♭ F G A♭ B♭ C'],
-    ['nikriz_c', 'C D E♭ F♯ G A B♭ C'],
-    ['ajam_bb', 'B♭ C D E♭ F G A B♭'],
-  ])('%s', (id, expected) => {
+  it.each(SCALE_READBACK)('%s', (id, expected) => {
     expect(scaleDegreeLabels(MAQAM_PRESETS_BY_ID[id].scaleDegrees).join(' ')).toBe(expected);
   });
 
-  it('covers every shipped family in the readback table above', () => {
-    // A table that silently stops covering new families is the `guardrail-
-    // coverage-gap` shape: green, and blind to whatever was added last.
-    expect(MAQAM_PRESETS).toHaveLength(9);
+  it('covers every shipped maqam, by id rather than by count', () => {
+    /*
+     * The previous version asserted `MAQAM_PRESETS.toHaveLength(9)` as a stand
+     * in for "the table covers everything". That is a proxy: it fails when a
+     * maqam is added even if the row WAS added, and it would pass with a row
+     * for a maqam that does not exist. Compare the sets.
+     */
+    expect([...SCALE_READBACK.map(([id]) => id)].sort()).toEqual(
+      MAQAM_PRESETS.map((preset) => preset.id).sort(),
+    );
   });
+});
 
+describe('scale spellings', () => {
   it('puts Sikah on a tonic no untouched piano key can play', () => {
     const sikah = MAQAM_PRESETS_BY_ID.sikah_e;
     const { matrix } = deriveDetuneMatrix(sikah.scaleDegrees);
     expect(matrix[pitchClassOf(sikah.tonic)]).toBe(-50);
+  });
+});
+
+describe('ajnasSpans', () => {
+  /**
+   * What the brackets over the staff are drawn from. Derived from each cell's
+   * root and its own interval count, so a cell corrected from a tetrachord to
+   * a pentachord — which is the correction this whole dataset needed once —
+   * moves its bracket with no second number to remember.
+   */
+  it('covers every cell, ending each one on its own top note', () => {
+    for (const preset of MAQAM_PRESETS) {
+      for (const span of ajnasSpans(preset)) {
+        const jins = preset.primaryAjnas.find((cell) => cell.id === span.id);
+        expect(jins, `${preset.id} has no cell ${span.id}`).toBeDefined();
+        expect(span.toIndex - span.fromIndex + 1, `${preset.id} / ${span.id}`).toBe(
+          Math.min(jins!.intervalsInCents.length, preset.scaleDegrees.length - span.fromIndex),
+        );
+        expect(span.toIndex).toBeLessThan(preset.scaleDegrees.length);
+      }
+    }
+  });
+
+  it('meets the ghammaz exactly where the join says it does', () => {
+    for (const preset of MAQAM_PRESETS) {
+      const spans = ajnasSpans(preset);
+      ajnasJoins(preset).forEach((join, index) => {
+        const lower = spans[index];
+        const upper = spans[index + 1];
+        if (!lower || !upper) return;
+        expect(lower.toIndex, `${preset.id} lower cell`).toBe(join.lowerTopIndex);
+        expect(upper.fromIndex, `${preset.id} upper cell`).toBe(join.ghammazIndex);
+      });
+    }
+  });
+
+  /*
+   * A cell rooted on a degree the scale does not contain must be left OUT, not
+   * drawn from index 0. `findIndex` returns -1 there, and -1 reads as a
+   * perfectly plausible bracket starting on the tonic.
+   */
+  it('drops a cell whose root is not a degree of this maqam', () => {
+    const rast = MAQAM_PRESETS_BY_ID.rast_c;
+    // F sharp is not a degree of Rast, so this cell has nowhere to sit.
+    const orphan: Jins = {
+      ...rast.primaryAjnas[0],
+      id: 'not_in_this_scale',
+      root: { letter: 'F', accidental: '#' },
+    };
+    const invented: MaqamPreset = {
+      ...rast,
+      primaryAjnas: [...rast.primaryAjnas, orphan],
+    };
+    expect(ajnasSpans(invented).map((span) => span.id)).toEqual(
+      ajnasSpans(rast).map((span) => span.id),
+    );
   });
 });

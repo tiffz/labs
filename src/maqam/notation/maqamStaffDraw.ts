@@ -1,5 +1,10 @@
 import { Accidental, Beam, BoundingBox, Formatter, Renderer, Stave, StaveNote, Voice } from 'vexflow';
 
+import {
+  createVexFlowAnnotation,
+  createVexFlowRule,
+  vexFlowUserUnitsPerPixel,
+} from '../../shared/vexflow/vexFlowAnnotation';
 import { ensureVexFlowFontsLoaded } from '../../shared/vexflow/vexFlowFontExport';
 import {
   spellingAriaLabel,
@@ -35,6 +40,38 @@ export interface DrawStaffOptions {
   highlighted?: ReadonlySet<number>;
   /** Colour for lit noteheads. Defaults to the app's retuned amber. */
   highlightColor?: string;
+  /**
+   * Ajnas to bracket above the staff, as inclusive index ranges into `notes`.
+   *
+   * This is the one place the app draws a cell rather than listing it. A maqam
+   * is not a scale with a name; it is two or three ajnas joined at a shared
+   * degree, and until the brackets were here the reader had a panel saying
+   * "Jins Rast on C, Jins Upper Rast on G" beside eight undifferentiated
+   * noteheads, with nothing connecting the two.
+   */
+  brackets?: StaffBracket[];
+  /**
+   * Keep the bracket's row of space whether or not a bracket is drawn there.
+   *
+   * Brackets appear on hover, and the staff is sized to its own ink — so the
+   * first one to appear grew the drawing by 52px and shoved the notation up
+   * 26px and the Play row down 26px. The browser reported it as a real
+   * layout-shift (0.0031), and it is: pointing at a chip made the music jump.
+   * Reserving the row costs a strip of white on a staff that is already
+   * centred in its card.
+   */
+  reserveBracketRow?: boolean;
+}
+
+export interface StaffBracket {
+  id: string;
+  label: string;
+  /** Inclusive index into `notes`. */
+  from: number;
+  /** Inclusive index into `notes`. */
+  to: number;
+  /** 1-based, matching the `--maqam-jins-N` tokens and the chip's swatch. */
+  tone: number;
 }
 
 /** Breathing room kept above and below the drawn extent, in CSS px. */
@@ -50,6 +87,47 @@ const EDGE_PAD = 6;
  */
 const DEFAULT_HIGHLIGHT = '#1d5b82';
 const INK = '#241d16';
+
+/**
+ * The score's three inks, read from the app's own CSS custom properties.
+ *
+ * VexFlow paints with JavaScript colour strings, so a stylesheet cannot reach
+ * it and every renderer in this repo has ended up with a hex literal that the
+ * theme around it does not know about. Reading the tokens here means a look
+ * applied to `.maqam` reaches the notation too, and there is exactly one place
+ * each colour is defined.
+ *
+ * The literals above remain as fallbacks for a container that resolves nothing
+ * — a detached node under test, or a draw that races the stylesheet.
+ */
+interface StaffInks {
+  ink: string;
+  lit: string;
+  bracket: string;
+  fadedInk: string;
+  jins: (tone: number) => string;
+}
+
+function staffInks(container: HTMLElement): StaffInks {
+  const read = (name: string, fallback: string) => {
+    if (typeof getComputedStyle !== 'function') return fallback;
+    const value = getComputedStyle(container).getPropertyValue(name).trim();
+    return value || fallback;
+  };
+  return {
+    ink: read('--maqam-staff-ink', INK),
+    lit: read('--maqam-staff-lit', DEFAULT_HIGHLIGHT),
+    bracket: read('--maqam-bracket-ink', BRACKET_INK),
+    /* Notes outside the cell being pointed at. Quiet enough to recede, dark
+       enough to still read as notation rather than as a rendering fault. */
+    fadedInk: read('--m3-outline', '#8e9384'),
+    /* One colour per cell, so a jins is the same colour in its chip, its
+       bracket and its notes. Falls back to the bracket ink, which is the
+       colour every bracket had before they were told apart. */
+    jins: (tone: number) =>
+      read(`--maqam-jins-${tone}`, read('--maqam-bracket-ink', BRACKET_INK)),
+  };
+}
 const EMPTY_HIGHLIGHT: ReadonlySet<number> = new Set<number>();
 
 /**
@@ -107,8 +185,22 @@ function drawStaffNow(
     return fitToDrawnExtent(container, verticalExtentOf(stave, []));
   }
 
+  const inks = staffInks(container);
   const lit = options.highlighted ?? EMPTY_HIGHLIGHT;
-  const litColor = options.highlightColor ?? DEFAULT_HIGHLIGHT;
+  const litColor = options.highlightColor ?? inks.lit;
+
+  /*
+   * Brackets are drawn ONLY while a cell is being pointed at, and then only
+   * that one.
+   *
+   * Drawn always, they are a permanent overlay answering a question the reader
+   * is not currently asking, and two of them at once cannot say which owns the
+   * degree where they meet — three attempts at showing that simultaneously
+   * (meeting on the notehead, ringing it, stacking on two rows) all failed on
+   * the same point. Nothing by default; one cell, whole, on demand.
+   */
+  const brackets = options.brackets ?? [];
+  const pointed = brackets[0];
 
   const staveNotes = notes.map((note, index) => {
     const staveNote = new StaveNote({
@@ -118,7 +210,24 @@ function drawStaffNow(
     if (note.accidental !== 'n') {
       staveNote.addModifier(new Accidental(note.accidental), 0);
     }
-    if (lit.has(index)) {
+    const inPointedCell =
+      pointed !== undefined && index >= pointed.from && index <= pointed.to;
+    if (pointed !== undefined && !inPointedCell && !lit.has(index)) {
+      /* Quieted, not hidden. The rest of the scale is still the context the
+         cell sits in; removing it would make a four-note fragment look like
+         the whole maqam. */
+      const faded = inks.fadedInk;
+      staveNote.setStyle({ fillStyle: faded, strokeStyle: faded });
+      staveNote
+        .getModifiers()
+        .forEach((modifier) => modifier.setStyle({ fillStyle: faded, strokeStyle: faded }));
+    } else if (inPointedCell && !lit.has(index)) {
+      const tone = inks.jins(pointed.tone);
+      staveNote.setStyle({ fillStyle: tone, strokeStyle: tone });
+      staveNote
+        .getModifiers()
+        .forEach((modifier) => modifier.setStyle({ fillStyle: tone, strokeStyle: tone }));
+    } else if (lit.has(index)) {
       // Colour the whole note — head, stem and accidental — so a lit degree
       // reads at a glance rather than needing a hunt for a tinted notehead.
       staveNote.setStyle({ fillStyle: litColor, strokeStyle: litColor });
@@ -126,7 +235,7 @@ function drawStaffNow(
         .getModifiers()
         .forEach((modifier) => modifier.setStyle({ fillStyle: litColor, strokeStyle: litColor }));
     } else {
-      staveNote.setStyle({ fillStyle: INK, strokeStyle: INK });
+      staveNote.setStyle({ fillStyle: inks.ink, strokeStyle: inks.ink });
     }
     return staveNote;
   });
@@ -157,9 +266,194 @@ function drawStaffNow(
     beam.setContext(context).draw();
   }
 
+  const extent = verticalExtentOf(stave, [...staveNotes, ...beams]);
+  const drawnTop = drawAjnasBrackets(container, stave, staveNotes, brackets, extent, inks);
+
+  /*
+   * Two reasons the box grows upward, and it takes the larger.
+   *
+   * The RESERVED row is computed from the geometry a bracket would use, not
+   * from one that happens to be on screen, so it is identical whether a cell
+   * is being pointed at or not — that is what stops the music jumping. The
+   * DRAWN top is still honoured because dropping it clips any bracket a caller
+   * shows without reserving: measured, that silently removed the bracket
+   * instead of resizing the box, which is the worse failure of the two.
+   */
+  const svgEl = container.querySelector('svg');
+  const reservedTop =
+    options.reserveBracketRow && extent !== undefined && svgEl
+      ? bracketRowTop(stave, extent, vexFlowUserUnitsPerPixel(svgEl))
+      : undefined;
+  const bracketTop =
+    reservedTop === undefined
+      ? drawnTop
+      : drawnTop === undefined
+        ? reservedTop
+        : Math.min(reservedTop, drawnTop);
+
   applyStaffAccessibility(container, notes);
-  return fitToDrawnExtent(container, verticalExtentOf(stave, [...staveNotes, ...beams]));
+  return fitToDrawnExtent(
+    container,
+    bracketTop === undefined || extent === undefined
+      ? extent
+      : { top: Math.min(extent.top, bracketTop), bottom: extent.bottom },
+  );
 }
+
+/**
+ * Square brackets over the staff, one per jins, the way maqamworld draws them.
+ *
+ * Geometry that belongs to the NOTATION is in staff spaces, so it grows with
+ * the music: rule ticks 0.55 spaces deep, label one space above the rule.
+ * Those are measured off maqamworld's own jins diagrams. Geometry that belongs
+ * to the PAGE — the label's type size, the rule's weight — is in CSS pixels,
+ * through `createVexFlowAnnotation`, because a jins name is a word on the page
+ * and has to be the size words on this page are.
+ *
+ * Plain square brackets with short uniform end ticks, which is the vocabulary
+ * maqamworld's own scale diagrams use.
+ *
+ * Cells that SHARE a degree are stacked on two rows, each covering the shared
+ * note in full. That is the one departure, and it is the point: nearly every
+ * maqam here is two cells joined at one note, and two rules meeting end-to-end
+ * on a single row say "this is where one stops and the next starts" — the
+ * disjunct reading, and the opposite of what is true. Stacked, the shared note
+ * sits under both rules and the overlap is simply visible.
+ *
+ * Ticks that reached down to each notehead were tried and removed. They were
+ * an answer to the brackets looking misaligned, and the brackets were not
+ * misaligned — measured, the ends sat 0.2px from the notehead centres. What
+ * was actually wrong was the DATA: Jins Nahawand was stored as a tetrachord in
+ * Kurd and Nikriz, so the upper bracket really did stop a note short of the
+ * octave.
+ *
+ * The labels are plain text, not links. The same jins name is a link to
+ * maqamworld in the panel three inches to the right; a second copy of one link
+ * inside an `aria-hidden` image would be a duplicate the screen reader could
+ * not reach anyway.
+ *
+ * @returns the topmost y the brackets occupy, so the SVG viewport can grow to
+ * hold them — or `undefined` when nothing was drawn.
+ */
+/** The top of the row a bracket occupies: its rule, plus the label above it. */
+function bracketRowTop(stave: Stave, extent: VerticalExtent, px: number): number {
+  const space = stave.getSpacingBetweenLines();
+  const baseY = Math.min(extent.top, stave.getYForLine(0)) - space * 1.4;
+  return baseY - (LABEL_GAP_PX + LABEL_SIZE_PX) * px;
+}
+
+function drawAjnasBrackets(
+  container: HTMLDivElement,
+  stave: Stave,
+  staveNotes: StaveNote[],
+  brackets: StaffBracket[],
+  extent: VerticalExtent | undefined,
+  inks: StaffInks,
+): number | undefined {
+  const svg = container.querySelector('svg');
+  if (!svg || brackets.length === 0 || extent === undefined) return undefined;
+
+  const space = stave.getSpacingBetweenLines();
+  const rows = assignBracketRows(brackets);
+  const rowHeight = space * 2.6;
+  // Clear of the highest ink on the staff, whichever bracket sits lowest.
+  const baseY = Math.min(extent.top, stave.getYForLine(0)) - space * 1.4;
+
+  const group = document.createElementNS(SVG_NS, 'g');
+  group.setAttribute('class', 'maqam-staff__ajnas');
+  let topmost = baseY;
+  // One CSS pixel, in this drawing's units. The label and the rule are sized
+  // in real pixels; everything else here is in staff spaces.
+  const px = vexFlowUserUnitsPerPixel(svg);
+
+  brackets.forEach((bracket, index) => {
+    const first = staveNotes[bracket.from];
+    const last = staveNotes[bracket.to];
+    if (!first || !last) return;
+    const bracketInk = inks.jins(bracket.tone);
+
+    const x1 = noteCentreX(first);
+    const x2 = noteCentreX(last);
+    if (!Number.isFinite(x1) || !Number.isFinite(x2) || x2 <= x1) return;
+
+    const y = baseY - rows[index] * rowHeight;
+    const tick = space * 0.55;
+
+    group.appendChild(
+      createVexFlowRule(
+        svg,
+        `M ${x1} ${y + tick} L ${x1} ${y} L ${x2} ${y} L ${x2} ${y + tick}`,
+        { widthPx: BRACKET_RULE_PX, color: bracketInk },
+      ),
+    );
+
+    group.appendChild(
+      createVexFlowAnnotation(svg, {
+        text: bracket.label,
+        x: (x1 + x2) / 2,
+        y: y - LABEL_GAP_PX * px,
+        sizePx: LABEL_SIZE_PX,
+        weight: 500,
+        color: bracketInk,
+      }),
+    );
+
+    topmost = Math.min(topmost, y - (LABEL_GAP_PX + LABEL_SIZE_PX) * px);
+  });
+
+  if (group.childNodes.length === 0) return undefined;
+  svg.appendChild(group);
+  return topmost;
+}
+
+/**
+ * Which row each bracket draws on.
+ *
+ * Any shared degree puts a cell on its own row, so the note both cells contain
+ * sits under two rules and the overlap is legible. Cells that share nothing
+ * sit on the same row, because there is nothing to show.
+ */
+function assignBracketRows(brackets: StaffBracket[]): number[] {
+  const rows: number[] = [];
+  brackets.forEach((bracket, index) => {
+    let row = 0;
+    let moved = true;
+    while (moved) {
+      moved = false;
+      for (let other = 0; other < index; other += 1) {
+        if (rows[other] !== row) continue;
+        const overlaps =
+          Math.min(bracket.to, brackets[other].to) >= Math.max(bracket.from, brackets[other].from);
+        if (overlaps) {
+          row += 1;
+          moved = true;
+        }
+      }
+    }
+    rows.push(row);
+  });
+  return rows;
+}
+
+/** Centre of a notehead, ignoring the accidental hanging off its left. */
+function noteCentreX(note: StaveNote): number {
+  return (note.getNoteHeadBeginX() + note.getNoteHeadEndX()) / 2;
+}
+
+
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+/* Fallback only. The live value is `--maqam-bracket-ink`, so a theme reaches
+   the label. M3 `on-surface-variant` warmed toward the app's primary: a label
+   about the music, quieter than the music. */
+const BRACKET_INK = '#6f4450';
+/* CSS pixels, all three. M3 title-small — the size a heading over a region is
+   set at on this page. The point of measuring in pixels rather than staff
+   spaces is that the label stays this size at any zoom, instead of growing
+   with the notation until it competes with it. */
+const LABEL_SIZE_PX = 14;
+const LABEL_GAP_PX = 8;
+const BRACKET_RULE_PX = 1.25;
 
 /**
  * Size the SVG to what VexFlow actually drew, rather than to a guess.

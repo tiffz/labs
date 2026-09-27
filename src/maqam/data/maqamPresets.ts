@@ -1,3 +1,4 @@
+import { MAQAM_PRESETS } from './maqamCatalogue';
 import {
   MAQAM_ACCIDENTALS,
   microtonalCentsOf,
@@ -28,6 +29,25 @@ export interface Jins {
   root: MaqamNoteSpelling;
   /** Cents above the root, ascending, starting at 0. */
   intervalsInCents: number[];
+  /**
+   * Where this cell's size and intervals were checked. Required, because the
+   * app teaches theory off a screen that looks authoritative and the first
+   * version of this data was wrong in a way nobody could audit: every root
+   * jins that is a 5-note pentachord was authored as a 4-note tetrachord.
+   */
+  source: string;
+  /**
+   * Other cells that can sit in this position.
+   *
+   * maqamworld writes these with "either ... or": Maqam Rast is "followed on
+   * the 5th degree by either Jins Upper Rast ... or Jins Nahawand", and Maqam
+   * 'Ajam the same. Listing one and dropping the other implies a maqam has a
+   * single settled decomposition, which is not what the source says.
+   *
+   * They are alternatives, not additional cells, so they do not take part in
+   * the scale or the joins — only in what the panel offers.
+   */
+  alternatives?: Omit<Jins, 'alternatives'>[];
 }
 
 export interface MaqamPreset {
@@ -47,6 +67,11 @@ export interface MaqamPreset {
   /** The tonic, as written. */
   tonic: MaqamNoteSpelling;
   description: string;
+  /**
+   * This maqam's page on maqamworld.com, shown in the app as a credit and a
+   * way for a reader to check anything the app claims.
+   */
+  source: string;
   /**
    * The ascending scale. The detune matrix and the keyboard colouring are both
    * DERIVED from this — it is the one place a maqam's pitches are written down.
@@ -150,6 +175,44 @@ export function degreeAbsoluteCents(degree: MaqamScaleDegree, tonicOctave: numbe
   return midi * 100 + microtonalCentsOf(degree);
 }
 
+/**
+ * The family a maqam belongs to, derived from its root jins.
+ *
+ * maqamworld.com: "Maqamat are classified into families based on sharing the
+ * same first (root) jins. The root jins plays the largest role in defining the
+ * maqam's character."
+ *
+ * So the family is not a field to author and keep in step. It is a reading of
+ * the root jins, which means a new maqam files itself, and a family can never
+ * disagree with the cell it is named for. Given "Jins Rast on C" this is
+ * "Rast"; given "Jins Upper Rast on G" it would be "Upper Rast", which is why
+ * only the ROOT jins is consulted.
+ */
+export function maqamFamily(preset: MaqamPreset): string {
+  const root = preset.primaryAjnas[0];
+  if (!root) return 'Other';
+  // "Jins Nahawand on C" -> "Nahawand".
+  const withoutPrefix = root.name.replace(/^Jins\s+/, '');
+  const withoutRoot = withoutPrefix.replace(/\s+on\s+.+$/, '');
+  return withoutRoot.trim() || 'Other';
+}
+
+/** Every family present, and the maqamat in each, for a two-tier picker. */
+export function maqamatByFamily(
+  presets: readonly MaqamPreset[] = MAQAM_PRESETS,
+): { family: string; maqamat: MaqamPreset[] }[] {
+  const families = new Map<string, MaqamPreset[]>();
+  for (const preset of presets) {
+    const family = maqamFamily(preset);
+    const members = families.get(family) ?? [];
+    members.push(preset);
+    families.set(family, members);
+  }
+  return [...families.entries()]
+    .map(([family, maqamat]) => ({ family, maqamat }))
+    .sort((a, b) => a.family.localeCompare(b.family));
+}
+
 /** Scale index a spelling sits at, or -1. */
 function degreeIndexOf(preset: MaqamPreset, spelling: MaqamNoteSpelling): number {
   return preset.scaleDegrees.findIndex(
@@ -164,8 +227,10 @@ function degreeIndexOf(preset: MaqamPreset, spelling: MaqamNoteSpelling): number
  * first cell ends and the second begins" for every maqam, directly under the
  * intervals that disprove it: Rast's lower jins is 0-200-350-500, which is
  * C D E½♭ F, so it ends on F and the upper jins starts a whole tone above on
- * G. Rast, Nahawand and Ajam are DISJUNCT — the cells do not touch — and the
- * app taught the opposite on the screen that loads by default.
+ * G. Deriving it matters more than the answer: when the cell sizes were later
+ * corrected against maqamworld.com, every maqam here turned out to be
+ * conjunct, and the panel, the ghammaz and the melody patterns all corrected
+ * themselves with no prose to chase.
  *
  * Separately, the ghammaz here is read from the upper jins's root rather than
  * guessed from the lower jins's note count. The guess was right only for the
@@ -182,16 +247,75 @@ export interface AjnasJoin {
 }
 
 /** `undefined` for a maqam with a single settled jins, which has no join. */
-export function ajnasJoin(preset: MaqamPreset): AjnasJoin | undefined {
-  const [lower, upper] = preset.primaryAjnas;
-  if (!lower || !upper) return undefined;
-
+function joinBetween(
+  preset: MaqamPreset,
+  lower: Jins,
+  upper: Jins,
+): AjnasJoin | undefined {
   const lowerRootIndex = degreeIndexOf(preset, lower.root);
   const ghammazIndex = degreeIndexOf(preset, upper.root);
   if (lowerRootIndex < 0 || ghammazIndex < 0) return undefined;
 
   const lowerTopIndex = lowerRootIndex + lower.intervalsInCents.length - 1;
   return { lowerTopIndex, ghammazIndex, shared: lowerTopIndex === ghammazIndex };
+}
+
+/**
+ * Every seam, not just the first.
+ *
+ * A maqam is not limited to two cells — maqamworld draws three over Maqam
+ * Rast, the third covering the descending form — and this used to read
+ * `primaryAjnas[0]` and `[1]` and ignore anything after. A third cell was
+ * stored, listed in the panel, and then silently left out of every sentence
+ * about how the cells meet.
+ */
+export function ajnasJoins(preset: MaqamPreset): AjnasJoin[] {
+  const joins: AjnasJoin[] = [];
+  for (let i = 0; i + 1 < preset.primaryAjnas.length; i += 1) {
+    const join = joinBetween(preset, preset.primaryAjnas[i], preset.primaryAjnas[i + 1]);
+    if (join) joins.push(join);
+  }
+  return joins;
+}
+
+/**
+ * The maqam's own ghammaz: the seam between the first two cells.
+ *
+ * `undefined` for a maqam with a single settled jins, which has no join.
+ */
+export function ajnasJoin(preset: MaqamPreset): AjnasJoin | undefined {
+  return ajnasJoins(preset)[0];
+}
+
+/** Which scale degrees each cell covers, for the brackets drawn over the staff. */
+export interface AjnasSpan {
+  id: string;
+  name: string;
+  /** Scale index of the cell's root. */
+  fromIndex: number;
+  /** Scale index of its top note. */
+  toIndex: number;
+}
+
+/**
+ * Where each jins sits in the written scale.
+ *
+ * Derived from the cell's root and its own interval count, like every other
+ * fact about the seam — so a cell corrected from a tetrachord to a pentachord
+ * moves its bracket without anyone editing a second number. A cell rooted on a
+ * degree the scale does not contain (a descending-form cell, say) is left out
+ * rather than drawn at index 0, which is what `findIndex` returning -1 would
+ * otherwise produce: a bracket starting at the tonic for no reason.
+ */
+export function ajnasSpans(preset: MaqamPreset): AjnasSpan[] {
+  const lastIndex = preset.scaleDegrees.length - 1;
+  return preset.primaryAjnas.flatMap((jins) => {
+    const fromIndex = degreeIndexOf(preset, jins.root);
+    if (fromIndex < 0) return [];
+    const toIndex = Math.min(fromIndex + jins.intervalsInCents.length - 1, lastIndex);
+    if (toIndex <= fromIndex) return [];
+    return [{ id: jins.id, name: jins.name, fromIndex, toIndex }];
+  });
 }
 
 /**
@@ -218,296 +342,7 @@ export function hasMicrotones(degrees: MaqamScaleDegree[]): boolean {
   return degrees.some((degree) => MAQAM_ACCIDENTALS[degree.accidental].isMicrotonal);
 }
 
-const n = (letter: MaqamScaleDegree['letter'], octaveOffset = 0): MaqamScaleDegree => ({
-  letter,
-  accidental: 'n',
-  octaveOffset,
-});
-const halfFlat = (
-  letter: MaqamScaleDegree['letter'],
-  octaveOffset = 0,
-): MaqamScaleDegree => ({ letter, accidental: 'd', octaveOffset });
-const flat = (letter: MaqamScaleDegree['letter'], octaveOffset = 0): MaqamScaleDegree => ({
-  letter,
-  accidental: 'b',
-  octaveOffset,
-});
-const sharp = (letter: MaqamScaleDegree['letter'], octaveOffset = 0): MaqamScaleDegree => ({
-  letter,
-  accidental: '#',
-  octaveOffset,
-});
-
-/**
- * The nine maqam families.
- *
- * Every other named maqam in common use is a member of one of these, so this is
- * the set that teaches the system rather than a catalogue.
- *
- * Each is authored twice over — once as written `scaleDegrees`, once as
- * `primaryAjnas` intervals — and `maqamPresets.test.ts` requires the two to
- * agree. That cross-check is what caught the original spec rooting Jins
- * Nahawand on A in Bayati, where the B-flat makes those intervals impossible.
- *
- * Four families use microtones (Rast, Bayati, Sikah, Saba); five sit entirely
- * in 12-TET (Ajam, Hijaz, Kurd, Nahawand, Nikriz). That spread is deliberate —
- * it shows that "maqam" is not a synonym for "quarter-tone".
- */
-export const MAQAM_PRESETS: MaqamPreset[] = [
-  {
-    id: 'rast_c',
-    name: 'Rast on C',
-    transliteration: 'Maqam Rast',
-    arabicName: 'راست',
-    tonic: { letter: 'C', accidental: 'n' },
-    description:
-      'The foundational maqam, and the one others are measured against. Its third and seventh sit half-flat, between the major and minor you already know.',
-    repeatsAtOctave: true,
-    scaleDegrees: [n('C'), n('D'), halfFlat('E'), n('F'), n('G'), n('A'), halfFlat('B'), n('C', 1)],
-    primaryAjnas: [
-      {
-        id: 'rast_c__jins_rast_c',
-        name: 'Jins Rast on C',
-        root: { letter: 'C', accidental: 'n' },
-        intervalsInCents: [0, 200, 350, 500],
-      },
-      {
-        id: 'rast_c__jins_rast_g',
-        name: 'Jins Rast on G',
-        root: { letter: 'G', accidental: 'n' },
-        intervalsInCents: [0, 200, 350, 500],
-      },
-    ],
-  },
-  {
-    id: 'bayati_d',
-    name: 'Bayati on D',
-    transliteration: 'Maqam Bayati',
-    arabicName: 'بياتي',
-    tonic: { letter: 'D', accidental: 'n' },
-    description:
-      'Everywhere in Arabic song. The half-flat second gives it a pull toward the tonic that no Western mode has.',
-    repeatsAtOctave: true,
-    scaleDegrees: [n('D'), halfFlat('E'), n('F'), n('G'), n('A'), flat('B'), n('C', 1), n('D', 1)],
-    primaryAjnas: [
-      {
-        id: 'bayati_d__jins_bayati_d',
-        name: 'Jins Bayati on D',
-        root: { letter: 'D', accidental: 'n' },
-        intervalsInCents: [0, 150, 300, 500],
-      },
-      {
-        // The spec rooted this on A, where Bayati's B-flat makes the authored
-        // 0-200-300-500 impossible (it would be Jins Kurd). Nahawand sits on
-        // the fifth degree, G — where those intervals are exactly right.
-        id: 'bayati_d__jins_nahawand_g',
-        name: 'Jins Nahawand on G',
-        root: { letter: 'G', accidental: 'n' },
-        intervalsInCents: [0, 200, 300, 500],
-      },
-    ],
-  },
-  {
-    id: 'sikah_e',
-    name: 'Sikah on E½♭',
-    transliteration: 'Maqam Sikah',
-    arabicName: 'سيكاه',
-    tonic: { letter: 'E', accidental: 'd' },
-    description:
-      'Rooted on a half-flat, so the home note itself is one an untouched piano cannot play. Its first jins is only three notes.',
-    repeatsAtOctave: true,
-    scaleDegrees: [
-      halfFlat('E'),
-      n('F'),
-      n('G'),
-      n('A'),
-      halfFlat('B'),
-      n('C', 1),
-      n('D', 1),
-      halfFlat('E', 1),
-    ],
-    primaryAjnas: [
-      {
-        id: 'sikah_e__jins_sikah_e',
-        name: 'Jins Sikah on E½♭',
-        root: { letter: 'E', accidental: 'd' },
-        intervalsInCents: [0, 150, 350],
-      },
-      {
-        id: 'sikah_e__jins_rast_g',
-        name: 'Jins Rast on G',
-        root: { letter: 'G', accidental: 'n' },
-        intervalsInCents: [0, 200, 350, 500],
-      },
-    ],
-  },
-  {
-    id: 'saba_d',
-    name: 'Saba on D',
-    transliteration: 'Maqam Saba',
-    arabicName: 'صبا',
-    tonic: { letter: 'D', accidental: 'n' },
-    description:
-      'The sound of lament. Saba is the one family that never comes home: its upper tonic is flattened, so the scale does not close at the octave.',
-    // The exception the `repeatsAtOctave` flag exists for.
-    repeatsAtOctave: false,
-    scaleDegrees: [
-      n('D'),
-      halfFlat('E'),
-      n('F'),
-      flat('G'),
-      n('A'),
-      flat('B'),
-      n('C', 1),
-    ],
-    primaryAjnas: [
-      {
-        // Only the lower jins is listed. Jins Saba — with its diminished fourth
-        // from D to G-flat — is the uncontested, defining cell. Saba's upper
-        // region is analysed differently across sources, and guessing at it
-        // would be inventing content (docs/CONTENT_ACCURACY.md).
-        id: 'saba_d__jins_saba_d',
-        name: 'Jins Saba on D',
-        root: { letter: 'D', accidental: 'n' },
-        intervalsInCents: [0, 150, 300, 400],
-      },
-    ],
-  },
-  {
-    id: 'hijaz_d',
-    name: 'Hijaz on D',
-    transliteration: 'Maqam Hijaz',
-    arabicName: 'حجاز',
-    tonic: { letter: 'D', accidental: 'n' },
-    description:
-      'No microtones at all. The drama is the step-and-a-half leap from E♭ to F♯. A good place to start if the half-flats are not landing yet.',
-    repeatsAtOctave: true,
-    scaleDegrees: [n('D'), flat('E'), sharp('F'), n('G'), n('A'), flat('B'), n('C', 1), n('D', 1)],
-    primaryAjnas: [
-      {
-        id: 'hijaz_d__jins_hijaz_d',
-        name: 'Jins Hijaz on D',
-        root: { letter: 'D', accidental: 'n' },
-        intervalsInCents: [0, 100, 400, 500],
-      },
-      {
-        id: 'hijaz_d__jins_nahawand_g',
-        name: 'Jins Nahawand on G',
-        root: { letter: 'G', accidental: 'n' },
-        intervalsInCents: [0, 200, 300, 500],
-      },
-    ],
-  },
-  {
-    id: 'kurd_d',
-    name: 'Kurd on D',
-    transliteration: 'Maqam Kurd',
-    arabicName: 'كرد',
-    tonic: { letter: 'D', accidental: 'n' },
-    description:
-      'A flattened second and nothing else exotic. Western ears hear Phrygian; the difference is where the melody rests, not which notes exist.',
-    repeatsAtOctave: true,
-    scaleDegrees: [n('D'), flat('E'), n('F'), n('G'), n('A'), flat('B'), n('C', 1), n('D', 1)],
-    primaryAjnas: [
-      {
-        id: 'kurd_d__jins_kurd_d',
-        name: 'Jins Kurd on D',
-        root: { letter: 'D', accidental: 'n' },
-        intervalsInCents: [0, 100, 300, 500],
-      },
-      {
-        id: 'kurd_d__jins_nahawand_g',
-        name: 'Jins Nahawand on G',
-        root: { letter: 'G', accidental: 'n' },
-        intervalsInCents: [0, 200, 300, 500],
-      },
-    ],
-  },
-  {
-    id: 'nahawand_c',
-    name: 'Nahawand on C',
-    transliteration: 'Maqam Nahawand',
-    arabicName: 'نهاوند',
-    tonic: { letter: 'C', accidental: 'n' },
-    description:
-      'The closest thing to a Western minor. Useful as a control: if Nahawand sounds ordinary to you, the strangeness in the others really is the tuning.',
-    repeatsAtOctave: true,
-    scaleDegrees: [n('C'), n('D'), flat('E'), n('F'), n('G'), flat('A'), flat('B'), n('C', 1)],
-    primaryAjnas: [
-      {
-        id: 'nahawand_c__jins_nahawand_c',
-        name: 'Jins Nahawand on C',
-        root: { letter: 'C', accidental: 'n' },
-        intervalsInCents: [0, 200, 300, 500],
-      },
-      {
-        id: 'nahawand_c__jins_kurd_g',
-        name: 'Jins Kurd on G',
-        root: { letter: 'G', accidental: 'n' },
-        intervalsInCents: [0, 100, 300, 500],
-      },
-    ],
-  },
-  {
-    id: 'nikriz_c',
-    name: 'Nikriz on C',
-    transliteration: 'Maqam Nikriz',
-    arabicName: 'نكريز',
-    tonic: { letter: 'C', accidental: 'n' },
-    description:
-      'Built on a five-note jins rather than a four-note one, with a raised fourth. The extra note is why its lower cell reaches all the way to the fifth.',
-    repeatsAtOctave: true,
-    scaleDegrees: [n('C'), n('D'), flat('E'), sharp('F'), n('G'), n('A'), flat('B'), n('C', 1)],
-    primaryAjnas: [
-      {
-        id: 'nikriz_c__jins_nikriz_c',
-        name: 'Jins Nikriz on C',
-        root: { letter: 'C', accidental: 'n' },
-        intervalsInCents: [0, 200, 300, 600, 700],
-      },
-      {
-        id: 'nikriz_c__jins_nahawand_g',
-        name: 'Jins Nahawand on G',
-        root: { letter: 'G', accidental: 'n' },
-        intervalsInCents: [0, 200, 300, 500],
-      },
-    ],
-  },
-  {
-    id: 'ajam_bb',
-    name: 'Ajam on B♭',
-    transliteration: 'Maqam Ajam',
-    arabicName: 'عجم',
-    tonic: { letter: 'B', accidental: 'b' },
-    description:
-      'The major scale, by another name and another route. Its two ajnas are identical, which is exactly what makes it sound settled.',
-    repeatsAtOctave: true,
-    scaleDegrees: [
-      flat('B'),
-      n('C', 1),
-      n('D', 1),
-      flat('E', 1),
-      n('F', 1),
-      n('G', 1),
-      n('A', 1),
-      flat('B', 1),
-    ],
-    primaryAjnas: [
-      {
-        id: 'ajam_bb__jins_ajam_bb',
-        name: 'Jins Ajam on B♭',
-        root: { letter: 'B', accidental: 'b' },
-        intervalsInCents: [0, 200, 400, 500],
-      },
-      {
-        id: 'ajam_bb__jins_ajam_f',
-        name: 'Jins Ajam on F',
-        root: { letter: 'F', accidental: 'n' },
-        intervalsInCents: [0, 200, 400, 500],
-      },
-    ],
-  },
-];
+export { MAQAM_PRESETS } from './maqamCatalogue';
 
 export const MAQAM_PRESETS_BY_ID: Record<string, MaqamPreset> = Object.fromEntries(
   MAQAM_PRESETS.map((preset) => [preset.id, preset]),

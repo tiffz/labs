@@ -142,13 +142,50 @@ Why synthesis rather than a sample library: a piano is the wrong instrument for 
 
 [`notation/maqamStaffDraw.ts`](notation/maqamStaffDraw.ts) awaits `ensureVexFlowFontsLoaded()` **inside** the draw function, so the guarantee travels with it rather than depending on a caller remembering. `MaqamStaff` _also_ holds render on `useVexFlowMusicFontReady()` to avoid flashing an empty box. Both arms are deliberate.
 
+## Design
+
+Citrus. Full palette, shape and type rules: [`DESIGN.md`](DESIGN.md).
+
+The preview gallery that chose it — ten seeds, a switcher, a contrast harness —
+is deleted, per [`labs-ui-design-variations`](../../.agents/skills/labs-ui-design-variations/SKILL.md).
+Its one durable output is in `maqam.css`.
+
+### Ajnas are pointed at, not permanently drawn
+
+The staff shows no brackets until a jins chip in the maqam card is hovered or
+focused; then it shows **that one**, its notes in the cell's colour, its keys
+lit on the keyboard, everything else quiet.
+
+This is the fourth attempt at one problem: two ajnas share a degree, and two
+brackets drawn at once cannot say which of them owns it. Terminating both on
+the shared notehead reads as a seam. Ringing the note says _where_ but not
+_whose_. Stacking on two rows says _that_ they overlap but still not _whose_.
+Showing one at a time answers it by construction — the shared degree lights for
+each cell in turn — and it takes the permanent overlay off a staff whose reader
+is usually not asking the question.
+
+The detail is a **hovercard**. Rendered inline it grew the taller of the two
+stage columns by a line, which moved the whole page every time the pointer
+crossed a chip.
+
+## State
+
 ## State
 
 `useMaqamState` holds it all; there is no persistence. Everything lives in the URL (`?maqam=rast_c&tuning=----d------d`), so a link is the save file. A corrupt `tuning` value falls back to the **maqam's own tuning**, never to twelve equal keys — that would look like a deliberate "no microtones" choice the user never made.
 
 ## Shared code touched
 
-- `OnscreenPianoKeyboard` gained one optional prop, `decorateKey`, for per-key role classes and badges. Additive; every existing caller is unaffected.
+- `OnscreenPianoKeyboard` gained one optional prop, `decorateKey`, returning a class, a
+  `label` (the key's printed name), a `badge` and a `mark`. Additive; every existing caller
+  is unaffected. `label` is what lets a keycap read `E♭3` on Hijaz instead of `D♯3` — the
+  staff and the scale line both say `E♭`, and matching the two is the learner's whole task.
+- `vexflow/vexFlowAnnotation.ts` is new: text drawn **on** a score, in the host app's own
+  typeface and sized in real pixels. Three faults kept recurring and the loudest one is
+  invisible in review — VexFlow sets `stroke="black"` on the `<svg>` root, so every
+  annotation inherits a 1-unit outline and renders as a black blob whatever its `fill`
+  says. It has been misdiagnosed as a font problem every time. Six files across five apps
+  still carry it; they are baselined in `vexFlowAnnotationGuardrails.test.ts`.
 - `audioPatternRegistry` gained a row for `maqam`, describing what this app actually does rather than aspiring to a pattern it does not use.
 
 ## MIDI

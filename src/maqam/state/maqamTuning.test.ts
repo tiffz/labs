@@ -78,6 +78,28 @@ describe('buildKeyTunings', () => {
     expect(tunings.filter((t) => t.role === 'in-scale')).toHaveLength(7);
   });
 
+  /**
+   * The degree numeral is the whole membership design, so it has to be right
+   * on the maqam that falsified the three models before it. On Rast every
+   * white key is in the maqam, which is exactly why a relative tint said
+   * nothing there.
+   */
+  it('numbers every degree from the tonic, and numbers nothing else', () => {
+    const tunings = buildKeyTunings(rast, rastMatrix);
+    // C D E½♭ F G A B½♭, in pitch-class order.
+    expect(tunings.filter((t) => t.degree !== undefined).map((t) => t.degree)).toEqual([
+      1, 2, 3, 4, 5, 6, 7,
+    ]);
+    expect(tunings[0].degree).toBe(1);
+    expect(tunings[0].isTonic).toBe(true);
+    // The closing upper tonic is the same pitch class as the opening one. It
+    // must not renumber home as 8.
+    expect(rast.scaleDegrees).toHaveLength(8);
+    expect(tunings.filter((t) => t.degree === 8)).toHaveLength(0);
+    // Nothing outside the maqam is numbered.
+    expect(tunings.filter((t) => t.role === 'outside' && t.degree !== undefined)).toHaveLength(0);
+  });
+
   it('follows the live matrix, not the preset, once they disagree', () => {
     const edited = toggleDetuneSlot(rastMatrix, 9); // bend A, which Rast leaves alone
     const tunings = buildKeyTunings(rast, edited);
@@ -105,7 +127,7 @@ describe('buildKeyTunings', () => {
     expect(tunings[4].cents).toBe(0);
     expect(tunings[4].label).toBe('E');
     expect(tunings[4].label).not.toBe('E½♭');
-    expect(tunings[4].ariaLabel).toBe('E, in the maqam');
+    expect(tunings[4].ariaLabel).toBe('E, degree 3 of the maqam');
     expect(tunings[4].badge).toBeUndefined();
   });
 
@@ -143,12 +165,12 @@ describe('buildKeyTunings', () => {
     const sikah = MAQAM_PRESETS_BY_ID.sikah_e;
     const tunings = buildKeyTunings(sikah, deriveDetuneMatrix(sikah.scaleDegrees).matrix);
     expect(tunings[4].ariaLabel).toBe(
-      'E half-flat, in the maqam, home note, tuned 50 cents flat',
+      'E half-flat, degree 1 of the maqam, home note, tuned 50 cents flat',
     );
   });
 
   it('speaks a plain scale key simply', () => {
-    expect(buildKeyTunings(rast, rastMatrix)[2].ariaLabel).toBe('D, in the maqam');
+    expect(buildKeyTunings(rast, rastMatrix)[2].ariaLabel).toBe('D, degree 2 of the maqam');
   });
 
   it('speaks a key outside the maqam as outside it', () => {

@@ -18,11 +18,8 @@ import {
 } from './maqamTuning';
 import { readMaqamUrlState, writeMaqamUrlSearch } from './maqamUrlState';
 import {
-  DEFAULT_MELODY_ID,
-  GENERATED_MELODY_ID,
-  findMelodyDefinition,
-  generateMelody,
   resolveMelody,
+  scaleOf,
   type ResolvedMelodyNote,
 } from '../melody/maqamMelody';
 import { buildMelodyTimeline, noteIndexAt } from '../melody/melodyTimeline';
@@ -35,14 +32,12 @@ export const MELODY_BPM = 76;
 const PLAYBACK_LEAD_SECONDS = 0.12;
 
 export interface MaqamState {
-  melodyId: string;
-  melodySeed: number;
+
+  /** The maqam's scale, resolved against the live tuning. */
   melody: ResolvedMelodyNote[];
   isPlaying: boolean;
   /** Index into `melody` of the note sounding now, or null when silent. */
   playingIndex: number | null;
-  selectMelody: (id: string) => void;
-  shuffleMelody: () => void;
   togglePlayback: () => void;
   preset: MaqamPreset | undefined;
   presetId: string;
@@ -60,7 +55,16 @@ export interface MaqamState {
    * tried and the user heard nothing, and it is the only reason to put a line
    * of text on screen about sound.
    */
-  audioBlocked: boolean;
+  /**
+   * Which control was pressed when sound failed, or `null` when it has not.
+   *
+   * Not a boolean: the recovery differs. A blocked keypress wants "press a key
+   * again"; a blocked Play wants "press Play again", next to the Play button,
+   * which on a short window is 250px above where the keyboard message renders.
+   * Telling someone to press a key when they pressed Play, in a line they
+   * cannot see, is worse than saying nothing.
+   */
+  audioBlocked: 'keyboard' | 'playback' | null;
   selectPreset: (id: string) => void;
   toggleSlot: (pitchClass: number) => void;
   resetTuning: () => void;
@@ -82,11 +86,9 @@ export function useMaqamState(): MaqamState {
   const [audioState, setAudioState] = useState<AudioContextState | 'uninitialized'>(
     'uninitialized',
   );
-  const [melodyId, setMelodyId] = useState(initial.melodyId);
-  const [melodySeed, setMelodySeed] = useState(initial.melodySeed);
   const [isPlaying, setIsPlaying] = useState(false);
   const [playingIndex, setPlayingIndex] = useState<number | null>(null);
-  const [audioBlocked, setAudioBlocked] = useState(false);
+  const [audioBlocked, setAudioBlocked] = useState<'keyboard' | 'playback' | null>(null);
 
   const preset = useMemo(() => findMaqamPreset(presetId), [presetId]);
   const synthRef = useRef<MaqamSynth | null>(null);
@@ -157,7 +159,7 @@ export function useMaqamState(): MaqamState {
       const synth = getSynth();
       void synth.resume().then((running) => {
         setAudioState(synth.getState());
-        setAudioBlocked(!running);
+        setAudioBlocked(running ? null : 'keyboard');
       });
       synth.noteOn(midiNote, cents);
       setAudioState(synth.getState());
@@ -248,16 +250,8 @@ export function useMaqamState(): MaqamState {
 
   const melody = useMemo<ResolvedMelodyNote[]>(() => {
     if (!preset) return [];
-    const notes =
-      melodyId === GENERATED_MELODY_ID
-        ? generateMelody(preset, melodySeed)
-        : (findMelodyDefinition(melodyId) ?? findMelodyDefinition(DEFAULT_MELODY_ID))?.build(
-            preset,
-          ) ?? [];
-    // The live matrix, not the preset: staff, keyboard and audio must all read
-    // one source, or editing the tuning desynchronises them.
-    return resolveMelody(preset, notes, MELODY_OCTAVE, matrix);
-  }, [preset, melodyId, melodySeed, matrix]);
+    return resolveMelody(preset, scaleOf(preset), MELODY_OCTAVE, matrix);
+  }, [preset, matrix]);
 
   /**
    * Play the phrase.
@@ -284,10 +278,10 @@ export function useMaqamState(): MaqamState {
       if (!running || now === null) {
         // Say so. Silence that the app presents as normal is indistinguishable
         // from a broken instrument, and the user has no way to tell which.
-        setAudioBlocked(true);
+        setAudioBlocked('playback');
         return;
       }
-      setAudioBlocked(false);
+      setAudioBlocked(null);
 
       const timeline = buildMelodyTimeline(melody, MELODY_BPM);
       const startAt = now + PLAYBACK_LEAD_SECONDS;
@@ -326,21 +320,6 @@ export function useMaqamState(): MaqamState {
     else startPlayback();
   }, [isPlaying, startPlayback, stopPlayback]);
 
-  const selectMelody = useCallback(
-    (id: string) => {
-      stopPlayback();
-      setMelodyId(id);
-    },
-    [stopPlayback],
-  );
-
-  const shuffleMelody = useCallback(() => {
-    stopPlayback();
-    setMelodyId(GENERATED_MELODY_ID);
-    // A fresh seed, kept in the URL so a phrase you like survives a reload.
-    setMelodySeed(Math.floor(Math.random() * 1_000_000) + 1);
-  }, [stopPlayback]);
-
   // Unmount only. Returning the function schedules it as cleanup rather than
   // calling it during the effect.
   useEffect(() => stopPlayback, [stopPlayback]);
@@ -350,11 +329,11 @@ export function useMaqamState(): MaqamState {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const search = writeMaqamUrlSearch(
-      { presetId, matrix, melodyId, melodySeed },
+      { presetId, matrix },
       window.location.search,
     );
     throttledReplaceState(`${window.location.pathname}${search}${window.location.hash}`);
-  }, [presetId, matrix, melodyId, melodySeed]);
+  }, [presetId, matrix]);
 
   const keyTunings = useMemo(() => buildKeyTunings(preset, matrix), [preset, matrix]);
   const isPresetTuning = useMemo(
@@ -378,13 +357,9 @@ export function useMaqamState(): MaqamState {
     resetTuning,
     noteOn,
     noteOff,
-    melodyId,
-    melodySeed,
     melody,
     isPlaying,
     playingIndex,
-    selectMelody,
-    shuffleMelody,
     togglePlayback,
   };
 }
