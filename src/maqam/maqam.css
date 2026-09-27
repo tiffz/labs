@@ -75,7 +75,7 @@
    * "sounding, or home" at three intensities, and terracotta means "bent off
    * equal temperament". Two hues, each with one job.
    */
-  --maqam-scale-wash: #e6eaf8;
+  --maqam-scale-wash: #dde4f7;
   --maqam-scale-wash-black: #1e2640;
   /* The octaves of the note sounding: a step above membership, below the note
      itself, so "which key is that" still has one loud answer. */
@@ -576,7 +576,7 @@
 .maqam-keyboard .shared-pk-white {
   border-color: var(--m3-outline-variant);
   border-radius: 0 0 var(--maqam-radius-m) var(--maqam-radius-m);
-  /* Every key starts recessed; membership brings it forward. */
+  /* Every key starts outside the maqam; membership tints it. */
   background: var(--maqam-key-face-dim);
 }
 
@@ -660,7 +660,7 @@
  * readable, which the previous three-competing-fills model made impossible.
  */
 .maqam-key.maqam-key--in-scale {
-  background: linear-gradient(180deg, #ffffff 0%, var(--maqam-scale-wash) 100%);
+  background: var(--maqam-scale-wash);
 }
 
 /* Tonic: shape, so it survives a colour-blind reading and stacks with a bend. */
@@ -1026,10 +1026,13 @@
 
 /* ---------------------------------------------------------------- matrix -- */
 
+/* A switch rail, not a panel: short, quiet, and sitting on the keyboard it
+   retunes. Twelve switches because bending C bends every C. */
 .maqam-matrix {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 6px;
+  gap: var(--maqam-s2);
+  margin-bottom: var(--maqam-s3);
 }
 
 @media (min-width: 640px) {
@@ -1044,7 +1047,7 @@
   align-items: center;
   justify-content: center;
   gap: 1px;
-  min-height: 46px;
+  min-height: 38px;
   padding: 5px 2px;
   border: 0;
   border-radius: var(--maqam-radius-m);

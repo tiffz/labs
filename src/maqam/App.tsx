@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import Button from '@mui/material/Button';
 import Paper from '@mui/material/Paper';
 import TextField from '@mui/material/TextField';
@@ -47,7 +47,6 @@ export default function App() {
     togglePlayback,
   } = useMaqamState();
 
-  const [tuningOpen, setTuningOpen] = useState(false);
 
   const staffNotes = useMemo(
     () => melody.map((note) => ({ ...note.staff, duration: note.duration })),
@@ -203,6 +202,10 @@ export default function App() {
             Keyboard
           </h2>
 
+          {/* Above the keys it retunes, always visible, the way a physical
+              oriental keyboard carries its quarter-tone switches. */}
+          <DetuneMatrixBar matrix={matrix} keyTunings={keyTunings} onToggle={toggleSlot} />
+
           <MaqamKeyboard
             keyTunings={keyTunings}
             activeNotes={activeNotes}
@@ -268,21 +271,9 @@ export default function App() {
                   Reset
                 </Button>
               )}
-              <Button
-                variant={tuningOpen ? 'contained' : 'outlined'}
-                size="small"
-                disableElevation
-                aria-expanded={tuningOpen}
-                onClick={() => setTuningOpen((open) => !open)}
-              >
-                Tune keys
-              </Button>
             </div>
           </div>
 
-          {tuningOpen && (
-            <DetuneMatrixBar matrix={matrix} keyTunings={keyTunings} onToggle={toggleSlot} />
-          )}
         </section>
       </div>
     </main>

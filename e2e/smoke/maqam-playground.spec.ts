@@ -170,7 +170,7 @@ test.describe('Maqam Playground', () => {
     await page.goto('/maqam/');
     await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
 
-    await page.getByRole('button', { name: /Tune keys/ }).click();
+    // The rail is always visible now, so there is no disclosure to open.
     // A is untouched in Rast; bending it makes the tuning custom.
     await page.getByRole('button', { name: /^A is in equal temperament/ }).click();
     await expect(page.locator('.maqam-badge')).toHaveText('Custom tuning');
@@ -573,36 +573,34 @@ test.describe('Maqam Playground', () => {
 
     const distance = await page.evaluate(() => {
       const rgb = (value: string) => (value.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number);
-      // Gradients: the bottom stop is the key's own face, the part not covered
-      // by a black key and the part the eye actually reads.
-      const face = (el: Element) => {
-        const style = getComputedStyle(el);
-        const stops = style.backgroundImage.match(/rgba?\([^)]+\)/g);
-        return rgb(stops ? stops[stops.length - 1] : style.backgroundColor);
-      };
-      const inScale = face(
-        document.querySelector('.maqam-keyboard .shared-pk-white.maqam-key--in-scale')!,
-      );
-      // Against a PLAIN WHITE KEY, which is the actual question: does a key in
-      // the maqam look marked, or does it look like an ordinary piano?
-      //
-      // Comparing it against the out-of-scale token instead is the mistake that
-      // made the first version of this guard vacuous — the old encoding cleared
-      // that comparison easily and still failed on Rast, because Rast has no
-      // out-of-scale white key for the difference to show up on.
-      const plainKey = [255, 255, 255];
+      /*
+       * EVERY colour stop on the key, not one of them.
+       *
+       * The version before this sampled the last stop of a
+       * `#ffffff -> tint` gradient and passed at distance 33, while the top
+       * two thirds of the key was plain white. On Rast, where every white key
+       * is in the maqam, the board still read as an ordinary piano — reported
+       * as the feature being missing for the third time.
+       */
+      const el = document.querySelector(
+        '.maqam-keyboard .shared-pk-white.maqam-key--in-scale',
+      )!;
+      const style = getComputedStyle(el);
+      const stops = style.backgroundImage.match(/rgba?\([^)]+\)/g);
+      const samples = (stops ?? [style.backgroundColor]).map(rgb);
 
-      return Math.hypot(
-        inScale[0] - plainKey[0],
-        inScale[1] - plainKey[1],
-        inScale[2] - plainKey[2],
+      const plainKey = [255, 255, 255];
+      const distances = samples.map((c) =>
+        Math.hypot(c[0] - plainKey[0], c[1] - plainKey[1], c[2] - plainKey[2]),
       );
+      // The CLOSEST stop to white decides: one tinted band does not mark a key.
+      return Math.min(...distances);
     });
 
     expect(
       distance,
-      `an in-maqam key is only ${distance.toFixed(1)} from a plain white key, so it reads as unmarked`,
-    ).toBeGreaterThan(20);
+      `the least-tinted part of an in-maqam key is only ${distance.toFixed(1)} from plain white, so it reads as unmarked`,
+    ).toBeGreaterThan(25);
   });
 
   test('the keyboard explains why it is retuned, without insisting', async ({ page }) => {
@@ -651,7 +649,6 @@ test.describe('Maqam Playground', () => {
     await expect(page.locator('.maqam-jins__stale')).toHaveCount(0);
 
     // Bend the maqam's own third away from what it is written as.
-    await page.getByRole('button', { name: /Tune keys/ }).click();
     await page.getByRole('button', { name: /^E is tuned/ }).click();
 
     // The board must now say so, in the panel making the claims.

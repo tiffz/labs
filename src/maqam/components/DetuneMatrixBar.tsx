@@ -8,12 +8,18 @@ interface DetuneMatrixBarProps {
 }
 
 /**
- * Twelve toggles, one per piano key, each switching that key between equal
- * temperament and a half-flat.
+ * Twelve switches, one per note name, sitting directly above the keyboard.
  *
- * This is the escape hatch, not the main control — picking a maqam sets all
- * twelve at once. It lives behind a disclosure so it does not compete with the
- * maqam picker for the same decision.
+ * Modelled on the physical oriental keyboards this app's whole conceit is
+ * borrowed from, which carry a row of quarter-tone switches — one per note
+ * name, not one per key, because bending C bends every C.
+ *
+ * It used to hide behind a "Tune keys" disclosure, which cost three things: a
+ * second solid button competing with Play, a 62px page reflow on open that
+ * truncated the reference panel on the far side of the screen, and the
+ * impression that retuning was an advanced mode rather than the thing this
+ * instrument does. Picking a maqam still sets all twelve at once; this is how
+ * you see what it set.
  */
 export default function DetuneMatrixBar({
   matrix,
@@ -21,7 +27,7 @@ export default function DetuneMatrixBar({
   onToggle,
 }: DetuneMatrixBarProps) {
   return (
-    <div className="maqam-matrix" role="group" aria-label="Retune individual keys">
+    <div className="maqam-matrix" role="group" aria-label="Retune individual notes">
       {PITCH_CLASS_NAMES.map((name, pitchClass) => {
         const cents = matrix[pitchClass] ?? 0;
         const bent = cents !== 0;
