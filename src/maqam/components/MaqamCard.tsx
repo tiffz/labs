@@ -2,10 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 
 import AnchoredPopover from '../../shared/components/AnchoredPopover';
 import GlossaryMenu from './GlossaryMenu';
+import MaqamPicker from './MaqamPicker';
 import {
   ajnasJoins,
   ajnasSpans,
-  maqamatByFamily,
   scaleDegreeLabels,
   type MaqamPreset,
 } from '../data/maqamPresets';
@@ -105,77 +105,11 @@ export default function MaqamCard({
       </h2>
 
       {/*
-        The title IS the picker.
-
-        A native <select>, transparent, stretched over a typographic face. The
-        card used to carry an outlined field reading "Kurd on D · Maqam Kurd"
-        and, directly under it, a heading reading "Maqam Kurd" — the same fact
-        twice, once as a form and once as type.
-
-        Native, not a hand-rolled combobox, for one reason worth more than the
-        styling: the platform's own two-tier picker. On a phone that is the
-        iOS wheel or the Android dialog with the nine family headers drawn by
-        the OS; type-ahead, arrow keys, Home/End and Escape all come free and
-        correct. A custom listbox would have to reimplement every one of those
-        to arrive back where it started.
-
-        The <select> is LAST in the DOM so it stacks over the face without a
-        z-index, which is why clicking the name, the caret or the Arabic all
-        open it.
+        The title IS the picker. The card used to carry an outlined field
+        reading "Kurd on D · Maqam Kurd" and, under it, a heading reading
+        "Maqam Kurd" — the same fact twice, once as a form and once as type.
       */}
-      <div className="maqam-titlepick">
-        <span className="maqam-titlepick__face" aria-hidden="true">
-          <span className="maqam-titlepick__name">{preset.transliteration}</span>
-          <svg className="maqam-titlepick__caret" viewBox="0 0 20 20" focusable="false">
-            <path
-              d="M5.5 8 10 12.5 14.5 8"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </span>
-
-        {/* Not `aria-hidden`: a reader who uses Arabic keeps the native name. */}
-        <span className="maqam-titlepick__arabic" lang="ar" dir="rtl">
-          {preset.arabicName}
-        </span>
-
-        <label className="maqam-visually-hidden" htmlFor="maqam-pick">
-          Maqam
-        </label>
-        <select
-          id="maqam-pick"
-          className="maqam-titlepick__native"
-          value={presetId}
-          onChange={(event) => onSelectPreset(event.target.value)}
-        >
-          {/*
-            Grouped by family: "Maqamat are classified into families based on
-            sharing the same first (root) jins" (maqamworld.com). Derived from
-            each maqam's root jins rather than authored, so a new maqam files
-            itself and a family can never disagree with the cell it is named
-            for.
-
-            The option is the transliteration alone. It was
-            `${option.name} · ${option.transliteration}` — "Kurd on D · Maqam
-            Kurd" — which is the same duplication inside a single row. Under a
-            header reading "Kurd family", "Maqam Kurd" is enough, and all 11
-            transliterations in the catalogue are distinct.
-          */}
-          {maqamatByFamily().map(({ family, maqamat }) => (
-            <optgroup key={family} label={`${family} family`}>
-              {maqamat.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.transliteration}
-                </option>
-              ))}
-            </optgroup>
-          ))}
-        </select>
-      </div>
+      <MaqamPicker preset={preset} presetId={presetId} onSelectPreset={onSelectPreset} />
 
       {/* h3: the maqam's name is the card's h2 now, so heading navigation
           lands on the card's subject rather than on a section label. */}

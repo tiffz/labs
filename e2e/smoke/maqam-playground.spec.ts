@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 
 /**
  * SMuFL codepoints, as vexflow 5.0.0 defines them
@@ -31,6 +31,19 @@ async function renderedGlyphs(page: import('@playwright/test').Page) {
 }
 
 /** @see src/maqam/CUJs.md */
+/**
+ * Choose a maqam through the app's own control.
+ *
+ * The picker was a native `<select>` and is now a menu the app draws, so
+ * `selectOption` no longer applies — and driving it by clicking is the point:
+ * these tests exercise the control a reader actually uses.
+ */
+async function selectMaqam(page: Page, name: string): Promise<void> {
+  await page.locator('.maqam-titlepick').click();
+  await page.locator('.maqam-menu [role="menuitemradio"]', { hasText: name }).first().click();
+  await expect(page.locator('.maqam-menu')).toHaveCount(0);
+}
+
 test.describe('Maqam Playground', () => {
   test('CUJ-001: black keys are labelled, so accidentals are identifiable', async ({ page }) => {
     await page.goto('/maqam/');
@@ -79,21 +92,32 @@ test.describe('Maqam Playground', () => {
     await page.goto('/maqam/');
     await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
 
+    await page.locator('.maqam-titlepick').click();
+
     // Grouped by root jins, per maqamworld's own classification. Asserted as
     // structure rather than as a count: a count goes stale every time a maqam
     // is added, and says nothing about whether the grouping works.
-    const groups = page.locator('#maqam-pick optgroup');
-    await expect(groups.first()).toHaveAttribute('label', /family$/);
+    const groups = page.locator('.maqam-menu [role="group"]');
+    await expect(groups.first()).toHaveAttribute('aria-label', /family$/);
     expect(await groups.count()).toBeGreaterThan(5);
 
-    // Every option sits inside a family; none dangle at the top level.
-    const total = await page.locator('#maqam-pick option').count();
-    const grouped = await page.locator('#maqam-pick optgroup option').count();
+    // Every maqam sits inside a family; none dangle at the top level.
+    const total = await page.locator('.maqam-menu [role="menuitemradio"]').count();
+    const grouped = await page.locator('.maqam-menu [role="group"] [role="menuitemradio"]').count();
     expect(grouped).toBe(total);
 
     // And a family with more than one member actually groups them together.
-    const bayati = page.locator('#maqam-pick optgroup[label^="Bayati"] option');
+    const bayati = page.locator(
+      '.maqam-menu [role="group"][aria-label^="Bayati"] [role="menuitemradio"]',
+    );
     expect(await bayati.count()).toBeGreaterThan(1);
+
+    // Exactly one is marked current, and it is the one the title shows.
+    const checked = page.locator('.maqam-menu [role="menuitemradio"][aria-checked="true"]');
+    await expect(checked).toHaveCount(1);
+    await expect(checked).toContainText(
+      (await page.locator('.maqam-titlepick__name').textContent()) ?? '',
+    );
   });
 
   test('CUJ-001: choosing a maqam with no microtones clears every retuned key', async ({
@@ -102,7 +126,7 @@ test.describe('Maqam Playground', () => {
     await page.goto('/maqam/');
     await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
 
-    await page.locator('#maqam-pick').selectOption('hijaz_d');
+    await selectMaqam(page, 'Maqam Hijaz');
 
     // Hijaz is entirely in 12-TET — its drama is the augmented second, not a
     // quarter-tone. Nothing should be painted amber.
@@ -375,15 +399,16 @@ test.describe('Maqam Playground', () => {
     await page.goto('/maqam/');
     await expect(page.locator('.maqam-staff svg')).toBeVisible({ timeout: 15_000 });
 
-    const maqamPicker = page.locator('#maqam-pick');
-    const maqamat = await maqamPicker.locator('option').evaluateAll((els) =>
-      els.map((el) => (el as HTMLOptionElement).value),
-    );
+    await page.locator('.maqam-titlepick').click();
+    const maqamat = await page
+      .locator('.maqam-menu [role="menuitemradio"] .maqam-menu__name')
+      .allTextContents();
+    await page.keyboard.press('Escape');
     expect(maqamat.length).toBeGreaterThan(5);
 
     const clipped: string[] = [];
     for (const maqam of maqamat) {
-      await maqamPicker.selectOption(maqam);
+      await selectMaqam(page, maqam);
       {
         // The redraw is async (it awaits the font gate), but the font resolved
         // on the first draw, so this settles within a frame.
@@ -557,6 +582,11 @@ test.describe('Maqam Playground', () => {
      */
     await page.goto('/maqam/?maqam=kurd_d');
     await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
+    /* Wait for the SCORE, not just the shell. Asserting "no brackets" before
+       the staff exists is trivially true, and then the hover lands before
+       there is anything to draw on — a race this test carried until a change
+       elsewhere altered the timing enough to expose it. */
+    await expect(page.locator('.maqam-staff svg')).toBeVisible({ timeout: 15_000 });
     await expect(page.locator('.maqam-staff__ajnas')).toHaveCount(0);
 
     const chips = page.locator('.maqam-chip');

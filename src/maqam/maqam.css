@@ -530,17 +530,16 @@
 }
 
 /*
- * The bleed the title trigger needs.
+ * Nothing bleeds out of this box.
  *
- * `overflow-y: auto` above makes this a clipping box. The padding used to
- * exist because an outlined field's floating label was sheared by that edge;
- * that field is gone, and the room now buys the trigger's own hover wash and
- * focus ring — which the same edge would otherwise cut on the left and right.
- * The negative margin cancels it so nothing else in the card moves.
+ * `overflow-y: auto` above forces `overflow-x` to `auto` too — CSS will not
+ * let one axis clip while the other stays visible — so the trigger's negative
+ * margins were sheared off at the card's right edge the moment it was
+ * highlighted. The trigger sits INSIDE the padding now and grows no wider than
+ * the card, which is the only arrangement a scroll box cannot cut.
  */
 .maqam-card {
-  padding: var(--maqam-s2) var(--maqam-s2) 0;
-  margin-inline: calc(var(--maqam-s2) * -1);
+  padding: 0;
 }
 
 /*
@@ -1457,9 +1456,15 @@
   flex-wrap: wrap;
   align-items: baseline;
   gap: var(--maqam-s3);
+  width: 100%;
   padding: var(--maqam-s2);
-  margin: 0 calc(var(--maqam-s2) * -1) var(--maqam-s1);
+  margin: 0 0 var(--maqam-s1);
+  border: 0;
   border-radius: var(--maqam-radius-s);
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
   transition: background 0.12s ease;
 }
 
@@ -1468,11 +1473,16 @@
   background: var(--m3-surface-container);
 }
 
-/* INSET, because the card is a scroll box and clips an outset ring — and the
-   transparent select hides its own outline, so there is no second ring. */
-.maqam-titlepick:has(.maqam-titlepick__native:focus-visible) {
+/* INSET, because the card is a scroll box and an outset ring is exactly what
+   it clips. */
+.maqam-titlepick:focus-visible {
+  outline: none;
   background: var(--m3-surface-container);
   box-shadow: inset 0 0 0 2px var(--m3-primary);
+}
+
+.maqam-titlepick[aria-expanded='true'] {
+  background: var(--m3-surface-container);
 }
 
 .maqam-titlepick__face {
@@ -1513,21 +1523,6 @@
   white-space: nowrap;
 }
 
-/* The real control: invisible, on top, full-bleed. Last in the DOM, so it
-   stacks over the face without a z-index. */
-.maqam-titlepick__native {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0;
-  appearance: none;
-  border: 0;
-  /* 1rem, or iOS zooms the page when this takes focus. */
-  font-size: var(--m3-title-medium);
-  cursor: pointer;
-}
-
 .maqam-card__foot {
   display: flex;
   align-items: center;
@@ -1546,4 +1541,81 @@
 .maqam-card__source:focus-visible {
   color: var(--m3-on-surface);
   border-bottom-color: currentColor;
+}
+
+/* ------------------------------------------------------------- maqam menu -- */
+
+/*
+ * An M3 menu, drawn by the app rather than by the OS. Grouped by family,
+ * because that is how maqamat are organised, and the grouping is the reason a
+ * list of eleven is worth structuring at all.
+ */
+.maqam-menu {
+  width: 19rem;
+  max-width: calc(100vw - 32px);
+  max-height: min(24rem, 70vh);
+  overflow-y: auto;
+  padding: var(--maqam-s2);
+  overscroll-behavior: contain;
+}
+
+.maqam-menu__group + .maqam-menu__group {
+  margin-top: var(--maqam-s2);
+  padding-top: var(--maqam-s2);
+  border-top: 1px solid var(--m3-outline-variant);
+}
+
+.maqam-menu__family {
+  margin: 0 0 2px;
+  padding: 0 var(--maqam-s2);
+  font-size: var(--m3-label-medium);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--m3-on-surface-variant);
+}
+
+.maqam-menu__item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--maqam-s3);
+  width: 100%;
+  min-height: 40px;
+  padding: var(--maqam-s2);
+  border: 0;
+  border-radius: var(--maqam-radius-s);
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.maqam-menu__item:hover {
+  background: var(--m3-surface-container);
+}
+
+.maqam-menu__item:focus-visible {
+  outline: none;
+  background: var(--m3-surface-container);
+  box-shadow: inset 0 0 0 2px var(--m3-primary);
+}
+
+/* M3 selection: the container tone. The accent is reserved for sounding, home
+   and Play, so the current maqam is marked with a surface step, not a colour. */
+.maqam-menu__item[aria-checked='true'] {
+  background: var(--m3-secondary-container);
+  font-weight: 600;
+}
+
+.maqam-menu__name {
+  font-size: var(--m3-body-medium);
+  color: var(--m3-on-surface);
+}
+
+/* The tonic, which the option text drops: "Kurd on D" beside "Maqam Kurd". */
+.maqam-menu__tonic {
+  font-size: var(--m3-body-small);
+  color: var(--m3-on-surface-variant);
+  white-space: nowrap;
 }
