@@ -15,6 +15,11 @@ interface JinsBreakdownProps {
    * that 350 cents sounds like a major third — the precise opposite of the
    * lesson, reached by following the app's own affordances.
    */
+  /**
+   * False only once a degree the maqam USES has been retuned. Bending a note
+   * it does not use leaves every claim in this panel true, so it must not
+   * trigger the warning.
+   */
   isPresetTuning: boolean;
 }
 
@@ -70,7 +75,16 @@ export default function JinsBreakdown({ preset, isPresetTuning }: JinsBreakdownP
         <span className="maqam-jins__arabic" lang="ar" dir="rtl">
           {preset.arabicName}
         </span>
-        <span className="maqam-jins__translit">{preset.transliteration}</span>
+        {/* The name is the link. A separate "Source:" line said the same thing
+            twice and spent a whole row doing it. */}
+        <a
+          className="maqam-jins__translit"
+          href={preset.source}
+          target="_blank"
+          rel="noreferrer noopener"
+        >
+          {preset.transliteration}
+        </a>
       </div>
 
       {!isPresetTuning && (
@@ -99,6 +113,16 @@ export default function JinsBreakdown({ preset, isPresetTuning }: JinsBreakdownP
               {jins.intervalsInCents.join(' · ')}
               <span className="maqam-jins__unit"> cents</span>
             </span>
+            {/* The source says "either/or", so "or" here. Listing one and dropping
+                the other implies a settled decomposition. */}
+            {jins.alternatives?.map((alternative) => (
+              <span className="maqam-jins__alt" key={alternative.id}>
+                or{' '}
+                <a href={alternative.source} target="_blank" rel="noreferrer noopener">
+                  {alternative.name}
+                </a>
+              </span>
+            ))}
           </li>
         ))}
       </ol>
@@ -126,19 +150,6 @@ export default function JinsBreakdown({ preset, isPresetTuning }: JinsBreakdownP
           Stops at the seventh. It does not return to its tonic.
         </p>
       )}
-
-      {/*
-        Credit, and a way to check. Every interval in this panel was taken from
-        maqamworld.com, and the reason the first version of this data was wrong
-        for months is that there was nowhere for a reader to go and verify it.
-        A citation is the difference between teaching and asserting.
-      */}
-      <p className="maqam-jins__credit">
-        Source:{' '}
-        <a href={preset.source} target="_blank" rel="noreferrer noopener">
-          {preset.transliteration} on maqamworld.com
-        </a>
-      </p>
     </div>
   );
 }

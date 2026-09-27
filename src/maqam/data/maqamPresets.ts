@@ -36,6 +36,18 @@ export interface Jins {
    * jins that is a 5-note pentachord was authored as a 4-note tetrachord.
    */
   source: string;
+  /**
+   * Other cells that can sit in this position.
+   *
+   * maqamworld writes these with "either ... or": Maqam Rast is "followed on
+   * the 5th degree by either Jins Upper Rast ... or Jins Nahawand", and Maqam
+   * 'Ajam the same. Listing one and dropping the other implies a maqam has a
+   * single settled decomposition, which is not what the source says.
+   *
+   * They are alternatives, not additional cells, so they do not take part in
+   * the scale or the joins — only in what the panel offers.
+   */
+  alternatives?: Omit<Jins, 'alternatives'>[];
 }
 
 export interface MaqamPreset {

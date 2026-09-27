@@ -84,6 +84,15 @@ export const MAQAM_PRESETS: MaqamPreset[] = [
         root: { letter: 'G', accidental: 'n' },
         intervalsInCents: [0, 200, 350, 500],
         source: `${MAQAM_WORLD_JINS}upper-rast.php`,
+        alternatives: [
+          {
+            id: 'rast_c__jins_nahawand_g',
+            name: 'Jins Nahawand on G',
+            root: { letter: 'G', accidental: 'n' },
+            intervalsInCents: [0, 200, 300, 500, 700],
+            source: `${MAQAM_WORLD_JINS}nahawand.php`,
+          },
+        ],
       },
     ],
   },
@@ -433,6 +442,15 @@ export const MAQAM_PRESETS: MaqamPreset[] = [
         root: { letter: 'G', accidental: 'n' },
         intervalsInCents: [0, 200, 400, 500],
         source: `${MAQAM_WORLD_JINS}upper_ajam.php`,
+        alternatives: [
+          {
+            id: 'ajam_c__jins_nahawand_g',
+            name: 'Jins Nahawand on G',
+            root: { letter: 'G', accidental: 'n' },
+            intervalsInCents: [0, 200, 300, 500, 700],
+            source: `${MAQAM_WORLD_JINS}nahawand.php`,
+          },
+        ],
       },
     ],
   },

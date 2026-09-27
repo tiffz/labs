@@ -166,34 +166,63 @@ test.describe('Maqam Playground', () => {
     );
   });
 
-  test('CUJ-003: the tuning strip survives a reload via the URL', async ({ page }) => {
+  test('CUJ-003: the tuning survives a reload via the URL', async ({ page }) => {
     await page.goto('/maqam/');
     await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
 
-    // The rail is always visible now, so there is no disclosure to open.
-    // A is untouched in Rast; bending it makes the tuning custom.
+    // A is untouched in Rast, so bending it prepares rather than alters.
     await page.getByRole('button', { name: /^A4, equal temperament$/ }).click();
-    await expect(page.locator('.maqam-badge')).toHaveText('Custom tuning');
     await expect(page).toHaveURL(/tuning=/);
 
     await page.goto(page.url());
     await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
-    await expect(page.locator('.maqam-badge')).toHaveText('Custom tuning');
     // Rast's 2 bends plus the hand-added one, over 3 octaves.
     await expect(page.locator('.maqam-key--retuned')).toHaveCount(9);
   });
 
-  test('CUJ-003: returning the tuning to the preset drops the custom badge', async ({
+  test('CUJ-003: bending a note the maqam does not use is not an alteration', async ({
     page,
   }) => {
-    await page.goto('/maqam/?maqam=rast_c&tuning=----d----d-d');
+    /*
+     * The distinction a maqam musician draws, and the one this app got wrong.
+     *
+     * Bending a note the maqam does not use is PREPARING: the maqam is
+     * untouched, and those keys are the vocabulary a player reaches for.
+     * maqamworld on Suznak, Rast's commonest modulation: the move to Jins
+     * Hijaz on the 5th degree is "practically obligatory in any taqsim or
+     * mawwal starting on the root Jins Rast". Flagging that as "Custom
+     * tuning" told the user they had broken something.
+     */
+    await page.goto('/maqam/?maqam=rast_c');
     await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
-    await expect(page.locator('.maqam-badge')).toHaveText('Custom tuning');
+
+    // F♯ is not in Rast. Bending it changes nothing about the maqam.
+    await page.getByRole('button', { name: /^F♯4, equal temperament$/ }).click();
+    await expect(page.locator('.maqam-badge')).toHaveCount(0);
+    await expect(page.locator('.maqam-jins__stale')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /^Reset$/ })).toHaveCount(0);
+
+    // E IS in Rast, and it is the note that makes Rast Rast. Changing it
+    // alters the maqam, and the app has to say so.
+    await page.getByRole('button', { name: /^E4, 50 cents flat$/ }).click();
+    await expect(page.locator('.maqam-badge')).toHaveCount(1);
+    await expect(page.locator('.maqam-jins__stale')).toBeVisible();
+    await expect(page.getByRole('button', { name: /^Reset$/ })).toBeVisible();
+  });
+
+  test('CUJ-003: Reset returns the maqam to what it is written as', async ({ page }) => {
+    await page.goto('/maqam/?maqam=rast_c&tuning=--------------');
+    await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
+
+    // A corrupt tuning falls back to the maqam's own, so bend a degree by hand.
+    await page.getByRole('button', { name: /^E4, 50 cents flat$/ }).click();
+    await expect(page.getByRole('button', { name: /^Reset$/ })).toBeVisible();
 
     await page.getByRole('button', { name: /^Reset$/ }).click();
 
-    // Derived, not remembered: undoing the edit must clear the badge.
+    // Derived, not remembered: undoing the edit must clear every trace.
     await expect(page.locator('.maqam-badge')).toHaveCount(0);
+    await expect(page.locator('.maqam-jins__stale')).toHaveCount(0);
     await expect(page.locator('.maqam-key--retuned')).toHaveCount(6);
   });
 
@@ -548,58 +577,67 @@ test.describe('Maqam Playground', () => {
     }
   });
 
-  test('a key in the maqam is marked, even when every degree is a white key', async ({
-    page,
-  }) => {
+  test('notes outside the maqam are visibly faded, on every maqam', async ({ page }) => {
     /*
-     * The regression this exists for.
+     * Membership is a FADE, and the fade is on the notes the maqam does not
+     * use. A key in the maqam is an ordinary key; a key outside it is greyed,
+     * the way a disabled stop on an instrument is.
      *
-     * Membership was once carried by presence alone: an in-maqam key at full
-     * strength, one outside it receding. On Rast every degree lands on a white
-     * key and all 5 black keys are out, so the in/out split coincided exactly
-     * with the white/black split and presence said nothing the piano had not
-     * already said. The default screen looked like an ordinary keyboard and the
-     * owner reported the feature as missing, correctly.
+     * This guard has been rewritten three times because the design under it
+     * kept changing, and each rewrite is worth remembering: it asserted the
+     * in-maqam key was BRIGHTER (wrong once the board became sand), then that
+     * the in-maqam key was far from plain white (wrong once in-maqam keys
+     * became ordinary ivory keys). What has been true throughout is the thing
+     * asserted here — the two kinds must look different, in both the face and
+     * the weight of the name on it.
      *
-     * Measured as colour DISTANCE, not contrast ratio. The two faces are
-     * deliberately close in value and far apart in hue — cool for in, warm for
-     * out — and a luminance ratio is blind to exactly that. Using the wrong
-     * instrument here would produce a guard that passes while the mark is
-     * invisible, which is how this shipped in the first place.
+     * Measured from the tokens rather than from whichever keys a particular
+     * maqam happens to show, so it holds on Rast, where every white key is in
+     * the maqam and the fade appears only on the black ones.
      */
-    await page.goto('/maqam/?maqam=rast_c');
+    await page.goto('/maqam/?maqam=hijaz_d');
     await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
 
-    const distance = await page.evaluate(() => {
+    const marks = await page.evaluate(() => {
       const rgb = (value: string) => (value.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number);
-      /*
-       * EVERY colour stop on the key, not one of them.
-       *
-       * The version before this sampled the last stop of a
-       * `#ffffff -> tint` gradient and passed at distance 33, while the top
-       * two thirds of the key was plain white. On Rast, where every white key
-       * is in the maqam, the board still read as an ordinary piano — reported
-       * as the feature being missing for the third time.
-       */
-      const el = document.querySelector(
-        '.maqam-keyboard .shared-pk-white.maqam-key--in-scale',
-      )!;
-      const style = getComputedStyle(el);
-      const stops = style.backgroundImage.match(/rgba?\([^)]+\)/g);
-      const samples = (stops ?? [style.backgroundColor]).map(rgb);
+      const probe = (token: string) => {
+        const el = document.createElement('div');
+        el.style.background = `var(${token})`;
+        document.querySelector('.maqam')!.appendChild(el);
+        const colour = rgb(getComputedStyle(el).backgroundColor);
+        el.remove();
+        return colour;
+      };
+      const apart = (a: number[], b: number[]) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
 
-      const plainKey = [255, 255, 255];
-      const distances = samples.map((c) =>
-        Math.hypot(c[0] - plainKey[0], c[1] - plainKey[1], c[2] - plainKey[2]),
+      const inWhite = document.querySelector(
+        '.maqam-keyboard .shared-pk-white.maqam-key--in-scale .shared-pk-white-label',
       );
-      // The CLOSEST stop to white decides: one tinted band does not mark a key.
-      return Math.min(...distances);
+      const outWhite = [...document.querySelectorAll('.maqam-keyboard .shared-pk-white')]
+        .find((el) => !el.classList.contains('maqam-key--in-scale'))
+        ?.querySelector('.shared-pk-white-label');
+
+      return {
+        whiteFaces: apart(probe('--maqam-scale-wash'), probe('--maqam-key-face-dim')),
+        blackFaces: apart(probe('--maqam-scale-wash-black'), probe('--maqam-key-black-dim')),
+        inWeight: inWhite ? Number(getComputedStyle(inWhite).fontWeight) : 0,
+        outWeight: outWhite ? Number(getComputedStyle(outWhite).fontWeight) : 0,
+      };
     });
 
     expect(
-      distance,
-      `the least-tinted part of an in-maqam key is only ${distance.toFixed(1)} from plain white, so it reads as unmarked`,
-    ).toBeGreaterThan(25);
+      marks.whiteFaces,
+      `a white key in the maqam and one outside it are only ${marks.whiteFaces.toFixed(1)} apart`,
+    ).toBeGreaterThan(20);
+    expect(
+      marks.blackFaces,
+      `a black key in the maqam and one outside it are only ${marks.blackFaces.toFixed(1)} apart`,
+    ).toBeGreaterThan(20);
+
+    // The name is the second channel, and costs no ink to carry.
+    expect(marks.inWeight, 'a note in the maqam should be named in a heavier weight').toBeGreaterThan(
+      marks.outWeight,
+    );
   });
 
   test('one control answers both keyboard questions', async ({ page }) => {

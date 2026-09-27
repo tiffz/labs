@@ -9,8 +9,8 @@ import JinsBreakdown from './components/JinsBreakdown';
 import MaqamKeyboard from './components/MaqamKeyboard';
 import MaqamStaff from './components/MaqamStaff';
 import KeyboardNote from './components/KeyboardNote';
-import { maqamatByFamily } from './data/maqamPresets';
-import { liveScaleLabels } from './state/maqamTuning';
+import { MAQAM_PRESETS, maqamatByFamily } from './data/maqamPresets';
+import { describeTuning, liveScaleLabels } from './state/maqamTuning';
 import { useMaqamState } from './state/useMaqamState';
 
 /**
@@ -26,7 +26,6 @@ export default function App() {
     preset,
     presetId,
     matrix,
-    isPresetTuning,
     keyTunings,
     activeNotes,
     midiDevices,
@@ -80,6 +79,14 @@ export default function App() {
     () => (playingIndex === null ? undefined : melody[playingIndex]?.midiNote),
     [melody, playingIndex],
   );
+
+  /*
+   * Bending a note the maqam does not use is preparing, not altering — it is
+   * how a player sets up a modulation, and Rast's commonest one is described
+   * on maqamworld as "practically obligatory". Reporting that as "Custom
+   * tuning" told the user they had broken something.
+   */
+  const tuning = describeTuning(preset, matrix, MAQAM_PRESETS);
 
   return (
     <main id="main" className="maqam">
@@ -184,7 +191,10 @@ export default function App() {
 
           {preset && (
             <aside className="maqam-stage__jins">
-              <JinsBreakdown preset={preset} isPresetTuning={isPresetTuning} />
+              <JinsBreakdown
+                preset={preset}
+                isPresetTuning={tuning.kind === 'preset' || tuning.kind === 'prepared'}
+              />
             </aside>
           )}
         </div>
@@ -195,12 +205,7 @@ export default function App() {
           </h2>
 
           {/* One switch per key, sitting over it. Position is the label. */}
-          <KeyTuningRail
-            octaves={KEYBOARD_OCTAVES}
-            matrix={matrix}
-            keyTunings={keyTunings}
-            onToggle={toggleSlot}
-          />
+          <KeyTuningRail octaves={KEYBOARD_OCTAVES} matrix={matrix} onToggle={toggleSlot} />
 
           <MaqamKeyboard
             keyTunings={keyTunings}
@@ -242,7 +247,12 @@ export default function App() {
                 <span className="maqam-legend__dot" aria-hidden="true" />
                 Tonic
               </span>
-              {!isPresetTuning && <span className="maqam-badge">Custom tuning</span>}
+              {tuning.kind === 'spells' && (
+                <span className="maqam-badge">Now spells {tuning.name}</span>
+              )}
+              {tuning.kind === 'unnamed' && (
+                <span className="maqam-badge">Not a named maqam</span>
+              )}
             </p>
 
             <div className="maqam-board__actions">
@@ -250,7 +260,7 @@ export default function App() {
                   with a real keyboard. Two chips in one corner asked the
                   reader to work out they were the same conversation. */}
               <KeyboardNote supported={midiSupported} devices={midiDevices} />
-              {!isPresetTuning && preset && (
+              {preset && tuning.kind !== 'preset' && tuning.kind !== 'prepared' && (
                 <Button variant="text" size="small" onClick={resetTuning}>
                   Reset
                 </Button>

@@ -1,5 +1,5 @@
 import { PITCH_CLASS_NAMES, type DetuneMatrix } from '../data/maqamPresets';
-import { formatCents, type KeyTuning } from '../state/maqamTuning';
+import { formatCents } from '../state/maqamTuning';
 
 /** Mirrors the shared keyboard's own layout, so a switch sits over its key. */
 const WHITE_OFFSETS = [0, 2, 4, 5, 7, 9, 11];
@@ -14,7 +14,6 @@ const BLACK_KEYS = [
 interface KeyTuningRailProps {
   octaves: number[];
   matrix: DetuneMatrix;
-  keyTunings: KeyTuning[];
   onToggle: (pitchClass: number) => void;
 }
 
@@ -41,7 +40,6 @@ interface KeyTuningRailProps {
 export default function KeyTuningRail({
   octaves,
   matrix,
-  keyTunings,
   onToggle,
 }: KeyTuningRailProps) {
   const switchFor = (
@@ -52,7 +50,6 @@ export default function KeyTuningRail({
   ) => {
     const cents = matrix[pitchClass] ?? 0;
     const bent = cents !== 0;
-    const tuning = keyTunings[pitchClass];
     const name = PITCH_CLASS_NAMES[pitchClass];
 
     return (
@@ -68,7 +65,14 @@ export default function KeyTuningRail({
            three times with no way to tell them apart. That one switch bends
            all three octaves is said once, on the group. */
         aria-label={`${name}${octave}, ${bent ? formatCents(cents) : 'equal temperament'}`}
-        title={tuning?.ariaLabel}
+        /* Hovering a switch should teach what it is, not restate the key's
+           own name. Someone meeting this app has never seen a quarter-tone
+           switch and there is nothing else on screen that explains one. */
+        title={
+          bent
+            ? `${name} is lowered a quarter tone, in every octave. Click to restore it.`
+            : `Lower ${name} a quarter tone, in every octave.`
+        }
       >
         <span aria-hidden="true">{bent ? '½♭' : ''}</span>
       </button>

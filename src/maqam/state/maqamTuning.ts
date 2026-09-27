@@ -9,6 +9,7 @@ import {
 } from '../notation/maqamAccidentals';
 import {
   deriveDetuneMatrix,
+  scalePitchClasses,
   type DetuneMatrix,
   type MaqamPreset,
   type MaqamScaleDegree,
@@ -210,6 +211,63 @@ export function liveScaleLabels(
  * dialog, "350 cents" in the ajnas panel, "−50c" here), so one quantity looked
  * like three different units to a reader still learning what a cent is.
  */
+/**
+ * What the user has done to the tuning, and what it now spells.
+ *
+ * Bending a note the maqam does NOT use is preparing, not altering: the maqam
+ * is untouched, and those keys are the vocabulary a player reaches for.
+ * maqamworld on Suznak, the commonest modulation of Rast: the move to Jins
+ * Hijaz on the 5th degree is "practically obligatory in any taqsim or mawwal
+ * starting on the root Jins Rast". Calling that "custom tuning" is wrong —
+ * nothing about the maqam has changed.
+ *
+ * Bending a note the maqam DOES use is altering, and often lands on something
+ * with a name. Un-bend Rast's 7th and the keys spell Maqam Mahur, in Rast's
+ * own family. So the app names the result where it can, rather than reporting
+ * an error: the disclaimer becomes a discovery.
+ */
+export type TuningStatus =
+  | { kind: 'preset' }
+  | { kind: 'prepared'; bentOutside: number[] }
+  | { kind: 'spells'; presetId: string; name: string }
+  | { kind: 'unnamed' };
+
+function sameMatrix(a: DetuneMatrix, b: DetuneMatrix): boolean {
+  return a.length === b.length && a.every((cents, index) => cents === b[index]);
+}
+
+export function describeTuning(
+  preset: MaqamPreset | undefined,
+  matrix: DetuneMatrix,
+  catalogue: readonly MaqamPreset[],
+): TuningStatus {
+  if (!preset) return { kind: 'unnamed' };
+  if (matrixMatchesPreset(matrix, preset)) return { kind: 'preset' };
+
+  const own = deriveDetuneMatrix(preset.scaleDegrees).matrix;
+  const inScale = scalePitchClasses(preset.scaleDegrees);
+
+  // Has any degree the maqam actually uses been changed?
+  const alteredDegree = [...inScale].some((pitchClass) => matrix[pitchClass] !== own[pitchClass]);
+  if (!alteredDegree) {
+    const bentOutside = matrix
+      .map((cents, pitchClass) => ({ cents, pitchClass }))
+      .filter(({ cents, pitchClass }) => cents !== 0 && !inScale.has(pitchClass))
+      .map(({ pitchClass }) => pitchClass);
+    return { kind: 'prepared', bentOutside };
+  }
+
+  // It spells something else. Name it if we know it.
+  const match = catalogue.find(
+    (candidate) =>
+      candidate.id !== preset.id &&
+      sameMatrix(matrix, deriveDetuneMatrix(candidate.scaleDegrees).matrix),
+  );
+  return match
+    ? { kind: 'spells', presetId: match.id, name: match.transliteration }
+    : { kind: 'unnamed' };
+}
+
 export function formatCents(cents: number): string {
   // A quantity, always — never a phrase like "in equal temperament". Callers
   // put this inside a sentence, and a fragment that reads as a whole clause is

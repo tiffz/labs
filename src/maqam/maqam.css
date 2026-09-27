@@ -61,22 +61,24 @@
    * just not part of this maqam — and it leaves colour free to mean one thing.
    */
   --maqam-key-face: #fffdf6;
-  --maqam-key-face-dim: #e2dbc6;
+  --maqam-key-face-dim: #ddd5bd;
   /*
-   * "This key belongs to the maqam", as a wash.
+   * Membership is FADE, and the fade is on the notes the maqam does not use.
    *
-   * Presence alone could not say it. On Rast every degree lands on a white key
-   * and all five black keys are out, so the in/out split coincided exactly
-   * with the white/black split and the board looked like an ordinary piano —
-   * the membership signal was invisible on the app's default screen.
+   * Tinting the in-maqam keys instead turned the board into a lavender slab:
+   * on Rast, where every white key is in the maqam, all 21 went the same
+   * colour and it stopped looking like a piano at all. A key in the maqam is
+   * an ordinary key; a key outside it is visibly greyed, the way a disabled
+   * stop on an instrument is. That reads on Rast too — the faded keys are the
+   * black ones, and "this maqam is the white keys" is exactly right.
    *
    * Membership is brightness, not hue: a key in the maqam is at full
    * strength and one outside it recedes toward the board. Garnet then means
    * "sounding, or home" at three intensities, and terracotta means "bent off
    * equal temperament". Two hues, each with one job.
    */
-  --maqam-scale-wash: #c2cdee;
-  --maqam-scale-wash-black: #1e2640;
+  --maqam-scale-wash: #fffdf6;
+  --maqam-scale-wash-black: #242a3d;
   /* The octaves of the note sounding: a step above membership, below the note
      itself, so "which key is that" still has one loud answer. */
   --maqam-echo: #d3a3ad;
@@ -92,7 +94,7 @@
    * 8.1:1, and the face alone still carries the distinction.
    */
   --maqam-key-face-dim-ink: var(--maqam-key-ink);
-  --maqam-key-black-dim: #6b7285;
+  --maqam-key-black-dim: #6e7689;
 
   /* Type scale. Six sizes, because a screen this small cannot justify more. */
   --maqam-text-xs: 0.6875rem;
@@ -275,6 +277,20 @@
   .maqam-jins__list {
     gap: 8px;
     margin: 6px 0 8px;
+  }
+
+  .maqam-jins__alt {
+    font-size: var(--maqam-text-sm);
+    color: var(--m3-on-surface-variant);
+  }
+
+  .maqam-jins__alt a {
+    color: inherit;
+    text-underline-offset: 2px;
+  }
+
+  .maqam-jins__alt a:hover {
+    color: var(--maqam-tonic);
   }
 
   .maqam-jins__note {
@@ -473,6 +489,14 @@
 .maqam-jins__translit {
   font-size: var(--maqam-text-sm);
   color: var(--m3-on-surface-variant);
+  text-decoration: none;
+  border-bottom: 1px solid var(--m3-outline-variant);
+}
+
+.maqam-jins__translit:hover,
+.maqam-jins__translit:focus-visible {
+  color: var(--maqam-tonic);
+  border-bottom-color: currentColor;
 }
 
 .maqam-jins__list {
@@ -717,8 +741,15 @@
    the keys are this size. */
 .maqam-keyboard .shared-pk-white-label {
   font-size: var(--maqam-text-sm);
-  font-weight: 600;
-  color: var(--maqam-key-face-dim-ink);
+  font-weight: 500;
+  /* The name of a note outside the maqam is lighter in WEIGHT, not in ink:
+     fading the ink put it under AA on an already-greyed key. */
+  color: var(--maqam-key-ink);
+}
+
+.maqam-key--in-scale .shared-pk-white-label {
+  font-weight: 700;
+  color: var(--maqam-key-ink);
 }
 
 /*
@@ -728,9 +759,7 @@
  */
 .maqam-keyboard .shared-pk-black-label {
   font-size: var(--maqam-text-xs);
-  font-weight: 600;
-  /* Full white on the dim face too: the face carries the membership signal, and
-     a dimmed label on a dimmed key failed contrast at 1.24:1. */
+  font-weight: 500;
   color: rgba(255, 255, 255, 0.95);
   bottom: var(--maqam-s2);
 }
@@ -745,6 +774,7 @@
  */
 .maqam-key.maqam-key--in-scale {
   background: var(--maqam-scale-wash);
+  box-shadow: inset 0 -2px 0 rgba(30, 38, 64, 0.07);
 }
 
 /* Tonic: shape, so it survives a colour-blind reading and stacks with a bend. */
@@ -806,6 +836,10 @@
  */
 .maqam-keyboard .shared-pk-black {
   background: var(--maqam-key-black-dim);
+}
+
+.shared-pk-black.maqam-key--in-scale .shared-pk-black-label {
+  font-weight: 700;
 }
 
 .shared-pk-black.maqam-key--in-scale {
@@ -945,24 +979,6 @@
   font-size: var(--maqam-text-xs);
   font-weight: 700;
   letter-spacing: 0.03em;
-}
-
-.maqam-jins__credit {
-  margin: var(--maqam-s4) 0 0;
-  padding-top: var(--maqam-s3);
-  border-top: 1px solid var(--m3-outline-variant);
-  font-size: var(--maqam-text-sm);
-  line-height: 1.5;
-  color: var(--m3-on-surface-variant);
-}
-
-.maqam-jins__credit a {
-  color: inherit;
-  text-underline-offset: 2px;
-}
-
-.maqam-jins__credit a:hover {
-  color: var(--maqam-tonic);
 }
 
 /* -------------------------------------------------------- retuning note -- */
