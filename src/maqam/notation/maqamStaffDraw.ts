@@ -50,6 +50,17 @@ export interface DrawStaffOptions {
    * noteheads, with nothing connecting the two.
    */
   brackets?: StaffBracket[];
+  /**
+   * Keep the bracket's row of space whether or not a bracket is drawn there.
+   *
+   * Brackets appear on hover, and the staff is sized to its own ink — so the
+   * first one to appear grew the drawing by 52px and shoved the notation up
+   * 26px and the Play row down 26px. The browser reported it as a real
+   * layout-shift (0.0031), and it is: pointing at a chip made the music jump.
+   * Reserving the row costs a strip of white on a staff that is already
+   * centred in its card.
+   */
+  reserveBracketRow?: boolean;
 }
 
 export interface StaffBracket {
@@ -256,7 +267,29 @@ function drawStaffNow(
   }
 
   const extent = verticalExtentOf(stave, [...staveNotes, ...beams]);
-  const bracketTop = drawAjnasBrackets(container, stave, staveNotes, brackets, extent, inks);
+  const drawnTop = drawAjnasBrackets(container, stave, staveNotes, brackets, extent, inks);
+
+  /*
+   * Two reasons the box grows upward, and it takes the larger.
+   *
+   * The RESERVED row is computed from the geometry a bracket would use, not
+   * from one that happens to be on screen, so it is identical whether a cell
+   * is being pointed at or not — that is what stops the music jumping. The
+   * DRAWN top is still honoured because dropping it clips any bracket a caller
+   * shows without reserving: measured, that silently removed the bracket
+   * instead of resizing the box, which is the worse failure of the two.
+   */
+  const svgEl = container.querySelector('svg');
+  const reservedTop =
+    options.reserveBracketRow && extent !== undefined && svgEl
+      ? bracketRowTop(stave, extent, vexFlowUserUnitsPerPixel(svgEl))
+      : undefined;
+  const bracketTop =
+    reservedTop === undefined
+      ? drawnTop
+      : drawnTop === undefined
+        ? reservedTop
+        : Math.min(reservedTop, drawnTop);
 
   applyStaffAccessibility(container, notes);
   return fitToDrawnExtent(
@@ -302,6 +335,13 @@ function drawStaffNow(
  * @returns the topmost y the brackets occupy, so the SVG viewport can grow to
  * hold them — or `undefined` when nothing was drawn.
  */
+/** The top of the row a bracket occupies: its rule, plus the label above it. */
+function bracketRowTop(stave: Stave, extent: VerticalExtent, px: number): number {
+  const space = stave.getSpacingBetweenLines();
+  const baseY = Math.min(extent.top, stave.getYForLine(0)) - space * 1.4;
+  return baseY - (LABEL_GAP_PX + LABEL_SIZE_PX) * px;
+}
+
 function drawAjnasBrackets(
   container: HTMLDivElement,
   stave: Stave,

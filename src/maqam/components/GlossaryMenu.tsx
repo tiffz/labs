@@ -4,7 +4,7 @@ import Button from '@mui/material/Button';
 import AnchoredPopover from '../../shared/components/AnchoredPopover';
 
 /**
- * The four words this app cannot avoid using.
+ * The words this app cannot avoid using.
  *
  * Definitions are one line each and deliberately thin. Every one of them is a
  * summary of a page on maqamworld that says it better, and the app's standing
@@ -14,22 +14,16 @@ import AnchoredPopover from '../../shared/components/AnchoredPopover';
 const TERMS = [
   {
     term: 'Maqam',
-    gloss: 'A melodic mode: a scale plus the conventions for moving through it.',
-    href: 'https://www.maqamworld.com/en/maqam.php',
-  },
-  {
-    term: 'Maqamat',
-    gloss: 'The plural of maqam. They are grouped into families by their root jins.',
+    plural: 'Maqamat',
+    gloss:
+      'A melodic mode: a scale plus the conventions for moving through it. Maqamat that share the same root jins form a family.',
     href: 'https://www.maqamworld.com/en/maqam.php',
   },
   {
     term: 'Jins',
-    gloss: 'The 3-to-5-note cell a maqam is built from. Its top note is the ghammaz.',
-    href: 'https://www.maqamworld.com/en/jins.php',
-  },
-  {
-    term: 'Ajnas',
-    gloss: 'The plural of jins. Most maqamat are two, joined at a shared note.',
+    plural: 'Ajnas',
+    gloss:
+      'The 3-to-5-note cell a maqam is built from. Its top note is the ghammaz, and most maqamat join a second jins to the first at a shared note.',
     href: 'https://www.maqamworld.com/en/jins.php',
   },
 ];
@@ -74,7 +68,7 @@ export default function GlossaryMenu() {
             renders at the end of <body>, outside `.maqam`. */}
         <div className="maqam-portal maqam-glossary">
           <dl className="maqam-glossary__list">
-            {TERMS.map(({ term, gloss, href }) => (
+            {TERMS.map(({ term, plural, gloss, href }) => (
               <div className="maqam-glossary__row" key={term}>
                 {/* The term is the link, for the same reason the maqam heading
                     is: a separate "learn more" per row would be four more
@@ -83,6 +77,10 @@ export default function GlossaryMenu() {
                   <a href={href} target="_blank" rel="noreferrer noopener">
                     {term}
                   </a>
+                  {/* The plural beside the singular, not as its own entry.
+                      Four rows where two of them existed only to say "the
+                      plural of the row above" is a glossary padding itself. */}
+                  <span className="maqam-glossary__plural"> · {plural}</span>
                 </dt>
                 <dd>{gloss}</dd>
               </div>

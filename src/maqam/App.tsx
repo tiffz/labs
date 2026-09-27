@@ -181,7 +181,14 @@ export default function App() {
                 it left a hole beside a full reference panel and read as a
                 stray control belonging to nothing. */}
             <Paper elevation={0} className="maqam-staff-surface">
-              <MaqamStaff notes={staffNotes} highlighted={litNotes} brackets={brackets} />
+              {/* The bracket row is reserved whether or not a bracket is in
+                  it, so pointing at a jins cannot make the music jump. */}
+              <MaqamStaff
+                notes={staffNotes}
+                highlighted={litNotes}
+                brackets={brackets}
+                reserveBracketRow={(preset?.primaryAjnas.length ?? 0) > 0}
+              />
 
               {/* Beside the control that failed, naming the action the user
                   took. It used to render under the keyboard and say "press a

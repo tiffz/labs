@@ -1082,6 +1082,11 @@
   border-bottom-color: currentColor;
 }
 
+.maqam-glossary__plural {
+  font-weight: 400;
+  color: var(--m3-on-surface-variant);
+}
+
 .maqam-glossary__row dd {
   margin: 2px 0 0;
   font-size: var(--m3-body-medium);

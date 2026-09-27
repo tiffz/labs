@@ -14,6 +14,8 @@ interface MaqamStaffProps {
   highlighted?: ReadonlySet<number>;
   /** Ajnas to bracket above the staff. */
   brackets?: StaffBracket[];
+  /** Hold the bracket's row of space open even when no bracket is drawn. */
+  reserveBracketRow?: boolean;
   className?: string;
 }
 
@@ -49,7 +51,13 @@ const MAX_SCALE = 2.2;
  * It also risked a measure-draw feedback loop, since the SVG is what fills the
  * box being measured.
  */
-export default function MaqamStaff({ notes, highlighted, brackets, className }: MaqamStaffProps) {
+export default function MaqamStaff({
+  notes,
+  highlighted,
+  brackets,
+  reserveBracketRow,
+  className,
+}: MaqamStaffProps) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const [width, setWidth] = useState(0);
   /**
@@ -81,7 +89,7 @@ export default function MaqamStaff({ notes, highlighted, brackets, className }: 
     const host = hostRef.current;
     if (!host || !fontReady || width < MIN_WIDTH) return;
     let current = true;
-    void drawMaqamStaff(host, notes, { width, height: drawHeight, scale, highlighted, brackets }).then(
+    void drawMaqamStaff(host, notes, { width, height: drawHeight, scale, highlighted, brackets, reserveBracketRow }).then(
       (measured) => {
         // A newer draw has started, or nothing could be measured. Either way,
         // do not overwrite the box with a stale or invented number.
@@ -92,7 +100,7 @@ export default function MaqamStaff({ notes, highlighted, brackets, className }: 
     return () => {
       current = false;
     };
-  }, [notes, highlighted, brackets, width, drawHeight, scale, fontReady]);
+  }, [notes, highlighted, brackets, reserveBracketRow, width, drawHeight, scale, fontReady]);
 
   return (
     <div className={['maqam-staff', className].filter(Boolean).join(' ')}>

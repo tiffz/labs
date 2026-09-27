@@ -589,6 +589,45 @@ test.describe('Maqam Playground', () => {
     await expect(page.locator('.maqam-keyboard .maqam-key--in-jins')).toHaveCount(0);
   });
 
+  test('pointing at a jins moves nothing on the page', async ({ page }) => {
+    /*
+     * The staff is sized to its own ink, so the first bracket to appear grew
+     * the drawing by 52px and shoved the notation up 26px and the Play row
+     * down 26px — the browser reported it as a real layout-shift of 0.0031.
+     * Pointing at a chip made the music jump.
+     *
+     * The bracket's row is reserved whether or not a bracket is in it. This
+     * asserts the box does not move AND that a bracket actually appeared: a
+     * run where the hover silently missed would otherwise report "nothing
+     * moved", which is true and meaningless.
+     */
+    await page.goto('/maqam/?maqam=kurd_d');
+    await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('.maqam-staff svg')).toBeVisible({ timeout: 15_000 });
+
+    const geometry = () =>
+      page.evaluate(() => {
+        const box = (selector: string) => {
+          const el = document.querySelector(selector);
+          if (!el) return null;
+          const rect = el.getBoundingClientRect();
+          return { h: Math.round(rect.height), top: Math.round(rect.top) };
+        };
+        return {
+          staff: box('.maqam-staff__canvas'),
+          play: box('.maqam-melodybar'),
+          card: box('.maqam-card'),
+        };
+      });
+
+    const before = await geometry();
+    await page.locator('.maqam-chip').nth(1).hover();
+    await expect(page.locator('.maqam-staff__ajnas path')).toHaveCount(1);
+    const after = await geometry();
+
+    expect(after, 'the staff or the controls moved when a jins was pointed at').toEqual(before);
+  });
+
   test('portalled surfaces resolve the app tokens', async ({ page }) => {
     await page.goto('/maqam/');
     await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
