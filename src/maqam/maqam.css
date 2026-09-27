@@ -92,6 +92,31 @@
   --maqam-title-font: inherit;
 
   /*
+   * The board is its own surface, not the fourth step of the page ramp.
+   *
+   * It is the largest coloured area in the app — the stage the instrument
+   * stands on — and tying it to `surface-container-high` meant it could only
+   * ever be one tonal step away from the page, which is what kept the whole
+   * screen inside a 1.16:1 span and reading as drab. Named separately, a look
+   * can make it a colour without dragging every panel with it.
+   */
+  --maqam-board: #e4dccd;
+  --maqam-board-ink: #1e2640;
+  --maqam-board-ink-quiet: #545a72;
+
+  /*
+   * The quarter-tone switches. Off is a recess you can see; on is the full
+   * tertiary, not its container.
+   *
+   * Off measured 1.06:1 against the board and on measured 1.18:1 against off —
+   * a control that was invisible in both states and whose two states were
+   * indistinguishable from each other. A switch has to look like a switch
+   * before its state can mean anything.
+   */
+  --maqam-switch-off: #f7f2e7;
+  --maqam-switch-border: #a9a08c;
+
+  /*
    * The shared popover shell (`.labs-popover-surface`) paints from these, and
    * this app never set them — so the glossary, the keyboard note and the theme
    * picker were white cards whatever the page behind them looked like. Most
@@ -130,9 +155,19 @@
    * carry the fact on their own.
    */
   --maqam-key-face: #ffffff;
-  --maqam-key-face-dim: #e6dfd2;
+  /*
+   * A key the maqam does not use is OBVIOUSLY out.
+   *
+   * This was #e6dfd2, which measures 1.33:1 against a white key — present, and
+   * reported as "very hard to read". The numeral carries the fact and the face
+   * was treated as a whisper supporting it; at 1.33:1 the whisper was
+   * inaudible, and the numeral alone asks the reader to scan 21 keys for
+   * absence. 1.55:1 is a step you see without looking for it, and the key name
+   * on it still measures 7.4:1, well clear of AA.
+   */
+  --maqam-key-face-dim: #d5cab3;
   --maqam-scale-wash: #ffffff;
-  --maqam-scale-wash-black: #1b2136;
+  --maqam-scale-wash-black: #171d31;
   /* The octaves of the note sounding: a step above membership, below the note
      itself, so "which key is that" still has one loud answer. */
   --maqam-echo: #d3a3ad;
@@ -149,8 +184,9 @@
   --maqam-key-face-dim-ink: var(--maqam-key-ink);
   /* A black key is black. 15 of the 18 are outside the maqam on most maqamat,
      and a slate grey read as a slab laid over the instrument rather than as
-     the accidentals of a piano. */
-  --maqam-key-black-dim: #3d4560;
+     the accidentals of a piano. Lifted from #3d4560 so the in/out step on the
+     black keys matches the one on the white keys — both were too fine. */
+  --maqam-key-black-dim: #5a6285;
 
   /*
    * ------------------------------------------------------------- M3 type
@@ -761,8 +797,8 @@
   /* Narrow, with wide gutters: a switch over its key, not a tile filling it. */
   inset: 0 min(15px, 22%);
   border-radius: var(--maqam-radius-s);
-  background: var(--m3-surface-container-highest);
-  border: 1px solid var(--m3-outline-variant);
+  background: var(--maqam-switch-off);
+  border: 1px solid var(--maqam-switch-border);
   transition:
     background 0.12s ease,
     border-color 0.12s ease;
@@ -779,9 +815,15 @@
   border-color: var(--maqam-microtonal);
 }
 
+/* On: the full tertiary, with its own readable ink. The container tone was
+   1.18:1 against the off state — two states the eye could not separate. */
 .maqam-rail__switch--white.is-bent::before {
-  background: var(--maqam-microtonal-soft);
-  border-color: var(--maqam-microtonal);
+  background: var(--m3-tertiary);
+  border-color: var(--m3-tertiary);
+}
+
+.maqam-rail__switch--white.is-bent {
+  color: var(--m3-on-tertiary);
 }
 
 .maqam-rail__switch--black {
@@ -791,18 +833,15 @@
   height: 18px;
   transform: translateX(-50%);
   z-index: 2;
-  /* A pale indigo chip, not a dark dot. At full `secondary` the five black-key
-     switches were the loudest marks on the board, above a keyboard whose whole
-     job is to be looked at. */
   background: var(--m3-secondary-container);
-  border-color: var(--m3-outline-variant);
+  border-color: var(--maqam-switch-border);
   color: var(--m3-on-secondary-container);
 }
 
 .maqam-rail__switch--black.is-bent {
-  background: var(--maqam-microtonal);
-  border-color: var(--maqam-microtonal);
-  color: #ffffff;
+  background: var(--m3-tertiary);
+  border-color: var(--m3-tertiary);
+  color: var(--m3-on-tertiary);
 }
 
 /* A fingertip target on touch, without changing the desktop rhythm. */
@@ -839,7 +878,8 @@
    * Depth now comes from value and a rim, not from hue. Same recession, and
    * the keys are what you look at.
    */
-  background: var(--m3-surface-container-high);
+  background: var(--maqam-board);
+  color: var(--maqam-board-ink);
 }
 
 /*
@@ -1199,10 +1239,10 @@
   align-items: center;
   height: 32px;
   padding: 0 var(--maqam-s3);
-  border: 1px solid var(--m3-outline-variant);
+  border: 1px solid var(--maqam-switch-border);
   border-radius: var(--maqam-radius-s);
   background: transparent;
-  color: var(--m3-on-surface-variant);
+  color: var(--maqam-board-ink-quiet);
   font-size: var(--m3-label-large);
   font-weight: 500;
 }
@@ -1252,7 +1292,7 @@
 .maqam-midi.MuiButton-root {
   gap: var(--maqam-s2);
   border-radius: var(--maqam-radius-pill);
-  color: var(--m3-on-surface-variant);
+  color: var(--maqam-board-ink-quiet);
   font-size: var(--m3-label-large);
   font-weight: 500;
   letter-spacing: 0.006em;

@@ -5,7 +5,7 @@ import {
   MAQAM_DESIGN_THEMES,
   findMaqamDesignTheme,
 } from './maqamDesignThemes';
-import { contrastRatio, luminance, parseHex } from './maqamThemeTokens';
+import { contrastRatio, luminance } from './maqamThemeTokens';
 
 /**
  * Ten themes is ten times the surface area for an unreadable screen, and a
@@ -40,7 +40,8 @@ describe.each(MAQAM_DESIGN_THEMES)('$label', (theme) => {
   it.each([
     ['a key in the maqam', '--maqam-key-ink', '--maqam-key-face'],
     ['a key outside it', '--maqam-key-face-dim-ink', '--maqam-key-face-dim'],
-    ['the scale line on the board', '--m3-on-surface', '--m3-surface-container-high'],
+    ['the scale line on the board', '--maqam-board-ink', '--maqam-board'],
+    ['the glossary and the links', '--m3-primary', '--m3-surface'],
     ['body text on the page', '--m3-on-surface', '--m3-surface'],
     ['supporting text on a panel', '--m3-on-surface-variant', '--m3-surface-container-low'],
     ['the notation on its sheet', '--maqam-staff-ink', '--m3-surface-container-lowest'],
@@ -62,11 +63,31 @@ describe.each(MAQAM_DESIGN_THEMES)('$label', (theme) => {
     expect(ratio, `white on ${faceToken} is ${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(4.5);
   });
 
-  it('keeps the board a visible step below the page', () => {
-    const ratio = contrastRatio(t['--m3-surface-container-high'], t['--m3-surface']);
+  it('keeps the board a visible step from the page', () => {
+    const ratio = contrastRatio(t['--maqam-board'], t['--m3-surface']);
     expect(ratio, `the board against the page is ${ratio.toFixed(3)}:1`).toBeGreaterThanOrEqual(
       1.15,
     );
+  });
+
+  /*
+   * The quarter-tone switches, in both states.
+   *
+   * They measured 1.06:1 against the board and 1.18:1 against each other — a
+   * control you could not see, whose two states you could not tell apart, on
+   * the one mechanic this app exists to demonstrate. A switch has to look like
+   * a switch before its state can mean anything.
+   */
+  it('keeps a quarter-tone switch visible against the board', () => {
+    const ratio = contrastRatio(t['--maqam-switch-off'], t['--maqam-board']);
+    expect(ratio, `an unlit switch on the board is ${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(
+      1.15,
+    );
+  });
+
+  it('keeps a lit switch unmistakable against an unlit one', () => {
+    const ratio = contrastRatio(t['--m3-tertiary'], t['--maqam-switch-off']);
+    expect(ratio, `lit against unlit is ${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(3);
   });
 
   /*
@@ -84,10 +105,17 @@ describe.each(MAQAM_DESIGN_THEMES)('$label', (theme) => {
     ['white', '--maqam-key-face', '--maqam-key-face-dim'],
     ['black', '--maqam-scale-wash-black', '--maqam-key-black-dim'],
   ])('keeps an out-of-maqam %s key visibly faded against one in it', (_half, inToken, outToken) => {
-    const [r1, g1, b1] = parseHex(t[inToken]);
-    const [r2, g2, b2] = parseHex(t[outToken]);
-    const distance = Math.hypot(r1 - r2, g1 - g2, b1 - b2);
-    expect(distance, `the two ${_half} key faces are only ${distance.toFixed(1)} apart`).toBeGreaterThan(12);
+    /*
+     * A LUMINANCE ratio, not an RGB distance. The old floor was "more than 12
+     * apart in RGB", which the shipped default passed at 1.33:1 while the
+     * owner reported the membership colouring as "very hard to read" — the
+     * instrument was measuring something the eye does not.
+     */
+    const ratio = contrastRatio(t[inToken], t[outToken]);
+    expect(
+      ratio,
+      `the two ${_half} key faces are only ${ratio.toFixed(2)}:1 apart`,
+    ).toBeGreaterThanOrEqual(1.45);
   });
 
   /*
@@ -96,17 +124,27 @@ describe.each(MAQAM_DESIGN_THEMES)('$label', (theme) => {
    * means white keys darken and black keys lighten. Stated as an assertion
    * because it reads as an inconsistency otherwise, and someone will "fix" it.
    */
-  it('fades both halves toward the board, not toward one end of the scale', () => {
-    const board = luminance(t['--m3-surface-container-high']);
-    const closer = (a: string, b: string) =>
-      Math.abs(luminance(a) - board) < Math.abs(luminance(b) - board);
+  it('fades both halves toward the board, not toward one end of the scale', (ctx) => {
+    const board = luminance(t['--maqam-board']);
+    /*
+     * Only on a light board. On a dark one a black key is already the board's
+     * luminance, so "recede toward it" has nowhere to go — and the direction
+     * that does have room (lifting) is the one that keeps the white note name
+     * readable. Scoped rather than deleted: this is the rule that makes the
+     * white/black asymmetry deliberate instead of a bug someone will "fix".
+     */
+    if (board < 0.4) return ctx.skip();
+    const gap = (token: string) => Math.abs(luminance(t[token]) - board);
+    const report = (outToken: string, inToken: string) =>
+      `out ${t[outToken]} is ${gap(outToken).toFixed(3)} from the board ` +
+      `${t['--maqam-board']}, in ${t[inToken]} is ${gap(inToken).toFixed(3)}`;
     expect(
-      closer(t['--maqam-key-face-dim'], t['--maqam-key-face']),
-      'an out-of-maqam white key should sit nearer the board than one in the maqam',
+      gap('--maqam-key-face-dim') < gap('--maqam-key-face'),
+      `white: ${report('--maqam-key-face-dim', '--maqam-key-face')}`,
     ).toBe(true);
     expect(
-      closer(t['--maqam-key-black-dim'], t['--maqam-scale-wash-black']),
-      'an out-of-maqam black key should sit nearer the board than one in the maqam',
+      gap('--maqam-key-black-dim') < gap('--maqam-scale-wash-black'),
+      `black: ${report('--maqam-key-black-dim', '--maqam-scale-wash-black')}`,
     ).toBe(true);
   });
 

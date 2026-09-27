@@ -36,6 +36,18 @@ export interface MaqamThemeSeed {
   /** M3 tertiary: "bent off equal temperament", and nothing else. */
   tertiary: string;
   shape: MaqamThemeShape;
+  /**
+   * The board — the stage the keyboard stands on, and the largest coloured
+   * area in the app.
+   *
+   * Its own seed rather than a step of the surface ramp, because that is what
+   * separates a look with presence from a pale one. Tied to the ramp, the
+   * board could only ever sit one tonal step from the page, which held every
+   * theme inside a 1.2:1 total span and made ten distinct palettes all read as
+   * "off-white with an accent". Defaults to a ramp step for looks that want
+   * the quiet version.
+   */
+  stage?: string;
   /** Optional display face for the app title. Body stays the app default. */
   titleFont?: string;
   /**
@@ -109,6 +121,59 @@ export function readableOn(background: string): string {
     : '#111111';
 }
 
+/**
+ * Push `from` away from a stage until it is at least `minRatio` from `other`,
+ * without pushing it so far that `ink` stops being readable on it.
+ *
+ * Returns the last value that satisfied the ink constraint, so a look that
+ * cannot reach the separation floor fails the test loudly rather than shipping
+ * an unreadable key.
+ */
+function separateWhileReadable(
+  from: string,
+  away: string,
+  other: string,
+  ink: string,
+  minRatio: number,
+  minInkRatio: number,
+): string {
+  let best = from;
+  for (let amount = 0; amount <= 0.6; amount += 0.02) {
+    const candidate = mix(from, away, amount);
+    if (contrastRatio(candidate, ink) < minInkRatio) break;
+    best = candidate;
+    if (contrastRatio(candidate, other) >= minRatio) break;
+  }
+  return best;
+}
+
+/**
+ * The unlit chip that separates best from both the lit accent and the board.
+ *
+ * Scored rather than chosen: each candidate is measured against the two floors
+ * and the one that clears them by the widest margin wins. A look whose accent
+ * and board leave no room still fails the test — this finds the best available
+ * answer, it does not manufacture a passing one.
+ */
+function bestSwitchOff(stage: string, lit: string): string {
+  let best = stage;
+  let bestScore = -Infinity;
+  for (const target of ['#ffffff', '#000000']) {
+    for (let amount = 0.08; amount <= 0.9; amount += 0.02) {
+      const candidate = mix(stage, target, amount);
+      const score = Math.min(
+        contrastRatio(candidate, lit) / 3.2,
+        contrastRatio(candidate, stage) / 1.25,
+      );
+      if (score > bestScore) {
+        bestScore = score;
+        best = candidate;
+      }
+    }
+  }
+  return best;
+}
+
 const RADII: Record<MaqamThemeShape, { xs: string; s: string; m: string; l: string }> = {
   sharp: { xs: '2px', s: '3px', m: '4px', l: '6px' },
   soft: { xs: '4px', s: '8px', m: '12px', l: '16px' },
@@ -161,7 +226,57 @@ export function buildThemeTokens(seed: MaqamThemeSeed): MaqamThemeTokens {
    */
   const keyFace = dark ? mix('#ffffff', ground, 0.08) : '#ffffff';
   const keyInk = dark ? mix('#111111', ground, 0.1) : mix(ink, '#000000', 0.12);
-  const blackKey = mix(secondary, '#000000', dark ? 0.35 : 0.2);
+
+  /*
+   * The stage, and what stands on it. A look may hand us a saturated colour
+   * here, so the ink over it is chosen by measurement rather than assumed —
+   * a gold board needs dark text and a lapis one needs light, and guessing
+   * gives one of the two a 1.9:1 scale line.
+   */
+  const stage = seed.stage ?? surface(0.14);
+  const stageInk = readableOn(stage);
+  /*
+   * Black keys: solid when the maqam uses them, LIFTED toward the board when
+   * it does not.
+   *
+   * One direction, on every board, which took three tries to land on. Fading
+   * "toward the stage" is the rule the white keys follow and it degenerates
+   * here — a black key on an oxblood board is already as dark as the board, so
+   * both states ended up 1.06:1 apart with nowhere to go. Lifting instead
+   * always has room, keeps the white note name readable (white on a dark key
+   * is the easy direction), and tints the receding key with the board's own
+   * hue so it still reads as sinking into this particular instrument.
+   */
+  const blackPresent = mix(secondary, '#000000', dark ? 0.58 : 0.55);
+  const blackFaded = separateWhileReadable(
+    blackPresent,
+    mix(stage, '#ffffff', 0.4),
+    blackPresent,
+    '#ffffff',
+    1.55,
+    4.6,
+  );
+  /*
+   * Off is a pale chip in every look, on is the full tertiary.
+   *
+   * Lifting the off state only a little from a dark stage put it right on top
+   * of a mid-toned tertiary — 1.06:1 between a switch's two states, on the one
+   * mechanic this app exists to demonstrate. A pale chip has room under it for
+   * any saturated accent.
+   *
+   * The border sits between the two so the chip has an edge on either side.
+   */
+  /*
+   * The unlit switch: whichever chip is furthest from the lit one.
+   *
+   * Two fixed rules were tried and each failed the other half of the set. A
+   * pale chip is right under a dark accent and 1.2:1 under Noir's gold; a
+   * chip that hugs a dark board is 1.17:1 under Zellige's teal. The direction
+   * depends on the ACCENT, not on the board, and the amount depends on both —
+   * so it is searched rather than guessed, scored against the two floors the
+   * test enforces: 3:1 from the lit state, 1.15:1 from the board it sits on.
+   */
+  const switchOff = bestSwitchOff(stage, tertiary);
 
   return {
     '--m3-surface': ground,
@@ -190,6 +305,13 @@ export function buildThemeTokens(seed: MaqamThemeSeed): MaqamThemeTokens {
     '--m3-tertiary-container': mix(tertiary, ground, dark ? 0.55 : 0.8),
     '--m3-on-tertiary-container': mix(tertiary, dark ? '#ffffff' : '#000000', 0.6),
 
+    /* The stage the instrument stands on. */
+    '--maqam-board': stage,
+    '--maqam-board-ink': stageInk,
+    '--maqam-board-ink-quiet': mix(stageInk, stage, 0.32),
+    '--maqam-switch-off': switchOff,
+    '--maqam-switch-border': mix(switchOff, stageInk, 0.42),
+
     /* Keyboard. Membership is the numeral; these carry one step of support. */
     '--maqam-key-face': keyFace,
     '--maqam-scale-wash': keyFace,
@@ -202,11 +324,30 @@ export function buildThemeTokens(seed: MaqamThemeSeed): MaqamThemeTokens {
      * reconstructed from first principles by a theme system. A flat step
      * toward black is a fade in every theme.
      */
-    '--maqam-key-face-dim': mix(keyFace, mix(ground, '#000000', 0.45), 0.14),
+    /*
+     * A step you see without looking for it.
+     *
+     * 0.14 toward a darkened ground measured 1.33:1 against a white key and
+     * was reported as "very hard to read" — the numeral carries the fact, and
+     * the face was treated as a whisper supporting it, at a volume nobody
+     * could hear. Tinted toward the STAGE and then darkened: the tint is what
+     * makes a receding key look like it is sinking into this particular board
+     * rather than turning grey.
+     */
+    '--maqam-key-face-dim': mix(mix(keyFace, stage, 0.22), '#000000', 0.15),
     '--maqam-key-ink': keyInk,
     '--maqam-key-face-dim-ink': keyInk,
-    '--maqam-scale-wash-black': blackKey,
-    '--maqam-key-black-dim': mix(blackKey, ground, 0.22),
+    /*
+     * Black keys move the same way white ones do — toward the stage to recede,
+     * away from it to be present — which is one rule that works on a light
+     * board AND a dark one. Mixing both toward a fixed colour instead left the
+     * two black keys 1.06:1 apart on every dark-stage look, because a dark key
+     * receding toward a dark board has nowhere to go.
+     */
+    '--maqam-scale-wash-black': blackPresent,
+    /* Toward the stage, which is the direction every receding key moves. */
+    '--maqam-key-black-dim': blackFaded,
+
     '--maqam-echo': mix(primary, ground, 0.45),
 
     /* Notation. Read by the staff renderer, so a theme reaches the SVG too. */

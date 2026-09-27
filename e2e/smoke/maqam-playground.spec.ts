@@ -499,25 +499,59 @@ test.describe('Maqam Playground', () => {
       return {
         rules: paths.map((path) => {
           const box = path.getBoundingClientRect();
-          return { left: box.left, right: box.right, bottom: box.bottom };
+          return { left: box.left, right: box.right, top: box.top };
         }),
+        rings: [...document.querySelectorAll('.maqam-staff__ajnas circle')].map((ring) => {
+          const box = ring.getBoundingClientRect();
+          return { cx: box.left + box.width / 2, cy: box.top + box.height / 2 };
+        }),
+        /* Every notehead VexFlow drew, by its own centre — the thing the
+           brackets claim to line up with. */
+        heads: [...document.querySelectorAll('.maqam-staff svg text')]
+          .filter((node) => !node.closest('.maqam-staff__ajnas'))
+          .map((node) => node.getBoundingClientRect())
+          .filter((box) => box.width > 18 && box.width < 26)
+          .map((box) => box.left + box.width / 2)
+          .sort((a, b) => a - b),
         staffTop,
       };
     });
 
     expect(geometry.rules).toHaveLength(panelNames.length);
-    // Rast's two cells share their G. Both rules must terminate on that one
-    // notehead — a gap or an overlap there would draw the seam as a fact it is
-    // not. Within a notehead's width of each other, in device pixels.
+
+    /*
+     * The ends sit ON the noteheads, measured against VexFlow's own output
+     * rather than against a number written here. This was reported as
+     * misaligned while measuring 0.2px out — the cause was ticks that stopped
+     * in empty space above the staff, not the x positions — so the guard pins
+     * the alignment that was already right AND the attachment that was not.
+     */
     const [lower, upper] = geometry.rules;
+    const nearestHead = (x: number) =>
+      Math.min(...geometry.heads.map((head) => Math.abs(head - x)));
+    expect(nearestHead(lower.left), 'the first cell does not start on a notehead').toBeLessThan(2);
+    expect(nearestHead(upper.right), 'the last cell does not end on a notehead').toBeLessThan(2);
     expect(
       Math.abs(lower.right - upper.left),
       'the two cells do not meet on the same notehead',
-    ).toBeLessThan(6);
-    // Above the music, not through it.
+    ).toBeLessThan(2);
+
+    // The horizontal rule stays clear of the staff; only the ticks come down.
     for (const rule of geometry.rules) {
-      expect(rule.bottom).toBeLessThanOrEqual(geometry.staffTop + 1);
+      expect(rule.top).toBeLessThanOrEqual(geometry.staffTop);
     }
+
+    /*
+     * The ghammaz ring. Two rules meeting at a point read as "one ends and the
+     * next begins", which is the disjunct case and the opposite of what is
+     * true of Rast — the G belongs to BOTH cells. Nothing else on the staff
+     * says so.
+     */
+    expect(geometry.rings, 'the shared degree is not marked').toHaveLength(1);
+    expect(
+      Math.abs(geometry.rings[0].cx - lower.right),
+      'the ring is not on the note the two cells share',
+    ).toBeLessThan(2);
   });
 
   test('portalled surfaces resolve the app tokens', async ({ page }) => {

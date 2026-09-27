@@ -239,10 +239,20 @@ function drawStaffNow(
  * through `createVexFlowAnnotation`, because a jins name is a word on the page
  * and has to be the size words on this page are.
  *
+ * Each end tick descends to ITS OWN note rather than stopping at a fixed
+ * depth. A rule with uniform stubs floats in the space above the staff while
+ * the notes it names sit at whatever heights the melody puts them — measured,
+ * the ends were within 0.2px of the notehead centres and still read as
+ * misaligned, because nothing visibly connected a stub hanging in white space
+ * to a notehead an inch below it. A tick that reaches down to the note is the
+ * difference between "near" and "attached".
+ *
  * Two cells that share exactly one degree — the ghammaz, which is how nearly
- * every maqam here is put together — both terminate ON that notehead, because
- * that shared note IS the fact. Cells that overlap by two or more get their
- * own row, so the overlap reads as an overlap instead of as one long rule.
+ * every maqam here is put together — both terminate ON that notehead, and the
+ * shared note is RINGED. Terminating on it was not enough: two rules meeting
+ * at a point say "this is where one ends and the next begins", which is the
+ * disjunct reading, and the opposite of what is true. The ring says the note
+ * belongs to both. Cells that overlap by two or more get their own row.
  *
  * The labels are plain text, not links. The same jins name is a link to
  * maqamworld in the panel three inches to the right; a second copy of one link
@@ -276,6 +286,11 @@ function drawAjnasBrackets(
   // in real pixels; everything else here is in staff spaces.
   const px = vexFlowUserUnitsPerPixel(svg);
 
+  /* Degrees covered by more than one cell. On nearly every maqam here that is
+     one note, the ghammaz, and it is the single most important thing the
+     brackets have to say. */
+  const shared = sharedDegrees(brackets);
+
   brackets.forEach((bracket, index) => {
     const first = staveNotes[bracket.from];
     const last = staveNotes[bracket.to];
@@ -286,12 +301,15 @@ function drawAjnasBrackets(
     if (!Number.isFinite(x1) || !Number.isFinite(x2) || x2 <= x1) return;
 
     const y = baseY - rows[index] * rowHeight;
-    const tick = space * 0.55;
+    /* Down to just above each notehead, so the bracket is attached to the
+       music rather than hovering over it. Clamped so a very high note cannot
+       produce an upward tick. */
+    const foot = (note: StaveNote) => Math.max(y + space * 0.5, noteHeadY(note) - space * 1.1);
 
     group.appendChild(
       createVexFlowRule(
         svg,
-        `M ${x1} ${y + tick} L ${x1} ${y} L ${x2} ${y} L ${x2} ${y + tick}`,
+        `M ${x1} ${foot(first)} L ${x1} ${y} L ${x2} ${y} L ${x2} ${foot(last)}`,
         { widthPx: BRACKET_RULE_PX, color: bracketInk },
       ),
     );
@@ -309,6 +327,30 @@ function drawAjnasBrackets(
 
     topmost = Math.min(topmost, y - (LABEL_GAP_PX + LABEL_SIZE_PX) * px);
   });
+
+  /*
+   * The ring, drawn last so it sits over both rules.
+   *
+   * An open circle round the notehead, not a fill: the note is already drawn
+   * and a filled mark would hide it. This is the one thing on the staff that
+   * says a degree is in two cells at once, which is what makes a maqam a
+   * maqam rather than a scale.
+   */
+  for (const index of shared) {
+    const note = staveNotes[index];
+    if (!note) continue;
+    const cx = noteCentreX(note);
+    const cy = noteHeadY(note);
+    if (!Number.isFinite(cx) || !Number.isFinite(cy)) continue;
+    const ring = document.createElementNS(SVG_NS, 'circle');
+    ring.setAttribute('cx', String(cx));
+    ring.setAttribute('cy', String(cy));
+    ring.setAttribute('r', String(space * 0.95));
+    ring.setAttribute('fill', 'none');
+    ring.setAttribute('stroke', bracketInk);
+    ring.setAttribute('stroke-width', String(BRACKET_RULE_PX * px));
+    group.appendChild(ring);
+  }
 
   if (group.childNodes.length === 0) return undefined;
   svg.appendChild(group);
@@ -340,6 +382,35 @@ function assignBracketRows(brackets: StaffBracket[]): number[] {
 /** Centre of a notehead, ignoring the accidental hanging off its left. */
 function noteCentreX(note: StaveNote): number {
   return (note.getNoteHeadBeginX() + note.getNoteHeadEndX()) / 2;
+}
+
+/**
+ * Vertical centre of a note's head.
+ *
+ * `getYs()` is VexFlow's own per-notehead y, so it follows the note up and
+ * down the stave. Falls back to the middle line rather than to 0, which would
+ * put a ring in the margin and look like a rendering fault rather than a
+ * missing one.
+ */
+function noteHeadY(note: StaveNote): number {
+  const ys = note.getYs();
+  return ys && ys.length > 0 && Number.isFinite(ys[0]) ? ys[0] : Number.NaN;
+}
+
+/**
+ * Note indices covered by more than one bracket.
+ *
+ * Derived from the spans rather than read off the join, so it stays true for a
+ * maqam with three cells and cannot disagree with what is actually drawn.
+ */
+function sharedDegrees(brackets: StaffBracket[]): number[] {
+  const seen = new Map<number, number>();
+  for (const bracket of brackets) {
+    for (let index = bracket.from; index <= bracket.to; index += 1) {
+      seen.set(index, (seen.get(index) ?? 0) + 1);
+    }
+  }
+  return [...seen.entries()].filter(([, count]) => count > 1).map(([index]) => index);
 }
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
