@@ -45,11 +45,11 @@ surface by `src/shared/notation/vexFlowMusicFontGateGuardrails.test.ts`.
 
 ## CUJ-004: Build a custom tuning and share it
 
-| Step | Action           | Budget                         | Verification                            |
-| ---- | ---------------- | ------------------------------ | --------------------------------------- |
-| 1    | Open "Tune keys" | Matrix expands, 12 toggles     | `e2e/smoke/maqam-playground.spec.ts`    |
-| 2    | Toggle a key     | Keyboard + URL update ≤ 400 ms | `e2e/smoke/maqam-playground.spec.ts`    |
-| 3    | Reload the URL   | Same tuning restored           | `src/maqam/state/maqamUrlState.test.ts` |
+| Step | Action                                 | Budget                                        | Verification                            |
+| ---- | -------------------------------------- | --------------------------------------------- | --------------------------------------- |
+| 1    | Throw a lever in the quarter-tone bank | All three octaves of that note retune at once | `e2e/smoke/maqam-playground.spec.ts`    |
+| 2    | Toggle a key                           | Keyboard + URL update ≤ 400 ms                | `e2e/smoke/maqam-playground.spec.ts`    |
+| 3    | Reload the URL                         | Same tuning restored                          | `src/maqam/state/maqamUrlState.test.ts` |
 
 ## CUJ-005: Hear the maqam as music, not as a scale
 

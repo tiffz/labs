@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, type CSSProperties } from 'react';
 
 import OnscreenPianoKeyboard, {
   type PianoKeyDecoration,
@@ -19,6 +19,11 @@ interface MaqamKeyboardProps {
    * correctly dim the entire keyboard.
    */
   inJinsPitchClasses?: ReadonlySet<number>;
+  /**
+   * Which of the `--maqam-jins-N` colours that cell owns, 1-based. The same
+   * number the chip and the staff bracket use, so the three agree.
+   */
+  inJinsTone?: number;
   onNoteOn: (midi: number) => void;
   onNoteOff: (midi: number) => void;
 }
@@ -37,6 +42,7 @@ export default function MaqamKeyboard({
   octaves,
   playingMidiNote,
   inJinsPitchClasses,
+  inJinsTone,
   onNoteOn,
   onNoteOff,
 }: MaqamKeyboardProps) {
@@ -100,7 +106,14 @@ export default function MaqamKeyboard({
   );
 
   return (
-    <div className="maqam-keyboard">
+    <div
+      className="maqam-keyboard"
+      style={
+        inJinsTone
+          ? ({ '--maqam-cell-tone': `var(--maqam-jins-${inJinsTone})` } as CSSProperties)
+          : undefined
+      }
+    >
       <OnscreenPianoKeyboard
         octaves={octaves}
         activeNotes={activeNotes}

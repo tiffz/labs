@@ -117,11 +117,6 @@ export default function MaqamPicker({ preset, presetId, onSelectPreset }: MaqamP
             />
           </svg>
         </span>
-        {/* Not hidden from assistive tech: a reader who uses Arabic keeps the
-            name the music is actually taught under. */}
-        <span className="maqam-titlepick__arabic" lang="ar" dir="rtl">
-          {preset.arabicName}
-        </span>
       </button>
 
       <AnchoredPopover

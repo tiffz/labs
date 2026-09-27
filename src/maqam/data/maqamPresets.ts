@@ -56,14 +56,19 @@ export interface MaqamPreset {
   name: string;
   /** Transliterated Arabic name, e.g. "Maqam Rast". */
   transliteration: string;
-  /**
-   * The name in Arabic script.
+  /*
+   * There is no `arabicName`.
    *
-   * Not decoration: these are the names the music is actually taught under, and
-   * showing them alongside the transliteration is the difference between an app
-   * about a tradition and an app that has borrowed from one.
+   * It was shown beside the transliteration and is gone at the owner's
+   * request, on a standing rule worth keeping: this app does not display what
+   * its author cannot check. Every other claim here — an interval, a cell
+   * size, a join — can be verified against the `source` URL by someone who
+   * reads English. A name in a script you cannot read cannot, so it was the
+   * one thing on screen taken purely on trust.
+   *
+   * The data is not lost, only unshipped: every preset carries its maqamworld
+   * page in `source`, and that page has the Arabic.
    */
-  arabicName: string;
   /** The tonic, as written. */
   tonic: MaqamNoteSpelling;
   description: string;

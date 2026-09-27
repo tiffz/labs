@@ -58,7 +58,6 @@ export const MAQAM_PRESETS: MaqamPreset[] = [
     name: 'Rast on C',
     transliteration: 'Maqam Rast',
     source: `${MAQAM_WORLD_MAQAM}rast.php`,
-    arabicName: 'راست',
     tonic: { letter: 'C', accidental: 'n' },
     description:
       'The foundational maqam, and the one others are measured against. Its third and seventh sit half-flat, between the major and minor you already know.',
@@ -101,7 +100,6 @@ export const MAQAM_PRESETS: MaqamPreset[] = [
     name: 'Bayati on D',
     transliteration: 'Maqam Bayati',
     source: `${MAQAM_WORLD_MAQAM}bayati.php`,
-    arabicName: 'بياتي',
     tonic: { letter: 'D', accidental: 'n' },
     description:
       'Everywhere in Arabic song. The half-flat second gives it a pull toward the tonic that no Western mode has.',
@@ -144,7 +142,6 @@ export const MAQAM_PRESETS: MaqamPreset[] = [
     name: 'Bayati Shuri on D',
     transliteration: 'Maqam Bayati Shuri',
     source: `${MAQAM_WORLD_MAQAM}bayati_shuri.php`,
-    arabicName: 'بياتي شوري',
     tonic: { letter: 'D', accidental: 'n' },
     description:
       'Bayati with Hijaz on top. The leap from A flat to B is what you hear, and it arrives exactly where Bayati would have gone somewhere gentler.',
@@ -175,7 +172,6 @@ export const MAQAM_PRESETS: MaqamPreset[] = [
     name: 'Muhayyar on D',
     transliteration: 'Maqam Muhayyar',
     source: `${MAQAM_WORLD_MAQAM}bayati.php`,
-    arabicName: 'محير',
     tonic: { letter: 'D', accidental: 'n' },
     /*
      * Said plainly, because the thing that makes Muhayyar itself is the one
@@ -222,7 +218,6 @@ export const MAQAM_PRESETS: MaqamPreset[] = [
     name: 'Sikah on E½♭',
     transliteration: 'Maqam Sikah',
     source: `${MAQAM_WORLD_MAQAM}sikah.php`,
-    arabicName: 'سيكاه',
     tonic: { letter: 'E', accidental: 'd' },
     description:
       'Rooted on a half-flat, so the home note itself is one an untouched piano cannot play. Its first jins is only three notes.',
@@ -263,7 +258,6 @@ export const MAQAM_PRESETS: MaqamPreset[] = [
     name: 'Saba on D',
     transliteration: 'Maqam Saba',
     source: `${MAQAM_WORLD_MAQAM}saba.php`,
-    arabicName: 'صبا',
     tonic: { letter: 'D', accidental: 'n' },
     description:
       'The sound of lament. Saba is the one family that never comes home: its upper tonic is flattened, so the scale does not close at the octave.',
@@ -297,7 +291,6 @@ export const MAQAM_PRESETS: MaqamPreset[] = [
     name: 'Hijaz on D',
     transliteration: 'Maqam Hijaz',
     source: `${MAQAM_WORLD_MAQAM}hijaz.php`,
-    arabicName: 'حجاز',
     tonic: { letter: 'D', accidental: 'n' },
     description:
       'No microtones at all. The drama is the step-and-a-half leap from E♭ to F♯. A good place to start if the half-flats are not landing yet.',
@@ -325,7 +318,6 @@ export const MAQAM_PRESETS: MaqamPreset[] = [
     name: 'Kurd on D',
     transliteration: 'Maqam Kurd',
     source: `${MAQAM_WORLD_MAQAM}kurd.php`,
-    arabicName: 'كرد',
     tonic: { letter: 'D', accidental: 'n' },
     description:
       'A flattened second and nothing else exotic. Western ears hear Phrygian; the difference is where the melody rests, not which notes exist.',
@@ -357,7 +349,6 @@ export const MAQAM_PRESETS: MaqamPreset[] = [
     name: 'Nahawand on C',
     transliteration: 'Maqam Nahawand',
     source: `${MAQAM_WORLD_MAQAM}nahawand.php`,
-    arabicName: 'نهاوند',
     tonic: { letter: 'C', accidental: 'n' },
     description:
       'The closest thing to a Western minor. Useful as a control: if Nahawand sounds ordinary to you, the strangeness in the others really is the tuning.',
@@ -386,7 +377,6 @@ export const MAQAM_PRESETS: MaqamPreset[] = [
     name: 'Nikriz on C',
     transliteration: 'Maqam Nikriz',
     source: `${MAQAM_WORLD_MAQAM}nikriz.php`,
-    arabicName: 'نكريز',
     tonic: { letter: 'C', accidental: 'n' },
     description:
       'Built on a five-note jins rather than a four-note one, with a raised fourth. The extra note is why its lower cell reaches all the way to the fifth.',
@@ -416,7 +406,6 @@ export const MAQAM_PRESETS: MaqamPreset[] = [
     name: 'Ajam on C',
     transliteration: 'Maqam Ajam',
     source: `${MAQAM_WORLD_MAQAM}ajam.php`,
-    arabicName: 'عجم',
     tonic: { letter: 'C', accidental: 'n' },
     description:
       'The major scale, by another name and another route. Its second cell repeats the shape of the first, which is what makes it sound settled.',
