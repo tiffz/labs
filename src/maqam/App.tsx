@@ -5,6 +5,8 @@ import TextField from '@mui/material/TextField';
 
 import SkipToMain from '../shared/components/SkipToMain';
 import GlossaryMenu from './components/GlossaryMenu';
+import MaqamThemePicker from './components/MaqamThemePicker';
+import { isDesignPreviewEnabled } from './design/designPreview';
 import KeyTuningRail from './components/KeyTuningRail';
 import JinsBreakdown from './components/JinsBreakdown';
 import MaqamKeyboard from './components/MaqamKeyboard';
@@ -163,6 +165,11 @@ export default function App() {
             can teach the tradition far better than we can.
           */}
           <GlossaryMenu />
+
+          {/* Preview only: dev, or `?designPreview`. Ten looks to choose
+              between; the winner gets folded into the stylesheet and the rest
+              deleted. */}
+          {isDesignPreviewEnabled() && <MaqamThemePicker />}
         </header>
 
         <div className="maqam-stage">
@@ -174,33 +181,36 @@ export default function App() {
               {preset ? `${preset.name} scale` : 'Scale'}
             </h2>
 
+            {/* Play lives in the card, under the music it plays — M3 puts a
+                card's actions inside it. Floating on the page below the card,
+                it left a hole beside a full reference panel and read as a
+                stray control belonging to nothing. */}
             <Paper elevation={0} className="maqam-staff-surface">
               <MaqamStaff notes={staffNotes} highlighted={litNotes} brackets={brackets} />
+
+              {/* Beside the control that failed, naming the action the user
+                  took. It used to render under the keyboard and say "press a
+                  key again" whichever control had failed, so someone who
+                  pressed Play was told to do something else, in a line 250px
+                  below the button and off-screen on a phone. */}
+              {audioBlocked === 'playback' && (
+                <p className="maqam-alert" role="status">
+                  No sound yet. Your browser holds audio until you interact with the page. Press
+                  Play again.
+                </p>
+              )}
+
+              <div className="maqam-melodybar">
+                <Button
+                  variant="contained"
+                  disableElevation
+                  onClick={togglePlayback}
+                  className="maqam-melodybar__play"
+                >
+                  {isPlaying ? 'Stop' : 'Play'}
+                </Button>
+              </div>
             </Paper>
-
-            {/* Beside the control that failed, naming the action the user took.
-                It used to render under the keyboard and say "press a key
-                again" whichever control had failed, so someone who pressed
-                Play was told to do something else, in a line 250px below the
-                button and off-screen on a phone. */}
-            {audioBlocked === 'playback' && (
-              <p className="maqam-alert" role="status">
-                No sound yet. Your browser holds audio until you interact with the page. Press Play
-                again.
-              </p>
-            )}
-
-            <div className="maqam-melodybar">
-              <Button
-                variant="contained"
-                disableElevation
-                onClick={togglePlayback}
-                className="maqam-melodybar__play"
-              >
-                {isPlaying ? 'Stop' : 'Play'}
-              </Button>
-            </div>
-
           </section>
 
           {preset && (

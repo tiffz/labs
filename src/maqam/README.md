@@ -142,13 +142,70 @@ Why synthesis rather than a sample library: a piano is the wrong instrument for 
 
 [`notation/maqamStaffDraw.ts`](notation/maqamStaffDraw.ts) awaits `ensureVexFlowFontsLoaded()` **inside** the draw function, so the guarantee travels with it rather than depending on a caller remembering. `MaqamStaff` _also_ holds render on `useVexFlowMusicFontReady()` to avoid flashing an empty box. Both arms are deliberate.
 
+## Design
+
+Material 3, as a **token system** rather than as a look someone eyeballed. `maqam.css`
+declares the whole set on `.maqam, .maqam-portal` — both, because MUI popovers render into
+a portal at the end of `<body>` and would otherwise resolve nothing.
+
+- **Surfaces are one warm neutral at five tones.** Depth is a tonal step, never a hue
+  change and never a shadow. The palette's five hues
+  (saffron `#e5c100`, terracotta `#dc9750`, garnet `#922c40`, indigo `#1e2640`,
+  sand `#f3eac0`) are **accents**. An earlier version used sand as `surface-container`
+  and then filled a 1200x390 board with it, which is how a palette meant for detail
+  became the loudest thing on screen.
+- **Three roles, three jobs.** Garnet (`primary`) = "sounding, or home", and the one CTA.
+  Terracotta (`tertiary`) = "bent off equal temperament". Indigo (`secondary`) = structure.
+  Nothing else is coloured.
+- **One containment idiom**: an outlined card, radius 16, 1dp `outline-variant`. The board
+  is the single exception — a filled well one tone deeper, because it holds an instrument.
+- **M3 type scale by role** (`--m3-headline-small`, `--m3-title-medium`, `--m3-body-medium`,
+  `--m3-label-*`), so a size is chosen by what the text _is_.
+- **The notation is themed too.** VexFlow paints with JS colour strings, so `maqamStaffDraw`
+  reads `--maqam-staff-ink`, `--maqam-staff-lit` and `--maqam-bracket-ink` off the container.
+  Without that the staff keeps whatever hex was hardcoded in 2026 while the page moves on.
+
+### Ten looks, behind a preview picker
+
+[`design/maqamDesignThemes.ts`](design/maqamDesignThemes.ts) holds ten alternative looks —
+Sahara, Damascus, Zellige, Manuscript, Gallery, Oud, Bosphorus, Saffron, Noir, Risograph —
+for choosing a direction in the running app rather than from mockups.
+
+- **Preview only.** The picker shows in dev, or with `?designPreview`. A link can pin one
+  with `?theme=noir`; otherwise the choice persists in `localStorage`.
+- **`maqam.css` owns the default.** `applyMaqamTheme` injects nothing for Sahara. Deriving
+  the default here too gave one palette two sources of truth, and the derived one won —
+  so the shipped design was quietly replaced by an approximation of itself.
+- **A theme is a seed, not 40 hexes.** Ground, ink, three roles, a mode, a shape; the rest
+  is derived ([`design/maqamThemeTokens.ts`](design/maqamThemeTokens.ts)), so no theme can
+  ship missing a token and silently inherit the last one's.
+- **The ramp preserves hue.** Surfaces scale the ground's own channels rather than mixing
+  toward the ink, which dragged every warm surface toward navy.
+- **Every look is contrast-tested.** `maqamDesignThemes.test.ts` runs the same AA and
+  surface-step floors the e2e enforces on the default over all ten, as arithmetic. It
+  caught five real defects on first run, including two key faces **0.0 apart** in Noir —
+  the exact membership bug this app shipped three times.
+
+**When one wins:** fold its tokens into `maqam.css`, delete the other nine, delete
+`design/` and `context/`, write `DESIGN.md` + a scoped rule, and remove the picker.
+See [`labs-ui-design-variations`](../../.agents/skills/labs-ui-design-variations/SKILL.md).
+
 ## State
 
 `useMaqamState` holds it all; there is no persistence. Everything lives in the URL (`?maqam=rast_c&tuning=----d------d`), so a link is the save file. A corrupt `tuning` value falls back to the **maqam's own tuning**, never to twelve equal keys — that would look like a deliberate "no microtones" choice the user never made.
 
 ## Shared code touched
 
-- `OnscreenPianoKeyboard` gained one optional prop, `decorateKey`, for per-key role classes and badges. Additive; every existing caller is unaffected.
+- `OnscreenPianoKeyboard` gained one optional prop, `decorateKey`, returning a class, a
+  `label` (the key's printed name), a `badge` and a `mark`. Additive; every existing caller
+  is unaffected. `label` is what lets a keycap read `E♭3` on Hijaz instead of `D♯3` — the
+  staff and the scale line both say `E♭`, and matching the two is the learner's whole task.
+- `vexflow/vexFlowAnnotation.ts` is new: text drawn **on** a score, in the host app's own
+  typeface and sized in real pixels. Three faults kept recurring and the loudest one is
+  invisible in review — VexFlow sets `stroke="black"` on the `<svg>` root, so every
+  annotation inherits a 1-unit outline and renders as a black blob whatever its `fill`
+  says. It has been misdiagnosed as a font problem every time. Six files across five apps
+  still carry it; they are baselined in `vexFlowAnnotationGuardrails.test.ts`.
 - `audioPatternRegistry` gained a row for `maqam`, describing what this app actually does rather than aspiring to a pattern it does not use.
 
 ## MIDI

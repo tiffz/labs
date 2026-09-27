@@ -1,8 +1,6 @@
 import '../shared/ui/fonts/appFonts';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import CssBaseline from '@mui/material/CssBaseline';
-import { ThemeProvider } from '@mui/material/styles';
 import LabsErrorBoundary from '../shared/components/LabsErrorBoundary';
 import {
   LabsKeyboardShortcutsHost,
@@ -10,8 +8,8 @@ import {
 } from '../shared/keyboardShortcuts';
 import { installLabsCrashHandlers } from '../shared/utils/labsCrashLog';
 import { installServerLogger } from '../shared/utils/serverLogger';
-import { getAppTheme } from '../shared/ui/theme/appTheme';
 import { initMaterialIconRuntime } from '../shared/ui/icons/materialIconsBootstrap';
+import MaqamDesignThemeProvider from './context/MaqamDesignThemeProvider';
 import '../shared/components/music/appSharedThemes.css';
 import '../shared/components/music/onscreenPianoKeyboard.css';
 import '../shared/styles/labsChrome.css';
@@ -28,12 +26,13 @@ initMaterialIconRuntime();
 createRoot(document.getElementById('root')!).render(
   <LabsErrorBoundary appId="maqam">
     <StrictMode>
-      <ThemeProvider theme={getAppTheme('maqam')}>
-        <CssBaseline />
+      {/* Owns both halves of the look: the CSS custom properties the
+          stylesheet reads and the MUI palette, which cannot read them. */}
+      <MaqamDesignThemeProvider>
         <LabsKeyboardShortcutsHost sections={() => [labsCommonHelpShortcutSection()]}>
           <App />
         </LabsKeyboardShortcutsHost>
-      </ThemeProvider>
+      </MaqamDesignThemeProvider>
     </StrictMode>
   </LabsErrorBoundary>,
 );

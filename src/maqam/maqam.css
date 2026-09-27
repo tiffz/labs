@@ -23,31 +23,95 @@
  */
 .maqam,
 .maqam-portal {
-  /* M3 surface roles */
-  --m3-surface: #fffdf5;
-  --m3-surface-container: #f3eac0;
-  --m3-surface-container-high: #ece0ae;
+  /*
+   * ---------------------------------------------------------------- M3 roles
+   *
+   * A tonal system, not a list of favourite colours. The five hues this app was
+   * given — saffron #e5c100, terracotta #dc9750, garnet #922c40, indigo #1e2640,
+   * sand #f3eac0 — are ACCENTS. The previous version used sand as
+   * `surface-container` and then filled a 1200x390 board and a text field with
+   * it, which is how a palette meant for detail became the loudest thing on
+   * screen. M3's answer is the one used here: every large area is a near-neutral
+   * step of one warm ramp, and chroma is spent only where meaning lives.
+   *
+   * Surfaces are a single warm neutral at four tones. Depth is a tonal step, not
+   * a hue change and not a shadow — that is what makes the page read as one
+   * material instead of as three unrelated cards.
+   */
+  --m3-surface: #fdf8f2;
+  --m3-surface-container-lowest: #ffffff;
+  --m3-surface-container-low: #f8f2ea;
+  --m3-surface-container: #f4ece3;
+  --m3-surface-container-high: #efe7dc;
+  --m3-surface-container-highest: #eae1d5;
+
+  /* Ink is indigo rather than black: it is the one place the palette's cool
+     hue belongs, and it warms nothing else. */
   --m3-on-surface: #1e2640;
-  --m3-on-surface-variant: #4c5470;
-  --m3-outline-variant: rgba(30, 38, 64, 0.14);
+  --m3-on-surface-variant: #545a72;
+  --m3-outline: #7c8098;
+  --m3-outline-variant: #d8d1c2;
+
+  /* Primary: garnet. Says "sounding, or home", and carries the one CTA. */
+  --m3-primary: #922c40;
+  --m3-on-primary: #ffffff;
+  --m3-primary-container: #ffd9dd;
+  --m3-on-primary-container: #3b0a17;
+
+  /* Secondary: indigo. Structure — selection, the rail, quiet chrome. */
+  --m3-secondary: #454d6d;
+  --m3-secondary-container: #dfe1f4;
+  --m3-on-secondary-container: #151b34;
+
+  /* Tertiary: terracotta. Says "bent off equal temperament", and nothing else.
+     Darkened from #b06a22 to clear 4.5:1 as text on every surface above. */
+  --m3-tertiary: #8a5115;
+  --m3-on-tertiary: #ffffff;
+  /* Two steps darker than #ffdcbe, which measured 1.00:1 against the rail's
+     unlit fill — identical luminance, hue only. The lit switches read as faint
+     smudges because "bent off equal temperament" owned no value step. */
+  --m3-tertiary-container: #f7c99a;
+  --m3-on-tertiary-container: #2f1600;
+
+  /* Saffron survives as one hairline of warmth, used at hairline scale only. */
+  --m3-accent-saffron: #e5c100;
 
   /*
-   * Two hues, and that is the whole palette.
+   * The notation's three inks.
    *
-   * Garnet says "this note is sounding, or is home". Terracotta says "this
-   * pitch is bent off equal temperament". Nothing else is coloured.
-   *
-   * The palette is saffron, terracotta, garnet, indigo and sand
-   * (#e5c100 #dc9750 #922c40 #1e2640 #f3eac0). Ink is indigo rather than
-   * black, the ground is sand rather than grey, and the two meaning-bearing
-   * hues are garnet and terracotta. Membership stays a cool-against-warm
-   * distinction, now indigo against sand.
+   * VexFlow paints with JS colour strings, so the stylesheet cannot reach it —
+   * every renderer in this repo ended up with a hex literal its theme knew
+   * nothing about. `maqamStaffDraw` reads these, which is what lets a look
+   * apply to the staff as well as to the page.
    */
-  --m3-primary: #922c40;
-  --m3-primary-container: #eccdd4;
-  --m3-tertiary: #b06a22;
-  --m3-tertiary-container: #f7dcb2;
-  --m3-on-tertiary-container: #5c3408;
+  --maqam-staff-ink: #241d16;
+  --maqam-staff-lit: #922c40;
+  --maqam-bracket-ink: #6f4450;
+
+  /* A display face, for the looks that use one. */
+  --maqam-title-font: inherit;
+
+  /*
+   * The shared popover shell (`.labs-popover-surface`) paints from these, and
+   * this app never set them — so the glossary, the keyboard note and the theme
+   * picker were white cards whatever the page behind them looked like. Most
+   * visible on a dark look, where a white slab opened over a dark page.
+   *
+   * They are declared here AND written into every theme, because the element
+   * they style is MUI's Paper, which is the PARENT of `.maqam-portal` — a
+   * custom property declared on the portal cannot reach it.
+   */
+  --labs-popover-bg: var(--m3-surface-container-lowest);
+  --labs-popover-border: 1px solid var(--m3-outline-variant);
+  --labs-popover-radius: var(--maqam-radius-m);
+
+  /*
+   * State layers, M3's own opacities. Hover 8%, focus/press 10%, on the role
+   * colour rather than a hand-picked hover fill per control — which is what
+   * made hover states differ between the rail, the keys and the buttons.
+   */
+  --m3-state-hover: 0.08;
+  --m3-state-press: 0.1;
 
   --maqam-tonic: var(--m3-primary);
   --maqam-tonic-soft: var(--m3-primary-container);
@@ -61,24 +125,18 @@
    * against the other keys, and all three were invisible on Rast, whose seven
    * degrees are the seven white keys — a relative mark with nothing to
    * contrast against. The user reported "the highlighting is broken" four
-   * times and every time it was working as built. `--maqam-key-face-dim` and
-   * its black-key twin still exist, one gentle step of recession that
-   * reinforces the numeral; they no longer carry the fact on their own, which
-   * is why the step could come down from a grey slab to a warm shade.
-   *
-   * Tinting the in-maqam keys INSTEAD was tried too, and turned the board into
-   * a lavender slab: on Rast all 21 white keys went the same colour and it
-   * stopped looking like a piano at all.
+   * times and every time it was working as built. The faces below still carry
+   * one gentle step of recession that reinforces the numeral; they no longer
+   * carry the fact on their own.
    */
-  --maqam-key-face: #fffdf6;
-  --maqam-key-face-dim: #e7e0cd;
-  --maqam-scale-wash: #fffdf6;
-  --maqam-scale-wash-black: #1c2237;
+  --maqam-key-face: #ffffff;
+  --maqam-key-face-dim: #e6dfd2;
+  --maqam-scale-wash: #ffffff;
+  --maqam-scale-wash-black: #1b2136;
   /* The octaves of the note sounding: a step above membership, below the note
      itself, so "which key is that" still has one loud answer. */
   --maqam-echo: #d3a3ad;
   --maqam-key-ink: #2c3350;
-  --maqam-key-black: #2a2e3c;
   /*
    * Recession lives in the FACE, never in the ink.
    *
@@ -90,20 +148,29 @@
    */
   --maqam-key-face-dim-ink: var(--maqam-key-ink);
   /* A black key is black. 15 of the 18 are outside the maqam on most maqamat,
-     and at #6e7689 they read as a slate slab laid over the instrument rather
-     than as the accidentals of a piano. One step of lift off the in-maqam
-     black is enough now that the numeral says which is which. */
+     and a slate grey read as a slab laid over the instrument rather than as
+     the accidentals of a piano. */
   --maqam-key-black-dim: #3d4560;
 
-  /* Type scale. Six sizes, because a screen this small cannot justify more. */
-  --maqam-text-xs: 0.6875rem;
-  --maqam-text-sm: 0.75rem;
-  --maqam-text-md: 0.875rem;
-  --maqam-text-lg: 1rem;
-  --maqam-text-xl: 1.375rem;
+  /*
+   * ------------------------------------------------------------- M3 type
+   *
+   * The M3 scale, named as M3 names it, so a size is chosen by what the text IS
+   * rather than by how big it should look. Six ad-hoc rem values preceded this
+   * and nothing said which to use where, which is most of what read as
+   * inconsistent.
+   */
+  --m3-headline-small: 1.5rem; /* 24/32 — the app title */
+  --m3-title-medium: 1rem; /* 16/24 w500 — a jins name */
+  --m3-title-small: 0.875rem; /* 14/20 w500 */
+  --m3-body-medium: 0.875rem; /* 14/20 — running text */
+  --m3-body-small: 0.75rem; /* 12/16 — supporting detail */
+  --m3-label-large: 0.875rem; /* 14 w500 — buttons */
+  --m3-label-medium: 0.75rem; /* 12 w500 — eyebrows, key names */
+  --m3-label-small: 0.6875rem; /* 11 w500 — the smallest mark on a keycap */
   --maqam-text-arabic: 1.75rem;
 
-  /* Space, on a 4px grid. */
+  /* Space, on M3's 4dp grid. */
   --maqam-s1: 4px;
   --maqam-s2: 8px;
   --maqam-s3: 12px;
@@ -112,10 +179,11 @@
   --maqam-s6: 32px;
   --maqam-gap: var(--maqam-s5);
 
-  /* Shape scale. */
+  /* M3 shape scale: 4 / 8 / 12 / 16 / full. */
+  --maqam-radius-xs: 4px;
   --maqam-radius-s: 8px;
   --maqam-radius-m: 12px;
-  --maqam-radius-l: 20px;
+  --maqam-radius-l: 16px;
   --maqam-radius-pill: 999px;
 }
 
@@ -127,16 +195,14 @@
   height: 100vh;
   height: 100dvh;
   overflow: hidden;
-  /* A warm wash rather than a flat fill: the page had the right colours and
-     none of the depth, which is most of what read as "dry". */
-  background:
-    radial-gradient(120% 90% at 12% 0%, #fffdf4 0%, rgba(255, 253, 244, 0) 55%),
-    radial-gradient(
-      90% 70% at 100% 100%,
-      #f0e3b6 0%,
-      rgba(240, 227, 182, 0) 60%
-    ),
-    var(--m3-surface);
+  /*
+   * Flat. Two radial gradients used to wash the page saffron at one corner and
+   * near-white at the other, which meant no panel had a stable ground to sit
+   * on: the same card read as raised at the top of the screen and sunken at
+   * the bottom. M3 gets depth from tonal steps between surfaces, and a ground
+   * has to hold still for those steps to mean anything.
+   */
+  background: var(--m3-surface);
   color: var(--m3-on-surface);
 }
 
@@ -206,7 +272,8 @@
 
 .maqam-topbar__title {
   margin: 0;
-  font-size: var(--maqam-text-xl);
+  font-family: var(--maqam-title-font, inherit);
+  font-size: var(--m3-headline-small);
   font-weight: 700;
   letter-spacing: -0.015em;
   line-height: 1.2;
@@ -218,15 +285,27 @@
   min-width: 0;
 }
 
-/* The one place the app wants a filled field rather than a bare outline: it is
-   the primary control and should read as the thing you touch first. */
+/*
+ * An M3 outlined field. It was filled with `surface-container` back when that
+ * token was sand, which made the app's first control a saffron slab competing
+ * with the notation for the eye. M3 reserves a filled field for dense forms;
+ * a single field in an app bar is outlined.
+ */
 .maqam-topbar__picker .MuiOutlinedInput-root {
-  background: var(--m3-surface-container);
-  border-radius: var(--maqam-radius-m);
+  background: var(--m3-surface-container-lowest);
+  border-radius: var(--maqam-radius-xs);
+  /* 40px, not the 37.1 it computed to. A field beside a 44px button and a 36px
+     text button wants to be one of the two, not a fourth number. */
+  min-height: 40px;
+}
+
+.maqam-topbar__picker .MuiOutlinedInput-notchedOutline {
+  border-color: var(--m3-outline);
 }
 
 .maqam-topbar__picker select {
-  font-weight: 600;
+  font-size: var(--m3-body-medium);
+  font-weight: 500;
 }
 
 /*
@@ -242,7 +321,7 @@
 
   .maqam-topbar__title {
     flex: 1 1 auto;
-    font-size: var(--maqam-text-xl);
+    font-size: var(--m3-headline-small);
   }
 
   .maqam-topbar__picker {
@@ -256,7 +335,7 @@
 
   .maqam-jins__lede {
     margin: 0 0 var(--maqam-s4);
-    font-size: var(--maqam-text-md);
+    font-size: var(--m3-body-medium);
     line-height: 1.55;
     color: var(--m3-on-surface-variant);
   }
@@ -269,7 +348,7 @@
     border-radius: var(--maqam-radius-s);
     background: var(--maqam-microtonal-soft);
     color: var(--m3-on-tertiary-container);
-    font-size: var(--maqam-text-sm);
+    font-size: var(--m3-label-medium);
     line-height: 1.5;
   }
 
@@ -279,7 +358,7 @@
   }
 
   .maqam-jins__alt {
-    font-size: var(--maqam-text-sm);
+    font-size: var(--m3-label-medium);
     color: var(--m3-on-surface-variant);
   }
 
@@ -298,7 +377,7 @@
 
   .maqam-description {
     margin-top: 8px;
-    font-size: var(--maqam-text-md);
+    font-size: var(--m3-body-medium);
   }
 
   .maqam-board {
@@ -309,11 +388,13 @@
 
 /* -------------------------------------------------------------- eyebrows -- */
 
+/* M3 label-medium: 12/16 at weight 500. It was 11px at weight 700 with 0.09em
+   tracking, which is a shout for a word that only has to name a section. */
 .maqam-eyebrow {
   margin: 0;
-  font-size: var(--maqam-text-xs);
-  font-weight: 700;
-  letter-spacing: 0.09em;
+  font-size: var(--m3-label-medium);
+  font-weight: 500;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--m3-on-surface-variant);
 }
@@ -349,25 +430,16 @@
      */
     align-items: stretch;
   }
-
-  /*
-   * The sheet is the size of the music on it.
-   *
-   * Stretching it to match the reference column made the largest element on the
-   * page 62% empty white — 102px of notation in a 271px card — which is the
-   * "notation floating in a pool of white" this layout was supposed to have
-   * fixed. The two columns are different lengths because they hold different
-   * amounts; that only read as a hole while the reference column was a filled
-   * card with a visible edge, and it is not one any more.
-   */
-  .maqam-stage__staff {
-    align-self: start;
-  }
 }
 
 .maqam-stage__staff,
 .maqam-stage__jins {
   min-width: 0;
+}
+
+.maqam-stage__staff {
+  display: flex;
+  flex-direction: column;
 }
 
 /*
@@ -409,21 +481,44 @@
 
 .maqam-stage__hint {
   margin: 0;
-  font-size: var(--maqam-text-md);
+  font-size: var(--m3-body-medium);
   color: var(--m3-on-surface-variant);
 }
 
+/*
+ * One containment idiom for the whole app: a filled M3 card, radius 16, no
+ * border and no shadow. Depth is the tonal step from the page.
+ *
+ * This surface used to be a white-to-cream gradient under a 28px drop shadow
+ * while the panel beside it had a bare hairline and the board below it was a
+ * tinted well — three ways of saying "this is a region", none of them the
+ * same, which is most of what read as an inconsistent visual style.
+ *
+ * The notation itself keeps the lightest tone, because it IS paper.
+ */
+/*
+ * An M3 OUTLINED card, not a filled one.
+ *
+ * Filled was the first attempt and it contained nothing: measured against the
+ * page, the staff card came out at 1.03:1 and the ajnas panel at 1.07:1, so
+ * whitespace was doing all the grouping and the page read as three things
+ * floating rather than three regions — which is the "awkwardly spaced"
+ * complaint, arriving as a spacing problem but caused by a missing edge.
+ *
+ * M3 pairs a small tonal step with EITHER elevation 1 OR a 1dp outline. This
+ * takes the outline: a shadow under a card on a warm ground reads as dirt, and
+ * the board below is the one thing allowed to look recessed.
+ */
 .maqam-staff-surface.MuiPaper-root {
-  border: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--maqam-s3);
+  flex: 1;
+  justify-content: center;
+  border: 1px solid var(--m3-outline-variant);
   border-radius: var(--maqam-radius-l);
-  /* Paper-white, and warmer at the foot, so the staff reads as a page rather
-     than a dialog box. */
-  background: linear-gradient(180deg, #ffffff 0%, #fffcf2 100%);
-  padding: var(--maqam-s2) var(--maqam-s3);
-  /* The one hero surface, so the one real elevation. */
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.9) inset,
-    0 10px 28px -16px rgba(32, 27, 22, 0.28);
+  background: var(--m3-surface-container-lowest);
+  padding: var(--maqam-s4);
 }
 
 .maqam-staff {
@@ -441,27 +536,31 @@
   margin: var(--maqam-s3) 0 0;
   max-width: 68ch;
   color: var(--m3-on-surface-variant);
-  font-size: var(--maqam-text-md);
+  font-size: var(--m3-body-medium);
   line-height: 1.5;
 }
 
 /* ----------------------------------------------------------------- ajnas -- */
 
 /*
- * No card. A 1.07:1 fill behind a column of text is a border doing no work
- * (ux-restraint rule 5), and it was the edge that made the two columns' natural
- * difference in length look like a rendering fault. A hairline separates it
- * from the staff instead, and only where there are two columns to separate.
+ * The same card as the staff, one tone down: the notation is paper, the
+ * reference beside it is a panel.
+ *
+ * It was a bare column separated by a single vertical hairline, which is a
+ * third containment idiom on a page that already had two — and a lone 1px rule
+ * floating in whitespace is the least M3 thing on the screen. With both
+ * columns carded, the two also stretch to the same height, which is what
+ * closed the hole that used to sit under the Play button.
  */
-.maqam-jins {
-  padding: 0;
+.maqam-stage__jins {
+  background: var(--m3-surface-container-low);
+  border: 1px solid var(--m3-outline-variant);
+  border-radius: var(--maqam-radius-l);
+  padding: var(--maqam-s4);
 }
 
-@media (min-width: 900px) {
-  .maqam-stage__jins {
-    padding-left: var(--maqam-s5);
-    border-left: 1px solid var(--m3-outline-variant);
-  }
+.maqam-jins {
+  padding: 0;
 }
 
 .maqam-jins__title {
@@ -486,7 +585,7 @@
 }
 
 .maqam-jins__translit {
-  font-size: var(--maqam-text-sm);
+  font-size: var(--m3-label-medium);
   color: var(--m3-on-surface-variant);
   text-decoration: none;
   border-bottom: 1px solid var(--m3-outline-variant);
@@ -519,7 +618,7 @@
 /* A link, but a quiet one: the jins name is a heading first and a way out
    second. Default link blue was the only cold colour left on the page. */
 .maqam-jins__name {
-  font-size: var(--maqam-text-md);
+  font-size: var(--m3-body-medium);
   font-weight: 600;
   color: var(--m3-on-surface);
   text-decoration: none;
@@ -547,8 +646,27 @@
   }
 }
 
+/*
+ * The alternative cell ("or Jins Nahawand on G").
+ *
+ * These declarations existed ONLY inside the narrow-screen media query, so at
+ * every desktop width the link fell back to the user agent's blue with a blue
+ * underline — brighter than anything else on the page and answering to no M3
+ * role. A rule that only applies under 900px is not a style, it is a gap.
+ */
+.maqam-jins__alt a {
+  color: var(--m3-primary);
+  text-decoration: none;
+  border-bottom: 1px solid var(--m3-outline-variant);
+}
+
+.maqam-jins__alt a:hover,
+.maqam-jins__alt a:focus-visible {
+  border-bottom-color: currentColor;
+}
+
 .maqam-jins__steps {
-  font-size: var(--maqam-text-sm);
+  font-size: var(--m3-label-medium);
   color: var(--m3-on-surface-variant);
   font-variant-numeric: tabular-nums;
 }
@@ -559,7 +677,7 @@
 
 .maqam-jins__note {
   margin: 0 0 10px;
-  font-size: var(--maqam-text-sm);
+  font-size: var(--m3-label-medium);
   line-height: 1.45;
   color: var(--m3-on-surface-variant);
 }
@@ -601,7 +719,7 @@
   border-color: rgba(30, 38, 64, 0.1);
   color: var(--m3-on-tertiary-container);
   font: inherit;
-  font-size: var(--maqam-text-xs);
+  font-size: var(--m3-label-small);
   line-height: 1;
   cursor: pointer;
   transition:
@@ -643,8 +761,8 @@
   /* Narrow, with wide gutters: a switch over its key, not a tile filling it. */
   inset: 0 min(15px, 22%);
   border-radius: var(--maqam-radius-s);
-  background: rgba(30, 38, 64, 0.07);
-  border: 1px solid rgba(30, 38, 64, 0.1);
+  background: var(--m3-surface-container-highest);
+  border: 1px solid var(--m3-outline-variant);
   transition:
     background 0.12s ease,
     border-color 0.12s ease;
@@ -673,9 +791,12 @@
   height: 18px;
   transform: translateX(-50%);
   z-index: 2;
-  background: rgba(30, 38, 64, 0.45);
-  border-color: rgba(30, 38, 64, 0.5);
-  color: var(--maqam-microtonal-soft);
+  /* A pale indigo chip, not a dark dot. At full `secondary` the five black-key
+     switches were the loudest marks on the board, above a keyboard whose whole
+     job is to be looked at. */
+  background: var(--m3-secondary-container);
+  border-color: var(--m3-outline-variant);
+  color: var(--m3-on-secondary-container);
 }
 
 .maqam-rail__switch--black.is-bent {
@@ -701,7 +822,7 @@
 .maqam-board {
   display: flex;
   flex-direction: column;
-  gap: var(--maqam-s4);
+  gap: var(--maqam-s3);
   flex-shrink: 0;
   padding: var(--maqam-s5);
   border-radius: var(--maqam-radius-l);
@@ -718,10 +839,7 @@
    * Depth now comes from value and a rim, not from hue. Same recession, and
    * the keys are what you look at.
    */
-  background: linear-gradient(168deg, #eee9da 0%, #e4ddc7 100%);
-  box-shadow:
-    inset 0 1px 3px rgba(32, 27, 22, 0.12),
-    inset 0 0 0 1px rgba(30, 38, 64, 0.06);
+  background: var(--m3-surface-container-high);
 }
 
 /*
@@ -737,9 +855,11 @@
  */
 .maqam-instrument {
   overflow-x: auto;
-  /* Room for the focus ring (3px + 2px offset). Without it the scroll container
-     clipped the top edge of the ring on the key the user had just tabbed to. */
-  padding: 6px 0;
+  /* Room for the focus ring (3px + 2px offset) on every side. It was `6px 0`,
+     which leaves the horizontal axis — the one `overflow-x` actually clips —
+     with no bleed at all, so the first switch in the rail lost the left edge
+     of its ring to a straight vertical cut. */
+  padding: 6px;
 }
 
 .maqam-instrument > * {
@@ -770,12 +890,6 @@
 @media (min-width: 640px) {
   .maqam-board {
     --maqam-key-width: 46px;
-  }
-
-  .maqam-keyboard {
-    --maqam-mark-bottom: 26px;
-    --maqam-mark-bottom-black: 24px;
-    --maqam-badge-bottom: 46px;
   }
 
   .maqam-keyboard .shared-pk-white {
@@ -814,12 +928,6 @@
     flex: 1;
   }
 
-  .maqam-keyboard {
-    --maqam-mark-bottom: 34px;
-    --maqam-mark-bottom-black: 30px;
-    --maqam-badge-bottom: 58px;
-  }
-
   .maqam-keyboard .shared-pk-white {
     flex: 1;
     width: auto;
@@ -837,7 +945,7 @@
 /* Key labels: big enough to read, which the 0.6rem shared default is not once
    the keys are this size. */
 .maqam-keyboard .shared-pk-white-label {
-  font-size: var(--maqam-text-sm);
+  font-size: var(--m3-label-medium);
   font-weight: 500;
   /* The name of a note outside the maqam is lighter in WEIGHT, not in ink:
      fading the ink put it under AA on an already-greyed key. */
@@ -855,7 +963,7 @@
  * size they can simply be legible.
  */
 .maqam-keyboard .shared-pk-black-label {
-  font-size: var(--maqam-text-xs);
+  font-size: var(--m3-label-small);
   font-weight: 500;
   color: rgba(255, 255, 255, 0.95);
   bottom: var(--maqam-s2);
@@ -886,13 +994,17 @@
 .maqam-keyboard .shared-pk-mark {
   position: absolute;
   /*
-   * In the strip of white key that no black key covers — which is 44px tall on
-   * a phone and 80px on a desktop, so the offsets scale with the keys rather
-   * than being one number that fits the largest. Pinned at 54px it landed
-   * behind the black keys at 390px, where the numerals ran through the
-   * accidentals' names.
+   * One offset at every size, and it fits at every size.
+   *
+   * The strip of white key that no black key covers is 44px at its smallest
+   * (a phone) and 80px at its largest. The name occupies 8-22 and the numeral
+   * 24-41, so both clear 44. The previous version stacked a third mark up
+   * there and had to scale all three per breakpoint — which promptly
+   * desynchronised, because a later short-desktop block changed the key
+   * heights without changing the offsets, and the badge came out sliced in
+   * half at 1366x768. Two marks, one number, nothing to keep in step.
    */
-  bottom: var(--maqam-mark-bottom, 24px);
+  bottom: 24px;
   left: 50%;
   transform: translateX(-50%);
   min-width: 17px;
@@ -901,7 +1013,7 @@
   align-items: center;
   justify-content: center;
   border-radius: var(--maqam-radius-pill);
-  font-size: var(--maqam-text-sm);
+  font-size: var(--m3-label-medium);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   line-height: 1;
@@ -917,7 +1029,7 @@
 }
 
 .shared-pk-black .shared-pk-mark {
-  bottom: var(--maqam-mark-bottom-black, 22px);
+  bottom: 24px;
   color: #f0d7dd;
 }
 
@@ -927,57 +1039,15 @@
 }
 
 /*
- * Retuned: an amber mark on the part of the key the player can actually see.
+ * Black keys recede the same way white ones do: TOWARD THE BOARD.
  *
- * On a white key that is the bottom, not the top. The top of a white key is
- * mostly covered by its neighbouring black keys, so a cap drawn there appeared
- * as a stub in the gutter between two black keys, nearer to them than to the
- * note it described - and the badge sat 150px above the key's own name, which
- * read as annotating the black key beside it. Proximity decides what a mark
- * belongs to.
- */
-/* No underline. The half-flat glyph sits on the key already, and the switch
-   above it is lit; a third mark for one fact is two too many. */
-
-.shared-pk-white.maqam-key--retuned .shared-pk-badge {
-  /* Grouped with the note name at the foot of the key, not orphaned at the top. */
-  top: auto;
-  bottom: var(--maqam-badge-bottom, 42px);
-  padding: 1px var(--maqam-s1);
-  border-radius: var(--maqam-radius-s);
-  background: var(--maqam-microtonal-soft);
-  color: var(--m3-on-tertiary-container);
-  font-size: var(--maqam-text-sm);
-}
-
-/*
- * On a phone there is room for ONE mark above the note name — the strip of
- * white key no black key covers is 44px tall — and the degree is the one that
- * has to be there. Drawn anyway, the ½♭ pill came out sliced in half by the
- * accidentals above it.
- *
- * Nothing is lost: the switch directly over that key is lit and reads ½♭, and
- * the scale line under the board spells the degree out in full.
- */
-@media (max-width: 639px) {
-  .shared-pk-white.maqam-key--retuned .shared-pk-badge {
-    display: none;
-  }
-}
-
-/* A black key's whole top edge is exposed, so the cap works there. */
-
-.shared-pk-black.maqam-key--retuned .shared-pk-badge {
-  top: 9px;
-  color: var(--maqam-microtonal-soft);
-  font-size: var(--maqam-text-xs);
-}
-
-/*
- * Black keys carry membership the same way, one step of presence rather than a
- * second colour. There used to be two near-identical dark shades here, a navy
- * and a green, close enough in value to read as an inconsistency rather than as
- * a distinction.
+ * Which means the two move in opposite directions on a luminance scale — an
+ * out-of-maqam white key gets darker, an out-of-maqam black key gets lighter —
+ * and that reads as an inconsistency until you name the rule. It is one rule.
+ * The board is light, so receding is "closer to the board" for both, and a key
+ * the maqam does not use sits nearer the wood it is set into. Making both
+ * fade in the same luminance direction instead would push out-of-maqam black
+ * keys to near-black, i.e. MORE present than the ones in the maqam.
  */
 .maqam-keyboard .shared-pk-black {
   background: var(--maqam-key-black-dim);
@@ -1015,8 +1085,7 @@
 }
 
 .maqam-key.maqam-key--sounding .shared-pk-white-label,
-.maqam-key.maqam-key--sounding .shared-pk-black-label,
-.maqam-key.maqam-key--sounding .shared-pk-badge {
+.maqam-key.maqam-key--sounding .shared-pk-black-label {
   color: rgba(255, 255, 255, 0.96);
 }
 
@@ -1035,8 +1104,7 @@
   background: var(--maqam-tonic);
 }
 
-.maqam-keyboard .shared-pk-white.active .shared-pk-white-label,
-.maqam-keyboard .shared-pk-white.active .shared-pk-badge {
+.maqam-keyboard .shared-pk-white.active .shared-pk-white-label {
   color: rgba(255, 255, 255, 0.95);
 }
 
@@ -1048,15 +1116,20 @@
   gap: var(--maqam-s2) var(--maqam-s5);
 }
 
+/* M3 title-medium. This line IS the maqam, read back, so it carries the
+   board's heading weight and nothing else on the board competes with it. */
 .maqam-scaleline {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--maqam-s3);
+  gap: var(--maqam-s4);
   margin: 0;
-  flex: 1 1 100%;
-  font-size: var(--maqam-text-lg);
-  font-weight: 600;
-  letter-spacing: 0.01em;
+  /* `1 1 100%` forced a wrap, so the board's two lines of text sat one above
+     the other in 125px of otherwise empty panel. They belong on one row: the
+     maqam on the left, the keyboard's own action on the right. */
+  flex: 1 1 auto;
+  font-size: var(--m3-title-medium);
+  font-weight: 500;
+  letter-spacing: 0.009em;
 }
 
 .maqam-scaleline__note {
@@ -1071,11 +1144,15 @@
 
 /* -------------------------------------------------------------- glossary -- */
 
+/* An M3 text button: the app bar's one trailing action. Quieter than the maqam
+   picker beside it — choosing a maqam is the journey, looking a word up is what
+   you do once. */
 .maqam-glossary__trigger.MuiButton-root {
-  /* Quieter than the maqam picker beside it. Choosing a maqam is the journey;
-     looking a word up is the thing you do once, on your first visit. */
-  color: var(--m3-on-surface-variant);
+  border-radius: var(--maqam-radius-pill);
+  color: var(--m3-primary);
+  font-size: var(--m3-label-large);
   font-weight: 500;
+  letter-spacing: 0.006em;
   text-transform: none;
 }
 
@@ -1091,108 +1168,95 @@
 }
 
 .maqam-glossary__row dt {
-  font-size: var(--maqam-text-md);
-  font-weight: 700;
+  font-size: var(--m3-title-small);
+  font-weight: 500;
+}
+
+/* Without this the four terms rendered in the user agent's blue — the same
+   gap the alternative-jins link had, for the same reason: no rule at all. */
+.maqam-glossary__row dt a {
+  color: var(--m3-primary);
+  text-decoration: none;
+  border-bottom: 1px solid var(--m3-outline-variant);
+}
+
+.maqam-glossary__row dt a:hover,
+.maqam-glossary__row dt a:focus-visible {
+  border-bottom-color: currentColor;
 }
 
 .maqam-glossary__row dd {
   margin: 2px 0 0;
-  font-size: var(--maqam-text-md);
+  font-size: var(--m3-body-medium);
   color: var(--m3-on-surface-variant);
 }
 
+/* An M3 assist chip: 32dp tall, 8dp corner, outlined, label-large. It was a
+   700-weight tinted pill, which read as a warning badge for a state that is
+   not a warning. */
 .maqam-badge {
-  padding: 2px 10px;
-  border-radius: var(--maqam-radius-pill);
-  background: var(--m3-tertiary-container);
-  color: var(--m3-on-tertiary-container);
-  font-size: var(--maqam-text-xs);
-  font-weight: 700;
-  letter-spacing: 0.03em;
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 var(--maqam-s3);
+  border: 1px solid var(--m3-outline-variant);
+  border-radius: var(--maqam-radius-s);
+  background: transparent;
+  color: var(--m3-on-surface-variant);
+  font-size: var(--m3-label-large);
+  font-weight: 500;
 }
 
 /* -------------------------------------------------------- retuning note -- */
 
-/* Quiet by design: this explains the app's strangest idea, and still must not
-   compete with Play. */
-/* `.MuiIconButton-root`, not `.MuiButton-root`: this is an IconButton, and the
-   Button selector matched nothing, so the trigger rendered at 22x36 in default
-   MUI ink — under the 24px target floor on its narrow axis. */
-.maqam-retuning__trigger.MuiIconButton-root {
-  width: 32px;
-  height: 32px;
-  color: var(--m3-on-surface-variant);
-  font-size: var(--maqam-text-lg);
-  font-weight: 700;
-  border: 1px solid var(--m3-outline-variant);
-}
-
-.maqam-retuning__trigger.MuiIconButton-root:hover {
-  color: var(--maqam-tonic);
-  border-color: currentColor;
-  background: transparent;
-}
-
-@media (pointer: coarse) {
-  .maqam-retuning__trigger.MuiIconButton-root {
-    width: 40px;
-    height: 40px;
-  }
-}
-
-.maqam-retuning__detail {
-  max-width: 26rem;
-  padding: var(--maqam-s4) var(--maqam-s5) var(--maqam-s3);
-}
-
-.maqam-retuning__detail h3 {
-  margin: 0 0 var(--maqam-s2);
-  font-size: var(--maqam-text-lg);
-}
-
-.maqam-retuning__detail p {
-  margin: 0 0 var(--maqam-s2);
-  font-size: var(--maqam-text-md);
-  line-height: 1.55;
-  color: var(--m3-on-surface-variant);
-}
-
-.maqam-retuning__note {
-  font-style: italic;
-}
-
 /* ------------------------------------------------------------ melody bar -- */
 
+/*
+ * Play sits in the staff card, under the music it plays.
+ *
+ * It used to float on the page below the card with nothing around it, which
+ * left a 76px hole beside a full reference panel and read as a stray control.
+ * M3 puts a card's actions inside the card.
+ */
 .maqam-melodybar {
   display: flex;
   flex-wrap: wrap;
   align-items: stretch;
   gap: var(--maqam-s2);
-  margin-top: var(--maqam-s4);
 }
 
-/* One height for the row. Only Play is left in it now, but the rule stays so
-   anything added beside it lines up rather than being eyeballed. */
-.maqam-melodybar > * {
-  --maqam-control-height: 42px;
-}
+/*
+ * No height here. `getAppTheme('maqam')` sets `MuiButton { minHeight: 44 }`
+ * (the app is `readable: true`), and `min-height` beats `height` — so the 40px
+ * this used to declare never applied, and the comment beside it asserted a
+ * number the app did not produce. The shared theme owns the primary control
+ * height; three roles, three heights, and they are listed where they are set:
+ *
+ *   44px  the one filled button (Play)          — shared theme
+ *   36px  every text button (Glossary, MIDI)    — MUI small
+ *   32px  the assist chip                       — M3 chip
+ */
 
-.maqam-melodybar .MuiButton-root,
-.maqam-melodybar .MuiOutlinedInput-root {
-  height: var(--maqam-control-height);
-}
-
+/* M3 label-large on a full-radius filled button. */
 .maqam-melodybar__play.MuiButton-root {
   min-width: 6rem;
-  font-weight: 700;
+  border-radius: var(--maqam-radius-pill);
+  font-size: var(--m3-label-large);
+  font-weight: 500;
+  letter-spacing: 0.006em;
+  text-transform: none;
 }
 
 /* ------------------------------------------------------------ midi badge -- */
 
 .maqam-midi.MuiButton-root {
-  gap: 7px;
+  gap: var(--maqam-s2);
+  border-radius: var(--maqam-radius-pill);
   color: var(--m3-on-surface-variant);
+  font-size: var(--m3-label-large);
   font-weight: 500;
+  letter-spacing: 0.006em;
+  text-transform: none;
   white-space: nowrap;
 }
 
@@ -1219,13 +1283,13 @@
 
 .maqam-midi__detail h3 {
   margin: 0 0 8px;
-  font-size: var(--maqam-text-lg);
+  font-size: var(--m3-title-medium);
 }
 
 .maqam-midi__detail p,
 .maqam-midi__detail li {
   margin: 0 0 8px;
-  font-size: var(--maqam-text-md);
+  font-size: var(--m3-body-medium);
   line-height: 1.5;
   color: var(--m3-on-surface-variant);
 }
@@ -1242,65 +1306,6 @@
 
 /* ---------------------------------------------------------------- matrix -- */
 
-/* A switch rail, not a panel: short, quiet, and sitting on the keyboard it
-   retunes. Twelve switches because bending C bends every C. */
-.maqam-matrix {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: var(--maqam-s2);
-  margin-bottom: var(--maqam-s3);
-}
-
-@media (min-width: 640px) {
-  .maqam-matrix {
-    grid-template-columns: repeat(12, minmax(0, 1fr));
-  }
-}
-
-.maqam-matrix__slot {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 1px;
-  min-height: 38px;
-  padding: 5px 2px;
-  border: 0;
-  border-radius: var(--maqam-radius-m);
-  background: var(--m3-surface-container-high);
-  color: var(--m3-on-surface-variant);
-  font: inherit;
-  cursor: pointer;
-  transition:
-    background 0.12s,
-    color 0.12s;
-}
-
-.maqam-matrix__slot:hover {
-  background: #ffffff;
-}
-
-.maqam-matrix__slot.is-in-scale {
-  color: var(--m3-on-surface);
-  box-shadow: inset 0 0 0 1px var(--m3-outline-variant);
-}
-
-.maqam-matrix__slot.is-bent {
-  background: var(--m3-tertiary-container);
-  color: var(--m3-on-tertiary-container);
-  box-shadow: inset 0 0 0 1px var(--maqam-microtonal);
-}
-
-.maqam-matrix__note {
-  font-size: var(--maqam-text-md);
-  font-weight: 600;
-}
-
-.maqam-matrix__cents {
-  font-size: var(--maqam-text-xs);
-  line-height: 1;
-}
-
 /* ------------------------------------------------------------------ help -- */
 
 .maqam-alert {
@@ -1309,7 +1314,7 @@
   border-radius: var(--maqam-radius-m);
   background: var(--m3-tertiary-container);
   color: var(--m3-on-tertiary-container);
-  font-size: var(--maqam-text-md);
+  font-size: var(--m3-body-medium);
   line-height: 1.45;
 }
 
@@ -1375,8 +1380,115 @@
 }
 
 /* Coarse pointers need a real fingertip target on every control. */
-@media (pointer: coarse) {
-  .maqam-matrix__slot {
-    min-height: 50px;
-  }
+/* ---------------------------------------------------------- theme picker -- */
+
+/*
+ * Preview chrome, not product. It is gated to dev and `?designPreview`, and it
+ * goes once a look wins — so it is styled to sit quietly beside the glossary
+ * rather than to be a control anyone would miss.
+ */
+.maqam-themepicker__trigger.MuiButton-root {
+  gap: var(--maqam-s2);
+  border-radius: var(--maqam-radius-pill);
+  color: var(--m3-on-surface-variant);
+  font-size: var(--m3-label-large);
+  font-weight: 500;
+  letter-spacing: 0.006em;
+  text-transform: none;
+}
+
+.maqam-themepicker__chip {
+  width: 12px;
+  height: 12px;
+  border-radius: var(--maqam-radius-pill);
+  background: var(--m3-primary);
+  box-shadow: 0 0 0 1px var(--m3-outline-variant);
+}
+
+.maqam-themepicker {
+  width: 22rem;
+  max-width: calc(100vw - 32px);
+  padding: var(--maqam-s3);
+}
+
+.maqam-themepicker__note {
+  margin: 0 var(--maqam-s2) var(--maqam-s2);
+  font-size: var(--m3-body-small);
+  color: var(--m3-on-surface-variant);
+}
+
+.maqam-themepicker__list {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.maqam-themepicker__option {
+  display: flex;
+  align-items: center;
+  gap: var(--maqam-s3);
+  width: 100%;
+  padding: var(--maqam-s2);
+  border: 0;
+  border-radius: var(--maqam-radius-s);
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.maqam-themepicker__option:hover {
+  background: var(--m3-surface-container);
+}
+
+/* M3 selection: the container tone, not a border. */
+.maqam-themepicker__option[aria-pressed='true'] {
+  background: var(--m3-secondary-container);
+}
+
+.maqam-themepicker__swatch {
+  display: flex;
+  flex: 0 0 auto;
+  border-radius: var(--maqam-radius-xs);
+  overflow: hidden;
+  box-shadow: 0 0 0 1px var(--m3-outline-variant);
+}
+
+.maqam-themepicker__swatch > span {
+  width: 14px;
+  height: 28px;
+}
+
+.maqam-themepicker__text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.maqam-themepicker__label {
+  display: flex;
+  align-items: center;
+  gap: var(--maqam-s2);
+  font-size: var(--m3-title-small);
+  font-weight: 500;
+  color: var(--m3-on-surface);
+}
+
+.maqam-themepicker__mode {
+  padding: 0 6px;
+  border-radius: var(--maqam-radius-pill);
+  background: var(--m3-surface-container-highest);
+  color: var(--m3-on-surface-variant);
+  font-size: var(--m3-label-small);
+  font-weight: 500;
+}
+
+.maqam-themepicker__tagline {
+  font-size: var(--m3-body-small);
+  color: var(--m3-on-surface-variant);
 }

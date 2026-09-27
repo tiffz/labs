@@ -56,7 +56,23 @@ export default function MaqamKeyboard({
         ]
           .filter(Boolean)
           .join(' '),
-        badge: tuning.badge,
+        /*
+         * Spelled the way the MAQAM spells it, not the way a piano does.
+         *
+         * On Hijaz the staff and the scale line both read `E♭`, while the key
+         * under it said `D♯3` — the same pitch, named twice, and matching the
+         * two is the entire thing a reader is here to do. `tuning.label`
+         * already follows the live tuning, so a hand-bent key renames itself
+         * too.
+         *
+         * This also retires the separate ½♭ badge. It carried the accidental
+         * in a second chip above the name, which had to be positioned in the
+         * strip of white key no black key covers — and that strip is 80px at
+         * full desktop but 44px on a laptop, so the chip was sliced in half at
+         * 1366x768 and read as labelling the black key beside it. Folding the
+         * accidental into the name removes both the chip and its collision.
+         */
+        label: tuning.label ? `${tuning.label}${octave}` : undefined,
         // The numeral IS the membership mark. It is legible on Rast, where
         // every white key belongs and a relative tint therefore says nothing.
         mark: tuning.degree ? String(tuning.degree) : undefined,

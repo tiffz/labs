@@ -1,5 +1,10 @@
 import { Accidental, Beam, BoundingBox, Formatter, Renderer, Stave, StaveNote, Voice } from 'vexflow';
 
+import {
+  createVexFlowAnnotation,
+  createVexFlowRule,
+  vexFlowUserUnitsPerPixel,
+} from '../../shared/vexflow/vexFlowAnnotation';
 import { ensureVexFlowFontsLoaded } from '../../shared/vexflow/vexFlowFontExport';
 import {
   spellingAriaLabel,
@@ -68,6 +73,35 @@ const EDGE_PAD = 6;
  */
 const DEFAULT_HIGHLIGHT = '#1d5b82';
 const INK = '#241d16';
+
+/**
+ * The score's three inks, read from the app's own CSS custom properties.
+ *
+ * VexFlow paints with JavaScript colour strings, so a stylesheet cannot reach
+ * it and every renderer in this repo has ended up with a hex literal that the
+ * theme around it does not know about. Reading the tokens here means a look
+ * applied to `.maqam` reaches the notation too, and there is exactly one place
+ * each colour is defined.
+ *
+ * The literals above remain as fallbacks for a container that resolves nothing
+ * — a detached node under test, or a draw that races the stylesheet.
+ */
+function staffInks(container: HTMLElement): {
+  ink: string;
+  lit: string;
+  bracket: string;
+} {
+  const read = (name: string, fallback: string) => {
+    if (typeof getComputedStyle !== 'function') return fallback;
+    const value = getComputedStyle(container).getPropertyValue(name).trim();
+    return value || fallback;
+  };
+  return {
+    ink: read('--maqam-staff-ink', INK),
+    lit: read('--maqam-staff-lit', DEFAULT_HIGHLIGHT),
+    bracket: read('--maqam-bracket-ink', BRACKET_INK),
+  };
+}
 const EMPTY_HIGHLIGHT: ReadonlySet<number> = new Set<number>();
 
 /**
@@ -125,8 +159,9 @@ function drawStaffNow(
     return fitToDrawnExtent(container, verticalExtentOf(stave, []));
   }
 
+  const inks = staffInks(container);
   const lit = options.highlighted ?? EMPTY_HIGHLIGHT;
-  const litColor = options.highlightColor ?? DEFAULT_HIGHLIGHT;
+  const litColor = options.highlightColor ?? inks.lit;
 
   const staveNotes = notes.map((note, index) => {
     const staveNote = new StaveNote({
@@ -144,7 +179,7 @@ function drawStaffNow(
         .getModifiers()
         .forEach((modifier) => modifier.setStyle({ fillStyle: litColor, strokeStyle: litColor }));
     } else {
-      staveNote.setStyle({ fillStyle: INK, strokeStyle: INK });
+      staveNote.setStyle({ fillStyle: inks.ink, strokeStyle: inks.ink });
     }
     return staveNote;
   });
@@ -182,6 +217,7 @@ function drawStaffNow(
     staveNotes,
     options.brackets ?? [],
     extent,
+    inks.bracket,
   );
 
   applyStaffAccessibility(container, notes);
@@ -196,10 +232,12 @@ function drawStaffNow(
 /**
  * Square brackets over the staff, one per jins, the way maqamworld draws them.
  *
- * Geometry is in staff spaces rather than pixels, so it survives the canvas
- * scale the layout applies: rule 0.18 spaces thick, end ticks 0.55 spaces
- * deep, label one space above the rule. Those are measured off maqamworld's
- * own jins diagrams.
+ * Geometry that belongs to the NOTATION is in staff spaces, so it grows with
+ * the music: rule ticks 0.55 spaces deep, label one space above the rule.
+ * Those are measured off maqamworld's own jins diagrams. Geometry that belongs
+ * to the PAGE — the label's type size, the rule's weight — is in CSS pixels,
+ * through `createVexFlowAnnotation`, because a jins name is a word on the page
+ * and has to be the size words on this page are.
  *
  * Two cells that share exactly one degree — the ghammaz, which is how nearly
  * every maqam here is put together — both terminate ON that notehead, because
@@ -220,6 +258,7 @@ function drawAjnasBrackets(
   staveNotes: StaveNote[],
   brackets: StaffBracket[],
   extent: VerticalExtent | undefined,
+  bracketInk: string,
 ): number | undefined {
   const svg = container.querySelector('svg');
   if (!svg || brackets.length === 0 || extent === undefined) return undefined;
@@ -233,6 +272,9 @@ function drawAjnasBrackets(
   const group = document.createElementNS(SVG_NS, 'g');
   group.setAttribute('class', 'maqam-staff__ajnas');
   let topmost = baseY;
+  // One CSS pixel, in this drawing's units. The label and the rule are sized
+  // in real pixels; everything else here is in staff spaces.
+  const px = vexFlowUserUnitsPerPixel(svg);
 
   brackets.forEach((bracket, index) => {
     const first = staveNotes[bracket.from];
@@ -247,35 +289,25 @@ function drawAjnasBrackets(
     const tick = space * 0.55;
 
     group.appendChild(
-      svgNode('path', {
-        d: `M ${x1} ${y + tick} L ${x1} ${y} L ${x2} ${y} L ${x2} ${y + tick}`,
-        fill: 'none',
-        stroke: BRACKET_INK,
-        'stroke-width': String(space * 0.18),
-        'stroke-linecap': 'square',
+      createVexFlowRule(
+        svg,
+        `M ${x1} ${y + tick} L ${x1} ${y} L ${x2} ${y} L ${x2} ${y + tick}`,
+        { widthPx: BRACKET_RULE_PX, color: bracketInk },
+      ),
+    );
+
+    group.appendChild(
+      createVexFlowAnnotation(svg, {
+        text: bracket.label,
+        x: (x1 + x2) / 2,
+        y: y - LABEL_GAP_PX * px,
+        sizePx: LABEL_SIZE_PX,
+        weight: 500,
+        color: bracketInk,
       }),
     );
 
-    const label = svgNode('text', {
-      x: String((x1 + x2) / 2),
-      y: String(y - space * 0.55),
-      'text-anchor': 'middle',
-      fill: BRACKET_INK,
-      'font-size': String(space * 1.1),
-      /*
-       * Named, not inherited. VexFlow sets a serif music family on the <svg>
-       * root, so `inherit` drew the jins names in Bravura's text face —
-       * cramped, and reading as part of the notation rather than as a label
-       * on it.
-       */
-      'font-family': BRACKET_FONT,
-      'font-weight': '600',
-      'letter-spacing': String(space * 0.02),
-    });
-    label.textContent = bracket.label;
-    group.appendChild(label);
-
-    topmost = Math.min(topmost, y - space * 1.9);
+    topmost = Math.min(topmost, y - (LABEL_GAP_PX + LABEL_SIZE_PX) * px);
   });
 
   if (group.childNodes.length === 0) return undefined;
@@ -311,15 +343,17 @@ function noteCentreX(note: StaveNote): number {
 }
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
-const BRACKET_INK = '#7a4250';
-const BRACKET_FONT =
-  'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
-
-function svgNode(tag: string, attributes: Record<string, string>): SVGElement {
-  const node = document.createElementNS(SVG_NS, tag);
-  for (const [name, value] of Object.entries(attributes)) node.setAttribute(name, value);
-  return node;
-}
+/* Fallback only. The live value is `--maqam-bracket-ink`, so a theme reaches
+   the label. M3 `on-surface-variant` warmed toward the app's primary: a label
+   about the music, quieter than the music. */
+const BRACKET_INK = '#6f4450';
+/* CSS pixels, all three. M3 title-small — the size a heading over a region is
+   set at on this page. The point of measuring in pixels rather than staff
+   spaces is that the label stays this size at any zoom, instead of growing
+   with the notation until it competes with it. */
+const LABEL_SIZE_PX = 14;
+const LABEL_GAP_PX = 8;
+const BRACKET_RULE_PX = 1.25;
 
 /**
  * Size the SVG to what VexFlow actually drew, rather than to a guess.

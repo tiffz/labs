@@ -56,7 +56,16 @@ test.describe('Maqam Playground', () => {
     // are retuned — across the 3 rendered octaves that is 6 keys.
     const retuned = page.locator('.maqam-key--retuned');
     await expect(retuned).toHaveCount(6);
-    await expect(retuned.first().locator('.shared-pk-badge')).toHaveText('½♭');
+    /*
+     * The accidental is IN the key's name, not in a second chip above it.
+     * The chip had to live in the strip of white key no black key covers, and
+     * that strip is 80px at full desktop but 52px on a 1366x768 laptop — where
+     * it came out sliced in half, reading as a label on the black key beside
+     * it. The name says E half-flat, which is also what the staff and the
+     * scale line say.
+     */
+    await expect(retuned.first().locator('.shared-pk-white-label')).toHaveText('E½♭3');
+    await expect(page.locator('.shared-pk-badge')).toHaveCount(0);
 
     // Membership, tonic and retuning are independent channels now: 7 pitch
     // classes are in the maqam across 3 octaves, and only 2 of them are bent.
@@ -731,11 +740,13 @@ test.describe('Maqam Playground', () => {
       .evaluate((el) => getComputedStyle(el).color);
     expect(headingColour).not.toBe('rgb(0, 0, 0)');
 
-    // And it hands off to the source rather than explaining further itself.
-    await expect(detail.getByRole('link', { name: /maqamworld/i })).toHaveAttribute(
-      'href',
-      /maqamworld\.com/,
-    );
+    /*
+     * Two answers, and nothing else. This used to end with a link to
+     * maqamworld's "Oriental keyboards" page; the app has no need to repeat
+     * that word to explain a MIDI port, and the two sections above are the
+     * whole content of the control.
+     */
+    await expect(detail.getByRole('link')).toHaveCount(0);
   });
 
   test('the ajnas panel admits when the board no longer matches it', async ({ page }) => {

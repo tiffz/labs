@@ -38,10 +38,15 @@ const TERMS = [
  * A glossary in the header, where someone who does not yet have the vocabulary
  * will look for it.
  *
- * This replaced a flat "Learn maqamat at maqamworld" link sitting at the same
- * visual weight as the maqam picker. That link answered a question nobody had
- * arrived with; the question people actually arrive with is "what is a jins",
- * asked at the moment they first read the word on this page.
+ * Labelled with the plain noun. It read "What do these words mean?", which
+ * assumes the reader does not know them — condescending to anyone who came to
+ * this app already knowing what a jins is, which is a good share of the people
+ * who would open it. A glossary is a reference; naming it one lets the reader
+ * decide whether they need it.
+ *
+ * It replaced a flat "Learn maqamat at maqamworld" link sitting at the same
+ * visual weight as the maqam picker, which answered a question nobody arrives
+ * with.
  */
 export default function GlossaryMenu() {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
@@ -56,7 +61,7 @@ export default function GlossaryMenu() {
         aria-haspopup="dialog"
         aria-expanded={anchor !== null}
       >
-        What do these words mean?
+        Glossary
       </Button>
 
       <AnchoredPopover

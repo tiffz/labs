@@ -87,17 +87,10 @@ export default function KeyboardNote({ supported, devices }: KeyboardNoteProps) 
               The keys on screen work either way.
             </p>
           )}
-
-          <Button
-            variant="text"
-            size="small"
-            component="a"
-            href="https://www.maqamworld.com/en/instr/keyboard.php"
-            target="_blank"
-            rel="noreferrer noopener"
-          >
-            Oriental keyboards at maqamworld
-          </Button>
+          {/* No link out. It pointed at maqamworld's "Oriental keyboards"
+              page, and repeating that word is not something this app needs to
+              do to explain a MIDI port. The two answers above are the whole
+              content of this control. */}
         </div>
       </AnchoredPopover>
     </>

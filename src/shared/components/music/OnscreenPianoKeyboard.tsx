@@ -49,6 +49,13 @@ export interface PianoKeyDecoration {
   /** Short badge rendered on the keycap, e.g. `½♭`. */
   badge?: string;
   /**
+   * Replaces the printed note name, for an app that spells a key differently
+   * from the chromatic default — Maqam Playground writes Hijaz's third as
+   * `E♭3` rather than `D♯3`, because that is what its staff and its scale line
+   * say and matching the two is the learner's whole task.
+   */
+  label?: string;
+  /**
    * A second short mark on the keycap, for a fact the badge is not already
    * carrying. Maqam Playground draws the scale degree here, so a key can say
    * both "third of this maqam" and "bent a quarter tone" at once.
@@ -200,7 +207,11 @@ export default function OnscreenPianoKeyboard({
                 aria-pressed={active}
                 {...pressProps(midi)}
               >
-                {showLabels && <span className={classes.whiteKeyLabel}>{key.note}{octave}</span>}
+                {showLabels && (
+                  <span className={classes.whiteKeyLabel}>
+                    {decoration?.label ?? `${key.note}${octave}`}
+                  </span>
+                )}
                 {decoration?.badge && (
                   <span className="shared-pk-badge" aria-hidden="true">{decoration.badge}</span>
                 )}
@@ -230,7 +241,9 @@ export default function OnscreenPianoKeyboard({
                 {...pressProps(midi)}
               >
                 {showLabels && showBlackLabels && (
-                  <span className={classes.blackKeyLabel}>{key.note}{octave}</span>
+                  <span className={classes.blackKeyLabel}>
+                    {decoration?.label ?? `${key.note}${octave}`}
+                  </span>
                 )}
                 {decoration?.badge && (
                   <span className="shared-pk-badge" aria-hidden="true">{decoration.badge}</span>
