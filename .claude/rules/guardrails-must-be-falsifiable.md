@@ -86,6 +86,38 @@ an octave up", and asserting that failed immediately, on exactly the one preset.
 Before landing a guard, ask: **what else makes this assertion true?** If the answer includes the
 bug, the assertion is a proxy, not a test.
 
+### When a guard asserts a magnitude, ask whether the property is a direction
+
+The commonest way to build this shape by accident. The property is _"A stands out more than B"_ —
+an ordering — and the guard asserts _"A and B are far apart"_ — a magnitude. Both halves of the
+ordering satisfy the magnitude, so the guard is blind to exactly the failure it was written for,
+and the inverted design does not merely slip past it: it satisfies the guard **maximally**, then
+blocks the fix.
+
+Maqam's keyboard tinted every key OUTSIDE the maqam and left the ones inside it white. The guard
+asserted the two faces were more than 20 RGB units apart; measured, they were 70. So the defect
+passed with room to spare, and the correct design — one face for every key, membership carried by
+a numeral — reads as 0 apart and would have failed. The guard had to be rewritten before the bug
+could be fixed, which is the tell: **a guard you must delete to fix a bug was testing the bug.**
+
+The repair is to assert the ordering and let equality pass:
+
+```js
+// Not: |a - b| > threshold
+expect(outOfSet.chroma).toBeLessThanOrEqual(inSet.chroma);
+expect(outOfSet.distanceFromGround).toBeLessThanOrEqual(
+  inSet.distanceFromGround
+);
+```
+
+Then a separate assertion covers whichever channel is _supposed_ to carry the distinction — here,
+that an in-set key has a numeral and an out-of-set key does not. Two honest assertions beat one
+that averages a direction and a magnitude into neither.
+
+Applies well beyond colour: "the newest item is near the top", "the primary button is the loudest",
+"the error is more prominent than the hint". Any time you reach for `Math.abs(a - b)` on a pair
+where one side is meant to win, you are about to write this bug.
+
 **Derive the set; do not enumerate it.** Walk the tree and select by a property of the code — "calls
 `requestAnimationFrame`", "calls a Drive upload helper", "is a displayed string" — so a new file is
 enrolled by existing rather than by someone remembering. Then:
