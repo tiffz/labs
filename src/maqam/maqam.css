@@ -24,7 +24,7 @@
 .maqam,
 .maqam-portal {
   /* M3 surface roles */
-  --m3-surface: #fbf6e6;
+  --m3-surface: #fffdf5;
   --m3-surface-container: #f3eac0;
   --m3-surface-container-high: #ece0ae;
   --m3-on-surface: #1e2640;
@@ -61,7 +61,7 @@
    * just not part of this maqam — and it leaves colour free to mean one thing.
    */
   --maqam-key-face: #fffdf6;
-  --maqam-key-face-dim: #f4ecd2;
+  --maqam-key-face-dim: #dbcf9a;
   /*
    * "This key belongs to the maqam", as a wash.
    *
@@ -70,12 +70,12 @@
    * with the white/black split and the board looked like an ordinary piano —
    * the membership signal was invisible on the app's default screen.
    *
-   * Still two hues. Blue now means "belongs to this maqam" at four
-   * intensities: a wash for a degree, a dot for home, a soft fill for an
-   * octave of the note sounding, a full fill for the note itself. Amber still
-   * means bent off equal temperament and nothing else.
+   * Membership is brightness, not hue: a key in the maqam is at full
+   * strength and one outside it recedes toward the board. Garnet then means
+   * "sounding, or home" at three intensities, and terracotta means "bent off
+   * equal temperament". Two hues, each with one job.
    */
-  --maqam-scale-wash: #dcdfec;
+  --maqam-scale-wash: #e6eaf8;
   --maqam-scale-wash-black: #1e2640;
   /* The octaves of the note sounding: a step above membership, below the note
      itself, so "which key is that" still has one loud answer. */
@@ -92,7 +92,7 @@
    * 8.1:1, and the face alone still carries the distinction.
    */
   --maqam-key-face-dim-ink: var(--maqam-key-ink);
-  --maqam-key-black-dim: #6b6450;
+  --maqam-key-black-dim: #565c6e;
 
   /* Type scale. Six sizes, because a screen this small cannot justify more. */
   --maqam-text-xs: 0.6875rem;
@@ -260,8 +260,8 @@
     color: var(--m3-on-surface-variant);
   }
 
-  /* Amber, because this is the "bent off the written tuning" fact, and that is
-   what amber means everywhere else in the app. */
+  /* Terracotta, because this is the "bent off the written tuning" fact, and
+   that is what terracotta means everywhere else in the app. */
   .maqam-jins__stale {
     margin: 0 0 var(--maqam-s4);
     padding: var(--maqam-s2) var(--maqam-s3);
@@ -533,16 +533,6 @@
   color: var(--m3-on-surface-variant);
 }
 
-.maqam-jins__scale {
-  margin: 0;
-  padding: 8px 12px;
-  border-radius: var(--maqam-radius-m);
-  background: var(--m3-surface-container-high);
-  font-size: var(--maqam-text-lg);
-  font-weight: 600;
-  letter-spacing: 0.02em;
-}
-
 /* ----------------------------------------------------------------- board -- */
 
 .maqam-board {
@@ -560,7 +550,11 @@
    * eye had no entry point. Dropping the board below the page is what gives the
    * white keys an edge to sit against.
    */
-  background: linear-gradient(168deg, #dccf98 0%, #d3c488 100%);
+  background: linear-gradient(
+    168deg,
+    var(--m3-surface-container) 0%,
+    #ebdfab 100%
+  );
   box-shadow: inset 0 1px 3px rgba(32, 27, 22, 0.1);
 }
 
@@ -666,7 +660,7 @@
  * readable, which the previous three-competing-fills model made impossible.
  */
 .maqam-key.maqam-key--in-scale {
-  background: linear-gradient(180deg, #edeff6 0%, var(--maqam-scale-wash) 100%);
+  background: linear-gradient(180deg, #ffffff 0%, var(--maqam-scale-wash) 100%);
 }
 
 /* Tonic: shape, so it survives a colour-blind reading and stacks with a bend. */
@@ -810,11 +804,6 @@
   gap: 8px;
 }
 
-.maqam-board__midi {
-  font-size: var(--maqam-text-sm);
-  color: var(--m3-on-surface-variant);
-}
-
 .maqam-legend {
   display: flex;
   flex-wrap: wrap;
@@ -848,7 +837,7 @@
   width: 8px;
   height: 15px;
   border-radius: 0 0 3px 3px;
-  border: 1px solid var(--maqam-key-ink-dim, #9b9184);
+  border: 1px solid var(--m3-outline-variant);
 }
 
 .maqam-legend__swatch::before {
@@ -910,18 +899,29 @@
 
 /* Quiet by design: this explains the app's strangest idea, and still must not
    compete with Play. */
-.maqam-retuning__trigger.MuiButton-root {
+/* `.MuiIconButton-root`, not `.MuiButton-root`: this is an IconButton, and the
+   Button selector matched nothing, so the trigger rendered at 22x36 in default
+   MUI ink — under the 24px target floor on its narrow axis. */
+.maqam-retuning__trigger.MuiIconButton-root {
+  width: 32px;
+  height: 32px;
   color: var(--m3-on-surface-variant);
-  font-size: var(--maqam-text-md);
-  font-weight: 500;
-  text-decoration: underline;
-  text-decoration-color: var(--m3-outline-variant);
-  text-underline-offset: 3px;
+  font-size: var(--maqam-text-lg);
+  font-weight: 700;
+  border: 1px solid var(--m3-outline-variant);
 }
 
-.maqam-retuning__trigger.MuiButton-root:hover {
-  color: var(--m3-on-surface);
-  text-decoration-color: currentColor;
+.maqam-retuning__trigger.MuiIconButton-root:hover {
+  color: var(--maqam-tonic);
+  border-color: currentColor;
+  background: transparent;
+}
+
+@media (pointer: coarse) {
+  .maqam-retuning__trigger.MuiIconButton-root {
+    width: 40px;
+    height: 40px;
+  }
 }
 
 .maqam-retuning__detail {
@@ -955,8 +955,8 @@
   margin-top: var(--maqam-s4);
 }
 
-/* One height for the whole row. Three controls at 44, 40 and 38px read as three
-   unrelated things that happen to sit together. */
+/* One height for the row. Only Play is left in it now, but the rule stays so
+   anything added beside it lines up rather than being eyeballed. */
 .maqam-melodybar > * {
   --maqam-control-height: 42px;
 }
@@ -969,15 +969,6 @@
 .maqam-melodybar__play.MuiButton-root {
   min-width: 6rem;
   font-weight: 700;
-}
-
-.maqam-melodybar__pick {
-  flex: 0 1 12rem;
-  min-width: 0;
-}
-
-.maqam-melodybar__pick .MuiOutlinedInput-root {
-  background: #ffffff;
 }
 
 /* ------------------------------------------------------------ midi badge -- */
@@ -1072,7 +1063,7 @@
 
 .maqam-matrix__slot.is-in-scale {
   color: var(--m3-on-surface);
-  box-shadow: inset 0 0 0 1px rgba(47, 125, 92, 0.4);
+  box-shadow: inset 0 0 0 1px var(--m3-outline-variant);
 }
 
 .maqam-matrix__slot.is-bent {
@@ -1092,61 +1083,6 @@
 }
 
 /* ------------------------------------------------------------------ help -- */
-
-.maqam-help__body section {
-  padding-top: 16px;
-}
-
-.maqam-help__body section:first-of-type {
-  padding-top: 4px;
-}
-
-.maqam-help__body h3 {
-  margin: 0 0 6px;
-  font-size: var(--maqam-text-lg);
-  font-weight: 700;
-  letter-spacing: -0.01em;
-}
-
-.maqam-help__body p {
-  margin: 0 0 8px;
-  max-width: 62ch;
-  font-size: var(--maqam-text-md);
-  line-height: 1.58;
-  color: var(--m3-on-surface-variant);
-}
-
-.maqam-help__compare {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.maqam-help__compare span {
-  padding: 6px 12px;
-  border-radius: var(--maqam-radius-pill);
-  background: var(--m3-surface-container-high);
-  font-size: var(--maqam-text-md);
-}
-
-.maqam-help__compare .is-lit {
-  background: var(--m3-tertiary-container);
-  color: var(--m3-on-tertiary-container);
-}
-
-.maqam-help__badge {
-  padding: 1px 6px;
-  border-radius: var(--maqam-radius-s);
-  background: var(--m3-tertiary-container);
-  color: var(--m3-on-tertiary-container);
-  font-weight: 700;
-}
-
-.maqam-help__caveat {
-  padding: 10px 14px;
-  border-radius: var(--maqam-radius-m);
-  background: var(--m3-surface-container);
-}
 
 .maqam-alert {
   margin: 0;

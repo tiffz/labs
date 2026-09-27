@@ -417,7 +417,7 @@ const THEMES: Record<AppThemeId, Theme> = {
     // the palette changed.
     primary: '#922c40',
     secondary: '#b06a22',
-    backgroundDefault: '#fbf6e6',
+    backgroundDefault: '#fffdf5',
     backgroundPaper: '#fffcf2',
     textPrimary: '#1e2640',
     textSecondary: '#4c5470',

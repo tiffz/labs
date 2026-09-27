@@ -664,6 +664,92 @@ test.describe('Maqam Playground', () => {
     await expect(page.locator('.maqam-jins__stale')).toHaveCount(0);
   });
 
+  test('a key in the maqam is brighter than one outside it', async ({ page }) => {
+    /*
+     * The pair the app is actually about, and the one nothing was measuring.
+     *
+     * Two guards already covered membership and neither could see this: one
+     * compares an in-maqam key to a plain white key, the other compares a key
+     * to the board. Both passed while a palette change left out-of-maqam keys
+     * BRIGHTER than in-maqam ones at 1.12:1 — the model inverted, and below
+     * the 1.15 floor the app enforces elsewhere.
+     *
+     * Direction is asserted, not just separation. "Recedes toward the board"
+     * is a claim about which one is darker, and a ratio alone cannot tell.
+     */
+    await page.goto('/maqam/?maqam=hijaz_d');
+    await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
+
+    const membership = await page.evaluate(() => {
+      const channel = (c: number) => {
+        const v = c / 255;
+        return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+      };
+      const luminance = (value: string) => {
+        const [r, g, b] = (value.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number);
+        return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+      };
+      const fill = (el: Element) => {
+        const style = getComputedStyle(el);
+        const stops = style.backgroundImage.match(/rgba?\([^)]+\)/g);
+        return stops ? stops[stops.length - 1] : style.backgroundColor;
+      };
+
+      const inScale = document.querySelector(
+        '.maqam-keyboard .shared-pk-white.maqam-key--in-scale',
+      );
+      const outside = [...document.querySelectorAll('.maqam-keyboard .shared-pk-white')].find(
+        (el) => !el.classList.contains('maqam-key--in-scale'),
+      );
+      if (!inScale || !outside) return null;
+
+      const a = luminance(fill(inScale));
+      const b = luminance(fill(outside));
+      const [hi, lo] = [a, b].sort((x, y) => y - x);
+      return { inScale: a, outside: b, ratio: (hi + 0.05) / (lo + 0.05) };
+    });
+
+    // Hijaz uses 4 of 7 white keys, so both kinds are on screen.
+    expect(membership, 'Hijaz should show in-maqam and out-of-maqam white keys').not.toBeNull();
+    expect(
+      membership!.inScale,
+      'a key in the maqam must be the BRIGHTER one: it is at full strength, and one outside it recedes toward the board',
+    ).toBeGreaterThan(membership!.outside);
+    expect(
+      membership!.ratio,
+      `in-maqam against outside is only ${membership!.ratio.toFixed(3)}:1`,
+    ).toBeGreaterThanOrEqual(1.15);
+  });
+
+  test('the legend stays readable on the board', async ({ page }) => {
+    // 14px body text on the board's own fill. It measured 4.28:1 when the
+    // board was a darker khaki, under the 4.5:1 AA floor.
+    await page.goto('/maqam/');
+    await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
+
+    const ratio = await page.evaluate(() => {
+      const channel = (c: number) => {
+        const v = c / 255;
+        return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+      };
+      const luminance = (value: string) => {
+        const [r, g, b] = (value.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number);
+        return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+      };
+      const board = document.querySelector('.maqam-board')!;
+      const style = getComputedStyle(board);
+      const stops = style.backgroundImage.match(/rgba?\([^)]+\)/g);
+      const fill = stops ? stops[stops.length - 1] : style.backgroundColor;
+      const ink = getComputedStyle(document.querySelector('.maqam-legend')!).color;
+      const [hi, lo] = [luminance(ink), luminance(fill)].sort((x, y) => y - x);
+      return (hi + 0.05) / (lo + 0.05);
+    });
+
+    expect(ratio, `legend text on the board is only ${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(
+      4.5,
+    );
+  });
+
   test('the page itself never scrolls', async ({ page }) => {
     await page.goto('/maqam/');
     await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
