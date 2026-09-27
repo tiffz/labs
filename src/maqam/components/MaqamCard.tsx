@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import TextField from '@mui/material/TextField';
 
 import AnchoredPopover from '../../shared/components/AnchoredPopover';
 import GlossaryMenu from './GlossaryMenu';
@@ -98,62 +97,91 @@ export default function MaqamCard({
 
   return (
     <div className="maqam-card" ref={panelRef} data-overflowing={overflowing}>
-      <TextField
-        select
-        size="small"
-        label="Maqam"
-        value={presetId}
-        onChange={(event) => onSelectPreset(event.target.value)}
-        className="maqam-card__picker"
-        slotProps={{ select: { native: true } }}
-      >
-        {/*
-          Grouped by family, because that is how maqamat are organised:
-          "Maqamat are classified into families based on sharing the same first
-          (root) jins" (maqamworld.com). The grouping is derived from each
-          maqam's root jins rather than authored, so a new maqam files itself
-          and a family can never disagree with the cell it is named for.
-
-          Still a native select: the platform's own picker renders optgroups
-          properly on a phone, which a hand-rolled two-tier menu would have to
-          reimplement badly.
-        */}
-        {maqamatByFamily().map(({ family, maqamat }) => (
-          <optgroup key={family} label={`${family} family`}>
-            {maqamat.map((option) => (
-              <option key={option.id} value={option.id}>
-                {option.name} · {option.transliteration}
-              </option>
-            ))}
-          </optgroup>
-        ))}
-      </TextField>
+      {/* The card's heading, for heading navigation. The visible name is
+          painted by the trigger below, which is the element that announces
+          it — so the two cannot drift, both rendering from `preset`. */}
+      <h2 className="maqam-visually-hidden" id="maqam-card-heading">
+        {preset.transliteration}
+      </h2>
 
       {/*
-        The English name leads: this app is written in English for a reader who
-        does not yet know these maqamat. The Arabic is still here, and still
-        first in the reading order for anyone who does read it.
+        The title IS the picker.
 
-        The name is also the link out. A separate "Source:" line said the same
-        thing twice and spent a whole row doing it.
+        A native <select>, transparent, stretched over a typographic face. The
+        card used to carry an outlined field reading "Kurd on D · Maqam Kurd"
+        and, directly under it, a heading reading "Maqam Kurd" — the same fact
+        twice, once as a form and once as type.
+
+        Native, not a hand-rolled combobox, for one reason worth more than the
+        styling: the platform's own two-tier picker. On a phone that is the
+        iOS wheel or the Android dialog with the nine family headers drawn by
+        the OS; type-ahead, arrow keys, Home/End and Escape all come free and
+        correct. A custom listbox would have to reimplement every one of those
+        to arrive back where it started.
+
+        The <select> is LAST in the DOM so it stacks over the face without a
+        z-index, which is why clicking the name, the caret or the Arabic all
+        open it.
       */}
-      <div className="maqam-card__title">
-        <a
-          className="maqam-card__name"
-          href={preset.source}
-          target="_blank"
-          rel="noreferrer noopener"
-        >
-          {preset.transliteration}
-        </a>
-        <span className="maqam-card__arabic" lang="ar" dir="rtl">
+      <div className="maqam-titlepick">
+        <span className="maqam-titlepick__face" aria-hidden="true">
+          <span className="maqam-titlepick__name">{preset.transliteration}</span>
+          <svg className="maqam-titlepick__caret" viewBox="0 0 20 20" focusable="false">
+            <path
+              d="M5.5 8 10 12.5 14.5 8"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </span>
+
+        {/* Not `aria-hidden`: a reader who uses Arabic keeps the native name. */}
+        <span className="maqam-titlepick__arabic" lang="ar" dir="rtl">
           {preset.arabicName}
         </span>
+
+        <label className="maqam-visually-hidden" htmlFor="maqam-pick">
+          Maqam
+        </label>
+        <select
+          id="maqam-pick"
+          className="maqam-titlepick__native"
+          value={presetId}
+          onChange={(event) => onSelectPreset(event.target.value)}
+        >
+          {/*
+            Grouped by family: "Maqamat are classified into families based on
+            sharing the same first (root) jins" (maqamworld.com). Derived from
+            each maqam's root jins rather than authored, so a new maqam files
+            itself and a family can never disagree with the cell it is named
+            for.
+
+            The option is the transliteration alone. It was
+            `${option.name} · ${option.transliteration}` — "Kurd on D · Maqam
+            Kurd" — which is the same duplication inside a single row. Under a
+            header reading "Kurd family", "Maqam Kurd" is enough, and all 11
+            transliterations in the catalogue are distinct.
+          */}
+          {maqamatByFamily().map(({ family, maqamat }) => (
+            <optgroup key={family} label={`${family} family`}>
+              {maqamat.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.transliteration}
+                </option>
+              ))}
+            </optgroup>
+          ))}
+        </select>
       </div>
 
-      <h2 className="maqam-eyebrow" data-stale={!isPresetTuning}>
+      {/* h3: the maqam's name is the card's h2 now, so heading navigation
+          lands on the card's subject rather than on a section label. */}
+      <h3 className="maqam-eyebrow" data-stale={!isPresetTuning}>
         {isPresetTuning ? 'Built from' : 'Built from, as written'}
-      </h2>
+      </h3>
 
       {/*
         One chip per cell, in the cell's own colour — the same colour its
@@ -262,8 +290,19 @@ export default function MaqamCard({
         </p>
       )}
 
+      {/* The source link lives here now. It was the heading, and a heading
+          cannot be both a menu trigger and a link — two affordances on one
+          word. The foot is where this card's outbound affordances live. */}
       <div className="maqam-card__foot">
         <GlossaryMenu />
+        <a
+          className="maqam-card__source"
+          href={preset.source}
+          target="_blank"
+          rel="noreferrer noopener"
+        >
+          maqamworld
+        </a>
       </div>
     </div>
   );

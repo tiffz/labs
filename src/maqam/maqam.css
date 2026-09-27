@@ -529,11 +529,18 @@
   padding: var(--maqam-s4);
 }
 
+/*
+ * The bleed the title trigger needs.
+ *
+ * `overflow-y: auto` above makes this a clipping box. The padding used to
+ * exist because an outlined field's floating label was sheared by that edge;
+ * that field is gone, and the room now buys the trigger's own hover wash and
+ * focus ring — which the same edge would otherwise cut on the left and right.
+ * The negative margin cancels it so nothing else in the card moves.
+ */
 .maqam-card {
-  /* `overflow-y: auto` above makes this a clipping box, and an outlined
-     field's floating label sits ABOVE its input — so without this the word
-     "Maqam" is sheared off by the card's own scroll edge. */
-  padding: 8px 0 0;
+  padding: var(--maqam-s2) var(--maqam-s2) 0;
+  margin-inline: calc(var(--maqam-s2) * -1);
 }
 
 /*
@@ -1044,9 +1051,13 @@
 /* An M3 text button: the app bar's one trailing action. Quieter than the maqam
    picker beside it — choosing a maqam is the journey, looking a word up is what
    you do once. */
+/* Not the accent. DESIGN.md gives burnt orange three jobs — sounding, home,
+   and Play — and a footnote-weight affordance is none of them. It competed
+   with Play for the only loud colour on the page, and got louder still once
+   the card around it went quiet. */
 .maqam-glossary__trigger.MuiButton-root {
   border-radius: var(--maqam-radius-pill);
-  color: var(--m3-primary);
+  color: var(--m3-on-surface-variant);
   font-size: var(--m3-label-large);
   font-weight: 500;
   letter-spacing: 0.006em;
@@ -1297,60 +1308,6 @@
   gap: var(--maqam-s3);
 }
 
-.maqam-card__picker {
-  width: 100%;
-  /* An outlined field's floating label sits ABOVE the input's box, so at the
-     top of a card it is sheared off by the card's own edge. */
-  margin-top: 6px;
-}
-
-.maqam-card__picker .MuiOutlinedInput-root {
-  background: var(--m3-surface);
-  border-radius: var(--maqam-radius-s);
-  min-height: 40px;
-}
-
-.maqam-card__picker select {
-  font-size: var(--m3-body-medium);
-  font-weight: 500;
-}
-
-.maqam-card__title {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--maqam-s3);
-  padding-bottom: var(--maqam-s2);
-  border-bottom: 1px solid var(--m3-outline-variant);
-}
-
-/* The heading of the card, and the way out to the source. */
-.maqam-card__name {
-  font-size: var(--m3-headline-small);
-  font-weight: 600;
-  letter-spacing: -0.015em;
-  line-height: 1.2;
-  color: var(--m3-on-surface);
-  text-decoration: none;
-  border-bottom: 2px solid transparent;
-}
-
-.maqam-card__name:hover,
-.maqam-card__name:focus-visible {
-  color: var(--m3-primary);
-  border-bottom-color: currentColor;
-}
-
-/* Beside the English name, not above it. Arabic ascenders sit well above the
-   Latin cap height, so a tight line box shears the top off the name. */
-.maqam-card__arabic {
-  font-size: var(--maqam-text-arabic);
-  line-height: 1.6;
-  font-weight: 500;
-  color: var(--m3-on-surface-variant);
-  white-space: nowrap;
-}
-
 /* ------------------------------------------------------------- jins chips -- */
 
 /*
@@ -1481,4 +1438,112 @@
   margin: var(--maqam-s2) 0 0;
   font-size: var(--m3-body-small);
   color: var(--m3-on-surface-variant);
+}
+
+/* ------------------------------------------------------- the title picker -- */
+
+/*
+ * The card's heading and its maqam picker are one control: a native <select>,
+ * transparent, stretched over a typographic face.
+ *
+ * Native because of what comes free and correct on every platform — the
+ * two-tier picker with the nine family headers drawn by the OS, type-ahead,
+ * arrow keys, Home/End, Escape. A hand-rolled listbox would reimplement all of
+ * it to arrive back here, and would lose the phone picker on the way.
+ */
+.maqam-titlepick {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--maqam-s3);
+  padding: var(--maqam-s2);
+  margin: 0 calc(var(--maqam-s2) * -1) var(--maqam-s1);
+  border-radius: var(--maqam-radius-s);
+  transition: background 0.12s ease;
+}
+
+/* An M3 state layer, at the tonal step the selected jins chip already uses. */
+.maqam-titlepick:hover {
+  background: var(--m3-surface-container);
+}
+
+/* INSET, because the card is a scroll box and clips an outset ring — and the
+   transparent select hides its own outline, so there is no second ring. */
+.maqam-titlepick:has(.maqam-titlepick__native:focus-visible) {
+  background: var(--m3-surface-container);
+  box-shadow: inset 0 0 0 2px var(--m3-primary);
+}
+
+.maqam-titlepick__face {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--maqam-s1);
+  min-width: 0;
+}
+
+.maqam-titlepick__name {
+  font-size: var(--m3-headline-small);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+  color: var(--m3-on-surface);
+}
+
+.maqam-titlepick__caret {
+  width: 20px;
+  height: 20px;
+  align-self: center;
+  flex: 0 0 auto;
+  color: var(--m3-on-surface-variant);
+}
+
+.maqam-titlepick:hover .maqam-titlepick__caret {
+  color: var(--m3-on-surface);
+}
+
+.maqam-titlepick__arabic {
+  /* A PHYSICAL margin. This span is `dir="rtl"`, so `margin-inline-start`
+     resolves to margin-right and silently does nothing. */
+  margin-left: auto;
+  font-size: var(--maqam-text-arabic);
+  line-height: 1.4;
+  font-weight: 500;
+  color: var(--m3-on-surface-variant);
+  white-space: nowrap;
+}
+
+/* The real control: invisible, on top, full-bleed. Last in the DOM, so it
+   stacks over the face without a z-index. */
+.maqam-titlepick__native {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  appearance: none;
+  border: 0;
+  /* 1rem, or iOS zooms the page when this takes focus. */
+  font-size: var(--m3-title-medium);
+  cursor: pointer;
+}
+
+.maqam-card__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--maqam-s2);
+}
+
+.maqam-card__source {
+  font-size: var(--m3-label-large);
+  color: var(--m3-on-surface-variant);
+  text-decoration: none;
+  border-bottom: 1px solid var(--m3-outline-variant);
+}
+
+.maqam-card__source:hover,
+.maqam-card__source:focus-visible {
+  color: var(--m3-on-surface);
+  border-bottom-color: currentColor;
 }

@@ -216,7 +216,7 @@ export default function App() {
           </section>
 
           {preset && (
-            <aside className="maqam-stage__jins">
+            <aside className="maqam-stage__jins" aria-labelledby="maqam-card-heading">
               <MaqamCard
                 preset={preset}
                 presetId={presetId}
