@@ -66,14 +66,32 @@
   --maqam-tonic: var(--m3-primary);
 
   /*
-   * Membership is a NUMERAL on the key; the face carries one step of support.
-   * White against sage is 1.75:1 — the version that was reported as "very hard
-   * to read" measured 1.33:1.
+   * ONE face per kind of key. The face says nothing about membership.
+   *
+   * It used to: a key outside the maqam was tinted sage, a key inside it left
+   * white. That is backwards, and measurably so. Across all eleven maqamat the
+   * in-maqam white keys are always the MAJORITY (four to seven of seven) and
+   * the out-of-maqam ones the minority (zero to three) — so the tint always
+   * landed on the smaller set, and a small set carrying the only chroma on
+   * screen is the definition of a figure. Measured: the in-maqam face has
+   * chroma 0 and sits 1.1 luminance units from the board, the out-of-maqam
+   * face has chroma 17 and sits 70.1 from it. The key you cannot play was
+   * sixty-four times louder than the key you can, which is what got reported
+   * as "the keys outside the maqam look more emphasized".
+   *
+   * The fix is not to swap which side is tinted. It is to stop paying for
+   * membership in fill at all. Four of the eleven maqamat use every white key,
+   * so on those screens a fill difference has nothing to contrast against and
+   * says nothing whatsoever — and those four screens are already perfectly
+   * legible, because the DEGREE NUMERAL was doing the whole job by itself. A
+   * numeral is absolute where a tint is relative: present means in, absent
+   * means out, with no second key needed to compare against.
+   *
+   * So: every white key is white, every black key is black, and membership is
+   * the numeral plus the weight and ink of the name. See `DESIGN.md`.
    */
-  --maqam-key-face-dim: #abbcb3;
-  --maqam-scale-wash: #ffffff;
-  --maqam-scale-wash-black: #0e2b1c;
-  --maqam-key-black-dim: #284b39;
+  --maqam-key-face: #ffffff;
+  --maqam-key-face-black: #0e2b1c;
   --maqam-key-ink: #1a261b;
   --maqam-key-edge: #2d3f33;
   /* The octaves of the note sounding: below the note itself, so "which key is
@@ -676,8 +694,10 @@
      measured 1.09:1 against the page — an instrument with no edges. */
   border-color: var(--maqam-key-edge);
   border-radius: 0 0 var(--maqam-radius-m) var(--maqam-radius-m);
-  /* Every key starts outside the maqam; membership tints it. */
-  background: var(--maqam-key-face-dim);
+  background: var(--maqam-key-face);
+  /* The depth every key has. This was on `--in-scale` only, which made the
+     shadow a fourth membership channel by accident. */
+  box-shadow: inset 0 -2px 0 rgba(30, 38, 64, 0.07);
 }
 
 .maqam-keyboard .shared-pk-black {
@@ -757,9 +777,13 @@
 .maqam-keyboard .shared-pk-white-label {
   font-size: clamp(0.5625rem, 2.1vw, var(--m3-label-medium));
   font-weight: 500;
-  /* The name of a note outside the maqam is lighter in WEIGHT, not in ink:
-     fading the ink put it under AA on an already-greyed key. */
-  color: var(--maqam-key-ink);
+  /*
+   * A note outside the maqam is named in lighter ink as well as lighter
+   * weight. The ink half used to be impossible — it put the name under AA on
+   * a key that was already tinted grey — and deleting the tint is what buys
+   * it back. Measured 6.1:1 on white, so the second channel is free.
+   */
+  color: var(--m3-on-surface-variant);
 }
 
 .maqam-key--in-scale .shared-pk-white-label {
@@ -775,22 +799,27 @@
 .maqam-keyboard .shared-pk-black-label {
   font-size: var(--m3-label-small);
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.95);
+  /* The same two channels as a white key's name, in the ink a dark key needs.
+     8.5:1 on the face below it. */
+  color: rgba(255, 255, 255, 0.72);
   bottom: var(--maqam-s2);
 }
 
+.shared-pk-black.maqam-key--in-scale .shared-pk-black-label {
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.95);
+}
+
 /*
- * One visual channel per fact.
+ * One visual channel per fact — and membership is not one of the facts fill
+ * carries. Fill is reserved for what is happening RIGHT NOW: the sounding
+ * note, its octaves, a key retuned by hand. Those are momentary and want the
+ * loudest channel on the board. Membership is a standing property of the
+ * screen and gets the quiet, absolute one: a numeral.
  *
- * Fill says "in this maqam" and nothing else. The tonic is a dot, a retuned key
- * gets an amber cap and badge, the sounding note a saturated fill. A key can
- * carry all of them at once — Sikah's E half-flat does — and each stays
+ * A key can carry several at once — Sikah's E half-flat does — and each stays
  * readable, which the previous three-competing-fills model made impossible.
  */
-.maqam-key.maqam-key--in-scale {
-  background: var(--maqam-scale-wash);
-  box-shadow: inset 0 -2px 0 rgba(30, 38, 64, 0.07);
-}
 
 /*
  * The degree numeral. This is what membership is drawn with.
@@ -852,31 +881,18 @@
 }
 
 /*
- * Black keys recede the same way white ones do: TOWARD THE BOARD.
- *
- * Which means the two move in opposite directions on a luminance scale — an
- * out-of-maqam white key gets darker, an out-of-maqam black key gets lighter —
- * and that reads as an inconsistency until you name the rule. It is one rule.
- * The board is light, so receding is "closer to the board" for both, and a key
- * the maqam does not use sits nearer the wood it is set into. Making both
- * fade in the same luminance direction instead would push out-of-maqam black
- * keys to near-black, i.e. MORE present than the ones in the maqam.
+ * One black key face, for the same reason there is one white one. The two used
+ * to fade in opposite luminance directions — an out-of-maqam white key got
+ * darker, an out-of-maqam black key got lighter — which took a paragraph to
+ * justify and still left the unplayable keys as the marked set.
  */
 .maqam-keyboard .shared-pk-black {
-  background: var(--maqam-key-black-dim);
-  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.25);
-}
-
-.shared-pk-black.maqam-key--in-scale .shared-pk-black-label {
-  font-weight: 700;
-}
-
-.shared-pk-black.maqam-key--in-scale {
   background: linear-gradient(
     180deg,
     #2a3148 0%,
-    var(--maqam-scale-wash-black) 100%
+    var(--maqam-key-face-black) 100%
   );
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.25);
 }
 
 /* Sounding, during melody playback: the loudest state on the board. */
@@ -1303,13 +1319,30 @@
  * rest. The shared degree lights for BOTH cells, one after the other, which is
  * what makes the overlap legible on the instrument as well as on the staff.
  */
-.maqam-keyboard .maqam-key--out-of-jins {
-  opacity: 0.4;
+/*
+ * The KEYS do not fade. The MARKS do.
+ *
+ * Fading the key was reported as hard to read, and the black keys were the
+ * worst of it: `opacity` on the key made the card show through a surface whose
+ * whole job is to be solid, so the instrument dissolved rather than quietened.
+ * Dimming the numeral instead leaves the keyboard intact and still answers
+ * "which notes are this cell", because the numeral is the only thing on a key
+ * that was ever saying anything about the maqam.
+ */
+.maqam-keyboard .maqam-key--out-of-jins .shared-pk-mark {
+  opacity: 0.18;
 }
 
+/*
+ * The cell's own colour, not the accent. A jins is the same colour on the
+ * chip, on its bracket over the staff, and on the keys it covers, which is
+ * what ties the three together; `--maqam-cell-tone` is set on the keyboard
+ * from the pointed-at chip's `data-jins`. Painting these with `--m3-primary`
+ * instead gave the accent a fourth job and broke the tie to the bracket.
+ */
 .maqam-keyboard .maqam-key--in-jins .shared-pk-mark {
-  background: var(--m3-primary);
-  color: var(--m3-on-primary);
+  background: var(--maqam-cell-tone, var(--m3-primary));
+  color: #ffffff;
 }
 
 /* ---------------------------------------------------------- jins hovercard -- */

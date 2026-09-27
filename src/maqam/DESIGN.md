@@ -57,8 +57,21 @@ measures 1.09:1 against the page.
   could not keep and overlapped the keyboard by 11px at 1333×693.
 - `.maqam-stage` is `flex: 0 0 auto`. Letting it shrink is what spilled its
   cards over the keyboard.
-- Membership on the keyboard is a **numeral**, not a tint. Three relative
-  models shipped and all three were invisible on Rast, whose seven degrees are
-  the seven white keys.
+- Membership on the keyboard is a **numeral**, not a tint — and, since the
+  fourth attempt, not a tint _as well_. The spec has said this from the start
+  while the stylesheet also tinted every key the maqam does not use, and that
+  second channel pointed the wrong way: measured across all eleven maqamat the
+  in-maqam white keys are always the majority (4-7 of 7), so the tint always
+  landed on the minority, giving the keys you cannot play chroma 17 and 70.1
+  luminance units of separation from the board against the playable keys' 0 and
+  1.1. Four of the eleven use every white key, where a fill difference has
+  nothing to contrast against and says nothing at all — and those four screens
+  were already legible, which is the proof the numeral carries it alone.
+  **One face per kind of key.** Fill is reserved for what is happening now: the
+  sounding note, its octaves, a key retuned by hand.
+- Pointing at a jins dims the **marks**, never the keys. `opacity` on a key let
+  the card show through a surface whose job is to be solid, and the black keys
+  dissolved. An in-cell numeral takes `--maqam-cell-tone`, so it matches that
+  cell's chip and its bracket.
 - Ajnas brackets are drawn **only** while a cell is pointed at, and only that
   one. See [`README.md`](README.md) § Design for why.

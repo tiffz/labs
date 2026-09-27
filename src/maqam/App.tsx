@@ -257,6 +257,7 @@ export default function App() {
               octaves={KEYBOARD_OCTAVES}
               playingMidiNote={playingNote}
               inJinsPitchClasses={activePitchClasses}
+              inJinsTone={brackets?.[0]?.tone}
               onNoteOn={noteOn}
               onNoteOff={noteOff}
             />

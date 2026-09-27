@@ -800,67 +800,112 @@ test.describe('Maqam Playground', () => {
     }
   });
 
-  test('notes outside the maqam are visibly faded, on every maqam', async ({ page }) => {
+  test('the maqam is the figure, not the notes outside it', async ({ page }) => {
     /*
-     * Membership is a FADE, and the fade is on the notes the maqam does not
-     * use. A key in the maqam is an ordinary key; a key outside it is greyed,
-     * the way a disabled stop on an instrument is.
+     * The bug this replaces, and the guard that certified it.
      *
-     * This guard has been rewritten three times because the design under it
-     * kept changing, and each rewrite is worth remembering: it asserted the
-     * in-maqam key was BRIGHTER (wrong once the board became sand), then that
-     * the in-maqam key was far from plain white (wrong once in-maqam keys
-     * became ordinary ivory keys). What has been true throughout is the thing
-     * asserted here — the two kinds must look different, in both the face and
-     * the weight of the name on it.
+     * Membership used to be a FILL: a key outside the maqam was tinted sage, a
+     * key inside it left white. The old guard here asserted exactly that — the
+     * two token faces had to be more than 20 RGB units apart — so it was
+     * satisfied BY the defect and would have blocked the fix. A textbook
+     * `guardrail-proxy-assertion`: "the two look different" is a stand-in for
+     * "the maqam is the one that stands out", and the inverted design makes
+     * the stand-in true.
      *
-     * Measured from the tokens rather than from whichever keys a particular
-     * maqam happens to show, so it holds on Rast, where every white key is in
-     * the maqam and the fade appears only on the black ones.
+     * Measured across all eleven maqamat, the in-maqam white keys are always
+     * the majority (4-7 of 7) and the out-of-maqam ones the minority (0-3), so
+     * the tint always landed on the smaller set. The out-of-maqam face carried
+     * chroma 17 against the in-maqam face's 0, and sat 70.1 luminance units
+     * from the board against 1.1. The key you cannot play was the loudest
+     * thing on the instrument.
+     *
+     * So this asserts the direction, not the difference: whatever the faces
+     * are, a key outside the maqam may not out-shout one inside it. Both
+     * assertions pass when the faces are identical, which is the current
+     * design — the numeral carries membership — and both fail the moment a
+     * tint lands on the wrong set.
      */
     await page.goto('/maqam/?maqam=hijaz_d');
     await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
 
-    const marks = await page.evaluate(() => {
+    const board = await page.evaluate(() => {
       const rgb = (value: string) => (value.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number);
-      const probe = (token: string) => {
-        const el = document.createElement('div');
-        el.style.background = `var(${token})`;
-        document.querySelector('.maqam')!.appendChild(el);
-        const colour = rgb(getComputedStyle(el).backgroundColor);
-        el.remove();
-        return colour;
+      const fill = (el: Element) => {
+        const style = getComputedStyle(el);
+        const stops = style.backgroundImage.match(/rgba?\([^)]+\)/g);
+        return rgb(stops ? stops[stops.length - 1] : style.backgroundColor);
       };
-      const apart = (a: number[], b: number[]) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+      const channel = (c: number) => {
+        const v = c / 255;
+        return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+      };
+      const luminance = (c: number[]) =>
+        0.2126 * channel(c[0]) + 0.7152 * channel(c[1]) + 0.0722 * channel(c[2]);
+      /* How much colour a face carries. A grey or white face is 0. */
+      const chroma = (c: number[]) => Math.max(...c) - Math.min(...c);
 
-      const inWhite = document.querySelector(
-        '.maqam-keyboard .shared-pk-white.maqam-key--in-scale .shared-pk-white-label',
-      );
-      const outWhite = [...document.querySelectorAll('.maqam-keyboard .shared-pk-white')]
-        .find((el) => !el.classList.contains('maqam-key--in-scale'))
-        ?.querySelector('.shared-pk-white-label');
+      const pick = (kind: string, inScale: boolean) =>
+        [...document.querySelectorAll(`.maqam-keyboard .${kind}`)].find(
+          (el) => el.classList.contains('maqam-key--in-scale') === inScale,
+        );
+
+      const surface = luminance(fill(document.querySelector('.maqam-board')!));
+      const read = (kind: string) => {
+        const inside = pick(kind, true);
+        const outside = pick(kind, false);
+        if (!inside || !outside) return null;
+        const a = fill(inside);
+        const b = fill(outside);
+        return {
+          inChroma: chroma(a),
+          outChroma: chroma(b),
+          inFromBoard: Math.abs(luminance(a) - surface),
+          outFromBoard: Math.abs(luminance(b) - surface),
+          inMark: inside.querySelector('.shared-pk-mark')?.textContent ?? '',
+          outMark: outside.querySelector('.shared-pk-mark')?.textContent ?? '',
+        };
+      };
+
+      const label = (kind: string, labelClass: string, inScale: boolean) => {
+        const key = pick(kind, inScale);
+        const el = key?.querySelector(labelClass);
+        return el ? Number(getComputedStyle(el).fontWeight) : 0;
+      };
 
       return {
-        whiteFaces: apart(probe('--maqam-scale-wash'), probe('--maqam-key-face-dim')),
-        blackFaces: apart(probe('--maqam-scale-wash-black'), probe('--maqam-key-black-dim')),
-        inWeight: inWhite ? Number(getComputedStyle(inWhite).fontWeight) : 0,
-        outWeight: outWhite ? Number(getComputedStyle(outWhite).fontWeight) : 0,
+        white: read('shared-pk-white'),
+        black: read('shared-pk-black'),
+        inWeight: label('shared-pk-white', '.shared-pk-white-label', true),
+        outWeight: label('shared-pk-white', '.shared-pk-white-label', false),
       };
     });
 
-    expect(
-      marks.whiteFaces,
-      `a white key in the maqam and one outside it are only ${marks.whiteFaces.toFixed(1)} apart`,
-    ).toBeGreaterThan(20);
-    expect(
-      marks.blackFaces,
-      `a black key in the maqam and one outside it are only ${marks.blackFaces.toFixed(1)} apart`,
-    ).toBeGreaterThan(20);
+    // Hijaz uses 4 of 7 white keys and 3 of 5 black, so both kinds are on screen.
+    expect(board.white, 'Hijaz should show in-maqam and out-of-maqam white keys').not.toBeNull();
+    expect(board.black, 'Hijaz should show in-maqam and out-of-maqam black keys').not.toBeNull();
 
-    // The name is the second channel, and costs no ink to carry.
-    expect(marks.inWeight, 'a note in the maqam should be named in a heavier weight').toBeGreaterThan(
-      marks.outWeight,
-    );
+    for (const [kind, faces] of Object.entries({ white: board.white!, black: board.black! })) {
+      expect(
+        faces.outChroma,
+        `an out-of-maqam ${kind} key carries ${faces.outChroma} chroma against the in-maqam key's ` +
+          `${faces.inChroma}, which makes the note you cannot play the coloured one`,
+      ).toBeLessThanOrEqual(faces.inChroma);
+      expect(
+        faces.outFromBoard,
+        `an out-of-maqam ${kind} key sits ${faces.outFromBoard.toFixed(1)} from the board and an ` +
+          `in-maqam one only ${faces.inFromBoard.toFixed(1)}, so the maqam is the quieter set`,
+      ).toBeLessThanOrEqual(faces.inFromBoard + 0.5);
+
+      // And the channel that IS allowed to separate them still does.
+      expect(faces.inMark, `an in-maqam ${kind} key should carry its degree`).not.toBe('');
+      expect(faces.outMark, `an out-of-maqam ${kind} key should carry no degree`).toBe('');
+    }
+
+    // The name is the second channel, and costs no fill to carry.
+    expect(
+      board.inWeight,
+      'a note in the maqam should be named in a heavier weight',
+    ).toBeGreaterThan(board.outWeight);
   });
 
   test('one control answers both keyboard questions', async ({ page }) => {
@@ -929,28 +974,25 @@ test.describe('Maqam Playground', () => {
     await expect(page.locator('.maqam-eyebrow[data-stale="true"]')).toHaveCount(0);
   });
 
-  test('a key in the maqam is brighter than one outside it', async ({ page }) => {
+  test('the keyboard has a silhouette against the card it sits on', async ({ page }) => {
     /*
-     * The pair the app is actually about, and the one nothing was measuring
-     * until a palette change left out-of-maqam keys indistinguishable from
-     * in-maqam ones.
+     * What survives of a guard that used to assert in-maqam and out-of-maqam
+     * key fills were more than 30 apart. That assertion described the inverted
+     * membership design and is now wrong by construction — the faces are
+     * identical on purpose, and the test above owns the direction rule.
      *
-     * Measured as colour DISTANCE, not as a luminance ratio or a direction.
-     * An earlier version of this guard asserted that in-maqam keys must be
-     * BRIGHTER, on the model "a key outside the maqam recedes toward the
-     * board". That model changed: the board is sand, so a key outside the
-     * maqam recedes by STAYING sand, and a key inside it stands out by being
-     * tinted — which makes it the darker of the two. Asserting brightness
-     * would now forbid the design rather than protect it.
-     *
-     * What must stay true is that the two are far apart, and the units have to
-     * be chromatic: the difference is mostly hue at similar lightness, which a
-     * luminance ratio is blind to.
+     * This half was always about something else and is still true: a key must
+     * be visible against the card it sits on, and since both are near-white,
+     * what makes it visible is its EDGE. The original wanted 1.15:1 between
+     * the key's FILL and the card's, which a white key on a white card can
+     * never reach — a floor written for a keyboard on a coloured slab. Three
+     * of those were tried and all three rejected, so the floor outlived the
+     * design it described and would have forced the slab back.
      */
     await page.goto('/maqam/?maqam=hijaz_d');
     await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
 
-    const membership = await page.evaluate(() => {
+    const ratio = await page.evaluate(() => {
       const channel = (c: number) => {
         const v = c / 255;
         return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
@@ -965,49 +1007,20 @@ test.describe('Maqam Playground', () => {
         return stops ? stops[stops.length - 1] : style.backgroundColor;
       };
 
-      const rgb = (value: string) => (value.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number);
-      const inScale = document.querySelector(
-        '.maqam-keyboard .shared-pk-white.maqam-key--in-scale',
-      );
-      const outside = [...document.querySelectorAll('.maqam-keyboard .shared-pk-white')].find(
-        (el) => !el.classList.contains('maqam-key--in-scale'),
-      );
+      const key = document.querySelector('.maqam-keyboard .shared-pk-white');
       const board = document.querySelector('.maqam-board');
-      if (!inScale || !outside || !board) return null;
-
-      const a = rgb(fill(inScale));
-      const b = rgb(fill(outside));
-      return {
-        apart: Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]),
-        /*
-         * A key must be visible against the card it sits on — and since both
-         * are near-white, what makes it visible is its EDGE.
-         *
-         * This compared the key's fill with the card's and wanted 1.15:1,
-         * which a white key on a white card can never reach. It was a floor
-         * written for a keyboard on a coloured slab; three of those were tried
-         * and all three were rejected, so the floor outlived the design it
-         * described and would have forced the slab back.
-         */
-        keyEdgeAgainstBoard: (() => {
-          const edge = getComputedStyle(inScale).borderTopColor;
-          const hi = Math.max(luminance(edge), luminance(fill(board)));
-          const lo = Math.min(luminance(edge), luminance(fill(board)));
-          return (hi + 0.05) / (lo + 0.05);
-        })(),
-      };
+      if (!key || !board) return null;
+      const edge = getComputedStyle(key).borderTopColor;
+      const hi = Math.max(luminance(edge), luminance(fill(board)));
+      const lo = Math.min(luminance(edge), luminance(fill(board)));
+      return (hi + 0.05) / (lo + 0.05);
     });
 
-    // Hijaz uses 4 of 7 white keys, so both kinds are on screen.
-    expect(membership, 'Hijaz should show in-maqam and out-of-maqam white keys').not.toBeNull();
+    expect(ratio, 'the keyboard should be on screen').not.toBeNull();
     expect(
-      membership!.apart,
-      `in-maqam and out-of-maqam keys are only ${membership!.apart.toFixed(1)} apart`,
-    ).toBeGreaterThan(30);
-    expect(
-      membership!.keyEdgeAgainstBoard,
-      `a key's edge is only ${membership!.keyEdgeAgainstBoard.toFixed(2)}:1 against the card it ` +
-        'sits on, so the keyboard has no silhouette',
+      ratio!,
+      `a key's edge is only ${ratio!.toFixed(2)}:1 against the card it sits on, so the keyboard ` +
+        'has no silhouette',
     ).toBeGreaterThanOrEqual(1.8);
   });
 
