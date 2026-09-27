@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-import { ajnasJoin, scaleDegreeLabels, type MaqamPreset } from '../data/maqamPresets';
+import { ajnasJoins, scaleDegreeLabels, type MaqamPreset } from '../data/maqamPresets';
 
 interface JinsBreakdownProps {
   preset: MaqamPreset;
@@ -43,7 +43,7 @@ export default function JinsBreakdown({ preset, isPresetTuning }: JinsBreakdownP
    * Ajam looked disjunct, from cell sizes that were themselves wrong. Derived,
    * the panel followed the data to the right answer once the data was fixed.
    */
-  const join = ajnasJoin(preset);
+  const joins = ajnasJoins(preset);
   const labels = scaleDegreeLabels(preset.scaleDegrees);
 
   const panelRef = useRef<HTMLDivElement | null>(null);
@@ -107,17 +107,18 @@ export default function JinsBreakdown({ preset, isPresetTuning }: JinsBreakdownP
         ))}
       </ol>
 
-      {join && join.shared && (
-        <p className="maqam-jins__note">
-          Both cells claim {labels[join.ghammazIndex]}. The first ends there and the second starts
-          there, which is what joins them.
-        </p>
-      )}
-      {join && !join.shared && (
-        <p className="maqam-jins__note">
-          The cells do not touch. The first ends on {labels[join.lowerTopIndex]} and the second
-          starts a step higher on {labels[join.ghammazIndex]}.
-        </p>
+      {joins.map((join, index) =>
+        join.shared ? (
+          <p className="maqam-jins__note" key={`join-${index}`}>
+            Both cells claim {labels[join.ghammazIndex]}. One ends there and the next starts there,
+            which is what joins them.
+          </p>
+        ) : (
+          <p className="maqam-jins__note" key={`join-${index}`}>
+            These cells do not touch. One ends on {labels[join.lowerTopIndex]} and the next starts a
+            step higher on {labels[join.ghammazIndex]}.
+          </p>
+        ),
       )}
       {preset.primaryAjnas.length === 1 && (
         <p className="maqam-jins__note">

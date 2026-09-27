@@ -5,6 +5,7 @@ import {
   MAQAM_PRESETS_BY_ID,
   DEFAULT_MAQAM_ID,
   ajnasJoin,
+  ajnasJoins,
   degreeAbsoluteCents,
   ghammazDegreeIndex,
   deriveDetuneMatrix,
@@ -32,7 +33,7 @@ describe('preset integrity', () => {
       'kurd_d',
       'nahawand_c',
       'nikriz_c',
-      'ajam_bb',
+      'ajam_c',
     ]);
     expect(new Set(ids).size).toBe(ids.length);
   });
@@ -53,7 +54,7 @@ describe('preset integrity', () => {
       'sikah_e',
       'saba_d',
     ]);
-    expect(plain).toEqual(['hijaz_d', 'kurd_d', 'nahawand_c', 'nikriz_c', 'ajam_bb']);
+    expect(plain).toEqual(['hijaz_d', 'kurd_d', 'nahawand_c', 'nikriz_c', 'ajam_c']);
   });
 
   it('resolves the default id', () => {
@@ -301,7 +302,7 @@ describe('ajnas agree with the scale they are drawn from', () => {
   /**
    * Every maqam here is conjunct: its cells meet on one shared degree.
    *
-   * This test previously pinned rast_c, nahawand_c and ajam_bb as DISJUNCT,
+   * This test previously pinned rast_c, nahawand_c and ajam as DISJUNCT,
    * which was an artefact of wrong data rather than a fact about the music.
    * Each of those three has a 5-note pentachord as its root jins — Jins Rast,
    * Jins Nahawand and Jins 'Ajam are all "5-note jins" per maqamworld.com,
@@ -315,6 +316,38 @@ describe('ajnas agree with the scale they are drawn from', () => {
    * patterns and this list together, with no prose to chase. The failure was
    * treating the repo's own data as ground truth for a claim about the world.
    */
+  /**
+   * A maqam is not limited to two cells — maqamworld draws three over Maqam
+   * Rast, the third covering the descending form. The join logic used to read
+   * `primaryAjnas[0]` and `[1]` and ignore the rest, so a third cell would be
+   * stored, listed in the panel, and left out of every sentence about how the
+   * cells meet. Built from a synthetic 3-cell preset, because none of the
+   * shipped maqamat has one yet and a guard that waits for real data to appear
+   * is a guard that is not running.
+   */
+  it('describes every seam, not just the first', () => {
+    const rast = MAQAM_PRESETS_BY_ID.rast_c;
+    const threeCells: MaqamPreset = {
+      ...rast,
+      primaryAjnas: [
+        ...rast.primaryAjnas,
+        {
+          id: 'synthetic__third',
+          name: 'Jins Nahawand on C',
+          // Rooted on the upper tonic, closing the scale.
+          root: { letter: 'C', accidental: 'n' },
+          intervalsInCents: [0],
+          source: 'https://www.maqamworld.com/en/jins/nahawand.php',
+        },
+      ],
+    };
+
+    expect(ajnasJoins(rast)).toHaveLength(1);
+    expect(ajnasJoins(threeCells)).toHaveLength(2);
+    // And the maqam's own ghammaz is still the first seam.
+    expect(ajnasJoin(threeCells)).toEqual(ajnasJoins(threeCells)[0]);
+  });
+
   it('has no disjunct maqamat, because every cell reaches its ghammaz', () => {
     const disjunct = MAQAM_PRESETS.filter((preset) => ajnasJoin(preset)?.shared === false)
       .map((preset) => preset.id)
@@ -370,7 +403,7 @@ const SCALE_READBACK: [string, string][] = [
   ['kurd_d', 'D E♭ F G A B♭ C D'],
   ['nahawand_c', 'C D E♭ F G A♭ B♭ C'],
   ['nikriz_c', 'C D E♭ F♯ G A B♭ C'],
-  ['ajam_bb', 'B♭ C D E♭ F G A B♭'],
+  ['ajam_c', 'C D E F G A B C'],
 ];
 
 describe('written scales read back as expected', () => {

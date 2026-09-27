@@ -407,7 +407,7 @@ test.describe('Maqam Playground', () => {
 
     // Sikah is written from E half-flat and climbs to its own octave, so it
     // reaches higher above the stave than Ajam, which sits low and flat.
-    const low = await heightFor('maqam=ajam_bb');
+    const low = await heightFor('maqam=ajam_c');
     const high = await heightFor('maqam=sikah_e');
 
     expect(low).toBeGreaterThan(0);

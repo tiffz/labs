@@ -24,27 +24,30 @@
 .maqam,
 .maqam-portal {
   /* M3 surface roles */
-  --m3-surface: #fdf8f3;
-  --m3-surface-container: #f7f0e7;
-  --m3-surface-container-high: #f1e8dc;
-  --m3-on-surface: #201b16;
-  --m3-on-surface-variant: #52463a;
-  --m3-outline-variant: rgba(32, 27, 22, 0.1);
+  --m3-surface: #fbf6e6;
+  --m3-surface-container: #f3eac0;
+  --m3-surface-container-high: #ece0ae;
+  --m3-on-surface: #1e2640;
+  --m3-on-surface-variant: #4c5470;
+  --m3-outline-variant: rgba(30, 38, 64, 0.14);
 
   /*
    * Two hues, and that is the whole palette.
    *
-   * Ink blue says "this note is sounding, or is home". Amber says "this pitch
-   * is bent off equal temperament". Nothing else is coloured. The app used to
-   * have a third, a mint green carrying scale membership, which put a cool hue
-   * across two thirds of the keyboard on a warm cream ground and left the two
-   * hues that mean something competing with it for attention.
+   * Garnet says "this note is sounding, or is home". Terracotta says "this
+   * pitch is bent off equal temperament". Nothing else is coloured.
+   *
+   * The palette is saffron, terracotta, garnet, indigo and sand
+   * (#e5c100 #dc9750 #922c40 #1e2640 #f3eac0). Ink is indigo rather than
+   * black, the ground is sand rather than grey, and the two meaning-bearing
+   * hues are garnet and terracotta. Membership stays a cool-against-warm
+   * distinction, now indigo against sand.
    */
-  --m3-primary: #1d5b82;
-  --m3-primary-container: #cfe6f7;
-  --m3-tertiary: #8a5a12;
-  --m3-tertiary-container: #ffdeb0;
-  --m3-on-tertiary-container: #4a2f00;
+  --m3-primary: #922c40;
+  --m3-primary-container: #eccdd4;
+  --m3-tertiary: #b06a22;
+  --m3-tertiary-container: #f7dcb2;
+  --m3-on-tertiary-container: #5c3408;
 
   --maqam-tonic: var(--m3-primary);
   --maqam-tonic-soft: var(--m3-primary-container);
@@ -57,8 +60,8 @@
    * how the fact actually behaves — the other notes are still there, they are
    * just not part of this maqam — and it leaves colour free to mean one thing.
    */
-  --maqam-key-face: #fffefc;
-  --maqam-key-face-dim: #ebe3d1;
+  --maqam-key-face: #fffdf6;
+  --maqam-key-face-dim: #f4ecd2;
   /*
    * "This key belongs to the maqam", as a wash.
    *
@@ -72,13 +75,13 @@
    * octave of the note sounding, a full fill for the note itself. Amber still
    * means bent off equal temperament and nothing else.
    */
-  --maqam-scale-wash: #cadff0;
-  --maqam-scale-wash-black: #24313f;
+  --maqam-scale-wash: #dcdfec;
+  --maqam-scale-wash-black: #1e2640;
   /* The octaves of the note sounding: a step above membership, below the note
      itself, so "which key is that" still has one loud answer. */
-  --maqam-echo: #7fb2d6;
-  --maqam-key-ink: #3d352c;
-  --maqam-key-black: #272320;
+  --maqam-echo: #d3a3ad;
+  --maqam-key-ink: #2c3350;
+  --maqam-key-black: #2a2e3c;
   /*
    * Recession lives in the FACE, never in the ink.
    *
@@ -89,7 +92,7 @@
    * 8.1:1, and the face alone still carries the distinction.
    */
   --maqam-key-face-dim-ink: var(--maqam-key-ink);
-  --maqam-key-black-dim: #5f594f;
+  --maqam-key-black-dim: #6b6450;
 
   /* Type scale. Six sizes, because a screen this small cannot justify more. */
   --maqam-text-xs: 0.6875rem;
@@ -126,11 +129,11 @@
   /* A warm wash rather than a flat fill: the page had the right colours and
      none of the depth, which is most of what read as "dry". */
   background:
-    radial-gradient(120% 90% at 12% 0%, #fffdfa 0%, rgba(255, 253, 250, 0) 55%),
+    radial-gradient(120% 90% at 12% 0%, #fffdf4 0%, rgba(255, 253, 244, 0) 55%),
     radial-gradient(
       90% 70% at 100% 100%,
-      #f6ecdd 0%,
-      rgba(246, 236, 221, 0) 60%
+      #f0e3b6 0%,
+      rgba(240, 227, 182, 0) 60%
     ),
     var(--m3-surface);
   color: var(--m3-on-surface);
@@ -400,7 +403,7 @@
   border-radius: var(--maqam-radius-l);
   /* Paper-white, and warmer at the foot, so the staff reads as a page rather
      than a dialog box. */
-  background: linear-gradient(180deg, #ffffff 0%, #fffdf9 100%);
+  background: linear-gradient(180deg, #ffffff 0%, #fffcf2 100%);
   padding: var(--maqam-s2) var(--maqam-s3);
   /* The one hero surface, so the one real elevation. */
   box-shadow:
@@ -497,9 +500,20 @@
   border-radius: var(--maqam-radius-s);
 }
 
+/* A link, but a quiet one: the jins name is a heading first and a way out
+   second. Default link blue was the only cold colour left on the page. */
 .maqam-jins__name {
   font-size: var(--maqam-text-md);
   font-weight: 600;
+  color: var(--m3-on-surface);
+  text-decoration: none;
+}
+
+.maqam-jins__name:hover,
+.maqam-jins__name:focus-visible {
+  color: var(--maqam-tonic);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .maqam-jins__steps {
@@ -546,7 +560,7 @@
    * eye had no entry point. Dropping the board below the page is what gives the
    * white keys an edge to sit against.
    */
-  background: linear-gradient(168deg, #dccfb4 0%, #d5c7aa 100%);
+  background: linear-gradient(168deg, #dccf98 0%, #d3c488 100%);
   box-shadow: inset 0 1px 3px rgba(32, 27, 22, 0.1);
 }
 
@@ -652,7 +666,7 @@
  * readable, which the previous three-competing-fills model made impossible.
  */
 .maqam-key.maqam-key--in-scale {
-  background: linear-gradient(180deg, #e8f2fa 0%, var(--maqam-scale-wash) 100%);
+  background: linear-gradient(180deg, #edeff6 0%, var(--maqam-scale-wash) 100%);
 }
 
 /* Tonic: shape, so it survives a colour-blind reading and stacks with a bend. */
@@ -723,7 +737,7 @@
 .shared-pk-black.maqam-key--in-scale {
   background: linear-gradient(
     180deg,
-    #46525f 0%,
+    #39405c 0%,
     var(--maqam-scale-wash-black) 100%
   );
 }
@@ -743,7 +757,7 @@
 }
 
 .shared-pk-black.maqam-key--echoing {
-  background: #4a6072;
+  background: #7a5a66;
 }
 
 .maqam-key.maqam-key--sounding .shared-pk-white-label,
@@ -984,7 +998,7 @@
 
 .maqam-midi--connected .maqam-midi__dot {
   background: var(--maqam-tonic);
-  box-shadow: 0 0 0 3px rgba(29, 91, 130, 0.2);
+  box-shadow: 0 0 0 3px rgba(146, 44, 64, 0.2);
 }
 
 .maqam-midi--ready .maqam-midi__dot {
