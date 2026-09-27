@@ -1106,81 +1106,105 @@ test.describe('Maqam Playground', () => {
     expect(marks.slice(0, 7).map((k) => k.mark).join('')).toBe('1234567');
   });
 
-  test('the quarter-tone bank is twelve levers in piano shape, none overlapping', async ({
-    page,
-  }) => {
+  test('every lever sits over the key it retunes', async ({ page }) => {
     /*
-     * This replaced a test that asserted one switch per KEY — 36 of them, each
-     * sitting over its own key across three octaves. That design is gone: the
-     * action is per note NAME and applies to every octave, so three copies of
-     * each were three controls for one job.
+     * Two guards deep on this control now, and each replaced one that could
+     * not see the fault that followed it.
      *
-     * It is also what caused the fault that got reported as a clipping bug. A
-     * black chip was 18px wide and the gap it sat in between two white chips
-     * was 17px, so every black chip was drawn over its neighbours — by nine
-     * pixels at a coarse pointer, where it grew to 26. The old test could not
-     * see it: it measured each switch against its key and never two switches
-     * against each other.
+     * The first asserted every switch sat over its own key — 36 of them, three
+     * per note. It measured each switch against its KEY and never two switches
+     * against each other, so when a black chip grew 1px wider than the 17px
+     * gap it sat in, 36 controls drawn on top of one another passed it 36
+     * times. That got reported as a clipping bug.
      *
-     * So the invariant is not "aligned" any more, it is "twelve, shaped like a
-     * piano, and not on top of one another".
+     * The second replaced it with twelve levers in piano shape and asserted
+     * they did not intersect, and that each black lever sat on the seam
+     * between two white ones. Both were true. The bank was internally perfect
+     * — white centres at 0.5..6.5 sevenths, black at 1, 2, 4, 5, 6, exactly
+     * what the keyboard lays out — and still wrong, because it was 280px wide
+     * against an octave of 374. A correctly shaped keyboard at two thirds
+     * scale, left-aligned under a full one. The lever that retunes E sat over
+     * the gap between C and D, and the guard could not see it because every
+     * measurement it took was of the bank against ITSELF.
+     *
+     * So measure the bank against the instrument it labels. This subsumes both
+     * earlier guards: levers that land on their own keys cannot overlap each
+     * other, because the keys do not.
      */
-    await page.goto('/maqam/?maqam=muhayyar_d');
+    await page.goto('/maqam/?maqam=bayati_d');
     await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
 
     const bank = await page.evaluate(() => {
-      const levers = [...document.querySelectorAll('.maqam-lever')].map((el) => {
+      const centre = (el: Element) => {
         const box = el.getBoundingClientRect();
-        return {
-          black: el.classList.contains('maqam-lever--black'),
-          box: { left: box.left, right: box.right, top: box.top, bottom: box.bottom },
-          size: Math.min(box.width, box.height),
-          centre: box.left + box.width / 2,
-        };
-      });
+        return box.left + box.width / 2;
+      };
+      /*
+       * Paired by POSITION in the octave, not by name: a black key outside the
+       * maqam is spoken as "key, outside the maqam", so it has no note name to
+       * match on — and position is the property under test anyway.
+       */
+      const pairUp = (leverSelector: string, keySelector: string) => {
+        const levers = [...document.querySelectorAll(leverSelector)];
+        const keys = [...document.querySelectorAll(keySelector)].filter((el) =>
+          /octave 3$/.test(el.getAttribute('aria-label') ?? ''),
+        );
+        return levers.map((lever, index) => ({
+          note: (lever.getAttribute('aria-label') ?? '').split(',')[0].trim(),
+          key: keys[index] ?? null,
+          off: keys[index] ? centre(lever) - centre(keys[index]) : null,
+        }));
+      };
+
+      const whites = pairUp('.maqam-lever--white', '.maqam-keyboard .shared-pk-white');
+      const blacks = pairUp('.maqam-lever--black', '.maqam-keyboard .shared-pk-black');
+      const boxes = [...document.querySelectorAll('.maqam-lever')].map((el) =>
+        el.getBoundingClientRect(),
+      );
 
       let overlaps = 0;
-      for (let i = 0; i < levers.length; i += 1) {
-        for (let j = i + 1; j < levers.length; j += 1) {
-          const a = levers[i].box;
-          const b = levers[j].box;
+      for (let i = 0; i < boxes.length; i += 1) {
+        for (let j = i + 1; j < boxes.length; j += 1) {
+          const a = boxes[i];
+          const b = boxes[j];
           if (a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom) {
             overlaps += 1;
           }
         }
       }
 
-      const whites = levers.filter((l) => !l.black);
-      const blacks = levers.filter((l) => l.black);
-      /*
-       * A black lever belongs on the seam between two white ones. Measured
-       * against the white levers actually on screen, so the bank cannot drift
-       * out of piano shape without this failing.
-       */
-      const seams = whites.slice(0, -1).map((white, i) => (white.box.right + whites[i + 1].box.left) / 2);
-      const worstSeam = Math.max(
-        ...blacks.map((black) => Math.min(...seams.map((seam) => Math.abs(seam - black.centre)))),
-      );
-
+      const drift = [...whites, ...blacks];
       return {
         whites: whites.length,
         blacks: blacks.length,
+        unpaired: drift.filter((d) => d.off === null).map((d) => d.note),
+        worst: drift.reduce(
+          (worst, d) =>
+            d.off !== null && Math.abs(d.off) > Math.abs(worst.off ?? 0)
+              ? { note: d.note, off: d.off }
+              : worst,
+          { note: '', off: 0 } as { note: string; off: number | null },
+        ),
         overlaps,
-        smallest: Math.min(...levers.map((l) => l.size)),
-        worstSeam,
+        smallest: Math.min(...boxes.map((b) => Math.min(b.width, b.height))),
       };
     });
 
     expect(bank.whites).toBe(7);
     expect(bank.blacks).toBe(5);
+    // A pairing that found no key would make every assertion below vacuous.
+    expect(bank.unpaired, 'every lever must pair with a key in the first octave').toEqual([]);
+
+    expect(
+      Math.abs(bank.worst.off ?? 0),
+      `the ${bank.worst.note} lever is ${(bank.worst.off ?? 0).toFixed(1)}px from the centre of ` +
+        'the key it retunes, so the bank is not the octave it is drawn as',
+    ).toBeLessThanOrEqual(1);
+
     expect(
       bank.overlaps,
       `${bank.overlaps} pairs of levers are drawn on top of each other`,
     ).toBe(0);
-    expect(
-      bank.worstSeam,
-      `a black lever is ${bank.worstSeam.toFixed(1)}px off the seam it belongs on`,
-    ).toBeLessThanOrEqual(2);
     // The floor a fine pointer needs; the coarse-pointer bump is larger still.
     expect(bank.smallest).toBeGreaterThanOrEqual(22);
   });
