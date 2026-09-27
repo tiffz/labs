@@ -61,16 +61,6 @@ export interface StaffBracket {
   to: number;
   /** 1-based, matching the `--maqam-jins-N` tokens and the chip's swatch. */
   tone: number;
-  /**
-   * False when another cell is being pointed at.
-   *
-   * Two brackets drawn at once cannot answer "which of you owns the note where
-   * we meet" — stacking them shows THAT they overlap, and ringing the shared
-   * note shows WHERE, but neither shows whose it is. Drawing one at a time, as
-   * the reader points at each chip in turn, answers it by construction: the
-   * shared note lights up for both cells, one after the other.
-   */
-  active: boolean;
 }
 
 /** Breathing room kept above and below the drawn extent, in CSS px. */
@@ -189,13 +179,17 @@ function drawStaffNow(
   const litColor = options.highlightColor ?? inks.lit;
 
   /*
-   * The cell being pointed at, if any, and the notes it covers. Its notes take
-   * its colour so the chip, the bracket and the noteheads are one object.
+   * Brackets are drawn ONLY while a cell is being pointed at, and then only
+   * that one.
+   *
+   * Drawn always, they are a permanent overlay answering a question the reader
+   * is not currently asking, and two of them at once cannot say which owns the
+   * degree where they meet — three attempts at showing that simultaneously
+   * (meeting on the notehead, ringing it, stacking on two rows) all failed on
+   * the same point. Nothing by default; one cell, whole, on demand.
    */
   const brackets = options.brackets ?? [];
-  const pointed = brackets.length > 0 && brackets.some((bracket) => !bracket.active)
-    ? brackets.find((bracket) => bracket.active)
-    : undefined;
+  const pointed = brackets[0];
 
   const staveNotes = notes.map((note, index) => {
     const staveNote = new StaveNote({
@@ -332,17 +326,11 @@ function drawAjnasBrackets(
   // in real pixels; everything else here is in staff spaces.
   const px = vexFlowUserUnitsPerPixel(svg);
 
-  const anyPointed = brackets.some((bracket) => !bracket.active);
-
   brackets.forEach((bracket, index) => {
     const first = staveNotes[bracket.from];
     const last = staveNotes[bracket.to];
     if (!first || !last) return;
-    /* Pointing at one cell hides the others rather than dimming them. A dimmed
-       bracket still draws a line over the same notes, which is the ambiguity
-       this whole interaction exists to remove. */
-    if (anyPointed && !bracket.active) return;
-    const bracketInk = anyPointed ? inks.jins(bracket.tone) : inks.bracket;
+    const bracketInk = inks.jins(bracket.tone);
 
     const x1 = noteCentreX(first);
     const x2 = noteCentreX(last);

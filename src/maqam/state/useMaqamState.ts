@@ -4,7 +4,6 @@ import { getMidiInput } from '../../shared/midi/midiInput';
 import type { MidiDevice } from '../../shared/music/scoreTypes';
 import { throttledReplaceState } from '../../shared/utils/urlHistory';
 import { MaqamSynth, detuneForMidiNote } from '../audio/maqamSynth';
-import { DEFAULT_MAQAM_VOICE_ID } from '../audio/maqamVoices';
 import {
   findMaqamPreset,
   deriveDetuneMatrix,
@@ -33,9 +32,7 @@ export const MELODY_BPM = 76;
 const PLAYBACK_LEAD_SECONDS = 0.12;
 
 export interface MaqamState {
-  /** Which instrument new notes are struck with. */
-  voiceId: string;
-  setVoice: (id: string) => void;
+
   /** The maqam's scale, resolved against the live tuning. */
   melody: ResolvedMelodyNote[];
   isPlaying: boolean;
@@ -105,30 +102,10 @@ export function useMaqamState(): MaqamState {
    * state. Every note was silently inaudible. Creating it lazily here means the
    * StrictMode teardown is harmless: the next note rebuilds it.
    */
-  /**
-   * Which instrument. Held here rather than in the synth so the picker has
-   * something to render from before the first note has ever created a context
-   * — the synth does not exist until someone plays something.
-   */
-  const [voiceId, setVoiceId] = useState(DEFAULT_MAQAM_VOICE_ID);
-
-  /* Notes already sounding keep the voice they were struck with; a string does
-     not change instrument halfway through its decay. */
-  const setVoice = useCallback((id: string) => {
-    setVoiceId(id);
-    synthRef.current?.setVoice(id);
-  }, []);
-
   const getSynth = useCallback((): MaqamSynth => {
-    if (!synthRef.current) {
-      synthRef.current = new MaqamSynth();
-      /* A synth created after the user has already chosen an instrument must
-         start on that one, not on the default — the picker is usable before
-         the first note, which is when the synth comes into existence. */
-      synthRef.current.setVoice(voiceId);
-    }
+    if (!synthRef.current) synthRef.current = new MaqamSynth();
     return synthRef.current;
-  }, [voiceId]);
+  }, []);
 
   /**
    * The matrix is read inside `noteOn`, which Web MIDI calls from outside
@@ -367,8 +344,6 @@ export function useMaqamState(): MaqamState {
   return {
     preset,
     presetId,
-    voiceId,
-    setVoice,
     matrix,
     isPresetTuning,
     keyTunings,

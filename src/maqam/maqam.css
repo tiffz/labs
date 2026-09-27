@@ -171,14 +171,26 @@
   --maqam-radius-pill: 999px;
 }
 
+/*
+ * One viewport WHERE IT FITS, and a scrolling page where it does not.
+ *
+ * `height: 100dvh` with `overflow: hidden` promised a single screen at every
+ * size and could not keep it. Between roughly 620px and 740px tall the stage
+ * (which was allowed to shrink) collapsed under its own cards while those
+ * cards kept their real height, so they spilled out of it and OVERLAPPED the
+ * keyboard — 11px at 1333x693, which is what a window at 150% zoom gives. The
+ * escape hatch that switched to a scrolling page was pinned to `max-height:
+ * 620px`, a number chosen before the layout had a maqam card in it.
+ *
+ * `min-height` keeps the centred single screen whenever there is room and lets
+ * the page scroll when there is not, with no threshold to keep in step with
+ * the content.
+ */
 .maqam {
   display: flex;
   flex-direction: column;
-  /* 100vh first for browsers without dvh; dvh wins where supported so mobile
-     browser chrome does not push the keyboard off-screen. */
-  height: 100vh;
-  height: 100dvh;
-  overflow: hidden;
+  min-height: 100vh;
+  min-height: 100dvh;
   /*
    * Flat. Two radial gradients used to wash the page saffron at one corner and
    * near-white at the other, which meant no panel had a stable ground to sit
@@ -227,20 +239,11 @@
  * page: the page at least tells you it scrolls. Short windows get the same
  * treatment, since a 600px-tall desktop window has the same problem.
  */
-@media (max-width: 899px), (max-height: 620px) {
-  .maqam {
-    height: auto;
-    min-height: 100vh;
-    min-height: 100dvh;
-    overflow: visible;
-  }
-
+@media (max-width: 899px), (max-height: 740px) {
+  /* Stop centring once the page has to scroll: a centred column that overflows
+     is clipped at the TOP as well as the bottom, which hides the app's name. */
   .maqam-shell {
     justify-content: flex-start;
-  }
-
-  .maqam-stage {
-    overflow: visible;
   }
 }
 
@@ -372,10 +375,10 @@
   grid-template-columns: 1fr;
   align-content: start;
   gap: var(--maqam-gap);
-  /* Sized by its content, not stretched. Growing it split the screen between a
-     staff at the top and a keyboard at the bottom with a void between. */
-  flex: 0 1 auto;
-  min-height: 0;
+  /* Sized by its content, and never SMALLER than it. `0 1 auto` let a short
+     window squeeze this box while the cards inside kept their height, which is
+     how they ended up drawn over the keyboard. */
+  flex: 0 0 auto;
   /*
    * The stage itself does not scroll. When the window is short it is the ajnas
    * panel that gives, and it says so — see `.maqam-stage__jins`. A scroll
@@ -1274,118 +1277,6 @@
 }
 
 /* Coarse pointers need a real fingertip target on every control. */
-/* ---------------------------------------------------------- theme picker -- */
-
-/*
- * Preview chrome, not product. It is gated to dev and `?designPreview`, and it
- * goes once a look wins — so it is styled to sit quietly beside the glossary
- * rather than to be a control anyone would miss.
- */
-.maqam-themepicker__trigger.MuiButton-root {
-  gap: var(--maqam-s2);
-  border-radius: var(--maqam-radius-pill);
-  color: var(--m3-on-surface-variant);
-  font-size: var(--m3-label-large);
-  font-weight: 500;
-  letter-spacing: 0.006em;
-  text-transform: none;
-}
-
-.maqam-themepicker__chip {
-  width: 12px;
-  height: 12px;
-  border-radius: var(--maqam-radius-pill);
-  background: var(--m3-primary);
-  box-shadow: 0 0 0 1px var(--m3-outline-variant);
-}
-
-.maqam-themepicker {
-  width: 22rem;
-  max-width: calc(100vw - 32px);
-  padding: var(--maqam-s3);
-}
-
-.maqam-themepicker__note {
-  margin: 0 var(--maqam-s2) var(--maqam-s2);
-  font-size: var(--m3-body-small);
-  color: var(--m3-on-surface-variant);
-}
-
-.maqam-themepicker__list {
-  display: grid;
-  gap: 2px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  max-height: 60vh;
-  overflow-y: auto;
-}
-
-.maqam-themepicker__option {
-  display: flex;
-  align-items: center;
-  gap: var(--maqam-s3);
-  width: 100%;
-  padding: var(--maqam-s2);
-  border: 0;
-  border-radius: var(--maqam-radius-s);
-  background: none;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.maqam-themepicker__option:hover {
-  background: var(--m3-surface-container);
-}
-
-/* M3 selection: the container tone, not a border. */
-.maqam-themepicker__option[aria-pressed='true'] {
-  background: var(--m3-secondary-container);
-}
-
-.maqam-themepicker__swatch {
-  display: flex;
-  flex: 0 0 auto;
-  border-radius: var(--maqam-radius-xs);
-  overflow: hidden;
-  box-shadow: 0 0 0 1px var(--m3-outline-variant);
-}
-
-.maqam-themepicker__swatch > span {
-  width: 14px;
-  height: 28px;
-}
-
-.maqam-themepicker__text {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  min-width: 0;
-}
-
-.maqam-themepicker__label {
-  display: flex;
-  align-items: center;
-  gap: var(--maqam-s2);
-  font-size: var(--m3-title-small);
-  font-weight: 500;
-  color: var(--m3-on-surface);
-}
-
-.maqam-themepicker__mode {
-  padding: 0 6px;
-  border-radius: var(--maqam-radius-pill);
-  background: var(--m3-surface-container-highest);
-  color: var(--m3-on-surface-variant);
-  font-size: var(--m3-label-small);
-  font-weight: 500;
-}
-
-.maqam-themepicker__tagline {
-  font-size: var(--m3-body-small);
-  color: var(--m3-on-surface-variant);
-}
 
 /* ------------------------------------------------------------- maqam card -- */
 
@@ -1527,30 +1418,6 @@
   font-weight: 400;
 }
 
-/* The intervals, only for the cell being pointed at. Printed under every cell
-   at all times it was four lines of digits for a fact that matters once you
-   are asking about one of them. */
-.maqam-card__detail {
-  margin: 0;
-  font-size: var(--m3-body-small);
-  color: var(--m3-on-surface-variant);
-}
-
-.maqam-card__detail a {
-  color: var(--m3-primary);
-  text-decoration: none;
-  border-bottom: 1px solid var(--m3-outline-variant);
-}
-
-.maqam-card__detail a:hover,
-.maqam-card__detail a:focus-visible {
-  border-bottom-color: currentColor;
-}
-
-.maqam-card__steps {
-  font-variant-numeric: tabular-nums;
-}
-
 .maqam-card__note {
   margin: 0;
   font-size: var(--m3-body-small);
@@ -1561,73 +1428,6 @@
 .maqam-card__foot {
   margin-top: auto;
   padding-top: var(--maqam-s2);
-}
-
-/* ----------------------------------------------------------- voice picker -- */
-
-.maqam-voice__trigger.MuiButton-root {
-  border-radius: var(--maqam-radius-pill);
-  color: var(--m3-on-surface-variant);
-  font-size: var(--m3-label-large);
-  font-weight: 500;
-  letter-spacing: 0.006em;
-  text-transform: none;
-}
-
-.maqam-voice {
-  width: 21rem;
-  max-width: calc(100vw - 32px);
-  padding: var(--maqam-s3);
-}
-
-.maqam-voice__list {
-  display: grid;
-  gap: 2px;
-  margin: 0 0 var(--maqam-s2);
-  padding: 0;
-  list-style: none;
-}
-
-.maqam-voice__option {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  width: 100%;
-  padding: var(--maqam-s2);
-  border: 0;
-  border-radius: var(--maqam-radius-s);
-  background: none;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.maqam-voice__option:hover {
-  background: var(--m3-surface-container);
-}
-
-.maqam-voice__option[aria-pressed='true'] {
-  background: var(--m3-secondary-container);
-}
-
-.maqam-voice__label {
-  font-size: var(--m3-title-small);
-  font-weight: 500;
-  color: var(--m3-on-surface);
-}
-
-.maqam-voice__description {
-  font-size: var(--m3-body-small);
-  color: var(--m3-on-surface-variant);
-}
-
-.maqam-voice__note {
-  margin: 0;
-  padding: var(--maqam-s2);
-  border-top: 1px solid var(--m3-outline-variant);
-  font-size: var(--m3-body-small);
-  line-height: 1.45;
-  color: var(--m3-on-surface-variant);
 }
 
 /* ------------------------------------------------- keys, by pointed-at jins -- */
@@ -1644,4 +1444,36 @@
 .maqam-keyboard .maqam-key--in-jins .shared-pk-mark {
   background: var(--m3-primary);
   color: var(--m3-on-primary);
+}
+
+/* ---------------------------------------------------------- jins hovercard -- */
+
+/*
+ * What a cell is, shown beside the chip rather than under it. Inline, this
+ * grew the taller stage column by a line and moved the whole page.
+ */
+.maqam-jinscard {
+  width: 15rem;
+  max-width: calc(100vw - 32px);
+  padding: var(--maqam-s3);
+}
+
+.maqam-jinscard__name {
+  margin: 0;
+  font-size: var(--m3-title-small);
+  font-weight: 500;
+  color: var(--m3-on-surface);
+}
+
+.maqam-jinscard__steps {
+  margin: 2px 0 0;
+  font-size: var(--m3-body-small);
+  font-variant-numeric: tabular-nums;
+  color: var(--m3-on-surface-variant);
+}
+
+.maqam-jinscard__alt {
+  margin: var(--maqam-s2) 0 0;
+  font-size: var(--m3-body-small);
+  color: var(--m3-on-surface-variant);
 }

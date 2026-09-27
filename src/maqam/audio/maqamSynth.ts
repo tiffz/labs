@@ -4,22 +4,25 @@ import {
 } from '../../shared/playback/audioContextLifecycle';
 import type { DetuneMatrix } from '../data/maqamPresets';
 import { renderPluckedString, renderRoomImpulse } from './pluckedString';
-import {
-  DEFAULT_MAQAM_VOICE_ID,
-  findMaqamVoice,
-  type MaqamVoice,
-} from './maqamVoices';
 
 /** A4 = 440 Hz, MIDI note 69 — the anchor every other frequency is derived from. */
 const A4_HZ = 440;
 const A4_MIDI = 69;
 
 /**
- * The instrument, which is a set of numbers rather than a set of samples —
- * see `maqamVoices.ts`. Held here so a note renders with whatever is selected
- * at the time it is first heard.
+ * Oud-ish voicing. Gut and nylon strings lose energy faster than steel, and the
+ * body is woody rather than bright, so sustain sits below a guitar's and the
+ * tone control is well into the dark half.
+ *
+ * Three selectable voices lived here briefly — oud, qanun and santur — and came
+ * out again. They are one string model at three settings and they sounded like
+ * it: a picker offering three near-identical timbres is three ways to be unsure
+ * which one you are hearing. A second instrument has to be a second
+ * GENERATOR — something bowed or blown — to be worth choosing between.
  */
-const DEFAULT_VOICE = findMaqamVoice(DEFAULT_MAQAM_VOICE_ID)!;
+const PLUCK_SECONDS = 2.6;
+const PLUCK_SUSTAIN = 0.9965;
+const PLUCK_TONE = 0.62;
 
 /**
  * An oud's strings are doubled — each "string" is a course of two, tuned a few
@@ -100,7 +103,6 @@ export class MaqamSynth {
    * comparing them will do.
    */
   private readonly buffers = new Map<string, AudioBuffer>();
-  private voice: MaqamVoice = DEFAULT_VOICE;
   /** Sources queued by `scheduleNote`, so a stop can cancel a whole phrase. */
   private scheduled: AudioBufferSourceNode[] = [];
   private disposed = false;
@@ -146,18 +148,9 @@ export class MaqamSynth {
     return { context: this.managed.context, master: this.master };
   }
 
-  /** Which instrument new notes render as. Sounding notes keep their voice. */
-  setVoice(id: string): void {
-    this.voice = findMaqamVoice(id) ?? DEFAULT_VOICE;
-  }
-
-  getVoice(): MaqamVoice {
-    return this.voice;
-  }
-
-  /** Render (or reuse) the string for one pitch, in the current voice. */
+  /** Render (or reuse) the plucked string for one pitch. */
   private bufferFor(context: AudioContext, midiNote: number, cents: number): AudioBuffer | null {
-    const key = `${this.voice.id}:${voiceKey(midiNote, cents)}`;
+    const key = voiceKey(midiNote, cents);
     const cached = this.buffers.get(key);
     if (cached) return cached;
 
@@ -165,9 +158,9 @@ export class MaqamSynth {
     const samples = renderPluckedString({
       sampleRate: context.sampleRate,
       frequency,
-      seconds: this.voice.seconds,
-      sustain: this.voice.sustain,
-      tone: this.voice.tone,
+      seconds: PLUCK_SECONDS,
+      sustain: PLUCK_SUSTAIN,
+      tone: PLUCK_TONE,
       // Seeded from the pitch so a given note always sounds identical, and two
       // different notes do not share the same excitation noise.
       seed: Math.round(frequency * 100) || 1,
@@ -224,9 +217,7 @@ export class MaqamSynth {
     const sources: AudioBufferSourceNode[] = [];
     for (const [rate, when, level] of [
       [1, 0, 1],
-      ...(this.voice.course
-        ? [[COURSE_DETUNE_RATIO, COURSE_DELAY_SECONDS, COURSE_GAIN] as const]
-        : []),
+      [COURSE_DETUNE_RATIO, COURSE_DELAY_SECONDS, COURSE_GAIN],
     ] as const) {
       const source = context.createBufferSource();
       source.buffer = buffer;
@@ -334,9 +325,7 @@ export class MaqamSynth {
 
     for (const [rate, delay, level] of [
       [1, 0, 1],
-      ...(this.voice.course
-        ? [[COURSE_DETUNE_RATIO, COURSE_DELAY_SECONDS, COURSE_GAIN] as const]
-        : []),
+      [COURSE_DETUNE_RATIO, COURSE_DELAY_SECONDS, COURSE_GAIN],
     ] as const) {
       const source = context.createBufferSource();
       source.buffer = buffer;

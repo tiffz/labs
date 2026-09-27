@@ -467,88 +467,76 @@ test.describe('Maqam Playground', () => {
     expect(high).not.toBe(low);
   });
 
-  test('the staff brackets the ajnas the panel lists, meeting on the ghammaz', async ({
-    page,
-  }) => {
+  test('the staff shows no brackets until a cell is pointed at', async ({ page }) => {
     /*
-     * A maqam is cells joined at a shared degree, and until these brackets
-     * existed the app said so only in prose beside eight undifferentiated
-     * noteheads.
+     * Nothing by default.
      *
-     * The expected labels are read from the app's OWN ajnas panel rather than
-     * written here, so a maqam whose cells are corrected cannot leave the
-     * brackets behind: the two have to agree or this fails. Enumerating them
-     * would make this a constant-against-constant test.
+     * Brackets drawn always are a permanent overlay answering a question the
+     * reader is not currently asking — and two at once cannot say which owns
+     * the degree where they meet, which is the thing they exist to show.
      */
     await page.goto('/maqam/?maqam=rast_c');
     await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
     await expect(page.locator('.maqam-staff svg')).toBeVisible({ timeout: 15_000 });
-    await expect(page.locator('.maqam-staff__ajnas text').first()).toBeVisible();
+    await expect(page.locator('.maqam-staff__ajnas')).toHaveCount(0);
+  });
 
-    const panelNames = await page.locator('.maqam-chip__name').allTextContents();
-    const drawn = await page.locator('.maqam-staff__ajnas text').allTextContents();
-    expect(drawn.length).toBeGreaterThan(0);
-    expect(drawn).toEqual(panelNames);
+  test('a bracket is named by the chip that summons it, and sits above the staff', async ({
+    page,
+  }) => {
+    /*
+     * Geometry that does not depend on the platform's font metrics.
+     *
+     * This used to locate noteheads by filtering SVG <text> boxes to
+     * `width > 18 && width < 26`, which is a Bravura measurement on macOS and
+     * a different one on Linux — so it passed locally and failed the first
+     * time CI ran it. A guard whose fixture is the host's font rendering is a
+     * guard that reports where it ran.
+     *
+     * The facts that survive any renderer: the label matches the chip, the
+     * rule clears the staff, and the two cells meet where the panel says they
+     * do — each measured against the app's own output rather than a number
+     * typed here.
+     */
+    await page.goto('/maqam/?maqam=rast_c');
+    await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('.maqam-staff svg')).toBeVisible({ timeout: 15_000 });
 
-    const geometry = await page.evaluate(() => {
-      const paths = [...document.querySelectorAll('.maqam-staff__ajnas path')];
-      const staffTop = document
-        .querySelector('.maqam-staff svg')!
-        .querySelector('*')!
-        .getBoundingClientRect().top;
-      return {
-        rules: paths.map((path) => {
-          const box = path.getBoundingClientRect();
-          return { left: box.left, right: box.right, top: box.top };
-        }),
-        /* Every notehead VexFlow drew, by its own centre — the thing the
-           brackets claim to line up with. */
-        heads: [...document.querySelectorAll('.maqam-staff svg text')]
-          .filter((node) => !node.closest('.maqam-staff__ajnas'))
-          .map((node) => node.getBoundingClientRect())
-          .filter((box) => box.width > 18 && box.width < 26)
-          .map((box) => box.left + box.width / 2)
-          .sort((a, b) => a - b),
-        staffTop,
-      };
-    });
+    const chipNames = await page.locator('.maqam-chip__name').allTextContents();
+    expect(chipNames.length).toBeGreaterThan(1);
 
-    expect(geometry.rules).toHaveLength(panelNames.length);
+    const spanOf = async (index: number) => {
+      await page.locator('.maqam-chip').nth(index).hover();
+      await expect(page.locator('.maqam-staff__ajnas path')).toHaveCount(1);
+      await expect(page.locator('.maqam-staff__ajnas text')).toHaveText([chipNames[index]]);
+      return page.evaluate(() => {
+        const rule = document.querySelector('.maqam-staff__ajnas path')!.getBoundingClientRect();
+        const staff = document
+          .querySelector('.maqam-staff svg')!
+          .querySelector('*')!
+          .getBoundingClientRect();
+        return { left: rule.left, right: rule.right, top: rule.top, staffTop: staff.top };
+      });
+    };
+
+    const lower = await spanOf(0);
+    const upper = await spanOf(1);
+
+    // The rule clears the music; only its end ticks come down.
+    expect(lower.top).toBeLessThanOrEqual(lower.staffTop);
+    expect(upper.top).toBeLessThanOrEqual(upper.staffTop);
 
     /*
-     * The ends sit ON the noteheads, measured against VexFlow's own output
-     * rather than against a number written here. This was reported as
-     * misaligned while measuring 0.2px out — the cause was ticks that stopped
-     * in empty space above the staff, not the x positions — so the guard pins
-     * the alignment that was already right AND the attachment that was not.
+     * Rast's cells share their G, so the lower one ends exactly where the
+     * upper one starts. Compared to EACH OTHER, which needs no notehead
+     * measurement and is the fact the panel states in words.
      */
-    const [lower, upper] = geometry.rules;
-    const nearestHead = (x: number) =>
-      Math.min(...geometry.heads.map((head) => Math.abs(head - x)));
-    expect(nearestHead(lower.left), 'the first cell does not start on a notehead').toBeLessThan(2);
-    expect(nearestHead(upper.right), 'the last cell does not end on a notehead').toBeLessThan(2);
+    await expect(page.locator('.maqam-card')).toContainText('Both cells meet on G.');
     expect(
       Math.abs(lower.right - upper.left),
-      'the two cells do not meet on the same notehead',
+      'the two cells do not meet on the same degree',
     ).toBeLessThan(2);
-
-    // The horizontal rule stays clear of the staff; only the ticks come down.
-    for (const rule of geometry.rules) {
-      expect(rule.top).toBeLessThanOrEqual(geometry.staffTop);
-    }
-
-    /*
-     * And they are STACKED, which is how the shared degree is shown.
-     *
-     * Two rules meeting end-to-end on one row read as "this is where one stops
-     * and the next starts" — the disjunct case, and the opposite of what is
-     * true of Rast, whose G belongs to both cells. On separate rows the shared
-     * notehead carries a tick from each, and the overlap is simply visible.
-     */
-    expect(
-      Math.abs(lower.top - upper.top),
-      'the two cells are drawn on one row, so their shared note reads as a seam',
-    ).toBeGreaterThan(4);
+    expect(upper.right).toBeGreaterThan(lower.right);
   });
 
   test('pointing at a jins shows only that cell, on the staff and the keys', async ({
@@ -569,7 +557,7 @@ test.describe('Maqam Playground', () => {
      */
     await page.goto('/maqam/?maqam=kurd_d');
     await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
-    await expect(page.locator('.maqam-staff__ajnas path')).toHaveCount(2);
+    await expect(page.locator('.maqam-staff__ajnas')).toHaveCount(0);
 
     const chips = page.locator('.maqam-chip');
     await expect(chips).toHaveCount(2);
@@ -595,9 +583,9 @@ test.describe('Maqam Playground', () => {
     // G is in BOTH, and the octave D is the note the short tetrachord lost.
     expect(await litKeyNames()).toEqual(['A4', 'B♭4', 'C4', 'D4', 'G4'].sort());
 
-    // Pointing away puts every cell back.
+    // Pointing away puts the staff back to plain notation.
     await page.locator('.maqam-topbar__title').hover();
-    await expect(page.locator('.maqam-staff__ajnas path')).toHaveCount(2);
+    await expect(page.locator('.maqam-staff__ajnas')).toHaveCount(0);
     await expect(page.locator('.maqam-keyboard .maqam-key--in-jins')).toHaveCount(0);
   });
 

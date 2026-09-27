@@ -3,14 +3,11 @@ import Button from '@mui/material/Button';
 import Paper from '@mui/material/Paper';
 
 import SkipToMain from '../shared/components/SkipToMain';
-import MaqamThemePicker from './components/MaqamThemePicker';
-import { isDesignPreviewEnabled } from './design/designPreview';
 import KeyTuningRail from './components/KeyTuningRail';
 import MaqamCard from './components/MaqamCard';
 import MaqamKeyboard from './components/MaqamKeyboard';
 import MaqamStaff from './components/MaqamStaff';
 import KeyboardNote from './components/KeyboardNote';
-import VoicePicker from './components/VoicePicker';
 import { MAQAM_PRESETS, ajnasSpans } from './data/maqamPresets';
 import { pitchClassOf } from './notation/maqamAccidentals';
 import { describeTuning, liveScaleLabels } from './state/maqamTuning';
@@ -43,8 +40,6 @@ export default function App() {
     isPlaying,
     playingIndex,
     togglePlayback,
-    voiceId,
-    setVoice,
   } = useMaqamState();
 
   /**
@@ -71,22 +66,24 @@ export default function App() {
    * indices — but only while that stays true, which is what the guard in the
    * e2e checks by counting brackets against the panel.
    */
-  const brackets = useMemo(
-    () =>
-      preset
-        ? ajnasSpans(preset).map((span, index) => ({
-            id: span.id,
-            label: span.name,
-            from: span.fromIndex,
-            to: span.toIndex,
-            /* 1-based, so it lines up with the `--maqam-jins-N` tokens and
-               with the chip's own `data-jins`. */
-            tone: index + 1,
-            active: activeJinsId === null || activeJinsId === span.id,
-          }))
-        : undefined,
-    [preset, activeJinsId],
-  );
+  const brackets = useMemo(() => {
+    if (!preset || !activeJinsId) return undefined;
+    const spans = ajnasSpans(preset);
+    const index = spans.findIndex((span) => span.id === activeJinsId);
+    if (index < 0) return undefined;
+    const span = spans[index];
+    return [
+      {
+        id: span.id,
+        label: span.name,
+        from: span.fromIndex,
+        to: span.toIndex,
+        /* 1-based, so it lines up with the `--maqam-jins-N` tokens and with
+           the chip's own `data-jins`. */
+        tone: index + 1,
+      },
+    ];
+  }, [preset, activeJinsId]);
 
   /** The scale degrees of the jins being pointed at, for the keyboard. */
   const activeSpan = useMemo(() => {
@@ -168,9 +165,6 @@ export default function App() {
             <span className="maqam-topbar__word">Maqam</span>
             <span className="maqam-topbar__word maqam-topbar__word--light">Playground</span>
           </h1>
-
-          {/* Preview only: dev, or `?designPreview`. */}
-          {isDesignPreviewEnabled() && <MaqamThemePicker />}
         </header>
 
         <div className="maqam-stage">
@@ -202,7 +196,6 @@ export default function App() {
               )}
 
               <div className="maqam-melodybar">
-                <VoicePicker onChange={setVoice} voiceId={voiceId} />
                 <Button
                   variant="contained"
                   disableElevation

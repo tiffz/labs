@@ -144,51 +144,31 @@ Why synthesis rather than a sample library: a piano is the wrong instrument for 
 
 ## Design
 
-Material 3, as a **token system** rather than as a look someone eyeballed. `maqam.css`
-declares the whole set on `.maqam, .maqam-portal` — both, because MUI popovers render into
-a portal at the end of `<body>` and would otherwise resolve nothing.
+Citrus. Full palette, shape and type rules: [`DESIGN.md`](DESIGN.md).
 
-- **Surfaces are one warm neutral at five tones.** Depth is a tonal step, never a hue
-  change and never a shadow. The palette's five hues
-  (saffron `#e5c100`, terracotta `#dc9750`, garnet `#922c40`, indigo `#1e2640`,
-  sand `#f3eac0`) are **accents**. An earlier version used sand as `surface-container`
-  and then filled a 1200x390 board with it, which is how a palette meant for detail
-  became the loudest thing on screen.
-- **Three roles, three jobs.** Garnet (`primary`) = "sounding, or home", and the one CTA.
-  Terracotta (`tertiary`) = "bent off equal temperament". Indigo (`secondary`) = structure.
-  Nothing else is coloured.
-- **One containment idiom**: an outlined card, radius 16, 1dp `outline-variant`. The board
-  is the single exception — a filled well one tone deeper, because it holds an instrument.
-- **M3 type scale by role** (`--m3-headline-small`, `--m3-title-medium`, `--m3-body-medium`,
-  `--m3-label-*`), so a size is chosen by what the text _is_.
-- **The notation is themed too.** VexFlow paints with JS colour strings, so `maqamStaffDraw`
-  reads `--maqam-staff-ink`, `--maqam-staff-lit` and `--maqam-bracket-ink` off the container.
-  Without that the staff keeps whatever hex was hardcoded in 2026 while the page moves on.
+The preview gallery that chose it — ten seeds, a switcher, a contrast harness —
+is deleted, per [`labs-ui-design-variations`](../../.agents/skills/labs-ui-design-variations/SKILL.md).
+Its one durable output is in `maqam.css`.
 
-### Ten looks, behind a preview picker
+### Ajnas are pointed at, not permanently drawn
 
-[`design/maqamDesignThemes.ts`](design/maqamDesignThemes.ts) holds ten alternative looks —
-Sahara, Damascus, Zellige, Manuscript, Gallery, Oud, Bosphorus, Saffron, Noir, Risograph —
-for choosing a direction in the running app rather than from mockups.
+The staff shows no brackets until a jins chip in the maqam card is hovered or
+focused; then it shows **that one**, its notes in the cell's colour, its keys
+lit on the keyboard, everything else quiet.
 
-- **Preview only.** The picker shows in dev, or with `?designPreview`. A link can pin one
-  with `?theme=noir`; otherwise the choice persists in `localStorage`.
-- **`maqam.css` owns the default.** `applyMaqamTheme` injects nothing for Sahara. Deriving
-  the default here too gave one palette two sources of truth, and the derived one won —
-  so the shipped design was quietly replaced by an approximation of itself.
-- **A theme is a seed, not 40 hexes.** Ground, ink, three roles, a mode, a shape; the rest
-  is derived ([`design/maqamThemeTokens.ts`](design/maqamThemeTokens.ts)), so no theme can
-  ship missing a token and silently inherit the last one's.
-- **The ramp preserves hue.** Surfaces scale the ground's own channels rather than mixing
-  toward the ink, which dragged every warm surface toward navy.
-- **Every look is contrast-tested.** `maqamDesignThemes.test.ts` runs the same AA and
-  surface-step floors the e2e enforces on the default over all ten, as arithmetic. It
-  caught five real defects on first run, including two key faces **0.0 apart** in Noir —
-  the exact membership bug this app shipped three times.
+This is the fourth attempt at one problem: two ajnas share a degree, and two
+brackets drawn at once cannot say which of them owns it. Terminating both on
+the shared notehead reads as a seam. Ringing the note says _where_ but not
+_whose_. Stacking on two rows says _that_ they overlap but still not _whose_.
+Showing one at a time answers it by construction — the shared degree lights for
+each cell in turn — and it takes the permanent overlay off a staff whose reader
+is usually not asking the question.
 
-**When one wins:** fold its tokens into `maqam.css`, delete the other nine, delete
-`design/` and `context/`, write `DESIGN.md` + a scoped rule, and remove the picker.
-See [`labs-ui-design-variations`](../../.agents/skills/labs-ui-design-variations/SKILL.md).
+The detail is a **hovercard**. Rendered inline it grew the taller of the two
+stage columns by a line, which moved the whole page every time the pointer
+crossed a chip.
+
+## State
 
 ## State
 
