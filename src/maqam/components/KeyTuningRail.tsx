@@ -86,13 +86,6 @@ export default function KeyTuningRail({ matrix, onToggle }: KeyTuningRailProps) 
       role="group"
       aria-label="Quarter-tone levers. Each one lowers its note a quarter tone, in every octave."
     >
-      {/* The unit, printed ONCE — the way a desk prints dB at the head of a
-          fader bank rather than on every fader. Thirty-six copies of "½♭" made
-          the loudest type on the page out of a control the README calls the
-          exception. */}
-      <span className="maqam-tuningbank__unit" aria-hidden="true">
-        ½♭
-      </span>
       <div className="maqam-tuningbank__keys">
         {WHITE_OFFSETS.map((offset) => lever(offset, 'maqam-lever maqam-lever--white'))}
         {BLACK_KEYS.map(({ offset, afterWhite }) =>
@@ -101,6 +94,18 @@ export default function KeyTuningRail({ matrix, onToggle }: KeyTuningRailProps) 
           }),
         )}
       </div>
+      {/* The unit, printed ONCE — the way a desk prints dB on a fader bank
+          rather than on every fader. Thirty-six copies of "½♭" made the
+          loudest type on the page out of a control the README calls the
+          exception.
+
+          It sits AFTER the levers because the bank is aligned to the first
+          octave of the keyboard below it: anything ahead of the levers pushes
+          them off the keys they name. Here it falls in the empty space over
+          the second octave. */}
+      <span className="maqam-tuningbank__unit" aria-hidden="true">
+        ½♭
+      </span>
     </div>
   );
 }

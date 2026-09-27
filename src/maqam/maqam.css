@@ -114,6 +114,16 @@
    * Bound to roles the app already has rather than to two more one-off hexes,
    * which is what `--maqam-switch-off` and `--maqam-switch-border` were.
    */
+  /*
+   * Room for a focus ring (3px + 2px offset), and the reason the bank lines up
+   * with the keyboard. Both the bank and the instrument carry this as their
+   * horizontal padding, so their content boxes share a left edge and a width —
+   * which is what lets one octave of the bank be `calc(100% / 3)`. They were
+   * 8px and 6px, and the 2px of disagreement put every lever off its key and
+   * made the bank's third of the width 4px short.
+   */
+  --maqam-focus-bleed: 6px;
+
   --maqam-lever-rest: var(--m3-surface-container);
   --maqam-lever-rim: var(--m3-outline-variant);
   --maqam-lever-on: var(--m3-tertiary);
@@ -520,10 +530,11 @@
   gap: var(--maqam-s3);
   /* Room for the focus ring on all four sides — the ring is outset here, and
      nothing clips this row. */
-  padding: var(--maqam-s1) var(--maqam-s2);
+  /* Must match `.maqam-instrument` exactly — see `--maqam-focus-bleed`. */
+  padding: var(--maqam-s1) var(--maqam-focus-bleed);
 }
 
-/* The unit, once, at the head of the bank. */
+/* The unit, beside the bank. */
 .maqam-tuningbank__unit {
   flex: 0 0 auto;
   font-size: var(--m3-label-large);
@@ -532,14 +543,23 @@
 }
 
 /*
- * Seven white levers wide, five black ones in the gaps between them. The same
- * arithmetic the keyboard uses, so the silhouette matches the instrument even
- * though the bank no longer touches it.
+ * EXACTLY ONE OCTAVE OF THE KEYBOARD BELOW, sitting over it.
+ *
+ * The bank's internal proportions always matched the instrument — white
+ * centres at 0.5..6.5 sevenths, black at 1, 2, 4, 5 and 6 sevenths, which is
+ * what the shared keyboard lays out too. What did not match was the SCALE. The
+ * bank was a flat 17.5rem while an octave is 374px at this width, so it was a
+ * correctly-shaped keyboard at two thirds size, left-aligned under a full one.
+ * Every lever drifted further from the key it names than the last, and the
+ * lever that retunes E sat over the gap between C and D.
+ *
+ * A miniature of a thing, aligned with the thing, is a promise. Keep it: one
+ * octave exactly, and each lever lands on its own key for free.
  */
 .maqam-tuningbank__keys {
   position: relative;
   display: flex;
-  flex: 0 1 17.5rem;
+  flex: 0 0 15.75rem; /* 7 x 36px, the key width below 640px */
   min-width: 0;
   /* Room above for the black row. The two rows do not intersect at all, which
      is the difference between "a piano silhouette" and "chips drawn on top of
@@ -566,16 +586,16 @@
     border-color 0.12s ease;
 }
 
+/*
+ * No margin. Each white lever has to occupy its key's whole slot or the
+ * centres drift — seven 2px gaps steal 12px from the octave, which is a
+ * quarter of a key by the seventh lever. They read as seven objects on their
+ * borders alone, which is exactly how the white keys below them are drawn.
+ */
 .maqam-lever--white {
   flex: 1 1 0;
   min-width: 0;
   height: 26px;
-  /* A hair of separation so twelve levers read as twelve objects. */
-  margin-right: 2px;
-}
-
-.maqam-lever--white:last-of-type {
-  margin-right: 0;
 }
 
 /*
@@ -671,7 +691,7 @@
      which leaves the horizontal axis — the one `overflow-x` actually clips —
      with no bleed at all, so the first switch in the rail lost the left edge
      of its ring to a straight vertical cut. */
-  padding: 6px;
+  padding: var(--maqam-focus-bleed);
 }
 
 .maqam-instrument > * {
@@ -705,7 +725,9 @@
 }
 
 @media (min-width: 640px) {
-  .maqam-board {
+  /* 7 x 46px: the octave grows with the keys. */
+  .maqam-tuningbank__keys {
+    flex-basis: 20.125rem;
   }
 
   .maqam-keyboard .shared-pk-white {
@@ -729,6 +751,15 @@
  * shell, and the overflow hid B5 behind the scroll edge.
  */
 @media (min-width: 1000px) {
+  /*
+   * The keys go fluid here, so an octave is simply a third of the instrument.
+   * The bank's content box is the same width as the keyboard's container, so
+   * a third of one is a third of the other.
+   */
+  .maqam-tuningbank__keys {
+    flex-basis: calc(100% / 3);
+  }
+
   .maqam-keyboard .shared-pk-container {
     width: 100%;
   }

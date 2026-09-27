@@ -87,6 +87,16 @@ pills that had to spell out "C", "C#", "D". It sits outside the keyboard's
 scroll host, so bending B on a phone no longer means scrolling the instrument
 sideways to reach its switch.
 
+**The bank is exactly one octave wide, sitting over the first one.** Its
+internal proportions always matched the instrument; its scale did not. At a
+flat 17.5rem against an octave of 374px it was a correctly shaped keyboard at
+two thirds size, left-aligned under a full one, so every lever drifted further
+from its key than the last and the E lever sat over the gap between C and D.
+A miniature aligned with the thing it miniaturises is a promise. Both the bank
+and `.maqam-instrument` pad by `--maqam-focus-bleed`, which is what lets their
+content boxes share a left edge and a width, so one octave is `calc(100% / 3)`
+and each lever lands on its own key without further arithmetic.
+
 The ajnas panel sits beside the staff rather than under it because the ajnas **are** the structure of a maqam. Demoting them to a footnote is what made the first version read as "a scale with two odd accidentals".
 
 ### Key colours: one channel per fact
