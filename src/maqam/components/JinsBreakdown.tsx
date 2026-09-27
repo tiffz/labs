@@ -25,11 +25,10 @@ interface JinsBreakdownProps {
  * structure of the maqam — demoting them to a footnote is what made the first
  * version read as "a scale with odd accidentals".
  *
- * The maqam's own description lives here too. It used to sit under the melody
- * controls as a second loose paragraph of grey text, so the left column ended
- * in two unrelated explanations stacked on nothing, and the reader had to work
- * out which one described the pattern and which the maqam. Every sentence about
- * what this maqam IS is now in one region, beside its name.
+ * It carries no prose about what the maqam IS. Describing a tradition nobody
+ * here is expert in was the app claiming an authority it does not have, so the
+ * panel states what is checkable — the cells, their intervals, where they meet
+ * — and links to maqamworld for the rest.
  *
  * The scale line moved the other way, down to the keyboard: it names the keys
  * that are lit, so reading it beside the board is one glance instead of two.
@@ -74,12 +73,9 @@ export default function JinsBreakdown({ preset, isPresetTuning }: JinsBreakdownP
         <span className="maqam-jins__translit">{preset.transliteration}</span>
       </div>
 
-      <p className="maqam-jins__lede">{preset.description}</p>
-
       {!isPresetTuning && (
         <p className="maqam-jins__stale" role="status">
-          You have retuned a key, so the keyboard no longer plays this maqam as written. Everything
-          below describes the written maqam. Press Reset to hear it again.
+          Retuned. Below is the maqam as written, not what the keys now play.
         </p>
       )}
 
@@ -110,26 +106,24 @@ export default function JinsBreakdown({ preset, isPresetTuning }: JinsBreakdownP
       {joins.map((join, index) =>
         join.shared ? (
           <p className="maqam-jins__note" key={`join-${index}`}>
-            Both cells claim {labels[join.ghammazIndex]}. One ends there and the next starts there,
-            which is what joins them.
+            Both cells meet on {labels[join.ghammazIndex]}.
           </p>
         ) : (
           <p className="maqam-jins__note" key={`join-${index}`}>
-            These cells do not touch. One ends on {labels[join.lowerTopIndex]} and the next starts a
-            step higher on {labels[join.ghammazIndex]}.
+            The cells do not touch: {labels[join.lowerTopIndex]}, then{' '}
+            {labels[join.ghammazIndex]}.
           </p>
         ),
       )}
       {preset.primaryAjnas.length === 1 && (
         <p className="maqam-jins__note">
-          Only the lower cell is settled for this maqam. Sources disagree about the upper region, so
-          it is left out rather than guessed.
+          Only the lower cell is settled. Sources disagree above it.
         </p>
       )}
 
       {!preset.repeatsAtOctave && (
         <p className="maqam-jins__note">
-          Stops at the seventh. This maqam does not return to its tonic an octave up.
+          Stops at the seventh. It does not return to its tonic.
         </p>
       )}
 
@@ -140,7 +134,7 @@ export default function JinsBreakdown({ preset, isPresetTuning }: JinsBreakdownP
         A citation is the difference between teaching and asserting.
       */}
       <p className="maqam-jins__credit">
-        Intervals and ajnas from{' '}
+        Source:{' '}
         <a href={preset.source} target="_blank" rel="noreferrer noopener">
           {preset.transliteration} on maqamworld.com
         </a>

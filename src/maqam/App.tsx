@@ -4,14 +4,13 @@ import Paper from '@mui/material/Paper';
 import TextField from '@mui/material/TextField';
 
 import SkipToMain from '../shared/components/SkipToMain';
-import DetuneMatrixBar from './components/DetuneMatrixBar';
+import KeyTuningRail from './components/KeyTuningRail';
 import JinsBreakdown from './components/JinsBreakdown';
 import MaqamKeyboard from './components/MaqamKeyboard';
 import MaqamStaff from './components/MaqamStaff';
-import MidiStatusBadge from './components/MidiStatusBadge';
-import RetuningNote from './components/RetuningNote';
-import { PITCH_CLASS_NAMES, maqamatByFamily } from './data/maqamPresets';
-import { bentPitchClasses, formatCents, liveScaleLabels } from './state/maqamTuning';
+import KeyboardNote from './components/KeyboardNote';
+import { maqamatByFamily } from './data/maqamPresets';
+import { liveScaleLabels } from './state/maqamTuning';
 import { useMaqamState } from './state/useMaqamState';
 
 /**
@@ -21,9 +20,6 @@ import { useMaqamState } from './state/useMaqamState';
  */
 const KEYBOARD_OCTAVES = [3, 4, 5];
 
-/** "C♯, E and B" — the list separator is a comma, and only the last one is "and". */
-const LIST_FORMAT = new Intl.ListFormat('en', { style: 'long', type: 'conjunction' });
-const listJoin = (items: string[]): string => LIST_FORMAT.format(items);
 
 export default function App() {
   const {
@@ -84,8 +80,6 @@ export default function App() {
     () => (playingIndex === null ? undefined : melody[playingIndex]?.midiNote),
     [melody, playingIndex],
   );
-
-  const bentKeys = bentPitchClasses(matrix);
 
   return (
     <main id="main" className="maqam">
@@ -152,14 +146,12 @@ export default function App() {
 
         <div className="maqam-stage">
           <section className="maqam-stage__staff" aria-labelledby="maqam-scale-heading">
-            <div className="maqam-stage__head">
-              <h2 id="maqam-scale-heading" className="maqam-eyebrow">
-                Melody
-              </h2>
-              <p className="maqam-stage__hint">
-                {isPlaying ? 'playing' : 'press play, or press a key'}
-              </p>
-            </div>
+            {/* No eyebrow, no hint. "MELODY" labelled a five-line stave with a
+                treble clef on it, and "press play, or press a key" narrated a
+                button and a piano both visible without scrolling. */}
+            <h2 id="maqam-scale-heading" className="maqam-visually-hidden">
+              {preset ? `${preset.name} scale` : 'Scale'}
+            </h2>
 
             <Paper elevation={0} className="maqam-staff-surface">
               <MaqamStaff notes={staffNotes} highlighted={litNotes} />
@@ -202,9 +194,13 @@ export default function App() {
             Keyboard
           </h2>
 
-          {/* Above the keys it retunes, always visible, the way a physical
-              oriental keyboard carries its quarter-tone switches. */}
-          <DetuneMatrixBar matrix={matrix} keyTunings={keyTunings} onToggle={toggleSlot} />
+          {/* One switch per key, sitting over it. Position is the label. */}
+          <KeyTuningRail
+            octaves={KEYBOARD_OCTAVES}
+            matrix={matrix}
+            keyTunings={keyTunings}
+            onToggle={toggleSlot}
+          />
 
           <MaqamKeyboard
             keyTunings={keyTunings}
@@ -234,10 +230,9 @@ export default function App() {
               ))}
             </p>
 
-            {/* One entry per visual channel, in the order the eye meets them.
-                Membership is back, because the swatch can now show it: cool
-                against warm is a difference you can see at 14px, which the
-                previous bright-against-dim pair was not. */}
+            {/* Two marks, two lines. The half-flat used to have a third,
+                naming every bent key and its cents — redundant with the glyph
+                sitting on each of those keys, and with the switch above it. */}
             <p className="maqam-legend" aria-live="polite">
               <span className="maqam-legend__item">
                 <span className="maqam-legend__swatch" aria-hidden="true" />
@@ -247,25 +242,14 @@ export default function App() {
                 <span className="maqam-legend__dot" aria-hidden="true" />
                 Tonic
               </span>
-              {bentKeys.length > 0 && (
-                <span className="maqam-legend__item">
-                  <span className="maqam-legend__bend" aria-hidden="true">
-                    ½♭
-                  </span>
-                  {/* "C♯, E and B", not "C♯ and E and B". */}
-                  {listJoin(bentKeys.map((pc) => PITCH_CLASS_NAMES[pc]))}{' '}
-                  {formatCents(-50)}
-                </span>
-              )}
               {!isPresetTuning && <span className="maqam-badge">Custom tuning</span>}
             </p>
 
             <div className="maqam-board__actions">
-              {/* Beside the keyboard, because that is the thing it is about:
-                  a controller plays THIS board, retuned. In the topbar it read
-                  as app chrome and answered a question nobody had yet. */}
-              <MidiStatusBadge supported={midiSupported} devices={midiDevices} />
-              <RetuningNote />
+              {/* One control: why the keys are retuned, and how to play them
+                  with a real keyboard. Two chips in one corner asked the
+                  reader to work out they were the same conversation. */}
+              <KeyboardNote supported={midiSupported} devices={midiDevices} />
               {!isPresetTuning && preset && (
                 <Button variant="text" size="small" onClick={resetTuning}>
                   Reset

@@ -61,7 +61,7 @@
    * just not part of this maqam — and it leaves colour free to mean one thing.
    */
   --maqam-key-face: #fffdf6;
-  --maqam-key-face-dim: #dbcf9a;
+  --maqam-key-face-dim: #e2dbc6;
   /*
    * "This key belongs to the maqam", as a wash.
    *
@@ -75,7 +75,7 @@
    * "sounding, or home" at three intensities, and terracotta means "bent off
    * equal temperament". Two hues, each with one job.
    */
-  --maqam-scale-wash: #dde4f7;
+  --maqam-scale-wash: #c2cdee;
   --maqam-scale-wash-black: #1e2640;
   /* The octaves of the note sounding: a step above membership, below the note
      itself, so "which key is that" still has one loud answer. */
@@ -92,7 +92,7 @@
    * 8.1:1, and the face alone still carries the distinction.
    */
   --maqam-key-face-dim-ink: var(--maqam-key-ink);
-  --maqam-key-black-dim: #565c6e;
+  --maqam-key-black-dim: #6b7285;
 
   /* Type scale. Six sizes, because a screen this small cannot justify more. */
   --maqam-text-xs: 0.6875rem;
@@ -475,13 +475,6 @@
   color: var(--m3-on-surface-variant);
 }
 
-.maqam-jins__lede {
-  margin: 0 0 var(--maqam-s4);
-  font-size: var(--maqam-text-md);
-  line-height: 1.55;
-  color: var(--m3-on-surface-variant);
-}
-
 .maqam-jins__list {
   display: flex;
   flex-direction: column;
@@ -531,6 +524,97 @@
   font-size: var(--maqam-text-sm);
   line-height: 1.45;
   color: var(--m3-on-surface-variant);
+}
+
+/* ------------------------------------------------------------------ rail -- */
+
+/*
+ * The quarter-tone switches, laid out over the keys they govern.
+ *
+ * Geometry mirrors `.shared-pk-container` / `.shared-pk-octave` exactly: the
+ * octaves flex evenly, white switches flex within an octave, black switches
+ * sit at a percentage of it. Anything that changes there has to change here,
+ * which is why the e2e measures the two against each other.
+ */
+.maqam-rail {
+  display: flex;
+  width: 100%;
+  min-width: min-content;
+  justify-content: center;
+  margin-bottom: var(--maqam-s2);
+}
+
+.maqam-rail__octave {
+  display: flex;
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.maqam-rail__switch {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--m3-outline-variant);
+  border-radius: var(--maqam-radius-s);
+  /* Recessed when off, lit when on — a switch panel, not a row of labels. */
+  background: rgba(30, 38, 64, 0.07);
+  border-color: rgba(30, 38, 64, 0.1);
+  color: var(--m3-on-tertiary-container);
+  font: inherit;
+  font-size: var(--maqam-text-xs);
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease;
+}
+
+.maqam-rail__switch:hover {
+  border-color: var(--maqam-microtonal);
+}
+
+.maqam-rail__switch.is-bent {
+  background: var(--maqam-microtonal-soft);
+  border-color: var(--maqam-microtonal);
+  font-weight: 700;
+}
+
+.maqam-rail__switch--white {
+  /* Narrower than its key, with real gutters, so twenty-one switches read as
+     twenty-one objects rather than as one continuous strip. */
+  flex: 1;
+  min-width: 0;
+  height: 18px;
+  /* Narrow, with wide gutters: a switch over its key, not a tile filling it. */
+  margin: 0 min(15px, 22%);
+}
+
+.maqam-rail__switch--black {
+  position: absolute;
+  top: 0;
+  width: 18px;
+  height: 18px;
+  transform: translateX(-50%);
+  z-index: 2;
+  background: rgba(30, 38, 64, 0.45);
+  border-color: rgba(30, 38, 64, 0.5);
+  color: var(--maqam-microtonal-soft);
+}
+
+.maqam-rail__switch--black.is-bent {
+  background: var(--maqam-microtonal);
+  border-color: var(--maqam-microtonal);
+  color: #ffffff;
+}
+
+/* A fingertip target on touch, without changing the desktop rhythm. */
+@media (pointer: coarse) {
+  .maqam-rail__switch--white,
+  .maqam-rail__switch--black {
+    height: 28px;
+  }
 }
 
 /* ----------------------------------------------------------------- board -- */
@@ -692,9 +776,8 @@
  * read as annotating the black key beside it. Proximity decides what a mark
  * belongs to.
  */
-.shared-pk-white.maqam-key--retuned {
-  box-shadow: inset 0 -6px 0 var(--maqam-microtonal);
-}
+/* No underline. The half-flat glyph sits on the key already, and the switch
+   above it is lit; a third mark for one fact is two too many. */
 
 .shared-pk-white.maqam-key--retuned .shared-pk-badge {
   /* Grouped with the note name at the foot of the key, not orphaned at the top. */
@@ -708,9 +791,6 @@
 }
 
 /* A black key's whole top edge is exposed, so the cap works there. */
-.shared-pk-black.maqam-key--retuned {
-  box-shadow: inset 0 6px 0 var(--maqam-microtonal);
-}
 
 .shared-pk-black.maqam-key--retuned .shared-pk-badge {
   top: 9px;
@@ -855,16 +935,6 @@
   height: 10px;
   border-radius: 50%;
   background: var(--maqam-tonic);
-}
-
-.maqam-legend__bend {
-  display: inline-block;
-  padding: 0 5px;
-  border-radius: var(--maqam-radius-s);
-  background: var(--m3-tertiary-container);
-  color: var(--m3-on-tertiary-container);
-  font-size: var(--maqam-text-xs);
-  font-weight: 700;
 }
 
 .maqam-badge {

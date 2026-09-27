@@ -172,7 +172,7 @@ test.describe('Maqam Playground', () => {
 
     // The rail is always visible now, so there is no disclosure to open.
     // A is untouched in Rast; bending it makes the tuning custom.
-    await page.getByRole('button', { name: /^A is in equal temperament/ }).click();
+    await page.getByRole('button', { name: /^A4, equal temperament$/ }).click();
     await expect(page.locator('.maqam-badge')).toHaveText('Custom tuning');
     await expect(page).toHaveURL(/tuning=/);
 
@@ -228,7 +228,10 @@ test.describe('Maqam Playground', () => {
     const badge = page.locator('.maqam-midi').first();
     await expect(badge).toBeVisible();
     await badge.click();
-    await expect(page.getByRole('heading', { name: /Playing with a MIDI keyboard/ })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Why the keys are retuned/ })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: /Playing it with your own keyboard/ }),
+    ).toBeVisible();
   });
 
   test('a11y: the keyboard plays from the keyboard', async ({ page }) => {
@@ -421,12 +424,15 @@ test.describe('Maqam Playground', () => {
     await page.locator('.maqam-midi').first().click();
     const lit = page.locator('.maqam-midi__detail').first();
     await expect(lit).toBeVisible();
+    const heading = lit.getByRole('heading').first();
+    await expect(heading).toBeVisible();
 
     // MUI portals the dialog to the end of <body>, outside .maqam. With the
     // tokens declared only there, this chip lost the highlight that is the
     // entire point of the comparison it sits in.
     const colour = await lit
       .locator('h3')
+      .first()
       .evaluate((el) => getComputedStyle(el).color);
     expect(colour).not.toBe('rgb(0, 0, 0)');
   });
@@ -499,12 +505,11 @@ test.describe('Maqam Playground', () => {
      *
      * 1.15:1 is the floor for "this difference means something".
      *
-     * Only the TONAL pairs are measured here. Membership is deliberately a
-     * cool-against-warm hue difference at nearly equal lightness, and a
-     * luminance ratio is blind to exactly that — measuring it this way would
-     * report 1.13:1 for a distinction that is obvious on screen, and pressure
-     * someone into darkening a colour to satisfy the wrong instrument. That
-     * pair has its own guard, by colour distance, above.
+     * Only the page-against-board step is measured here. Every other pair in
+     * this app is a hue difference at similar lightness, which a luminance
+     * ratio is blind to — measuring those this way pressures someone into
+     * darkening a colour to satisfy the wrong instrument. They have their own
+     * guards, by colour distance, above.
      */
     await page.goto('/maqam/?maqam=nikriz_c');
     await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
@@ -532,18 +537,12 @@ test.describe('Maqam Playground', () => {
 
       const page_ = fill(pick('.maqam'));
       const board = fill(pick('.maqam-board'));
-      // An out-of-maqam key: warm, like the board, so this pair IS tonal.
-      const dimKey = [...document.querySelectorAll('.maqam-keyboard .shared-pk-white')].find(
-        (el) => !el.classList.contains('maqam-key--in-scale'),
-      );
-
       return {
         'board against the page': ratio(board, page_),
-        'a key against the board': ratio(dimKey ? fill(dimKey) : page_, board),
       };
     });
 
-    expect(Object.keys(steps)).toHaveLength(2);
+    expect(Object.keys(steps)).toHaveLength(1);
     for (const [what, value] of Object.entries(steps)) {
       expect(value, `${what} is only ${value.toFixed(3)}:1`).toBeGreaterThanOrEqual(1.15);
     }
@@ -603,22 +602,29 @@ test.describe('Maqam Playground', () => {
     ).toBeGreaterThan(25);
   });
 
-  test('the keyboard explains why it is retuned, without insisting', async ({ page }) => {
+  test('one control answers both keyboard questions', async ({ page }) => {
+    /*
+     * "Why is my E not an E" and "can I plug a keyboard in" used to be two
+     * chips side by side in the same corner, leaving the reader to work out
+     * they were the same conversation. They are: a controller plays THIS
+     * board, retuned.
+     */
     await page.goto('/maqam/?maqam=rast_c');
     await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
 
-    // A question mark, never a callout, and nowhere near Play's weight.
-    const trigger = page.getByRole('button', { name: /Why these keys are retuned/ });
+    const trigger = page.getByRole('button', { name: /About this keyboard|keyboards?$/ });
     await expect(trigger).toBeVisible();
-
     await trigger.click();
-    const detail = page.locator('.maqam-retuning__detail');
+
+    const detail = page.locator('.maqam-midi__detail');
     await expect(detail).toBeVisible();
     await expect(detail).toContainText('12 fixed keys');
+    await expect(detail).toContainText('Playing it with your own keyboard');
 
     // Tokens must reach it: this renders in a portal at the end of <body>.
     const headingColour = await detail
       .locator('h3')
+      .first()
       .evaluate((el) => getComputedStyle(el).color);
     expect(headingColour).not.toBe('rgb(0, 0, 0)');
 
@@ -649,11 +655,11 @@ test.describe('Maqam Playground', () => {
     await expect(page.locator('.maqam-jins__stale')).toHaveCount(0);
 
     // Bend the maqam's own third away from what it is written as.
-    await page.getByRole('button', { name: /^E is tuned/ }).click();
+    await page.getByRole('button', { name: /^E4, 50 cents flat$/ }).click();
 
     // The board must now say so, in the panel making the claims.
     await expect(page.locator('.maqam-jins__stale')).toBeVisible();
-    await expect(panel).toContainText('no longer plays this maqam as written');
+    await expect(panel).toContainText('not what the keys now play');
     await expect(panel).toContainText('as written');
 
     // And take it back when the tuning returns to the preset.
@@ -663,16 +669,21 @@ test.describe('Maqam Playground', () => {
 
   test('a key in the maqam is brighter than one outside it', async ({ page }) => {
     /*
-     * The pair the app is actually about, and the one nothing was measuring.
+     * The pair the app is actually about, and the one nothing was measuring
+     * until a palette change left out-of-maqam keys indistinguishable from
+     * in-maqam ones.
      *
-     * Two guards already covered membership and neither could see this: one
-     * compares an in-maqam key to a plain white key, the other compares a key
-     * to the board. Both passed while a palette change left out-of-maqam keys
-     * BRIGHTER than in-maqam ones at 1.12:1 — the model inverted, and below
-     * the 1.15 floor the app enforces elsewhere.
+     * Measured as colour DISTANCE, not as a luminance ratio or a direction.
+     * An earlier version of this guard asserted that in-maqam keys must be
+     * BRIGHTER, on the model "a key outside the maqam recedes toward the
+     * board". That model changed: the board is sand, so a key outside the
+     * maqam recedes by STAYING sand, and a key inside it stands out by being
+     * tinted — which makes it the darker of the two. Asserting brightness
+     * would now forbid the design rather than protect it.
      *
-     * Direction is asserted, not just separation. "Recedes toward the board"
-     * is a claim about which one is darker, and a ratio alone cannot tell.
+     * What must stay true is that the two are far apart, and the units have to
+     * be chromatic: the difference is mostly hue at similar lightness, which a
+     * luminance ratio is blind to.
      */
     await page.goto('/maqam/?maqam=hijaz_d');
     await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
@@ -692,29 +703,40 @@ test.describe('Maqam Playground', () => {
         return stops ? stops[stops.length - 1] : style.backgroundColor;
       };
 
+      const rgb = (value: string) => (value.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number);
       const inScale = document.querySelector(
         '.maqam-keyboard .shared-pk-white.maqam-key--in-scale',
       );
       const outside = [...document.querySelectorAll('.maqam-keyboard .shared-pk-white')].find(
         (el) => !el.classList.contains('maqam-key--in-scale'),
       );
-      if (!inScale || !outside) return null;
+      const board = document.querySelector('.maqam-board');
+      if (!inScale || !outside || !board) return null;
 
-      const a = luminance(fill(inScale));
-      const b = luminance(fill(outside));
-      const [hi, lo] = [a, b].sort((x, y) => y - x);
-      return { inScale: a, outside: b, ratio: (hi + 0.05) / (lo + 0.05) };
+      const a = rgb(fill(inScale));
+      const b = rgb(fill(outside));
+      return {
+        apart: Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]),
+        // A key IN the maqam must also stand out from the board it sits on.
+        // A key outside it is allowed to recede into that board: that is the
+        // encoding, not a defect.
+        inScaleAgainstBoard: (() => {
+          const hi = Math.max(luminance(fill(inScale)), luminance(fill(board)));
+          const lo = Math.min(luminance(fill(inScale)), luminance(fill(board)));
+          return (hi + 0.05) / (lo + 0.05);
+        })(),
+      };
     });
 
     // Hijaz uses 4 of 7 white keys, so both kinds are on screen.
     expect(membership, 'Hijaz should show in-maqam and out-of-maqam white keys').not.toBeNull();
     expect(
-      membership!.inScale,
-      'a key in the maqam must be the BRIGHTER one: it is at full strength, and one outside it recedes toward the board',
-    ).toBeGreaterThan(membership!.outside);
+      membership!.apart,
+      `in-maqam and out-of-maqam keys are only ${membership!.apart.toFixed(1)} apart`,
+    ).toBeGreaterThan(30);
     expect(
-      membership!.ratio,
-      `in-maqam against outside is only ${membership!.ratio.toFixed(3)}:1`,
+      membership!.inScaleAgainstBoard,
+      `an in-maqam key is only ${membership!.inScaleAgainstBoard.toFixed(3)}:1 against the board it sits on`,
     ).toBeGreaterThanOrEqual(1.15);
   });
 
@@ -745,6 +767,59 @@ test.describe('Maqam Playground', () => {
     expect(ratio, `legend text on the board is only ${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(
       4.5,
     );
+  });
+
+  test('every tuning switch sits over the key it retunes', async ({ page }) => {
+    /*
+     * The switch rail duplicates the keyboard's geometry — octaves flexing
+     * evenly, white keys flexing within an octave, black keys at a percentage
+     * of it — because the shared keyboard has no slot to render into. Two
+     * copies of a layout drift, and when this one drifts the switches stop
+     * being labelled by their position, which is the whole design.
+     *
+     * Measured, not eyeballed: centre against centre, every key.
+     */
+    await page.goto('/maqam/?maqam=rast_c');
+    await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
+
+    const alignment = await page.evaluate(() => {
+      const centre = (el: Element) => {
+        const r = el.getBoundingClientRect();
+        return r.left + r.width / 2;
+      };
+      const pair = (keySelector: string, switchSelector: string) => {
+        const keys = [...document.querySelectorAll(keySelector)];
+        const switches = [...document.querySelectorAll(switchSelector)];
+        if (keys.length === 0 || keys.length !== switches.length) {
+          return { count: keys.length, matched: switches.length, worst: Infinity };
+        }
+        const worst = Math.max(
+          ...keys.map((key, i) => Math.abs(centre(switches[i]) - centre(key))),
+        );
+        return { count: keys.length, matched: switches.length, worst };
+      };
+
+      return {
+        white: pair('.maqam-keyboard .shared-pk-white', '.maqam-rail__switch--white'),
+        black: pair('.maqam-keyboard .shared-pk-black', '.maqam-rail__switch--black'),
+      };
+    });
+
+    // 3 octaves: 21 white keys and 15 black ones, each with its own switch.
+    expect(alignment.white.count).toBe(21);
+    expect(alignment.black.count).toBe(15);
+    expect(alignment.white.matched).toBe(alignment.white.count);
+    expect(alignment.black.matched).toBe(alignment.black.count);
+
+    // A switch more than 2px off its key no longer reads as belonging to it.
+    expect(
+      alignment.white.worst,
+      `a white switch is ${alignment.white.worst.toFixed(1)}px off its key`,
+    ).toBeLessThanOrEqual(2);
+    expect(
+      alignment.black.worst,
+      `a black switch is ${alignment.black.worst.toFixed(1)}px off its key`,
+    ).toBeLessThanOrEqual(2);
   });
 
   test('the page itself never scrolls', async ({ page }) => {
