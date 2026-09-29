@@ -25,7 +25,23 @@ describe('preset integrity', () => {
   it('ships each family head plus its members, with unique ids', () => {
     const ids = MAQAM_PRESETS.map((p) => p.id);
     expect(ids).toEqual([
+      /*
+       * Grouped by family, in maqamworld's own order within each. The
+       * catalogue is assembled from one file per family, so this list reads
+       * the way the picker does.
+       *
+       * Maqam Dalanshin is the one Rast-family member missing, on purpose —
+       * see the note at the top of `families/rastFamily.ts`.
+       */
       'rast_c',
+      'suznak_c',
+      'nairuz_c',
+      'yakah_g',
+      'kirdan_c',
+      'sazkar_c',
+      'mahur_c',
+      'suzdalara_c',
+
       'bayati_d',
       'bayati_shuri_d',
       'muhayyar_d',
@@ -49,7 +65,17 @@ describe('preset integrity', () => {
     const micro = MAQAM_PRESETS.filter((p) => hasMicrotones(p.scaleDegrees)).map((p) => p.id);
     const plain = MAQAM_PRESETS.filter((p) => !hasMicrotones(p.scaleDegrees)).map((p) => p.id);
     expect(micro).toEqual([
+      // Every Rast-family member inherits Jins Rast's half-flat 3rd, so the
+      // whole family is microtonal however plain its upper cell is.
       'rast_c',
+      'suznak_c',
+      'nairuz_c',
+      'yakah_g',
+      'kirdan_c',
+      'sazkar_c',
+      'mahur_c',
+      'suzdalara_c',
+
       'bayati_d',
       'bayati_shuri_d',
       'muhayyar_d',
@@ -324,6 +350,7 @@ describe('ajnas agree with the scale they are drawn from', () => {
     ['Jins Nahawand', 5],
     ['Jins Nikriz', 5],
     ['Jins Rast', 5],
+    ['Jins Sazkar', 5],
   ])('stores %s as a %i-note jins, as maqamworld does', (name, notes) => {
     const uses = MAQAM_PRESETS.flatMap((preset) =>
       preset.primaryAjnas.filter((jins) => baseJinsName(jins.name) === name),
@@ -494,6 +521,23 @@ const SCALE_READBACK: [string, string][] = [
   ['nahawand_c', 'C D E♭ F G A♭ B♭ C'],
   ['nikriz_c', 'C D E♭ F♯ G A B♭ C'],
   ['ajam_c', 'C D E F G A B C'],
+
+  /*
+   * Maqam Rast family. Authored here from maqamworld's prose — "starts with
+   * the root Jins Rast on the tonic, followed by X on the Nth degree" — and
+   * independently of the catalogue, which is the point of this table.
+   */
+  ['suznak_c', 'C D E½♭ F G A♭ B C'],
+  ['nairuz_c', 'C D E½♭ F G A½♭ B♭ C'],
+  // The same two cells as Nairuz, a fourth lower.
+  ['yakah_g', 'G A B½♭ C D E½♭ F G'],
+  // Identical to Rast by design: Kirdan differs in sayr, which is not a scale.
+  ['kirdan_c', 'C D E½♭ F G A B½♭ C'],
+  // The raised 2nd is the whole of Sazkar, and the only interval in this
+  // family read off a notation image rather than out of prose.
+  ['sazkar_c', 'C D♯ E½♭ F G A B½♭ C'],
+  ['mahur_c', 'C D E½♭ F G A B C'],
+  ['suzdalara_c', 'C D E½♭ F G A B♭ C'],
 ];
 
 describe('written scales read back as expected', () => {
