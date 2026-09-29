@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { getMidiInput } from '../../shared/midi/midiInput';
+import type { AudioLatency } from '../../shared/playback/audioLatency';
 import type { MidiDevice } from '../../shared/music/scoreTypes';
 import { throttledReplaceState } from '../../shared/utils/urlHistory';
 import { MaqamSynth, detuneForMidiNote } from '../audio/maqamSynth';
@@ -49,6 +50,8 @@ export interface MaqamState {
   midiDevices: MidiDevice[];
   midiSupported: boolean;
   audioState: AudioContextState | 'uninitialized';
+  /** What the audio path costs end to end. `null` until a note has sounded. */
+  audioLatency: AudioLatency | null;
   /**
    * Set when audio was asked for and could not be produced. Distinct from
    * `audioState`, which describes a context that exists: this says the app
@@ -89,6 +92,8 @@ export function useMaqamState(): MaqamState {
   const [isPlaying, setIsPlaying] = useState(false);
   const [playingIndex, setPlayingIndex] = useState<number | null>(null);
   const [audioBlocked, setAudioBlocked] = useState<'keyboard' | 'playback' | null>(null);
+  /** What the audio path costs, once there is one. */
+  const [audioLatency, setAudioLatency] = useState<AudioLatency | null>(null);
 
   const preset = useMemo(() => findMaqamPreset(presetId), [presetId]);
   const synthRef = useRef<MaqamSynth | null>(null);
@@ -160,6 +165,10 @@ export function useMaqamState(): MaqamState {
       void synth.resume().then((running) => {
         setAudioState(synth.getState());
         setAudioBlocked(running ? null : 'keyboard');
+        /* Only meaningful once the context is running, and only changes when
+           the output device does — so this settles after the first note and
+           then costs nothing. React bails out on an equal value. */
+        if (running) setAudioLatency(synth.latency());
       });
       synth.noteOn(midiNote, cents);
       setAudioState(synth.getState());
@@ -351,6 +360,7 @@ export function useMaqamState(): MaqamState {
     midiDevices,
     midiSupported,
     audioState,
+    audioLatency,
     audioBlocked,
     selectPreset,
     toggleSlot,

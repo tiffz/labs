@@ -3,10 +3,13 @@ import Button from '@mui/material/Button';
 
 import AnchoredPopover from '../../shared/components/AnchoredPopover';
 import type { MidiDevice } from '../../shared/music/scoreTypes';
+import { describeAudioLatency, type AudioLatency } from '../../shared/playback/audioLatency';
 
 interface KeyboardNoteProps {
   supported: boolean;
   devices: MidiDevice[];
+  /** What the audio path costs. `null` until the first note has sounded. */
+  latency: AudioLatency | null;
 }
 
 /**
@@ -20,7 +23,7 @@ interface KeyboardNoteProps {
  *
  * Quiet by default. The app is fully playable without ever opening it.
  */
-export default function KeyboardNote({ supported, devices }: KeyboardNoteProps) {
+export default function KeyboardNote({ supported, devices, latency }: KeyboardNoteProps) {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   const connected = devices.filter((device) => device.connected);
 
@@ -87,6 +90,19 @@ export default function KeyboardNote({ supported, devices }: KeyboardNoteProps) 
               The keys on screen work either way.
             </p>
           )}
+          {/* The one number that says whether a latency complaint is this
+              app's fault or the output device's. A player who can read
+              "180ms, usually Bluetooth" fixes it in a second; without it the
+              only available conclusion is "this app is broken". Shown only
+              once a note has sounded, because before that there is no audio
+              path to measure. */}
+          {latency !== null && latency.totalMs !== null && (
+            <>
+              <h3>Timing</h3>
+              <p>{describeAudioLatency(latency)}</p>
+            </>
+          )}
+
           {/* No link out. It pointed at maqamworld's "Oriental keyboards"
               page, and repeating that word is not something this app needs to
               do to explain a MIDI port. The two answers above are the whole

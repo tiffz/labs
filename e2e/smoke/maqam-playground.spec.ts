@@ -1209,6 +1209,72 @@ test.describe('Maqam Playground', () => {
     expect(bank.smallest).toBeGreaterThanOrEqual(22);
   });
 
+  test('playing a note does not redraw the notation', async ({ page }) => {
+    /*
+     * The reason this app was unplayable through a MIDI keyboard.
+     *
+     * Highlighting the played degrees used to be an argument to the staff
+     * draw, so `highlighted` was a dependency of the layout effect and every
+     * key press re-ran VexFlow's entire layout. Measured on the running app:
+     * 8 staff DOM mutations per note, and ~29ms of render and paint.
+     *
+     * That cost is not paid by the note that triggers it — the audio is
+     * scheduled first — it is paid by the NEXT one. Web MIDI delivers its
+     * messages on the main thread, so while the stave is being rebuilt no
+     * further note can even enter its handler. A fast passage queues up
+     * behind the notation and the lag grows as you play.
+     *
+     * Lighting a note is now attribute writes on the stave already on screen.
+     * The stave is laid out when the MUSIC changes, which this also checks —
+     * a version that never redraws at all would pass the first assertion and
+     * fail the second.
+     */
+    await page.goto('/maqam/?maqam=bayati_d');
+    await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('.maqam-staff__canvas svg')).toBeVisible({ timeout: 15_000 });
+
+    await page.evaluate(() => {
+      const host = document.querySelector('.maqam-staff__canvas');
+      const counter = { mutations: 0 };
+      (window as unknown as { __staff: typeof counter }).__staff = counter;
+      new MutationObserver((records) => {
+        counter.mutations += records.length;
+      }).observe(host!, { childList: true, subtree: true });
+    });
+
+    const keys = page.locator('.maqam-keyboard .shared-pk-white');
+    for (let i = 0; i < 8; i += 1) {
+      await keys.nth(i % 7).click();
+    }
+    await page.waitForTimeout(400);
+
+    const afterNotes = await page.evaluate(
+      () => (window as unknown as { __staff: { mutations: number } }).__staff.mutations,
+    );
+    expect(
+      afterNotes,
+      `eight key presses rebuilt the stave ${afterNotes} times; notation must not redraw while ` +
+        'the instrument is being played',
+    ).toBe(0);
+
+    // The lit notes still have to appear — otherwise "no redraw" is just "no feature".
+    await page.locator('.maqam-keyboard .shared-pk-white').first().hover();
+    await page.mouse.down();
+    await expect(page.locator('.maqam-staff__canvas [data-lit="true"]').first()).toBeVisible();
+    await page.mouse.up();
+
+    // And a real change to the music still relays the stave.
+    await selectMaqam(page, 'Hijaz');
+    await page.waitForTimeout(500);
+    const afterSwitch = await page.evaluate(
+      () => (window as unknown as { __staff: { mutations: number } }).__staff.mutations,
+    );
+    expect(
+      afterSwitch,
+      'changing maqam must still redraw the stave',
+    ).toBeGreaterThan(0);
+  });
+
   test('a lever bends its note in every octave at once', async ({ page }) => {
     /*
      * The reason there are twelve and not thirty-six. Muhayyar writes E and B
