@@ -53,7 +53,6 @@ describe('buildKeyTunings', () => {
     expect(tunings[4].role).toBe('in-scale');
     expect(tunings[4].isTonic).toBe(false);
     expect(tunings[4].label).toBe('E½♭');
-    expect(tunings[4].badge).toBe('½♭');
   });
 
   /**
@@ -128,7 +127,6 @@ describe('buildKeyTunings', () => {
     expect(tunings[4].label).toBe('E');
     expect(tunings[4].label).not.toBe('E½♭');
     expect(tunings[4].ariaLabel).toBe('E, degree 3 of the maqam');
-    expect(tunings[4].badge).toBeUndefined();
   });
 
   it('keeps the letter the maqam chose while the accidental follows the tuning', () => {
@@ -139,14 +137,35 @@ describe('buildKeyTunings', () => {
     expect(buildKeyTunings(bayati, bent)[10].label).toBe('B¾♭');
   });
 
-  it('can retune a key that is outside the maqam entirely', () => {
+  it('names a key bent outside the maqam as a note, not as a number', () => {
+    /*
+     * This asserted `'F\u266f \u221250'`, which is what the keycap actually
+     * showed — and the keyboard appends the octave to whatever it is handed, so
+     * the key read `B \u2212503` on a white key and nobody could parse it. The
+     * test was pinning the bug.
+     *
+     * A bend is always exactly a quarter tone down. From a BLACK key that lands
+     * a quarter tone above the natural below it, so F\u266f becomes F\u00bd\u266f.
+     */
     const tunings = buildKeyTunings(rast, toggleDetuneSlot(rastMatrix, 6)); // F#
     expect(tunings[6].role).toBe('outside');
     expect(tunings[6].isRetuned).toBe(true);
-    // Shown on a keycap, so compact. The spoken form lives in ariaLabel.
-    expect(tunings[6].label).toBe('F♯ \u221250');
-    expect(tunings[6].badge).toBe('\u221250');
+    expect(tunings[6].label).toBe('F\u00bd\u266f');
+    // The spoken form still carries the exact amount; only the keycap is compact.
     expect(tunings[6].ariaLabel).toBe('F♯, outside the maqam, tuned 50 cents flat');
+  });
+
+  it('names a bent WHITE key as its own half-flat', () => {
+    /*
+     * The reported case. Nahawand on C has no B natural, so bending B falls to
+     * `bentLabel` rather than to the maqam's own spelling, and the keycap read
+     * `B \u2212503`.
+     */
+    const nahawand = MAQAM_PRESETS_BY_ID.nahawand_c;
+    const matrix = deriveDetuneMatrix(nahawand.scaleDegrees).matrix;
+    const tunings = buildKeyTunings(nahawand, toggleDetuneSlot(matrix, 11)); // B
+    expect(tunings[11].isRetuned).toBe(true);
+    expect(tunings[11].label).toBe('B\u00bd\u266d');
   });
 
   it('handles no preset at all', () => {
@@ -277,14 +296,31 @@ describe('formatCents', () => {
   });
 
   /**
-   * The keycap has about 24px. The badge and the spoken form were briefly one
-   * function, which put the sentence "50 cents flat" on a piano key, where it
-   * overran the key and spilled onto its neighbour.
+   * The keycap is about 24px, and the KEYBOARD APPENDS THE OCTAVE to whatever
+   * this returns — so the budget is the printed name plus a digit.
+   *
+   * This used to measure `badge`, a field nothing rendered, while `label` (the
+   * string that actually reaches the key) went unchecked. A bent key's label
+   * was `"B \u221250"`, five characters ending in a number, and with the octave
+   * glued on it printed `B \u2212503`. The guard was pointed at the wrong
+   * field, which is why it stayed green through the whole thing.
+   *
+   * Every bendable key, on a maqam that does not name it, so the bent branch is
+   * the one under test.
    */
-  it('keeps the keycap badge short enough to fit a key', () => {
-    const rastMatrixWithBentCSharp = toggleDetuneSlot(rastMatrix, 1);
-    const badge = buildKeyTunings(rast, rastMatrixWithBentCSharp)[1].badge;
-    expect(badge).toBeDefined();
-    expect(badge!.length).toBeLessThanOrEqual(4);
+  it('keeps every bent key name short enough to fit a keycap', () => {
+    for (let pitchClass = 0; pitchClass < 12; pitchClass += 1) {
+      const label = buildKeyTunings(rast, toggleDetuneSlot(rastMatrix, pitchClass))[pitchClass]
+        .label;
+      expect(label, `pitch class ${pitchClass} has no name when bent`).toBeDefined();
+      expect(
+        label!.length,
+        `"${label}" is too long for a keycap once the octave is appended`,
+      ).toBeLessThanOrEqual(4);
+      expect(
+        label!,
+        `"${label}" ends in a digit, so appending the octave runs two numbers together`,
+      ).not.toMatch(/\d$/);
+    }
   });
 });

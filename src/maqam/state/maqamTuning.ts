@@ -5,7 +5,6 @@ import {
   semitoneShiftOf,
   spellingAriaLabel,
   spellingLabel,
-  type MaqamAccidentalCode,
 } from '../notation/maqamAccidentals';
 import {
   deriveDetuneMatrix,
@@ -55,8 +54,6 @@ export interface KeyTuning {
   cents: number;
   /** How the maqam writes this key, e.g. `E½♭`. Absent for keys outside it. */
   label?: string;
-  /** Badge for a bent key, e.g. `½♭`. Absent when the key is unbent. */
-  badge?: string;
   /** Spoken description for assistive tech. */
   ariaLabel: string;
 }
@@ -125,7 +122,6 @@ export function buildKeyTunings(
       : undefined;
 
     const label = liveSpelling ? spellingLabel(liveSpelling) : bentLabel(pitchClass, cents);
-    const badge = bent ? badgeForCents(cents, liveSpelling?.accidental) : undefined;
     // Screen readers get the accidental spelled out — "E half-flat", not the
     // "E½♭" that a speech engine reads as "E one slash two flat" or skips.
     // The name only. `describeKey` appends the bend, so folding it in here too
@@ -143,7 +139,6 @@ export function buildKeyTunings(
       isRetuned: bent,
       cents,
       label,
-      badge,
       ariaLabel: describeKey(
         spokenName,
         role,
@@ -155,6 +150,9 @@ export function buildKeyTunings(
     };
   });
 }
+
+/** The only bend the app can produce: one quarter tone down. */
+const QUARTER_TONE_DOWN = -50;
 
 const PITCH_CLASS_LETTERS = [
   'C',
@@ -173,31 +171,64 @@ const PITCH_CLASS_LETTERS = [
 
 /**
  * A key bent by the user but not named by any maqam degree — the custom-matrix
- * case. Named from the piano key plus its bend, which is all that is known.
+ * case.
+ *
+ * NAMED AS A NOTE, NOT AS A NUMBER.
+ *
+ * This used to return `"B \u2212 50"`, and the keyboard appends the octave to
+ * whatever it is given, so the keycap read **`B \u2212503`**: a letter, a minus
+ * sign and two unrelated numbers run together. It was reported as impossible to
+ * read, and that is fair — it is not so much wrong as unparseable. Every other
+ * key on the board says `E\u266d3`, so this one should say `B\u00bd\u266d3`.
+ *
+ * A bend is always exactly \u221250 cents. The lever bank toggles between 0 and
+ * \u221250 (`toggleDetuneSlot`) and the URL encodes only `-` or `d`
+ * (`decodeTuning`), so no other value can reach here from anywhere in the app.
+ *
+ * Which note that lands on depends on the key. Down a quarter tone from a WHITE
+ * key is that letter's half-flat: B becomes B\u00bd\u266d. Down a quarter tone
+ * from a BLACK key lands a quarter tone above the natural below it, so C\u266f
+ * becomes C\u00bd\u266f \u2014 not C\u266f\u00bd\u266d, which names the
+ * same pitch twice over.
  */
 function bentLabel(pitchClass: number, cents: number): string | undefined {
   if (cents === 0) return undefined;
-  return `${PITCH_CLASS_LETTERS[pitchClass]} ${centsBadge(cents)}`;
-}
+  const letter = PITCH_CLASS_LETTERS[pitchClass];
+  if (letter === undefined) return undefined;
+  const isBlackKey = letter.length > 1;
 
-/**
- * Shown, not spoken. A keycap is about 24px wide.
- *
- * These are two different jobs and they were briefly the same function:
- * spelling the cents out for a screen reader put the sentence "50 cents flat"
- * on the keycap, where it overran the key and spilled onto its neighbour.
- */
-function centsBadge(cents: number): string {
-  return `${cents > 0 ? '+' : '\u2212'}${Math.abs(cents)}`;
-}
-
-function badgeForCents(cents: number, accidental?: MaqamAccidentalCode): string {
-  // Prefer the maqam's own symbol so a half-flat reads ½♭ rather than -50.
-  if (accidental && MAQAM_ACCIDENTALS[accidental].isMicrotonal) {
-    return MAQAM_ACCIDENTALS[accidental].symbol;
+  if (cents === QUARTER_TONE_DOWN) {
+    return isBlackKey
+      ? `${letter[0]}${MAQAM_ACCIDENTALS['+'].symbol}`
+      : `${letter}${MAQAM_ACCIDENTALS.d.symbol}`;
   }
-  return centsBadge(cents);
+
+  /*
+   * Unreachable today, and deliberately not guessed at. A bend this function
+   * cannot spell gets the plain letter rather than an invented accidental or a
+   * bare cents figure; the key is still tinted as retuned, and the spoken
+   * label below still carries the exact amount, so nothing is lost but the
+   * pretence of precision on a 24px keycap.
+   */
+  return letter;
 }
+
+/*
+ * `KeyTuning.badge` and the two functions behind it were deleted here.
+ *
+ * The shared keyboard does support a `badge` on a keycap, and this app used to
+ * pass one — but it was retired when the accidental was folded into the printed
+ * name (`MaqamKeyboard` says why: the chip had to live in the strip of white key
+ * no black key covers, which is 80px at full desktop and 44px on a laptop, so it
+ * was sliced in half at 1366x768). The field stayed behind and was computed for
+ * twelve keys on every render, reaching nothing.
+ *
+ * It is worth naming what it cost. The dead branch of `badgeForCents` fell back
+ * to a raw cents figure, and its comment — "prefer the maqam's own symbol so a
+ * half-flat reads ½♭ rather than -50" — described a fix that `bentLabel` never
+ * got. So the one place a cents figure could still reach the screen was the one
+ * place nobody had looked, and it printed `B \u2212503`.
+ */
 
 /** Spoken name for a key the maqam does not name — the hand-bent case. */
 function bentSpokenName(pitchClass: number, cents: number): string | undefined {
