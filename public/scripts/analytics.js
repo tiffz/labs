@@ -6,7 +6,23 @@
 (function() {
   'use strict';
 
-  var GA4_ID = 'G-25C3B5B84M';
+  /*
+   * Labs has its own GA4 property now.
+   *
+   * It used to send to G-25C3B5B84M, which is the measurement ID of the ONE
+   * data stream in the "Tiff Zhang - GA4" property — the stream configured for
+   * tiffzhang.com, right down to its referral exclusion. So labs was not
+   * "mixed in with" the main site's analytics; it was sending to the main
+   * site's stream, on the main site's ID, and no report could separate them
+   * because there was nothing to separate.
+   *
+   * A separate PROPERTY rather than a second stream in that one: GA4's default
+   * reports, Home and Insights all aggregate at property level, so a second
+   * stream would still need a comparison applied on every report. A property
+   * also keeps the main site's historical traffic out of labs' totals and
+   * period-over-period comparisons.
+   */
+  var GA4_ID = 'G-6DF4GDC8K1';
 
   var APP_MAP = {
     '/agility/': { name: 'agility', group: 'Music' },

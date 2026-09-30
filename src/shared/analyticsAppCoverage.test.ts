@@ -43,6 +43,31 @@ const mappedPaths = new Set(
   [...analyticsSource.matchAll(/'(\/[a-z0-9-]+\/)':\s*\{/g)].map((match) => match[1]),
 );
 
+/**
+ * The measurement ID of the stream labs must NOT send to.
+ *
+ * `G-25C3B5B84M` is the one data stream in the "Tiff Zhang - GA4" property —
+ * the stream configured for tiffzhang.com, down to its referral exclusion.
+ * Labs sent to it for years, which is why no report could ever separate the
+ * two sites: they were not two things mixed together, they were one stream.
+ */
+const MAIN_SITE_MEASUREMENT_ID = 'G-25C3B5B84M';
+
+describe('labs sends to its own GA4 property', () => {
+  it('uses a measurement ID, and not the main site\'s', () => {
+    const id = analyticsSource.match(/var GA4_ID = '(G-[A-Z0-9]+)'/)?.[1];
+    expect(id, 'GA4_ID should be a literal measurement ID in analytics.js').toMatch(
+      /^G-[A-Z0-9]{8,12}$/,
+    );
+    expect(
+      id,
+      `labs is sending to ${MAIN_SITE_MEASUREMENT_ID}, which is the main site's stream. ` +
+        'Everything labs reports would be pooled with tiffzhang.com and no report could ' +
+        'separate them.',
+    ).not.toBe(MAIN_SITE_MEASUREMENT_ID);
+  });
+});
+
 describe('analytics knows about every app', () => {
   it('finds both sides of the comparison', () => {
     // Either list coming back empty would make the assertions below vacuous —
