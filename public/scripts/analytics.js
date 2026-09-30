@@ -25,15 +25,43 @@
     '/ui/':      { name: 'ui',      group: 'Internal' },
     '/words/':   { name: 'words',   group: 'Music' },
     '/zines/':   { name: 'zines',   group: 'Art & Writing' },
+
+    // Added when the lookup was found to be nine apps out of date. Only the
+    // group matters here now; the name comes from the path.
+    '/lyrefly/':    { name: 'lyrefly',    group: 'Art & Writing' },
+    '/maqam/':      { name: 'maqam',      group: 'Music' },
+    '/midi/':       { name: 'midi',       group: 'Music' },
+    '/muscle/':     { name: 'muscle',     group: 'Art & Writing' },
+    '/palette/':    { name: 'palette',    group: 'Art & Writing' },
+    '/scrapboard/': { name: 'scrapboard', group: 'Art & Writing' },
+    '/sight/':      { name: 'sight',      group: 'Art & Writing' },
+    '/stanza/':     { name: 'stanza',     group: 'Music' },
+    '/zinebox/':    { name: 'zinebox',    group: 'Art & Writing' },
   };
 
+  /**
+   * Which app a page belongs to.
+   *
+   * The name is DERIVED FROM THE PATH, not looked up. `APP_MAP` supplies only
+   * the human grouping.
+   *
+   * It used to be a lookup, and a miss fell through to `{ name: 'landing' }`.
+   * Nine of the twenty-four apps were not in the map — maqam, palette, stanza,
+   * muscle, scrapboard, sight, midi, zinebox, lyrefly — so every visit to any
+   * of them was recorded as a visit to the HOME PAGE. That is not missing
+   * data, it is data attributed to the wrong thing, which is worse: the
+   * landing page looked busier than it was and nine apps looked dead.
+   *
+   * Deriving the name means a new app enrols itself the moment it has a URL.
+   * The worst a missing map entry can do now is leave the group 'Unknown',
+   * which shows up in a report instead of merging silently into another row.
+   */
   function detectApp() {
-    var path = window.location.pathname;
-    var keys = Object.keys(APP_MAP);
-    for (var i = 0; i < keys.length; i++) {
-      if (path.indexOf(keys[i]) === 0) return APP_MAP[keys[i]];
-    }
-    return { name: 'landing', group: 'Landing' };
+    var match = window.location.pathname.match(/^\/([a-z0-9-]+)\//);
+    if (!match) return { name: 'landing', group: 'Landing' };
+    var slug = match[1];
+    var known = APP_MAP['/' + slug + '/'];
+    return { name: slug, group: known ? known.group : 'Unknown' };
   }
 
   function initGA4() {
