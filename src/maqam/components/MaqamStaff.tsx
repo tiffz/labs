@@ -7,6 +7,10 @@ import {
   type StaffBracket,
   type StaffNote,
 } from '../notation/maqamStaffDraw';
+import { applyStaffHighlight } from '../notation/maqamStaffHighlight';
+
+/** Shared so an absent `highlighted` does not make a new object every render. */
+const NOTHING_LIT: ReadonlySet<number> = new Set<number>();
 
 interface MaqamStaffProps {
   notes: StaffNote[];
@@ -65,6 +69,14 @@ export default function MaqamStaff({
    * value that would collapse the staff to nothing while looking deliberate.
    */
   const [drawnHeight, setDrawnHeight] = useState<number | null>(null);
+  /**
+   * Bumped by every completed layout, and a dependency of the highlight below.
+   *
+   * A redraw paints every note in its resting colour, so whatever was lit has
+   * to be re-applied afterwards. Without this the highlight would survive only
+   * until the next resize or jins hover, and then silently vanish.
+   */
+  const [layoutVersion, setLayoutVersion] = useState(0);
   const fontReady = useVexFlowMusicFontReady();
 
   useEffect(() => {
@@ -89,18 +101,41 @@ export default function MaqamStaff({
     const host = hostRef.current;
     if (!host || !fontReady || width < MIN_WIDTH) return;
     let current = true;
-    void drawMaqamStaff(host, notes, { width, height: drawHeight, scale, highlighted, brackets, reserveBracketRow }).then(
-      (measured) => {
-        // A newer draw has started, or nothing could be measured. Either way,
-        // do not overwrite the box with a stale or invented number.
-        if (!current || measured === undefined) return;
-        setDrawnHeight(measured);
-      },
-    );
+    void drawMaqamStaff(host, notes, {
+      width,
+      height: drawHeight,
+      scale,
+      brackets,
+      reserveBracketRow,
+    }).then((measured) => {
+      // A newer draw has started, or nothing could be measured. Either way,
+      // do not overwrite the box with a stale or invented number.
+      if (!current) return;
+      setLayoutVersion((version) => version + 1);
+      if (measured === undefined) return;
+      setDrawnHeight(measured);
+    });
     return () => {
       current = false;
     };
-  }, [notes, highlighted, brackets, reserveBracketRow, width, drawHeight, scale, fontReady]);
+    /*
+     * `highlighted` is deliberately NOT a dependency. It used to be, and every
+     * key press therefore re-ran VexFlow's entire layout — ~29ms of render and
+     * 8 staff DOM mutations per note, measured on the real app. Web MIDI
+     * delivers on the main thread, so that redraw is what the next note has to
+     * wait behind. Lighting a note is now the separate, cheap effect below.
+     */
+  }, [notes, brackets, reserveBracketRow, width, drawHeight, scale, fontReady]);
+
+  /**
+   * Lighting the played degrees: attribute writes on the stave already on
+   * screen, no layout, no VexFlow.
+   */
+  useEffect(() => {
+    const host = hostRef.current;
+    if (!host) return;
+    applyStaffHighlight(host, highlighted ?? NOTHING_LIT);
+  }, [highlighted, layoutVersion]);
 
   return (
     <div className={['maqam-staff', className].filter(Boolean).join(' ')}>

@@ -3,6 +3,7 @@ import {
   type ManagedAudioContext,
 } from '../../shared/playback/audioContextLifecycle';
 import type { DetuneMatrix } from '../data/maqamPresets';
+import { measureAudioLatency, type AudioLatency } from '../../shared/playback/audioLatency';
 import { renderPluckedString, renderRoomImpulse } from './pluckedString';
 
 /** A4 = 440 Hz, MIDI note 69 — the anchor every other frequency is derived from. */
@@ -115,7 +116,13 @@ export class MaqamSynth {
     if (this.disposed) return null;
     if (!this.managed || !this.master) {
       try {
-        this.managed = createManagedAudioContext();
+        /*
+         * `interactive` asks the browser for the smallest buffer it is willing
+         * to give. It is the spec default, but saying so is free and not every
+         * browser's default is the spec's — and this app is played, not
+         * listened to, so a smaller buffer is always the right trade.
+         */
+        this.managed = createManagedAudioContext({ latencyHint: 'interactive' });
       } catch {
         // Past Chrome's per-document context cap, or Web Audio unavailable.
         // Silence is the honest outcome; the app stays usable without sound.
@@ -293,6 +300,11 @@ export class MaqamSynth {
   /** Audio-clock time, for lining a melody up against the visual highlight. */
   currentTime(): number | null {
     return this.managed?.context.currentTime ?? null;
+  }
+
+  /** What the audio path costs end to end. `null` fields mean "not reported". */
+  latency(): AudioLatency {
+    return measureAudioLatency(this.managed?.context);
   }
 
   /**

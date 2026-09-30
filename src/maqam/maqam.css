@@ -141,12 +141,26 @@
   --maqam-staff-lit: #b4400c;
   --maqam-bracket-ink: #5c6557;
 
-  /* Each cell of a maqam gets one of these, in order, so a jins is the same
-     colour in its chip, its bracket and its notes. Two is enough for every
-     maqam in the catalogue; a third is here for the three-cell case. */
+  /*
+   * Each cell of a maqam gets one of these, in order, so a jins is the same
+   * colour in its chip, its bracket and its notes.
+   *
+   * NONE OF THEM MAY BE A COLOUR THAT ALREADY MEANS SOMETHING. `--maqam-jins-2`
+   * was `#b4400c`, which is the tonic, the accent and the lit notehead all at
+   * once — measured, it sat at CIE76 dE 0.0 from the tonic, i.e. the same
+   * colour. So pointing at the second cell painted its degrees in exactly the
+   * ink that means "this is home", and a reader could not tell the two apart.
+   * `--maqam-jins-3` was the olive of a thrown lever, dE 42.9 from the tonic,
+   * which is the same fault waiting for the first three-cell maqam.
+   *
+   * Chosen by search rather than by eye, maximising the smallest distance to
+   * anything already meaningful. Worst case is now dE 53.1 against a reserved
+   * colour and dE 46.2 between two cells, and every one carries a white
+   * numeral at 7:1 or better. `maqamColourRoles.test.ts` holds the floor.
+   */
   --maqam-jins-1: #1f5f3f;
-  --maqam-jins-2: #b4400c;
-  --maqam-jins-3: #8a6d00;
+  --maqam-jins-2: #1d5b82;
+  --maqam-jins-3: #7a2f5a;
 
   /* A display face for the app's name. */
   --maqam-title-font: inherit;
@@ -918,12 +932,57 @@
  * justify and still left the unplayable keys as the marked set.
  */
 .maqam-keyboard .shared-pk-black {
-  background: linear-gradient(
+  /*
+   * A SOLID COLOUR UNDER THE GRADIENT, written as two properties rather than
+   * one `background` shorthand.
+   *
+   * A custom property inside a gradient resolves late. If
+   * `--maqam-key-face-black` is ever unresolved for a frame, the whole
+   * declaration is invalid at computed-value time and the background falls
+   * back to `transparent` — not to a colour. A black key that goes
+   * see-through for one frame and shows the card behind it is exactly what a
+   * "flicker of transparency" looks like. `background-color` is its own
+   * declaration, so it survives the gradient failing and the key cannot
+   * render transparent.
+   */
+  background-color: var(--maqam-key-face-black, #0e2b1c);
+  background-image: linear-gradient(
     180deg,
     #2a3148 0%,
-    var(--maqam-key-face-black) 100%
+    var(--maqam-key-face-black, #0e2b1c) 100%
   );
   box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.25);
+}
+
+/*
+ * Hover, owned outright.
+ *
+ * The shared keyboard ships `.shared-pk-black:hover { background: #334155 }`.
+ * That is specificity (0,2,0) — identical to `.maqam-keyboard .shared-pk-black`
+ * — so which of the two painted the key was decided by nothing but the order
+ * of two imports in `main.tsx`. And the shared rule is a `background`
+ * SHORTHAND, so on any turn it won it also reset `background-image` and wiped
+ * the gradient. A tie in the cascade over the paint of the app's instrument is
+ * how you get an intermittent flicker nobody can reproduce on demand.
+ *
+ * These are (0,3,0) and win deterministically. They also restore an affordance
+ * the override had silently killed: the keys had no hover state at all, on an
+ * instrument played with a mouse.
+ */
+.maqam-keyboard .shared-pk-black:hover {
+  background-color: #1b3a2a;
+  background-image: linear-gradient(180deg, #38405c 0%, #1b3a2a 100%);
+}
+
+.maqam-keyboard .shared-pk-white:hover {
+  background-color: var(--m3-surface-container-low);
+}
+
+/* Pressed outranks hovered: a hover tint must never sit over a sounding note. */
+.maqam-keyboard .shared-pk-white.active:hover,
+.maqam-keyboard .shared-pk-black.active:hover {
+  background-color: var(--maqam-tonic);
+  background-image: none;
 }
 
 /* Sounding, during melody playback: the loudest state on the board. */
@@ -1374,6 +1433,34 @@
 .maqam-keyboard .maqam-key--in-jins .shared-pk-mark {
   background: var(--maqam-cell-tone, var(--m3-primary));
   color: #ffffff;
+}
+
+/*
+ * HOME SURVIVES BEING INSIDE A CELL.
+ *
+ * A jins can reach the tonic — Jins Nahawand on the 5th of Nahawand runs up to
+ * the octave, so degree 1 is in it — and the cell tone then paints the tonic's
+ * numeral like any other member. Pointing at that cell left no accent anywhere
+ * on the board and the reader lost where home was, which is half of what
+ * "the jins highlighting overlaps the tonic highlighting" was describing.
+ *
+ * Two facts, two channels: the FILL still says which cell, and a ring in the
+ * accent says which note is home. A ring rather than a second fill because
+ * fill is already spoken for, and the mark is too small to divide.
+ */
+.maqam-keyboard .maqam-key--home.maqam-key--in-jins .shared-pk-mark {
+  box-shadow:
+    0 0 0 2px var(--maqam-key-face),
+    0 0 0 4px var(--maqam-tonic);
+}
+
+.maqam-keyboard
+  .shared-pk-black.maqam-key--home.maqam-key--in-jins
+  .shared-pk-mark {
+  /* Against a black key the inner spacer has to be the key, not the board. */
+  box-shadow:
+    0 0 0 2px var(--maqam-key-face-black),
+    0 0 0 4px var(--maqam-tonic);
 }
 
 /* ---------------------------------------------------------- jins hovercard -- */

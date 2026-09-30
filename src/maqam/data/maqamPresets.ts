@@ -48,6 +48,24 @@ export interface Jins {
    * the scale or the joins — only in what the panel offers.
    */
   alternatives?: Omit<Jins, 'alternatives'>[];
+  /**
+   * The jins this one is a variation of, bare — "Rast", not "Jins Rast on C".
+   *
+   * Only for families. maqamworld classifies maqamat "based on sharing the
+   * same first (root) jins", and the Rast family page says it "is made of
+   * maqamat that start with Jins Rast" — yet it lists Maqam Sazkar, whose root
+   * is Jins Sazkar. That is not an inconsistency in the source: Jins Sazkar is
+   * described there as "a variation of Jins Rast with a raised 2nd", so a
+   * maqam starting on it does start with Jins Rast, in the sense the family
+   * means.
+   *
+   * Without this, deriving the family from the root jins NAME puts Sazkar in a
+   * family of its own, which the source does not have. With it, the family is
+   * still derived rather than authored — `maqamFamily` resolves through this
+   * link — so a maqam still files itself and a family still cannot disagree
+   * with its cell.
+   */
+  variationOf?: string;
 }
 
 export interface MaqamPreset {
@@ -192,10 +210,16 @@ export function degreeAbsoluteCents(degree: MaqamScaleDegree, tonicOctave: numbe
  * disagree with the cell it is named for. Given "Jins Rast on C" this is
  * "Rast"; given "Jins Upper Rast on G" it would be "Upper Rast", which is why
  * only the ROOT jins is consulted.
+ *
+ * A root jins that declares itself a `variationOf` another resolves to that
+ * one. Maqam Sazkar is the case: its root is Jins Sazkar, which maqamworld
+ * calls "a variation of Jins Rast with a raised 2nd", and it lists the maqam
+ * in the Rast family. Reading the name alone gave it a family of its own.
  */
 export function maqamFamily(preset: MaqamPreset): string {
   const root = preset.primaryAjnas[0];
   if (!root) return 'Other';
+  if (root.variationOf) return root.variationOf;
   // "Jins Nahawand on C" -> "Nahawand".
   const withoutPrefix = root.name.replace(/^Jins\s+/, '');
   const withoutRoot = withoutPrefix.replace(/\s+on\s+.+$/, '');

@@ -6,6 +6,8 @@ import {
   vexFlowUserUnitsPerPixel,
 } from '../../shared/vexflow/vexFlowAnnotation';
 import { ensureVexFlowFontsLoaded } from '../../shared/vexflow/vexFlowFontExport';
+import { applyStaffHighlight, indexDrawnNotes } from './maqamStaffHighlight';
+import { staffInks, type StaffInks } from './maqamStaffInks';
 import {
   spellingAriaLabel,
   vexflowKey,
@@ -85,49 +87,7 @@ const EDGE_PAD = 6;
  * and blue keys for one event, and the amber matched the retuned-key mark
  * exactly. One fact, one channel: blue is sounding.
  */
-const DEFAULT_HIGHLIGHT = '#1d5b82';
-const INK = '#241d16';
 
-/**
- * The score's three inks, read from the app's own CSS custom properties.
- *
- * VexFlow paints with JavaScript colour strings, so a stylesheet cannot reach
- * it and every renderer in this repo has ended up with a hex literal that the
- * theme around it does not know about. Reading the tokens here means a look
- * applied to `.maqam` reaches the notation too, and there is exactly one place
- * each colour is defined.
- *
- * The literals above remain as fallbacks for a container that resolves nothing
- * — a detached node under test, or a draw that races the stylesheet.
- */
-interface StaffInks {
-  ink: string;
-  lit: string;
-  bracket: string;
-  fadedInk: string;
-  jins: (tone: number) => string;
-}
-
-function staffInks(container: HTMLElement): StaffInks {
-  const read = (name: string, fallback: string) => {
-    if (typeof getComputedStyle !== 'function') return fallback;
-    const value = getComputedStyle(container).getPropertyValue(name).trim();
-    return value || fallback;
-  };
-  return {
-    ink: read('--maqam-staff-ink', INK),
-    lit: read('--maqam-staff-lit', DEFAULT_HIGHLIGHT),
-    bracket: read('--maqam-bracket-ink', BRACKET_INK),
-    /* Notes outside the cell being pointed at. Quiet enough to recede, dark
-       enough to still read as notation rather than as a rendering fault. */
-    fadedInk: read('--m3-outline', '#8e9384'),
-    /* One colour per cell, so a jins is the same colour in its chip, its
-       bracket and its notes. Falls back to the bracket ink, which is the
-       colour every bracket had before they were told apart. */
-    jins: (tone: number) =>
-      read(`--maqam-jins-${tone}`, read('--maqam-bracket-ink', BRACKET_INK)),
-  };
-}
 const EMPTY_HIGHLIGHT: ReadonlySet<number> = new Set<number>();
 
 /**
@@ -186,8 +146,6 @@ function drawStaffNow(
   }
 
   const inks = staffInks(container);
-  const lit = options.highlighted ?? EMPTY_HIGHLIGHT;
-  const litColor = options.highlightColor ?? inks.lit;
 
   /*
    * Brackets are drawn ONLY while a cell is being pointed at, and then only
@@ -210,33 +168,26 @@ function drawStaffNow(
     if (note.accidental !== 'n') {
       staveNote.addModifier(new Accidental(note.accidental), 0);
     }
+    /*
+     * The note's RESTING colour, which does not depend on what is being
+     * played. Lighting a note is applied afterwards by `applyStaffHighlight`,
+     * directly on the drawn SVG — see the note on that function for why.
+     */
     const inPointedCell =
       pointed !== undefined && index >= pointed.from && index <= pointed.to;
-    if (pointed !== undefined && !inPointedCell && !lit.has(index)) {
+    let rest = inks.ink;
+    if (pointed !== undefined && !inPointedCell) {
       /* Quieted, not hidden. The rest of the scale is still the context the
          cell sits in; removing it would make a four-note fragment look like
          the whole maqam. */
-      const faded = inks.fadedInk;
-      staveNote.setStyle({ fillStyle: faded, strokeStyle: faded });
-      staveNote
-        .getModifiers()
-        .forEach((modifier) => modifier.setStyle({ fillStyle: faded, strokeStyle: faded }));
-    } else if (inPointedCell && !lit.has(index)) {
-      const tone = inks.jins(pointed.tone);
-      staveNote.setStyle({ fillStyle: tone, strokeStyle: tone });
-      staveNote
-        .getModifiers()
-        .forEach((modifier) => modifier.setStyle({ fillStyle: tone, strokeStyle: tone }));
-    } else if (lit.has(index)) {
-      // Colour the whole note — head, stem and accidental — so a lit degree
-      // reads at a glance rather than needing a hunt for a tinted notehead.
-      staveNote.setStyle({ fillStyle: litColor, strokeStyle: litColor });
-      staveNote
-        .getModifiers()
-        .forEach((modifier) => modifier.setStyle({ fillStyle: litColor, strokeStyle: litColor }));
-    } else {
-      staveNote.setStyle({ fillStyle: inks.ink, strokeStyle: inks.ink });
+      rest = inks.fadedInk;
+    } else if (inPointedCell) {
+      rest = inks.jins(pointed.tone);
     }
+    staveNote.setStyle({ fillStyle: rest, strokeStyle: rest });
+    staveNote
+      .getModifiers()
+      .forEach((modifier) => modifier.setStyle({ fillStyle: rest, strokeStyle: rest }));
     return staveNote;
   });
 
@@ -292,6 +243,8 @@ function drawStaffNow(
         : Math.min(reservedTop, drawnTop);
 
   applyStaffAccessibility(container, notes);
+  indexDrawnNotes(container);
+  applyStaffHighlight(container, options.highlighted ?? EMPTY_HIGHLIGHT, options.highlightColor);
   return fitToDrawnExtent(
     container,
     bracketTop === undefined || extent === undefined
@@ -446,7 +399,6 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 /* Fallback only. The live value is `--maqam-bracket-ink`, so a theme reaches
    the label. M3 `on-surface-variant` warmed toward the app's primary: a label
    about the music, quieter than the music. */
-const BRACKET_INK = '#6f4450';
 /* CSS pixels, all three. M3 title-small — the size a heading over a region is
    set at on this page. The point of measuring in pixels rather than staff
    spaces is that the label stays this size at any zoom, instead of growing

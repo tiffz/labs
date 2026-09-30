@@ -30190,6 +30190,52 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-playback-audiolatency-ts-audiolatency",
+    "name": "AudioLatency",
+    "path": "src/shared/playback/audioLatency.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "What the audio path costs, in milliseconds, end to end. Every app here that plays a note in response to a key press or a MIDI message has the same question behind it — \"why is this late?\" — and the answer is usually not in the app. A Web Audio note is delayed by two things the page does not control: `baseLatency` the render quantum plus whatever the browser buffers before handing audio to the OS. Typically 5-12ms. `outputLatency` the OS and the device. Wired output is a few ms. **Bluetooth is commonly 150-300ms**, which no amount of work inside the app can recover. Reporting them separately is the point: it tells you whether a latency complaint is a bug you can fix or a device the player should swap. A number the app computes about itself is worth more than a guess, and this is the one measurement that distinguishes the two causes. `outputLatency` is not implemented everywhere (Safari, and any headless browser with no audio device, report 0 or omit it). Zero is therefore \"unknown\", not \"instant\" — so it is reported as `null` rather than as a number a caller would add to a total and believe.",
+    "tags": [
+      "playback",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-playback-audiolatency-ts-describeaudiolatency",
+    "name": "describeAudioLatency",
+    "path": "src/shared/playback/audioLatency.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "One line a player can act on. The thresholds are about playing, not about perception in general: under ~10ms is indistinguishable from an acoustic instrument, ~20ms is what a typical DAW round trip feels like, and past ~50ms a drummer will hear themselves flam against their own hands.",
+    "tags": [
+      "playback"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-playback-audiolatency-ts-measureaudiolatency",
+    "name": "measureAudioLatency",
+    "path": "src/shared/playback/audioLatency.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "What the audio path costs, in milliseconds, end to end. Every app here that plays a note in response to a key press or a MIDI message has the same question behind it — \"why is this late?\" — and the answer is usually not in the app. A Web Audio note is delayed by two things the page does not control: `baseLatency` the render quantum plus whatever the browser buffers before handing audio to the OS. Typically 5-12ms. `outputLatency` the OS and the device. Wired output is a few ms. **Bluetooth is commonly 150-300ms**, which no amount of work inside the app can recover. Reporting them separately is the point: it tells you whether a latency complaint is a bug you can fix or a device the player should swap. A number the app computes about itself is worth more than a guess, and this is the one measurement that distinguishes the two causes. `outputLatency` is not implemented everywhere (Safari, and any headless browser with no audio device, report 0 or omit it). Zero is therefore \"unknown\", not \"instant\" — so it is reported as `null` rather than as a number a caller would add to a total and believe.",
+    "tags": [
+      "playback"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-playback-audioplaybackbreadcrumb-ts-audiobreadcrumbsample",
     "name": "AudioBreadcrumbSample",
     "path": "src/shared/playback/audioPlaybackBreadcrumb.ts",

@@ -37,7 +37,7 @@
       "path": "/pitch/",
       "title": "Find Your Pitch",
       "shortDescription": "Sing into a mic for live note, cents, and contour feedback",
-      "stage": "experimental",
+      "stage": "private",
       "category": "music",
       "iconClass": "pitch"
     },
@@ -53,7 +53,7 @@
       "path": "/stanza/",
       "title": "Stanza",
       "shortDescription": "Practice songs in sections with markers, loops, and a metronome",
-      "stage": "experimental",
+      "stage": "private",
       "category": "music",
       "iconClass": "stanza"
     },
@@ -125,7 +125,7 @@
       "path": "/lyrefly/",
       "title": "Lyrefly",
       "shortDescription": "Comic project workbench \u2014 track ideas, script, thumbs, art, and publishing",
-      "stage": "in-development",
+      "stage": "private",
       "category": "art",
       "iconClass": "lyrefly"
     },
@@ -189,7 +189,7 @@
       "path": "/maqam/",
       "title": "Maqam Playground",
       "shortDescription": "Retune a keyboard to Arabic maqamat and play the quarter-tones",
-      "stage": "in-development",
+      "stage": "experimental",
       "category": "music",
       "iconClass": "maqam"
     }

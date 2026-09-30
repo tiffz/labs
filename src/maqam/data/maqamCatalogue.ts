@@ -11,31 +11,11 @@
  * pentachords stored as 4-note tetrachords — and it survived review because
  * there was nowhere to go and check.
  */
-import type { MaqamPreset, MaqamScaleDegree } from './maqamPresets';
+import { RAST_FAMILY } from './families/rastFamily';
+import type { MaqamPreset } from './maqamPresets';
+import { MAQAM_WORLD_JINS, MAQAM_WORLD_MAQAM, flat, halfFlat, n, sharp } from './maqamScaleHelpers';
 
-/** Reference for every musical claim about a jins in this file. */
-const MAQAM_WORLD_JINS = 'https://www.maqamworld.com/en/jins/';
-const MAQAM_WORLD_MAQAM = 'https://www.maqamworld.com/en/maqam/';
 
-const n = (letter: MaqamScaleDegree['letter'], octaveOffset = 0): MaqamScaleDegree => ({
-  letter,
-  accidental: 'n',
-  octaveOffset,
-});
-const halfFlat = (
-  letter: MaqamScaleDegree['letter'],
-  octaveOffset = 0,
-): MaqamScaleDegree => ({ letter, accidental: 'd', octaveOffset });
-const flat = (letter: MaqamScaleDegree['letter'], octaveOffset = 0): MaqamScaleDegree => ({
-  letter,
-  accidental: 'b',
-  octaveOffset,
-});
-const sharp = (letter: MaqamScaleDegree['letter'], octaveOffset = 0): MaqamScaleDegree => ({
-  letter,
-  accidental: '#',
-  octaveOffset,
-});
 
 /**
  * The nine maqam families.
@@ -53,48 +33,7 @@ const sharp = (letter: MaqamScaleDegree['letter'], octaveOffset = 0): MaqamScale
  * it shows that "maqam" is not a synonym for "quarter-tone".
  */
 export const MAQAM_PRESETS: MaqamPreset[] = [
-  {
-    id: 'rast_c',
-    name: 'Rast on C',
-    transliteration: 'Maqam Rast',
-    source: `${MAQAM_WORLD_MAQAM}rast.php`,
-    tonic: { letter: 'C', accidental: 'n' },
-    description:
-      'The foundational maqam, and the one others are measured against. Its third and seventh sit half-flat, between the major and minor you already know.',
-    repeatsAtOctave: true,
-    scaleDegrees: [n('C'), n('D'), halfFlat('E'), n('F'), n('G'), n('A'), halfFlat('B'), n('C', 1)],
-    primaryAjnas: [
-      {
-        id: 'rast_c__jins_rast_c',
-        name: 'Jins Rast on C',
-        root: { letter: 'C', accidental: 'n' },
-        // "Jins Rast is a widely popular 5-note jins ... notated here with its
-        // tonic on C and its ghammaz on G." Authored here as a tetrachord
-        // ending on F, which made Rast read as disjunct when it is not.
-        intervalsInCents: [0, 200, 350, 500, 700],
-        source: `${MAQAM_WORLD_JINS}rast.php`,
-      },
-      {
-        id: 'rast_c__jins_upper_rast_g',
-        // Not "Jins Rast on G": Maqam Rast's scale "starts with the root Jins
-        // Rast on the tonic, followed on the 5th degree by either Jins Upper
-        // Rast (with its tonic up on the 8th degree) or Jins Nahawand".
-        name: 'Jins Upper Rast on G',
-        root: { letter: 'G', accidental: 'n' },
-        intervalsInCents: [0, 200, 350, 500],
-        source: `${MAQAM_WORLD_JINS}upper-rast.php`,
-        alternatives: [
-          {
-            id: 'rast_c__jins_nahawand_g',
-            name: 'Jins Nahawand on G',
-            root: { letter: 'G', accidental: 'n' },
-            intervalsInCents: [0, 200, 300, 500, 700],
-            source: `${MAQAM_WORLD_JINS}nahawand.php`,
-          },
-        ],
-      },
-    ],
-  },
+  ...RAST_FAMILY,
   {
     id: 'bayati_d',
     name: 'Bayati on D',
@@ -125,18 +64,6 @@ export const MAQAM_PRESETS: MaqamPreset[] = [
       },
     ],
   },
-  /*
-   * Bayati Shuri and Muhayyar: the rest of the Bayati family.
-   *
-   * Both share Jins Bayati on D as their root jins, which is what puts them in
-   * this family — "Maqamat are classified into families based on sharing the
-   * same first (root) jins" — and both are notated on D because Jins Bayati
-   * itself is "notated here with its tonic on D".
-   *
-   * What differs is the cell on the 4th degree, and that is the whole lesson
-   * of a family: same opening, different continuation. Bayati takes Nahawand
-   * (or Rast), Bayati Shuri takes Hijaz, Muhayyar takes Rast.
-   */
   {
     id: 'bayati_shuri_d',
     name: 'Bayati Shuri on D',

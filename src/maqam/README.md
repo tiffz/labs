@@ -25,9 +25,19 @@ The shell does **not** use `AppShellLayout`: that provides a scrolling content r
 
 ## The nine families
 
-Rast, Bayati, Sikah, Saba, Hijaz, Kurd, Nahawand, Nikriz, Ajam. Every other named maqam in common use is a member of one of these, so this is the set that teaches the system rather than a catalogue.
+Rast, Bayati, Sikah, Saba, Hijaz, Kurd, Nahawand, Nikriz, Ajam. Every named maqam is a member of one of these, so the families are the structure and the individual maqamat are the contents.
 
-Four are microtonal (Rast, Bayati, Sikah, Saba) and five sit entirely in 12-TET (Hijaz, Kurd, Nahawand, Nikriz, Ajam). That spread is asserted by a test: it is what stops a learner concluding that "maqam" means "quarter-tone".
+Four family heads are microtonal (Rast, Bayati, Sikah, Saba) and five sit entirely in 12-TET (Hijaz, Kurd, Nahawand, Nikriz, Ajam). That spread is asserted by a test: it is what stops a learner concluding that "maqam" means "quarter-tone".
+
+**The family is derived, never authored.** maqamworld classifies maqamat "based on sharing the same first (root) jins", so `maqamFamily` reads the root cell rather than storing a label — a new maqam files itself, and a family can never disagree with the cell it is named for. The one wrinkle is `variationOf`: Maqam Sazkar's root is Jins Sazkar, which the source calls "a variation of Jins Rast with a raised 2nd" and files under Rast. Reading the name alone invented a "Sazkar family" that does not exist, so a jins may declare the cell it varies and the derivation resolves through it.
+
+### Filling out the families
+
+The families are being populated one at a time, from each family page on maqamworld (`f_<family>.php`), so that every maqam gets looked at by someone who can judge it before the next batch lands.
+
+maqamworld states each maqam's **structure** in prose — "starts with the root Jins Rast on the tonic, followed by Jins Bayati on the 5th degree" — which is quotable and checkable. It publishes the **intervals** only as notation images. So a maqam assembled from ajnas already in this file carries no new interval risk, and the line to check is any genuinely new cell. Those are called out at the point of use; Jins Sazkar's raised 2nd is the first.
+
+A member is skipped rather than guessed when the source declines to pin it down. Maqam Dalanshin starts with Jins Saba Dalanshin, which maqamworld calls "a special case of Jins Saba which has no ghammaz, and therefore no defined size", with intervals only "more or less identical to Jins Hijaz". `Jins` requires a definite size, and the size test checks it against maqamworld's own 3/4/5-note index, so encoding one would invent the single thing this data exists to be checkable on.
 
 ### Saba does not close at the octave
 

@@ -30,6 +30,7 @@ export default function App() {
     activeNotes,
     midiDevices,
     midiSupported,
+    audioLatency,
     audioBlocked,
     selectPreset,
     toggleSlot,
@@ -295,7 +296,11 @@ export default function App() {
               {/* One control: why the keys are retuned, and how to play them
                   with a real keyboard. Two chips in one corner asked the
                   reader to work out they were the same conversation. */}
-              <KeyboardNote supported={midiSupported} devices={midiDevices} />
+              <KeyboardNote
+                supported={midiSupported}
+                devices={midiDevices}
+                latency={audioLatency}
+              />
               {preset && tuning.kind !== 'preset' && tuning.kind !== 'prepared' && (
                 <Button variant="text" size="small" onClick={resetTuning}>
                   Reset
