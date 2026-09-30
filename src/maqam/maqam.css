@@ -141,12 +141,26 @@
   --maqam-staff-lit: #b4400c;
   --maqam-bracket-ink: #5c6557;
 
-  /* Each cell of a maqam gets one of these, in order, so a jins is the same
-     colour in its chip, its bracket and its notes. Two is enough for every
-     maqam in the catalogue; a third is here for the three-cell case. */
+  /*
+   * Each cell of a maqam gets one of these, in order, so a jins is the same
+   * colour in its chip, its bracket and its notes.
+   *
+   * NONE OF THEM MAY BE A COLOUR THAT ALREADY MEANS SOMETHING. `--maqam-jins-2`
+   * was `#b4400c`, which is the tonic, the accent and the lit notehead all at
+   * once — measured, it sat at CIE76 dE 0.0 from the tonic, i.e. the same
+   * colour. So pointing at the second cell painted its degrees in exactly the
+   * ink that means "this is home", and a reader could not tell the two apart.
+   * `--maqam-jins-3` was the olive of a thrown lever, dE 42.9 from the tonic,
+   * which is the same fault waiting for the first three-cell maqam.
+   *
+   * Chosen by search rather than by eye, maximising the smallest distance to
+   * anything already meaningful. Worst case is now dE 53.1 against a reserved
+   * colour and dE 46.2 between two cells, and every one carries a white
+   * numeral at 7:1 or better. `maqamColourRoles.test.ts` holds the floor.
+   */
   --maqam-jins-1: #1f5f3f;
-  --maqam-jins-2: #b4400c;
-  --maqam-jins-3: #8a6d00;
+  --maqam-jins-2: #1d5b82;
+  --maqam-jins-3: #7a2f5a;
 
   /* A display face for the app's name. */
   --maqam-title-font: inherit;
@@ -1419,6 +1433,34 @@
 .maqam-keyboard .maqam-key--in-jins .shared-pk-mark {
   background: var(--maqam-cell-tone, var(--m3-primary));
   color: #ffffff;
+}
+
+/*
+ * HOME SURVIVES BEING INSIDE A CELL.
+ *
+ * A jins can reach the tonic — Jins Nahawand on the 5th of Nahawand runs up to
+ * the octave, so degree 1 is in it — and the cell tone then paints the tonic's
+ * numeral like any other member. Pointing at that cell left no accent anywhere
+ * on the board and the reader lost where home was, which is half of what
+ * "the jins highlighting overlaps the tonic highlighting" was describing.
+ *
+ * Two facts, two channels: the FILL still says which cell, and a ring in the
+ * accent says which note is home. A ring rather than a second fill because
+ * fill is already spoken for, and the mark is too small to divide.
+ */
+.maqam-keyboard .maqam-key--home.maqam-key--in-jins .shared-pk-mark {
+  box-shadow:
+    0 0 0 2px var(--maqam-key-face),
+    0 0 0 4px var(--maqam-tonic);
+}
+
+.maqam-keyboard
+  .shared-pk-black.maqam-key--home.maqam-key--in-jins
+  .shared-pk-mark {
+  /* Against a black key the inner spacer has to be the key, not the board. */
+  box-shadow:
+    0 0 0 2px var(--maqam-key-face-black),
+    0 0 0 4px var(--maqam-tonic);
 }
 
 /* ---------------------------------------------------------- jins hovercard -- */
