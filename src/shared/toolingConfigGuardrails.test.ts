@@ -1,5 +1,6 @@
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
@@ -106,6 +107,85 @@ describe('tooling excludes .claude/worktrees from discovery', () => {
 
   it('.claude/worktrees is gitignored so it can never be committed', () => {
     expect(read('.gitignore')).toMatch(/\.claude\/worktrees/);
+  });
+});
+
+describe('every way of starting a dev server agrees on the port', () => {
+  /*
+   * `scripts/labs-dev-port.mjs` decides which port a checkout owns — the main
+   * checkout keeps 5173, every linked worktree derives its own — because
+   * Playwright reuses an existing server outside CI, so a stray dev server from
+   * ANOTHER checkout silently serves its code instead of yours. Root cause
+   * class `stale-server-verification`.
+   *
+   * Playwright asked that module. `.husky/pre-push` asked it. `npm run dev` did
+   * NOT, and bound 5173 from anywhere — which is the one entry point where it
+   * matters most, because it is the one a person types. Starting a dev server
+   * by hand in a worktree either collided with the main checkout or served this
+   * branch's code on the port every other tool believes is the main checkout.
+   *
+   * So this asserts the answer is asked for, in every place that starts a
+   * server, rather than asserting a number.
+   */
+  it('vite.config.ts takes its dev port from the shared resolver', () => {
+    const config = readFileSync(resolve(root, 'vite.config.ts'), 'utf8');
+    expect(
+      config,
+      'vite.config.ts should import the port resolver rather than defaulting to 5173',
+    ).toMatch(/from '\.\/scripts\/labs-dev-port\.mjs'/);
+    expect(
+      config,
+      'server.port should come from resolveDevServerPort, so `npm run dev` binds the port ' +
+        'this checkout owns',
+    ).toMatch(/port:\s*resolveDevServerPort\(/);
+    expect(
+      config,
+      'strictPort, so a collision fails loudly instead of sliding to the next port and ' +
+        'leaving two checkouts one apart',
+    ).toMatch(/strictPort:\s*true/);
+  });
+
+  it('the resolver gives a linked worktree its own port and the main checkout 5173', async () => {
+    const { DEFAULT_DEV_PORT, resolveDevServerPort } = await import(
+      '../../scripts/labs-dev-port.mjs'
+    );
+
+    /*
+     * Behavioural, against real directories, because the resolver decides
+     * main-vs-linked by whether `.git` is a directory or a `gitdir:` pointer
+     * FILE. A made-up path has neither and silently reads as the main
+     * checkout — which is how the first version of this test passed itself.
+     */
+    const tmp = mkdtempSync(join(tmpdir(), 'labs-dev-port-'));
+    const mainCheckout = join(tmp, 'main');
+    const linkedA = join(tmp, 'alpha');
+    const linkedB = join(tmp, 'beta');
+    mkdirSync(join(mainCheckout, '.git'), { recursive: true });
+    mkdirSync(linkedA, { recursive: true });
+    mkdirSync(linkedB, { recursive: true });
+    writeFileSync(join(linkedA, '.git'), `gitdir: ${mainCheckout}/.git/worktrees/alpha\n`);
+    writeFileSync(join(linkedB, '.git'), `gitdir: ${mainCheckout}/.git/worktrees/beta\n`);
+
+    try {
+      expect(resolveDevServerPort(mainCheckout, {}), 'the main checkout keeps 5173').toBe(
+        DEFAULT_DEV_PORT,
+      );
+
+      const a = resolveDevServerPort(linkedA, {});
+      const b = resolveDevServerPort(linkedB, {});
+      expect(a, 'a linked worktree must not take the main checkout port').not.toBe(
+        DEFAULT_DEV_PORT,
+      );
+      expect(b).not.toBe(DEFAULT_DEV_PORT);
+      expect(a, 'two worktrees must not collide with each other').not.toBe(b);
+      // Deterministic, so a worktree reuses its own server across runs rather
+      // than stranding a fresh Vite on every invocation.
+      expect(resolveDevServerPort(linkedA, {})).toBe(a);
+      // An explicit override still wins, for CI and for pinning by hand.
+      expect(resolveDevServerPort(linkedA, { LABS_E2E_PORT: '4321' })).toBe(4321);
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
   });
 });
 

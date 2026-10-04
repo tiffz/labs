@@ -19,6 +19,7 @@ import {
   printDebugLogEntriesToConsole,
 } from './src/shared/debug/debugLogPostBody';
 import { applyDevGoogleApiKeyFromGitHub, resolveViteGoogleApiKeyForDev } from './src/shared/drive/resolveViteGoogleApiKeyForDev';
+import { resolveDevServerPort } from './scripts/labs-dev-port.mjs';
 
 const BUILD_VERSION = `${Date.now()}-${randomBytes(4).toString('hex')}`;
 
@@ -362,6 +363,24 @@ export default defineConfig({
   server: {
     /** Spotify OAuth redirect URIs cannot use `localhost`; default dev URL is loopback. */
     host: '127.0.0.1',
+    /*
+     * THE PORT THIS CHECKOUT OWNS.
+     *
+     * `scripts/labs-dev-port.mjs` already decided this — the main checkout keeps
+     * 5173, every linked worktree derives its own — and `playwright.config.ts`
+     * and `.husky/pre-push` both asked it. `npm run dev` did not, so it bound
+     * 5173 from anywhere, which is the one place the answer matters most:
+     * starting a dev server by hand in a worktree either collided with the main
+     * checkout or, worse, served this branch's code on the port every other tool
+     * believes is the main checkout. That is `stale-server-verification` with
+     * the trap left open in the doorway people actually walk through.
+     *
+     * `strictPort` so a collision fails loudly instead of silently sliding to
+     * 5174 and leaving two checkouts one port apart. Playwright passes `--port`
+     * on the command line, which overrides this with the same number.
+     */
+    port: resolveDevServerPort(PROJECT_ROOT),
+    strictPort: true,
     middlewareMode: false,
     /**
      * Pre-transform the heavy lazy Encore Originals chunks at dev startup so the FIRST
