@@ -12,21 +12,64 @@ const MAX_BPM = 300;
 const REPEAT_DELAY = 400;
 const REPEAT_INTERVAL = 80;
 
+/**
+ * Hold a button to repeat its action.
+ *
+ * THE REPEAT MUST NOT OUTLIVE THE GESTURE THAT STARTED IT.
+ *
+ * It used to stop on `pointerup` and `pointerleave` only, and neither is
+ * guaranteed to arrive. A browser fires `pointercancel` instead whenever it
+ * takes the gesture over — a touch that becomes a scroll, a pointer whose
+ * element is removed or moves out from under it, a system gesture. When that
+ * happened nothing cleared the interval, so BPM kept climbing at one per 80ms
+ * — 12.5 a second — until it hit the 300 cap. Measured: 120 to 177 in eight
+ * seconds with no further input.
+ *
+ * It is a nasty failure to diagnose because the cause is a gesture the user has
+ * already forgotten and the effect shows up on whatever they touch next, which
+ * is how it got reported as a different control's fault.
+ *
+ * So the repeat is stopped by three things rather than one:
+ *
+ *  - `pointercancel` on the button, the specific event that was missing;
+ *  - a `pointerup`/`pointercancel` listener on the WINDOW while the repeat is
+ *    live, so a release anywhere ends it even if the button is gone by then;
+ *  - `blur` and a hidden tab, because a backgrounded page still runs intervals
+ *    and coming back to a tripled tempo is the same bug with a longer fuse.
+ *
+ * The window listeners are attached only while repeating, so the common case
+ * costs nothing.
+ */
 function useRepeatPress(callback: () => void) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const cbRef = useRef(callback);
   cbRef.current = callback;
 
+  /* One `AbortController` per press detaches every window listener at once —
+     and avoids holding the stop function in a ref written during render, which
+     `react-hooks/refs` forbids as a React Compiler correctness rule. */
+  const abortRef = useRef<AbortController | null>(null);
+
   const stop = useCallback(() => {
     if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
     if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
+    abortRef.current?.abort();
+    abortRef.current = null;
   }, []);
 
   useEffect(() => stop, [stop]);
 
   const start = useCallback(() => {
     stop();
+    // A release anywhere ends the repeat, not just one on the button itself.
+    const controller = new AbortController();
+    abortRef.current = controller;
+    const until = { signal: controller.signal };
+    window.addEventListener('pointerup', stop, until);
+    window.addEventListener('pointercancel', stop, until);
+    window.addEventListener('blur', stop, until);
+    document.addEventListener('visibilitychange', stop, until);
     timerRef.current = setTimeout(() => {
       intervalRef.current = setInterval(() => cbRef.current(), REPEAT_INTERVAL);
     }, REPEAT_DELAY);
@@ -36,6 +79,7 @@ function useRepeatPress(callback: () => void) {
     onPointerDown: start,
     onPointerUp: stop,
     onPointerLeave: stop,
+    onPointerCancel: stop,
   };
 }
 
