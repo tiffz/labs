@@ -131,6 +131,62 @@ enrolled by existing rather than by someone remembering. Then:
 
 When a guard must stay a list, say in a comment what would have to be true to derive it instead.
 
+## A sixth shape: the right property, measured against the wrong thing
+
+The previous shapes are all about asserting the wrong **property**. This one
+asserts the right property and compares it to the wrong **referent** — so the
+test is meaningful, falsifiable, well-scoped, and still cannot see the bug.
+
+Three shipped in a single session, in one app:
+
+| Guard                                               | Measured                                     | Should have measured                        |
+| --------------------------------------------------- | -------------------------------------------- | ------------------------------------------- |
+| "the lever bank is twelve levers, none overlapping" | the bank against **itself** — internal seams | the bank against **the keyboard it labels** |
+| "every key name stays readable"                     | each colour against **its own background**   | the colours against **each other**          |
+| "the keycap text is short enough to fit"            | `badge`, a field **nothing renders**         | `label`, the string that reaches the key    |
+
+Each was green the whole time, and each had a visible bug underneath it:
+
+- The bank was internally perfect — white levers at 0.5..6.5 sevenths, black at
+  1, 2, 4, 5, 6, exactly what the keyboard lays out — and **two thirds the size
+  of the octave it sat above**. Every lever drifted further from its key than
+  the last. Nothing that measures a thing against itself can see its scale.
+- Contrast guards answer "can you read it". They never answer "do two things
+  that mean different things look different", so a cell tone sat at **dE 0.0
+  from the tonic** — the same colour, four jobs — and every contrast assertion
+  passed.
+- The keycap guard watched a field retired from the UI long before. Meanwhile
+  `label` printed `B −503` — a note, a cents figure and an octave run
+  together — on the app's central control.
+
+### The question that catches it
+
+> **If this assertion passes, can a person still see the bug?**
+
+If yes, the referent is wrong. Then ask what the thing under test has to AGREE
+WITH, and measure that instead:
+
+- A control that **labels** another control is only correct relative to it.
+  Measure the pair, never the one.
+- Two things that must **read as different** are only correct relative to each
+  other. Measuring each against its own background is a different question.
+- A value that reaches the **screen** is the one to assert. A sibling field
+  that no longer renders will hold any value you like, forever.
+
+### Prefer the user-visible end of the chain
+
+The cheapest way to pick the wrong referent is to assert something close to the
+code instead of close to the person. `badge` was easy to reach from the module
+under test; `label` required knowing which field the keyboard actually renders.
+The guard took the near one and was useless for four months.
+
+When a value passes through several hands before a person sees it, **assert at
+the last hand**. The keycap guard now asserts the printed name does not end in
+a digit — not because that is elegant, but because the keyboard appends the
+octave, and that is the specific way the string broke.
+
+Root cause class: `guardrail-wrong-referent`.
+
 ## When you cannot make it fail
 
 Say so, and prefer the weaker-but-honest assertion over the stronger-but-vacuous one. A source scan
@@ -138,4 +194,4 @@ that admits it is a source scan beats a "behavioural" test that silently checks 
 in a comment what a real behavioural check would need.
 
 Root cause classes: `guardrail-cannot-fail`, `fixture-shares-the-bug`, `guardrail-coverage-gap`,
-`guardrail-proxy-assertion`.
+`guardrail-proxy-assertion`, `guardrail-wrong-referent`.
