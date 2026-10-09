@@ -19,6 +19,11 @@ Only two things:
 2. **You verified the change does what you claim**, by running it: a test that fails
    against the old code, a browser check, a measurement. Not "it typechecks".
 
+   **Say which instrument produced a finding** — "measured in the browser", "read from the
+   source", "inferred from the merge order". A reader can discount an inference; they cannot
+   discount one they believe is a measurement. If you could not observe it, report the
+   conclusion as provisional rather than rounding it up to fact.
+
 That is the whole gate for the overwhelming majority of work: features, bug fixes,
 refactors, UI redesigns, new screens, dependency bumps, deletions.
 
