@@ -16,19 +16,24 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # Exit 1 = measured and below target; exit 2 = could not measure (GitHub API outage). They
+      # must not share a path: on 2026-10-05 a 502 from the runs API filed "CI success rate below
+      # 90%" for a week whose runs were never read.
       - name: Report CI health (advisory gate)
         id: ci_health
-        continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
-        run: node scripts/ci-health-report.mjs --days 7 --fail-below 90
+        run: |
+          set +e
+          node scripts/ci-health-report.mjs --days 7 --fail-below 90
+          echo "code=$?" >> "$GITHUB_OUTPUT"
 
       # This used to emit only `::warning`, which meant the CI health monitor was warning into a
       # log during the same ten days the nightly audit sat red — the monitor and the thing it was
       # meant to catch failed silently together. Same pattern as the dependency-audit job below:
       # write it down, then fail visibly. docs/CI_CHECK_VALUE.md § The solo rule.
       - name: File a health issue when below target
-        if: steps.ci_health.outcome == 'failure'
+        if: steps.ci_health.outputs.code == '1'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -50,9 +55,15 @@ jobs:
           fi
 
       - name: Fail the job so the advisory is visible
-        if: steps.ci_health.outcome == 'failure'
+        if: steps.ci_health.outputs.code == '1'
         run: |
           echo "::error title=CI success rate below 90%::See the filed ci-health issue. Triage with npm run report:ci-health and docs/ENGINEERING_HEALTH.md."
+          exit 1
+
+      - name: Fail visibly when CI health could not be measured
+        if: steps.ci_health.outputs.code != '0' && steps.ci_health.outputs.code != '1'
+        run: |
+          echo "::error title=CI health not measured::The GitHub runs API failed after retries (exit ${{ steps.ci_health.outputs.code }}). No health verdict this week; re-run the workflow."
           exit 1
 
   dependency-audit:

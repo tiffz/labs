@@ -14,14 +14,35 @@ const days = Number(args.find((_, i, a) => a[i - 1] === '--days') ?? 30);
 const workflowFile = args.find((_, i, a) => a[i - 1] === '--workflow') ?? 'ci.yml';
 const failBelow = Number(args.find((_, i, a) => a[i - 1] === '--fail-below') ?? NaN);
 
-function ghJson(cmd) {
-  try {
-    return JSON.parse(execSync(cmd, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }));
-  } catch (e) {
-    const msg = e.stderr?.toString?.() ?? e.message;
-    console.error(`ci-health-report: gh failed — ${msg}`);
-    console.error('Install and auth gh: https://cli.github.com/');
-    process.exit(1);
+/**
+ * Exit code for "could not measure". Distinct from 1 ("measured, and below the gate") so the weekly
+ * workflow never files a "CI success rate below 90%" issue for a GitHub outage. On 2026-10-05 the
+ * runs API returned HTTP 502, this script exited 1, and the workflow reported low CI health for a
+ * week whose health it never read.
+ */
+const EXIT_UNMEASURED = 2;
+
+/** 5xx and network failures are worth a retry; auth and 4xx are not. */
+function isTransientGhError(msg) {
+  return /HTTP 5\d\d|ECONNRESET|ETIMEDOUT|EAI_AGAIN|timed out|connection reset/i.test(msg);
+}
+
+function ghJson(cmd, attempts = 4) {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return JSON.parse(execSync(cmd, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }));
+    } catch (e) {
+      const msg = e.stderr?.toString?.() || e.message;
+      if (attempt < attempts && isTransientGhError(msg)) {
+        const waitS = 5 * 2 ** (attempt - 1);
+        console.error(`ci-health-report: gh failed (attempt ${attempt}/${attempts}), retrying in ${waitS}s — ${msg.trim()}`);
+        execSync(`sleep ${waitS}`);
+        continue;
+      }
+      console.error(`ci-health-report: could not read CI runs — ${msg.trim()}`);
+      console.error('This is a measurement failure, not a health result. Install and auth gh: https://cli.github.com/');
+      process.exit(EXIT_UNMEASURED);
+    }
   }
 }
 

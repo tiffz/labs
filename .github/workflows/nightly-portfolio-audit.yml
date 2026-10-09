@@ -133,21 +133,20 @@ jobs:
         id: lighthouse
         run: npm run audit:lighthouse -- --smoke-all --production --fail
 
-      - name: Explain Lighthouse floor failures
+      - name: Explain Lighthouse failures
         if: failure() && steps.lighthouse.outcome == 'failure'
         run: |
-          echo "::error title=Lighthouse floors::One or more routes fell below their per-app floor (baseline − 5) — see docs/PERFORMANCE_BUDGETS.md and docs/LIGHTHOUSE_AUDIT.md"
+          echo "::error title=Lighthouse audit failed::A route fell below its per-app floor OR crashed twice (the 'Lighthouse floor' / 'Lighthouse run error' annotations above say which) — see docs/PERFORMANCE_BUDGETS.md and docs/LIGHTHOUSE_AUDIT.md"
 
       - name: Upload Lighthouse JSON reports
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: lighthouse-nightly-reports
-          # `warn`, not `ignore`. The artifact has been absent from every recent nightly while this
-          # step still reported success — `ignore` turns an empty glob into silence, so a breach was
-          # never triageable. The reports ARE written locally (verified: .cache/lighthouse-_forms_.json,
-          # 418 kB) and the script mkdirs recursively, so the cause is CI-specific and still unknown.
-          # Warning makes the next run say so instead of hiding it.
+          # The artifact was missing from every nightly because upload-artifact (v4.4+) skips
+          # dot-directories by default, and the reports live in `.cache/`. `include-hidden-files`
+          # is the fix; `warn` stays so an empty glob is never silent again.
+          include-hidden-files: true
           if-no-files-found: warn
           path: |
             .cache/lighthouse-*.json
