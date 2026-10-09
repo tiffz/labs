@@ -10,6 +10,7 @@ import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import type { ReactElement } from 'react';
 import { driveFileWebUrl } from '../../drive/driveWebUrls';
+import { PerformanceSignInNotice } from './PerformanceSignInNotice';
 
 export type PerformanceVideoInlineLinkFeedback =
   | null
@@ -130,9 +131,7 @@ export function PerformanceVideoInlineLinkField(props: PerformanceVideoInlineLin
         </Alert>
       ) : null}
       {driveLinkFeedback?.kind === 'needs_signin' ? (
-        <Alert severity="info" variant="outlined" sx={{ py: 0.25, '& .MuiAlert-message': { py: 0.5 } }}>
-          Sign in with Google to verify this file.
-        </Alert>
+        <PerformanceSignInNotice message="Sign in to read this Drive link." />
       ) : null}
       {driveLinkFeedback?.kind === 'error' ? (
         <Alert severity="error" variant="outlined" sx={{ py: 0.25, '& .MuiAlert-message': { py: 0.5 } }}>

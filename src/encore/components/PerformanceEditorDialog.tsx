@@ -13,11 +13,15 @@ import { driveGetFileMetadata, driveUploadFileResumable } from '../drive/driveFe
 import {
   classifyDriveCopyFailure,
   copyDriveFileToMyDrive,
+  type DriveCopyProgress,
 } from '../../shared/drive/copyDriveFileToMyDrive';
 import { ensureDriveCopyAccessToken } from '../drive/driveReadonlyAccess';
+import { PerformanceSignInNotice } from './performance/PerformanceSignInNotice';
 import { upsertPerformanceVideoBySource } from '../performance/performanceVideoAttach';
 import {
   applyForeignVideoCopies,
+  foreignVideoCopyBatchFraction,
+  foreignVideoCopyJobLabel,
   liveForeignSourceForVideo,
   pruneStaleForeignVideoSources,
   planForeignVideoCopies,
@@ -190,7 +194,7 @@ export function PerformanceEditorDialog(props: {
     onDelete,
   } = props;
   const { songs, repertoireExtras } = useEncore();
-  const { withBlockingJob } = useEncoreBlockingJobs();
+  const { withBlockingJob, startBlockingJob } = useEncoreBlockingJobs();
   const { uploadWithDuplicateCheck, registerUploadedDriveFile } = useEncoreDriveUploadDedup();
   const songForPerformance = useMemo(
     () => (subjectKind === 'original' ? null : (songs.find((s) => s.id === songId) ?? null)),
@@ -236,6 +240,12 @@ export function PerformanceEditorDialog(props: {
   }, [draft]);
   const [videoInput, setVideoInput] = useState('');
   const [shortcutMsg, setShortcutMsg] = useState<string | null>(null);
+  /**
+   * Why the last action needs Google, shown with a sign-in button. Kept apart from `shortcutMsg` so
+   * the button can never attach to an unrelated message, and only rendered while signed out, so it
+   * clears itself the moment the sign-in popup returns a token.
+   */
+  const [signInPrompt, setSignInPrompt] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   /** Device clips queued for upload on save (log + add-video). */
   const [pendingLocalVideoFiles, setPendingLocalVideoFiles] = useState<File[]>([]);
@@ -284,6 +294,7 @@ export function PerformanceEditorDialog(props: {
       }
       setVideoInput('');
       setShortcutMsg(null);
+      setSignInPrompt(null);
       setPendingLocalVideoFiles([]);
       setPendingLinkVideo(null);
       // Per-session staging state, like the two above: a source resolved in a previous editing
@@ -611,14 +622,14 @@ export function PerformanceEditorDialog(props: {
 
     if (deviceFilesToUpload.length > 0) {
       if (!googleAccessToken) {
-        setShortcutMsg('Sign in with Google to upload the video from your device.');
+        setSignInPrompt('Sign in to upload this video to your Drive.');
         return;
       }
       setUploading(true);
       setShortcutMsg(null);
       try {
         await withBlockingJob('Uploading performance video…', async (setProgress) => {
-          setProgress(0);
+          setProgress(null);
           const layout = await ensureEncoreDriveLayout(googleAccessToken);
           const parent =
             resolveDriveUploadFolderId('performances', layout, repertoireExtras.driveUploadFolderOverrides) ??
@@ -710,77 +721,89 @@ export function PerformanceEditorDialog(props: {
     const copyTasks = planForeignVideoCopies(videos, foreignVideoSources);
     if (copyTasks.length > 0) {
       if (!googleAccessToken) {
-        setShortcutMsg('Sign in with Google to save a copy of this video to your Drive.');
+        setSignInPrompt('Sign in to save a copy of this video to your Drive.');
         return;
       }
       setUploading(true);
       setShortcutMsg(null);
+      /*
+       * `startBlockingJob`, not `withBlockingJob`: the label has to change as the copy moves between
+       * stages. The first version showed one static label over a bar pinned at 0% for the whole
+       * download, about a minute on a real video, and it read as broken.
+       */
+      const copyPosition = { index: 0, count: copyTasks.length };
+      const copyJob = startBlockingJob(
+        foreignVideoCopyJobLabel({ stage: 'preparing', fraction: null }, copyPosition),
+      );
+      let lastCopyReportAt = 0;
+      let lastCopyStage: DriveCopyProgress['stage'] | null = null;
+      const reportCopyProgress = (progress: DriveCopyProgress) => {
+        // A download streams thousands of chunks; re-rendering the snackbar on each one is waste.
+        // Stage changes always go through so the words never lag the work.
+        const now = Date.now();
+        if (progress.stage === lastCopyStage && now - lastCopyReportAt < 100) return;
+        lastCopyReportAt = now;
+        lastCopyStage = progress.stage;
+        copyJob.updateLabel(foreignVideoCopyJobLabel(progress, copyPosition));
+        copyJob.updateProgress(foreignVideoCopyBatchFraction(progress, copyPosition));
+      };
       try {
-        await withBlockingJob(
-          copyTasks.length === 1
-            ? 'Saving a copy to your Drive…'
-            : `Saving ${copyTasks.length} copies to your Drive…`,
-          async (setProgress) => {
-            setProgress(0);
-            const layout = await ensureEncoreDriveLayout(googleAccessToken);
-            const parent =
-              resolveDriveUploadFolderId('performances', layout, repertoireExtras.driveUploadFolderOverrides) ??
-              layout.performancesFolderId;
-            if (!parent?.trim()) throw new Error('Performances folder is not ready yet.');
+        const layout = await ensureEncoreDriveLayout(googleAccessToken);
+        const parent =
+          resolveDriveUploadFolderId('performances', layout, repertoireExtras.driveUploadFolderOverrides) ??
+          layout.performancesFolderId;
+        if (!parent?.trim()) throw new Error('Performances folder is not ready yet.');
 
-            const copied: { videoId: string; copiedFileId: string }[] = [];
-            /*
-             * Encore's session token holds `drive.file` + `drive.metadata.readonly`. That reads the
-             * NAME of a file a friend shared — which is why pasting their link resolves — but
-             * `drive.file` is per-file access to files this app created, so downloading the bytes
-             * is refused. Drive answers 403/404 and the old code reported "you do not have access",
-             * when the truth was that the app had never asked for it.
-             *
-             * So: try the session token, and on a permission failure ask for `drive.readonly` once
-             * and retry. Broad read access is not in the sign-in scopes on purpose — requesting it
-             * up front, to serve an occasional case, is how consent screens get clicked past.
-             */
-            let copyToken = googleAccessToken;
-            let broadenedScope = false;
-            for (let index = 0; index < copyTasks.length; index += 1) {
-              const task = copyTasks[index]!;
-              const onProgress = ({ bytesSent, bytesTotal }: { bytesSent: number; bytesTotal: number }) => {
-                const fileFrac = bytesTotal > 0 ? bytesSent / bytesTotal : 0;
-                setProgress((index + fileFrac) / copyTasks.length);
-              };
-              let result;
-              try {
-                result = await copyDriveFileToMyDrive({
-                  accessToken: copyToken,
-                  sourceFileId: task.sourceFileId,
-                  parentFolderId: parent.trim(),
-                  onProgress,
-                });
-              } catch (error) {
-                const reason = classifyDriveCopyFailure(error);
-                const permissionDenied = reason === 'no-access' || reason === 'not-found';
-                if (!permissionDenied || broadenedScope) throw error;
-                // One consent prompt, then reuse the broadened token for the rest of the batch.
-                broadenedScope = true;
-                copyToken = await ensureDriveCopyAccessToken();
-                result = await copyDriveFileToMyDrive({
-                  accessToken: copyToken,
-                  sourceFileId: task.sourceFileId,
-                  parentFolderId: parent.trim(),
-                  onProgress,
-                });
-              }
-              copied.push({ videoId: task.videoId, copiedFileId: result.fileId });
-            }
-            videos = applyForeignVideoCopies(videos, copied);
-            // The copy repointed these videos at the user's own files, so the sources that drove
-            // it no longer describe anything. Keeping them is what left "Save a copy to my Drive"
-            // on a video that had already been copied.
-            const copiedVideos = videos;
-            setForeignVideoSources((sources) => pruneStaleForeignVideoSources(sources, copiedVideos));
-            setProgress(1);
-          },
-        );
+        const copied: { videoId: string; copiedFileId: string }[] = [];
+        /*
+         * Encore's session token holds `drive.file` + `drive.metadata.readonly`. That reads the
+         * NAME of a file a friend shared — which is why pasting their link resolves — but
+         * `drive.file` is per-file access to files this app created, so downloading the bytes
+         * is refused. Drive answers 403/404 and the old code reported "you do not have access",
+         * when the truth was that the app had never asked for it.
+         *
+         * So: try the session token, and on a permission failure ask for `drive.readonly` once
+         * and retry. Broad read access is not in the sign-in scopes on purpose — requesting it
+         * up front, to serve an occasional case, is how consent screens get clicked past.
+         */
+        let copyToken = googleAccessToken;
+        let broadenedScope = false;
+        for (let index = 0; index < copyTasks.length; index += 1) {
+          const task = copyTasks[index]!;
+          copyPosition.index = index;
+          let result;
+          try {
+            result = await copyDriveFileToMyDrive({
+              accessToken: copyToken,
+              sourceFileId: task.sourceFileId,
+              parentFolderId: parent.trim(),
+              onProgress: reportCopyProgress,
+            });
+          } catch (error) {
+            const reason = classifyDriveCopyFailure(error);
+            const permissionDenied = reason === 'no-access' || reason === 'not-found';
+            if (!permissionDenied || broadenedScope) throw error;
+            // One consent prompt, then reuse the broadened token for the rest of the batch.
+            broadenedScope = true;
+            copyJob.updateLabel('Waiting for Google permission to read the shared video…');
+            copyJob.updateProgress(null);
+            copyToken = await ensureDriveCopyAccessToken();
+            result = await copyDriveFileToMyDrive({
+              accessToken: copyToken,
+              sourceFileId: task.sourceFileId,
+              parentFolderId: parent.trim(),
+              onProgress: reportCopyProgress,
+            });
+          }
+          copied.push({ videoId: task.videoId, copiedFileId: result.fileId });
+        }
+        videos = applyForeignVideoCopies(videos, copied);
+        // The copy repointed these videos at the user's own files, so the sources that drove
+        // it no longer describe anything. Keeping them is what left "Save a copy to my Drive"
+        // on a video that had already been copied.
+        const copiedVideos = videos;
+        setForeignVideoSources((sources) => pruneStaleForeignVideoSources(sources, copiedVideos));
+        copyJob.updateProgress(1);
       } catch (error) {
         const reason = classifyDriveCopyFailure(error);
         setShortcutMsg(
@@ -792,6 +815,8 @@ export function PerformanceEditorDialog(props: {
         );
         setUploading(false);
         return;
+      } finally {
+        copyJob.end();
       }
       setUploading(false);
     }
@@ -918,7 +943,7 @@ export function PerformanceEditorDialog(props: {
   const routeDroppedVideoFiles = useCallback(
     (files: File[]) => {
       if (!googleAccessToken) {
-        setShortcutMsg('Sign in with Google to upload the video from your device.');
+        setSignInPrompt('Sign in to upload this video to your Drive.');
         return;
       }
       const accepted = filterAcceptedPerformanceVideoFiles(files);
@@ -1201,6 +1226,7 @@ export function PerformanceEditorDialog(props: {
               </PerformanceEditorSection>
             </>
           )}
+          {signInPrompt && !googleAccessToken ? <PerformanceSignInNotice message={signInPrompt} /> : null}
           {shortcutMsg ? (
             <Alert
               severity={shortcutSeverity}

@@ -1,3 +1,4 @@
+import type { DriveCopyProgress } from '../../shared/drive/copyDriveFileToMyDrive';
 import type { EncorePerformanceVideo } from '../types';
 
 /**
@@ -179,4 +180,49 @@ export function setForeignVideoCopyRequested(
   copyRequested: boolean,
 ): ForeignVideoSource[] {
   return sources.map((s) => (s.videoId === videoId ? { ...s, copyRequested } : s));
+}
+
+function formatMegabytes(bytes: number): string {
+  const mb = bytes / (1024 * 1024);
+  return mb < 10 ? mb.toFixed(1) : String(Math.round(mb));
+}
+
+/**
+ * The blocking-job label for one moment of a copy.
+ *
+ * Every stage gets words, because the first report was "a loading bar appeared with no progress for
+ * almost a minute, so it seemed broken". A bar alone cannot say whether anything is happening; the
+ * byte count can. Byte counts use a slash, never "of": the job snackbar reads "N of M" as an item
+ * count and would caption "120 of 800 complete · 680 remaining".
+ */
+export function foreignVideoCopyJobLabel(
+  progress: DriveCopyProgress,
+  position: { index: number; count: number },
+): string {
+  const which = position.count > 1 ? ` (video ${position.index + 1}/${position.count})` : '';
+  const bytes =
+    progress.bytesDone != null && progress.bytesTotal
+      ? ` ${formatMegabytes(progress.bytesDone)} / ${formatMegabytes(progress.bytesTotal)} MB`
+      : progress.bytesDone != null && progress.bytesDone > 0
+        ? ` ${formatMegabytes(progress.bytesDone)} MB`
+        : '';
+  switch (progress.stage) {
+    case 'preparing':
+      return `Finding the video in Drive${which}…`;
+    case 'server-copy':
+      return `Saving a copy to your Drive${which}…`;
+    case 'download':
+      return `Downloading the shared video${which}…${bytes}`;
+    case 'upload':
+      return `Saving to your Drive${which}…${bytes}`;
+  }
+}
+
+/** Overall bar position across a batch, or `null` (indeterminate) when this stage cannot be measured. */
+export function foreignVideoCopyBatchFraction(
+  progress: DriveCopyProgress,
+  position: { index: number; count: number },
+): number | null {
+  if (progress.fraction == null || position.count <= 0) return null;
+  return (position.index + progress.fraction) / position.count;
 }
