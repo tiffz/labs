@@ -97,6 +97,8 @@ Before shipping performance UI changes:
 6. **List playback** — click thumbnail to play (`PerformanceVideoPlayableThumb`); no redundant play icon beside it.
 7. **Color** — fuchsia-forward soft surfaces in modals (`tone="soft"`, `encoreSoftPinkWash`); avoid heavy dark-violet body text on upload controls.
 8. **Tests** — extend the nearest `*.test.ts` for new behavior; run `npm run presubmit` before handoff.
+9. **Never send the user out of the dialog.** Anything the dialog needs (sign-in, a permission) is offered inside it (`PerformanceSignInNotice`), and a failure there must not unmount the dialog. Closing it to fix a prerequisite loses the draft.
+10. **Long work narrates itself.** Every stage of an upload or copy gets words and, where bytes move, a moving bar (`foreignVideoCopyJobLabel`). An unmeasured stage shows an indeterminate bar, never a static 0%.
 
 ## Add-track menu checklist (song media hub)
 

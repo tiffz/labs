@@ -103,6 +103,12 @@ export interface EncoreAuthContextValue {
   retryAccessGate: () => void;
   /** True while an interactive Google token request is in flight (popup / consent UX). */
   googleSignInPending: boolean;
+  /**
+   * Why the last sign-in from INSIDE the app failed (popup closed, blocked, network). Shown next to
+   * the button that started it. `accessDenied` is for the gate before the app; setting it from
+   * inside replaces the whole shell and unmounts whatever the user was editing.
+   */
+  googleSignInError: string | null;
 }
 
 const EncoreAuthContext = createContext<EncoreAuthContextValue | null>(null);
@@ -230,6 +236,7 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
   const [accessDenied, setAccessDenied] = useState(false);
   const [accessDeniedMessage, setAccessDeniedMessage] = useState<string | null>(null);
   const [googleSignInPending, setGoogleSignInPending] = useState(false);
+  const [googleSignInError, setGoogleSignInError] = useState<string | null>(null);
   const [spotifyLinked, setSpotifyLinked] = useState(() => hasUsableSpotifyTokenBundle());
   const [spotifyConnectError, setSpotifyConnectError] = useState<string | null>(null);
   const [spotifyConnectLoopbackUrl, setSpotifyConnectLoopbackUrl] = useState<string | null>(null);
@@ -548,13 +555,28 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
    * failure: the user sees the error and clicks again when ready.
    */
   const signInWithGoogle = useCallback(async () => {
+    /*
+     * From inside the app, a failure is reported beside the button, never through `accessDenied`.
+     * That flag swaps the whole shell for the access screen, which unmounts open dialogs: closing
+     * the popup from the performance editor's sign-in button threw away the performance being
+     * typed, which is the loss the button was added to prevent.
+     */
+    // Mirrors `canUseMainShell` in App.tsx: inside the app, a failure must not tear it down.
+    const insideAppShell = Boolean(googleAccessToken) || googleGateBypassed || !getGoogleClientId();
+    const failFromInsideApp = (message: string): boolean => {
+      if (!insideAppShell) return false;
+      setGoogleSignInError(message);
+      return true;
+    };
     const clientId = getGoogleClientId();
     if (!clientId) {
+      if (failFromInsideApp('Google sign-in is not set up for this build.')) return;
       setAccessDeniedMessage('Missing VITE_GOOGLE_CLIENT_ID.');
       setAccessDenied(true);
       return;
     }
     if (googleSignInInFlightRef.current) return;
+    setGoogleSignInError(null);
     googleSignInInFlightRef.current = true;
     setGoogleSignInPending(true);
     setAccessDenied(false);
@@ -587,13 +609,14 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
       setGoogleSessionExpired(false);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
+      if (failFromInsideApp(msg)) return;
       setAccessDeniedMessage(msg);
       setAccessDenied(true);
     } finally {
       googleSignInInFlightRef.current = false;
       setGoogleSignInPending(false);
     }
-  }, [finalizeGoogleSession, googleEmail]);
+  }, [finalizeGoogleSession, googleEmail, googleAccessToken, googleGateBypassed]);
 
   const continueWithoutGoogle = useCallback(() => {
     writeGoogleGateBypassed(true);
@@ -652,6 +675,7 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
       accessDeniedMessage,
       retryAccessGate,
       googleSignInPending,
+      googleSignInError,
     }),
     [
       googleAuthReady,
@@ -674,6 +698,7 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
       accessDenied,
       accessDeniedMessage,
       retryAccessGate,
+      googleSignInError,
     ],
   );
 

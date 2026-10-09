@@ -200,6 +200,81 @@ export async function driveGetMediaArrayBuffer(accessToken: string, fileId: stri
   return res.arrayBuffer();
 }
 
+/**
+ * Binary `alt=media` read that reports bytes as they arrive.
+ *
+ * {@link driveGetMediaArrayBuffer} resolves only once the whole body is in memory, so a caller
+ * showing progress sits at 0% for the entire download — on a large video, about a minute of a bar
+ * that looks broken. `bytesTotal` is `null` when neither the response nor the caller knows the size;
+ * report that as indeterminate rather than inventing a denominator.
+ */
+export async function driveGetMediaBlob(
+  accessToken: string,
+  fileId: string,
+  opts?: {
+    /** Fallback total when the response has no `Content-Length` (e.g. Drive metadata `size`). */
+    expectedBytes?: number;
+    onProgress?: (progress: { bytesDone: number; bytesTotal: number | null }) => void;
+  },
+): Promise<Blob> {
+  const res = await driveFetch(
+    accessToken,
+    `${DRIVE_BASE}/files/${encodeURIComponent(fileId)}?alt=media&supportsAllDrives=true`,
+  );
+  if (!res.ok) {
+    const text = await res.text();
+    throw new DriveHttpError(formatDriveRequestFailure('GET', `files/…/alt=media`, res.status, text), res.status, text);
+  }
+  const contentType = res.headers.get('Content-Type') ?? '';
+  const headerLength = Number(res.headers.get('Content-Length'));
+  const bytesTotal =
+    Number.isFinite(headerLength) && headerLength > 0
+      ? headerLength
+      : opts?.expectedBytes && opts.expectedBytes > 0
+        ? opts.expectedBytes
+        : null;
+  const onProgress = opts?.onProgress;
+  if (!res.body || !onProgress) return res.blob();
+
+  const reader = res.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let bytesDone = 0;
+  onProgress({ bytesDone, bytesTotal });
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+    bytesDone += value.byteLength;
+    onProgress({ bytesDone, bytesTotal });
+  }
+  return new Blob(chunks as BlobPart[], contentType ? { type: contentType } : undefined);
+}
+
+/**
+ * Server-side `files.copy`: Drive duplicates the bytes itself, so nothing passes through the
+ * browser. The copy is owned by the caller and lands in `parents`.
+ */
+export async function driveCopyFile(
+  accessToken: string,
+  fileId: string,
+  opts: { name: string; parents: string[] },
+): Promise<{ id: string; name?: string; size?: string }> {
+  const res = await driveFetch(
+    accessToken,
+    `${DRIVE_BASE}/files/${encodeURIComponent(fileId)}/copy?supportsAllDrives=true&fields=id,name,size`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: opts.name, parents: opts.parents }),
+    },
+  );
+  const text = await res.text();
+  if (!res.ok) {
+    throw new DriveHttpError(formatDriveRequestFailure('POST', 'files/…/copy', res.status, text), res.status, text);
+  }
+  return JSON.parse(text) as { id: string; name?: string; size?: string };
+}
+
 export type DriveFileListRow = {
   id?: string;
   name?: string;

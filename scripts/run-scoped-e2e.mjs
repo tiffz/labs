@@ -15,6 +15,7 @@ const APP_SMOKE_SPECS = {
     'e2e/smoke/encore-account-menu.spec.ts',
     'e2e/smoke/encore-guest-share.spec.ts',
     'e2e/smoke/encore-performance-routes.spec.ts',
+    'e2e/smoke/encore-performance-signin.spec.ts',
     'e2e/smoke/encore-originals-bulk-play.spec.ts',
     'e2e/smoke/encore-originals-brainstorm-chip.spec.ts',
     'e2e/smoke/encore-library-interaction.spec.ts',

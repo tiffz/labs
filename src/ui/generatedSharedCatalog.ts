@@ -16049,7 +16049,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "Copy a Drive file you can READ into a folder you OWN, by downloading its bytes and re-uploading. The case this exists for: a friend sends a Drive link to a performance video. Linking straight to their file id looks like it works and then rots — it depends on their sharing settings, their retention, and their account continuing to exist. Taking a copy is what the user meant by \"upload\", so do that. Download-and-reupload rather than Drive's own `files/copy` because copy still writes into a quota-and-ownership context that depends on the source, and because the byte path is already hardened here: `driveUploadFileResumable` chunks, resumes after a network drop, and refuses to start while offline. Google-native documents (Docs/Sheets/Slides) have no downloadable bytes and are rejected rather than silently producing a broken file.",
+    "description": "Which leg of the copy is running. `server-copy` and `preparing` have no byte counts.",
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
@@ -16062,7 +16062,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "Copy a Drive file you can READ into a folder you OWN, by downloading its bytes and re-uploading. The case this exists for: a friend sends a Drive link to a performance video. Linking straight to their file id looks like it works and then rots — it depends on their sharing settings, their retention, and their account continuing to exist. Taking a copy is what the user meant by \"upload\", so do that. Download-and-reupload rather than Drive's own `files/copy` because copy still writes into a quota-and-ownership context that depends on the source, and because the byte path is already hardened here: `driveUploadFileResumable` chunks, resumes after a network drop, and refuses to start while offline. Google-native documents (Docs/Sheets/Slides) have no downloadable bytes and are rejected rather than silently producing a broken file.",
+    "description": "Which leg of the copy is running. `server-copy` and `preparing` have no byte counts.",
     "tags": [
       "api"
     ],
@@ -16077,7 +16077,22 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "model",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "Copy a Drive file you can READ into a folder you OWN, by downloading its bytes and re-uploading. The case this exists for: a friend sends a Drive link to a performance video. Linking straight to their file id looks like it works and then rots — it depends on their sharing settings, their retention, and their account continuing to exist. Taking a copy is what the user meant by \"upload\", so do that. Download-and-reupload rather than Drive's own `files/copy` because copy still writes into a quota-and-ownership context that depends on the source, and because the byte path is already hardened here: `driveUploadFileResumable` chunks, resumes after a network drop, and refuses to start while offline. Google-native documents (Docs/Sheets/Slides) have no downloadable bytes and are rejected rather than silently producing a broken file.",
+    "description": "Which leg of the copy is running. `server-copy` and `preparing` have no byte counts.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-copydrivefiletomydrive-ts-drivecopyprogress",
+    "name": "DriveCopyProgress",
+    "path": "src/shared/drive/copyDriveFileToMyDrive.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Which leg of the copy is running. `server-copy` and `preparing` have no byte counts.",
     "tags": [
       "api"
     ],
@@ -16092,7 +16107,22 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "model",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "Copy a Drive file you can READ into a folder you OWN, by downloading its bytes and re-uploading. The case this exists for: a friend sends a Drive link to a performance video. Linking straight to their file id looks like it works and then rots — it depends on their sharing settings, their retention, and their account continuing to exist. Taking a copy is what the user meant by \"upload\", so do that. Download-and-reupload rather than Drive's own `files/copy` because copy still writes into a quota-and-ownership context that depends on the source, and because the byte path is already hardened here: `driveUploadFileResumable` chunks, resumes after a network drop, and refuses to start while offline. Google-native documents (Docs/Sheets/Slides) have no downloadable bytes and are rejected rather than silently producing a broken file.",
+    "description": "Which leg of the copy is running. `server-copy` and `preparing` have no byte counts.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-copydrivefiletomydrive-ts-drivecopystage",
+    "name": "DriveCopyStage",
+    "path": "src/shared/drive/copyDriveFileToMyDrive.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Which leg of the copy is running. `server-copy` and `preparing` have no byte counts.",
     "tags": [
       "api"
     ],
@@ -16310,6 +16340,19 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-drive-drivefetch-ts-drivecopyfile",
+    "name": "driveCopyFile",
+    "path": "src/shared/drive/driveFetch.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Server-side `files.copy`: Drive duplicates the bytes itself, so nothing passes through the browser. The copy is owned by the caller and lands in `parents`.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-drive-drivefetch-ts-drivecreateanyonereaderpermission",
     "name": "driveCreateAnyoneReaderPermission",
     "path": "src/shared/drive/driveFetch.ts",
@@ -16464,6 +16507,19 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "stability": "stable",
     "owner": "shared-core",
     "description": "Binary `alt=media` read (audio/video/pdf bytes). Prefer over for non-text bodies.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-drivefetch-ts-drivegetmediablob",
+    "name": "driveGetMediaBlob",
+    "path": "src/shared/drive/driveFetch.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Binary `alt=media` read that reports bytes as they arrive. resolves only once the whole body is in memory, so a caller showing progress sits at 0% for the entire download — on a large video, about a minute of a bar that looks broken. `bytesTotal` is `null` when neither the response nor the caller knows the size; report that as indeterminate rather than inventing a denominator.",
     "tags": [],
     "appsUsing": [],
     "exportType": "function",

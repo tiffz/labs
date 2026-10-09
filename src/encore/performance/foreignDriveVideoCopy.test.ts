@@ -8,7 +8,11 @@ import {
   setForeignVideoCopyRequested,
   upsertForeignVideoSource,
   type ForeignVideoSource,
+  foreignVideoCopyBatchFraction,
+  foreignVideoCopyJobLabel,
 } from './foreignDriveVideoCopy';
+import type { DriveCopyProgress } from '../../shared/drive/copyDriveFileToMyDrive';
+import { formatBlockingJobItemProgressCaption } from '../../shared/jobs/labsBlockingJobItemProgress';
 import type { EncorePerformanceVideo } from '../types';
 
 function video(id: string, targetFileId?: string): EncorePerformanceVideo {
@@ -181,5 +185,49 @@ describe('a copied video stops offering to be copied', () => {
     ];
     const videos = [video('v1', 'my-own-copy'), video('v2', 'still-theirs')];
     expect(pruneStaleForeignVideoSources(sources, videos).map((s) => s.videoId)).toEqual(['v2']);
+  });
+});
+
+describe('foreignVideoCopyJobLabel', () => {
+  const one = { index: 0, count: 1 };
+  const stages: DriveCopyProgress[] = [
+    { stage: 'preparing', fraction: null },
+    { stage: 'server-copy', fraction: null },
+    { stage: 'download', fraction: 0.1, bytesDone: 120 * 1024 * 1024, bytesTotal: 800 * 1024 * 1024 },
+    { stage: 'upload', fraction: 0.8, bytesDone: 500 * 1024 * 1024, bytesTotal: 800 * 1024 * 1024 },
+  ];
+
+  it('says what is happening at every stage, with byte counts while bytes move', () => {
+    expect(stages.map((p) => foreignVideoCopyJobLabel(p, one))).toEqual([
+      'Finding the video in Drive…',
+      'Saving a copy to your Drive…',
+      'Downloading the shared video… 120 / 800 MB',
+      'Saving to your Drive… 500 / 800 MB',
+    ]);
+  });
+
+  it('never phrases bytes as "N of M", which the job snackbar captions as an item count', () => {
+    for (const position of [one, { index: 1, count: 3 }]) {
+      for (const progress of stages) {
+        const label = foreignVideoCopyJobLabel(progress, position);
+        expect(formatBlockingJobItemProgressCaption(label)).toBeNull();
+      }
+    }
+  });
+
+  it('shows bytes so far when the total is unknown', () => {
+    expect(
+      foreignVideoCopyJobLabel({ stage: 'download', fraction: null, bytesDone: 3 * 1024 * 1024, bytesTotal: null }, one),
+    ).toBe('Downloading the shared video… 3.0 MB');
+  });
+});
+
+describe('foreignVideoCopyBatchFraction', () => {
+  it('places each video in its slice of the bar', () => {
+    expect(foreignVideoCopyBatchFraction({ stage: 'upload', fraction: 0.5 }, { index: 1, count: 2 })).toBe(0.75);
+  });
+
+  it('keeps an unmeasurable stage indeterminate instead of reporting 0', () => {
+    expect(foreignVideoCopyBatchFraction({ stage: 'server-copy', fraction: null }, { index: 0, count: 1 })).toBeNull();
   });
 });
