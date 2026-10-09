@@ -110,6 +110,48 @@ if (fs.existsSync(BASELINE_PATH)) {
 const results = {};
 let warnings = 0;
 let failures = 0;
+/** Crashes, counted apart from floor breaches so the log never calls one the other. */
+let runErrors = 0;
+
+/** Lighthouse's own reason for a failed run, or the tail of its stderr. */
+function describeRunError(outFile, err) {
+  try {
+    const report = JSON.parse(fs.readFileSync(outFile, 'utf8'));
+    if (report.runtimeError?.code) return `${report.runtimeError.code}: ${report.runtimeError.message ?? ''}`.trim();
+  } catch {
+    // No report written — fall through to stderr.
+  }
+  const stderr = err?.stderr?.toString?.().trim() ?? '';
+  const tail = stderr.split('\n').filter(Boolean).slice(-3).join(' | ');
+  return tail || err?.message || 'unknown error';
+}
+
+/**
+ * Run Lighthouse once, and once more if it crashes. A crash is not a score: on 2026-10-07 and
+ * 10-08 the home route (the first one audited) crashed after ~33s while every other route ran,
+ * and the nightly went red as a "floor" failure. The stderr was discarded, so nobody could say
+ * why. A retry absorbs a one-off; a route that crashes twice still fails, with the reason printed.
+ * Returns null on success, or the reason string.
+ */
+function runLighthouseWithRetry(url, outFile, attempts = 2) {
+  let reason = null;
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    fs.rmSync(outFile, { force: true });
+    try {
+      execSync(
+        `npx --yes lighthouse "${url}" --only-categories=performance,accessibility,best-practices,seo --output=json --output-path="${outFile}" --chrome-flags="--headless=new" --quiet`,
+        { stdio: 'pipe' },
+      );
+      const report = JSON.parse(fs.readFileSync(outFile, 'utf8'));
+      if (!report.runtimeError) return null;
+      reason = describeRunError(outFile, null);
+    } catch (err) {
+      reason = describeRunError(outFile, err);
+    }
+    if (attempt < attempts) process.stdout.write(`(run error: ${reason}; retrying) … `);
+  }
+  return reason;
+}
 
 console.log(`\n# Lighthouse audit (${production ? 'production' : 'dev — perf advisory only'})\n`);
 
@@ -119,18 +161,15 @@ for (const route of routes) {
   fs.mkdirSync(path.dirname(outFile), { recursive: true });
 
   process.stdout.write(`${route} … `);
-  try {
-    execSync(
-      `npx --yes lighthouse "${url}" --only-categories=performance,accessibility,best-practices,seo --output=json --output-path="${outFile}" --chrome-flags="--headless=new" --quiet`,
-      { stdio: 'pipe' },
-    );
-  } catch {
+  const runError = runLighthouseWithRetry(url, outFile);
+  if (runError) {
     if (RUN_ERROR_ADVISORY.has(route)) {
-      console.log('ERROR (audit failed to run) — advisory for this route (WebGL)');
+      console.log(`ERROR (audit failed to run: ${runError}) — advisory for this route (WebGL)`);
       warnings++;
     } else {
-      console.log('ERROR (audit failed to run)');
-      failures++;
+      console.log(`ERROR (audit failed to run: ${runError})`);
+      console.error(`::error title=Lighthouse run error::${route} — ${runError}`);
+      runErrors++;
     }
     continue;
   }
@@ -214,9 +253,9 @@ if (updateBaseline || resetBaseline || (!fs.existsSync(BASELINE_PATH) && smokeAl
   console.log(`\nWrote baseline ${BASELINE_PATH}`);
 }
 
-console.log(`\n${warnings} advisory warning(s), ${failures} failure(s).`);
+console.log(`\n${warnings} advisory warning(s), ${failures} floor failure(s), ${runErrors} run error(s).`);
 cleanup();
 
-if (failOnMiss && failures > 0) {
+if (failOnMiss && failures + runErrors > 0) {
   process.exit(1);
 }
