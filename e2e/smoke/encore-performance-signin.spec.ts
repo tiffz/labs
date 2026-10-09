@@ -9,9 +9,12 @@ import { enterEncoreApp } from '../helpers/enterEncoreApp';
  * and losing everything typed. The notice now carries its own button.
  *
  * The second half pins the trap that button walked into: a failed sign-in from inside the app set
- * `accessDenied`, which swaps the whole shell for the access screen and unmounts the dialog. The
- * e2e build has no Google client id, so the click fails deterministically — exactly the case that
- * used to throw the draft away.
+ * `accessDenied`, which swaps the whole shell for the access screen and unmounts the dialog.
+ *
+ * Whether the click opens a popup depends on the build: CI sets the session BFF URL, so a real
+ * popup opens and would sit there forever; a build with no Google config fails without one. Closing
+ * every popup as it opens makes both builds take the same path — the user closing the window —
+ * which is exactly the case that used to throw the draft away.
  */
 test.describe('Encore performance editor sign-in', () => {
   test('sign in from the video link notice keeps the dialog and the draft', async ({ page }) => {
@@ -37,9 +40,10 @@ test.describe('Encore performance editor sign-in', () => {
       .fill('https://drive.google.com/file/d/1AbCdEfGhIjKlMnOpQrStUvWxYz012345/view');
 
     await expect(editor.getByText('Sign in to read this Drive link.')).toBeVisible({ timeout: 5_000 });
+    page.context().on('page', (popup) => void popup.close());
     await editor.getByRole('button', { name: 'Sign in with Google' }).click();
 
-    await expect(editor.getByText(/Sign-in did not finish/)).toBeVisible({ timeout: 5_000 });
+    await expect(editor.getByText(/Sign-in did not finish/)).toBeVisible({ timeout: 15_000 });
     await expect(editor).toBeVisible();
     await expect(notes).toHaveValue('Work in progress that must survive sign-in');
   });
