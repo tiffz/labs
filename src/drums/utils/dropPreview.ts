@@ -18,6 +18,8 @@
  */
 
 import { getPatternDuration, replacePatternAtPosition } from './dragAndDrop';
+import { visualToLogicalTick } from '../../shared/rhythm/measureLayout';
+import { measureLayoutOf } from '../../shared/rhythm/rhythmParser';
 import { calculateReplacementHighlights, calculateNoteHighlightBounds } from './previewRenderer';
 import { findDropTarget } from './dropTargetFinder';
 import { calculateInsertionLineFromGap } from './insertionTargetFinder';
@@ -304,10 +306,11 @@ export function computeDropPreview(
     const dropPosition = dropTarget.exactCharPosition;
     const patternDuration = getPatternDuration(pattern);
 
-    // Validate the replacement
+    // Validate the replacement where the drop will apply it. `dropPosition` is a drawn-score
+    // tick; the string edit works on played ticks, exactly as App's drop handler converts it.
     const replacementResult = replacePatternAtPosition(
       notation,
-      dropPosition,
+      visualToLogicalTick(measureLayoutOf(parsedRhythm), dropPosition),
       pattern,
       patternDuration,
       timeSignature,

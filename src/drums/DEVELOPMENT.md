@@ -78,9 +78,27 @@ Notation helpers: `notationUtils.ts`, text alphabet in [`README.md`](README.md).
 - **Visual Coordinate System (Compressed)**: Used by VexFlow to render repeats. Simile repeats (`%`) and Section repeats (`|: :|x3`) are rendered as single blocks.
 - **Logical Coordinate System (Expanded)**: Used by the Sequencer and Drag-Drop logic. All repeats are fully unrolled into a flat timeline of measures.
 
-**Implementation**:
+**Implementation**: one module owns both timelines —
+[`src/shared/rhythm/measureLayout.ts`](../shared/rhythm/measureLayout.ts). `measureLayoutOf(parsed)`
+gives every expanded measure its source measure, whether the score hides it, its repeat pass, and
+its start tick on both timelines. The renderer's note positions, the editing callbacks, the drop
+preview, `measureSourceMapping`, and the player's play order all read it.
 
-- `findMeasureIndexFromVisualTick`: Converts a "Visual Tick" (e.g., clicking on the 3rd repeat of a section) into the correct "Logical Index" (e.g., Measure 18) by iterating through the Repeat Map.
+**Do not re-derive any of that locally.** Seven call sites once did, and they disagreed: the parser
+mapped a second section onto the first (one note highlighted in both sections, edits landing in the
+wrong one), the tick lookups padded every measure to 16 sixteenths (every edit past measure 1 in
+2/4 or 6/8 resolved one measure early), and the player re-expanded repeats the parser had already
+expanded (`x2` played three times).
+
+Rules that follow from the two timelines:
+
+- The renderer reports **visual** ticks. Convert with `visualToLogicalTick` /
+  `findMeasureIndexFromVisualTick` before calling anything that takes a logical tick
+  (`mapLogicalToStringIndex`, `replacePatternAtPosition`, `findMeasureIndexAtTick`).
+- A range end is exclusive. Resolve it with `edge: 'end'`, or a selection ending on a barline
+  resolves to the next measure — after a section, a hidden copy that points back at the section's
+  first measure.
+- `rhythm.measures` is already the play order. Never expand repeats again downstream.
 
 ### Repeat Handling Strategy
 

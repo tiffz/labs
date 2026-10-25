@@ -131,7 +131,6 @@ const App: React.FC = () => {
     addToHistory,
     setNotationWithoutHistory,
     noteDisplayRef: noteDisplayRef as React.RefObject<HTMLElement>,
-    measureSourceMapping: parsedRhythm.measureSourceMapping,
     parsedRhythm,
     // Declared above the playback hook because `isPlaying` does not exist yet here; mirrored below.
     isPlayingRef,
@@ -238,7 +237,6 @@ const App: React.FC = () => {
       expandedParsed = parseRhythm(expandedNotation, timeSignature);
     }
 
-    const activeCleanNotation = expandedNotation.replace(/[\s\n]/g, '');
     const patternDuration = getPatternDuration(pattern);
 
     addToHistory(notation);
@@ -268,8 +266,10 @@ const App: React.FC = () => {
       // If replacement failed, do nothing (the preview already validated this)
     } else {
       // Insert mode: insert pattern between notes at the drop position
+      // Pass the notation the parse describes: string positions in `expandedParsed` count its
+      // whitespace, so a stripped copy put the insert several characters early.
       const newNotation = insertPatternAtPosition(
-        activeCleanNotation,
+        expandedNotation,
         targetCharPosition,
         pattern,
         expandedParsed,

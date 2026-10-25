@@ -137,21 +137,11 @@ ${MB}`;
             console.log('Nested Repeat Length:', rhythm.measures.length);
             expect(rhythm.measures.length).toBe(4);
 
-            // Mapping:
-            // M0: Source.
-            // M1: Repeat of M0 (from inner |x2). Source=0.
-            // M2: Repeat of M0 (from outer loop first repeat). Source=0.
-            // M3: Repeat of M1 (from outer loop first repeat). Source=1 -> 0.
-            // Wait, mapping is purely index based.
-            // M1 maps to 0.
-            // M3 (copy of M1) maps to M1's source (0). Use deep mapping logic if implemented, otherwise 1.
-            // Current parser implementation maps to InputMapping (Single Level).
-            // M0->0, M1->0.
-            // Outer loop copies M0->0, M1->0 -> M2->0, M3->1.
-
+            // M1 repeats M0 (inner |x2); M2, M3 are the outer copy of M0, M1.
+            // Mapping follows nested repeats to the measure whose notes play, so M3 → M1 → M0.
             expect(rhythm.measureSourceMapping?.[1]).toBe(0);
             expect(rhythm.measureSourceMapping?.[2]).toBe(0);
-            expect(rhythm.measureSourceMapping?.[3]).toBe(1);
+            expect(rhythm.measureSourceMapping?.[3]).toBe(0);
         });
     });
 
@@ -255,15 +245,17 @@ ${M2} :| x2`;
             expect(rhythm.measures.length).toBe(6);
 
             // Check Mapping
-            // Block is indices 0, 1, 2. (M1, M1, M2).
-            // Input Mapping: 0->0, 1->0, 2->2.
-            // Repeat 1 (Indices 3,4,5): Copies 0,1,2 -> 0,0,2.
-            // Repeat 2 (Indices 6,7,8): Copies 0,1,2 -> 0,0,2.
-
+            // Block is indices 0, 1, 2 (M1, M1, M2); the x2 copy is 3, 4, 5.
+            // Measure 4 copies measure 1, which repeats measure 0, so its source is 0.
+            // There is no measure 6+: x2 is two plays in total. This test used to expect a
+            // mapping for measure 8, which is how a second section's measures got mapped onto
+            // the first section's and edits landed in both.
             expect(rhythm.measureSourceMapping?.[1]).toBe(0);
             expect(rhythm.measureSourceMapping?.[3]).toBe(0);
+            expect(rhythm.measureSourceMapping?.[4]).toBe(0);
             expect(rhythm.measureSourceMapping?.[5]).toBe(2);
-            expect(rhythm.measureSourceMapping?.[8]).toBe(2);
+            expect(rhythm.measureSourceMapping?.[6]).toBeUndefined();
+            expect(rhythm.measureSourceMapping?.[8]).toBeUndefined();
         });
     });
 
