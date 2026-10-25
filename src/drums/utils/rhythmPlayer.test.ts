@@ -602,4 +602,26 @@ describe('rhythmPlayer timing accuracy', () => {
       }
     });
   });
+
+  describe('section repeats', () => {
+    it('plays an x2 section twice, not three times', async () => {
+      // The parser writes repeats out in full; the player expanded them again on top, so each x2
+      // section played three times and the highlight vanished on the third pass (hidden measure).
+      const parsedRhythm = parseRhythm(
+        '|: DKTKD-TK| D-TKTKTK:|x2 |: DKTKD-TK| TKD-TKTK:|x2',
+        { numerator: 2, denominator: 4 },
+      );
+      const events: Array<{ m: number; r?: number }> = [];
+      // 240 BPM: one sixteenth = 62.5ms; one pass of 8 measures × 8 sixteenths = 4s.
+      await rhythmPlayer.play(parsedRhythm, 240, (m, _n, r) => { events.push({ m, r }); });
+      pumpFrames(3900);
+
+      const runs: string[] = [];
+      for (const { m, r } of events) {
+        const key = `${m}@${r}`;
+        if (runs[runs.length - 1] !== key) runs.push(key);
+      }
+      expect(runs.slice(0, 8)).toEqual(['0@1', '1@1', '0@2', '1@2', '4@1', '5@1', '4@2', '5@2']);
+    });
+  });
 });

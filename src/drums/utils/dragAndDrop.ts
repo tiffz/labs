@@ -68,19 +68,23 @@ export function getPatternDuration(pattern: string): number {
  * @param logicalPos - Logical tick position
  * @param parsedRhythm - Parsed rhythm containing measureMapping (REQUIRED)
  * @param timeSignature - Time signature
+ * @param edge - `'end'` resolves an exclusive range end to the measure before a barline
  */
 export function mapLogicalToStringIndex(
   notation: string,
   logicalPos: number,
   parsedRhythm: ParsedRhythm,
-  timeSignature: TimeSignature = { numerator: 4, denominator: 4 }
+  timeSignature: TimeSignature = { numerator: 4, denominator: 4 },
+  edge: 'start' | 'end' = 'start'
 ): { index: number; logicalReached: number } {
   const sixteenthsPerMeasure = getSixteenthsPerMeasure(timeSignature);
 
-  // FIX Phase 38: Use Systemic Coordinate Resolution
-  // Must use findMeasureIndexAtTick to resolve correct Logical Measure Index
-  // accounting for overfull/underfull measures in VexFlow timeline.
-  const lookup = findMeasureIndexAtTick(parsedRhythm, logicalPos);
+  // An exclusive end on a barline belongs to the measure before it. Resolving it as a start
+  // lands on the next measure — after a section, a hidden copy whose string position points back
+  // at the section's first measure, so a delete spliced backwards and duplicated it.
+  const lookup = edge === 'end' && logicalPos > 0
+    ? findMeasureIndexAtTick(parsedRhythm, logicalPos - 1)
+    : findMeasureIndexAtTick(parsedRhythm, logicalPos);
   const measureIdx = lookup.index;
   const offset = logicalPos - lookup.measureStartTick;
 

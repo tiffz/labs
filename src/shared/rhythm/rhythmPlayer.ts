@@ -1,4 +1,5 @@
 import type { ParsedRhythm, PlaybackSettings, DrumSound, TimeSignature } from './types';
+import { measureLayoutOf } from './rhythmParser';
 import { audioPlayer } from './drumAudioPlayer';
 import {
   getDefaultBeatGrouping,
@@ -74,50 +75,22 @@ interface ScheduledMetronomeEvent {
   subdivDurationSec: number;
 }
 
+/**
+ * The measures in play order.
+ *
+ * The parser has already written every repeat out, so `rhythm.measures` IS the play order. This
+ * used to re-expand section repeats on top of that, which played an `x2` section three times.
+ *
+ * Hidden section copies report the measure the score draws for them as `originalIndex`, because
+ * that is the one to highlight.
+ */
 function unrollMeasures(rhythm: ParsedRhythm) {
-  const result: Array<{
-    measure: (typeof rhythm.measures)[0];
-    originalIndex: number;
-    repeatIteration?: number;
-    repeatCount?: number;
-  }> = [];
-
-  let i = 0;
-  while (i < rhythm.measures.length) {
-    result.push({ measure: rhythm.measures[i], originalIndex: i });
-
-    const sectionRepeat = rhythm.repeats?.find(r =>
-      r.type === 'section' && r.endMeasure === i
-    ) as ({ type: 'section'; startMeasure: number; endMeasure: number; repeatCount: number } | undefined);
-
-    if (sectionRepeat && sectionRepeat.repeatCount > 1) {
-      for (let j = result.length - 1; j >= 0; j--) {
-        const m = result[j];
-        if (m.originalIndex >= sectionRepeat.startMeasure && m.originalIndex <= sectionRepeat.endMeasure) {
-          m.repeatIteration = 1;
-          m.repeatCount = sectionRepeat.repeatCount;
-        } else if (m.originalIndex < sectionRepeat.startMeasure && m.repeatIteration === undefined) {
-          break;
-        }
-      }
-
-      for (let r = 2; r <= sectionRepeat.repeatCount; r++) {
-        for (let k = sectionRepeat.startMeasure; k <= sectionRepeat.endMeasure; k++) {
-          if (k >= 0 && k < rhythm.measures.length) {
-            result.push({
-              measure: rhythm.measures[k],
-              originalIndex: k,
-              repeatIteration: r,
-              repeatCount: sectionRepeat.repeatCount,
-            });
-          }
-        }
-      }
-    }
-    i++;
-  }
-
-  return result;
+  return measureLayoutOf(rhythm).map((slot) => ({
+    measure: rhythm.measures[slot.index],
+    originalIndex: slot.drawnIndex,
+    repeatIteration: slot.repeatIteration,
+    repeatCount: slot.repeatCount,
+  }));
 }
 
 /**
@@ -385,7 +358,8 @@ class RhythmPlayer {
         ? gridSubdivDurationSec(bpm, rhythm.timeSignature, subdivisionLevel)
         : secPerSixteenth;
 
-    rhythm.measures.forEach((measure, measureIndex) => {
+    // Hidden section copies click under their written measure, which is the one the score draws.
+    unrollMeasures(rhythm).forEach(({ measure, originalIndex: measureIndex }) => {
       const sixteenthsPerMeasure = getSixteenthsPerMeasure(rhythm.timeSignature);
       const metBeatGrouping = getBeatGroupingInSixteenths(
         getDefaultBeatGrouping(rhythm.timeSignature),

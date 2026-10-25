@@ -1,5 +1,6 @@
 import React, { useEffect, useLayoutEffect, useRef, useState, useCallback } from 'react';
-import { sectionRepeatGhostMeasureCount } from '../../shared/rhythm/sectionRepeatSpan';
+import { hiddenMeasureIndices as hiddenMeasureIndicesOf } from '../../shared/rhythm/measureLayout';
+import { measureLayoutOf } from '../../shared/rhythm/rhythmParser';
 import { Renderer, Stave, StaveNote, Voice, Formatter, Beam, Dot, BarlineType } from 'vexflow';
 import type { ParsedRhythm, Note, DrumSound, TimeSignature, RepeatMarker, SectionRepeat } from '../types';
 import { drawDrumSymbol } from '../assets/drumSymbols';
@@ -570,24 +571,11 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
         return Math.max(minWidth, Math.min(maxWidth, calculatedWidth));
       };
 
-      // Calculate which measures should be hidden (unrolled section repeats)
-      // Visual rendering should only show the first iteration of a section repeat
-      const hiddenMeasureIndices = new Set<number>();
-      if (rhythm.repeats) {
-        rhythm.repeats.forEach(repeat => {
-          // Hide the expansion ghosts, and only those. `repeatCount` is TOTAL PLAYS, so a block
-          // played n times generates n-1 copies — the old `blockLength * repeatCount` counted the
-          // written block as a ghost too and hid that many measures of the FOLLOWING section.
-          if (repeat.type === 'section' && repeat.repeatCount > 0) {
-            const measuresToHide = sectionRepeatGhostMeasureCount(repeat);
-            const startHiddenIndex = repeat.endMeasure + 1;
-
-            for (let i = 0; i < measuresToHide; i++) {
-              hiddenMeasureIndices.add(startHiddenIndex + i);
-            }
-          }
-        });
-      }
+      // The score draws each section repeat once; its expansions play but are not drawn.
+      // Positions on the drawn score come from the same layout the editing callbacks resolve
+      // against, so a click and the edit it triggers cannot disagree about where a measure is.
+      const measureLayout = measureLayoutOf(rhythm);
+      const hiddenMeasureIndices = hiddenMeasureIndicesOf(measureLayout);
 
       const measureWidths = rhythm.measures.map((m, i) => calculateMeasureWidth(m, i));
       const exportLineBudget = exportLayoutWidth - DRUMS_SCORE_EXPORT_LAYOUT.containerPadding;
@@ -1146,11 +1134,6 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
       if (notation && timeSignature && !exportMode) {
         notePositionsRef.current = [];
 
-        let globalCharPosition = 0;
-        const measureStartCharPositions: Record<number, number> = {};
-        // Use pre-calculated map from parser, or empty if missing
-        const measureSourceMapping = rhythm.measureSourceMapping || {};
-
         const tempPositions: Array<{
           measureIndex: number;
           noteIndex: number;
@@ -1167,44 +1150,9 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
         }> = [];
 
         rhythm.measures.forEach((_measure, measureIndex) => {
-          // Record start of CURRENT measure
-          // If this measure is a literal part of the source string (not a ghost/expanded repeat),
-          // we use the current accumulated position.
-          // If it is a ghost/repeat, we map it to its source's position visually,
-          // but we DO NOT advance the global 'compressed' position pointer.
-
-          let effectiveStart = globalCharPosition;
-
-          // Check if this measure is a repeated instance (ghost)
-          const isRepeatInstance = measureSourceMapping[measureIndex] !== undefined && measureSourceMapping[measureIndex] !== measureIndex;
-
-          if (isRepeatInstance) {
-            // It's a ghost. Map to source.
-            const sourceIdx = measureSourceMapping[measureIndex];
-            if (measureStartCharPositions[sourceIdx] !== undefined) {
-              effectiveStart = measureStartCharPositions[sourceIdx];
-            }
-            // Do NOT update globalCharPosition for this measure's duration, 
-            // because it doesn't exist in the compressed string.
-          } else {
-            // It is a real source measure.
-            measureStartCharPositions[measureIndex] = globalCharPosition;
-            // We WILL update globalCharPosition after processing.
-          }
-
-          // If hidden, just skip visual targets
-          if (hiddenMeasureIndices.has(measureIndex)) {
-            // If it's a source measure that's hidden (unlikely given logic, but possible with section parsing),
-            // we still need to advance global time if it's source.
-            // But usually hidden measures are unrolled repeats (ghosts).
-            // Let's assume hidden measures are handled like ghosts if they are repeats.
-            // If NOT a repeat instance, we must advance.
-            if (!isRepeatInstance) {
-              const measureDuration = _measure.notes.reduce((sum, n) => sum + (n.durationInSixteenths || 0), 0);
-              globalCharPosition += measureDuration;
-            }
-            return;
-          }
+          // `charPosition` is a tick on the drawn score. Hidden section copies have none.
+          const effectiveStart = measureLayout[measureIndex]?.visualStartTick;
+          if (effectiveStart === null || effectiveStart === undefined) return;
 
           const measureRefs = allStaveNoteRefsRef.current
             .filter(ref => ref.measureIndex === measureIndex)
@@ -1262,21 +1210,6 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
             localOffset += durationInSixteenths;
           });
 
-          // Fix for Drop Mismatch (Phase 15/18):
-          // VexFlowRenderer calculates "charPosition" (logical ticks) by summing note durations.
-          // We must force alignment to the full measure duration defined by TimeSignature.
-          // This must apply to ALL measures (including Repeats/Ghosts) so globalCharPosition
-          // tracks strict Logical Time, ensuring selection targets correct tick.
-          const sixteenthsPerMeasure = getSixteenthsPerMeasure(rhythm.timeSignature);
-
-          // However, we should check if we should effectively wrap or pad
-          // Usually, standard measures imply full duration padding.
-          const effectiveDuration = Math.max(
-            _measure.notes.reduce((sum, n) => sum + (n.durationInSixteenths || 0), 0),
-            sixteenthsPerMeasure
-          );
-
-          globalCharPosition += effectiveDuration;
         });
 
         for (let i = 0; i < tempPositions.length; i++) {
@@ -1311,17 +1244,8 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
         // Each simile is treated as a single "note" covering the full measure duration.
         // The charPosition is the visual tick position of the ghost measure (not the source).
         for (const similePos of simileMeasurePositions) {
-          // Compute the visual tick position for this ghost measure.
-          // Walk through measures up to this index, summing durations of visible measures.
-          let visualTick = 0;
-          for (let m = 0; m < similePos.measureIndex; m++) {
-            if (!hiddenMeasureIndices.has(m)) {
-              const dur = rhythm.measures[m]?.notes.reduce(
-                (sum, n) => sum + (n.durationInSixteenths || 0), 0
-              ) || similePos.durationInSixteenths;
-              visualTick += Math.max(dur, similePos.durationInSixteenths);
-            }
-          }
+          const visualTick = measureLayout[similePos.measureIndex]?.visualStartTick;
+          if (visualTick === null || visualTick === undefined) continue;
 
           notePositionsRef.current.push({
             measureIndex: similePos.measureIndex,
