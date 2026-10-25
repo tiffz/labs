@@ -12,9 +12,13 @@ import { enterEncoreApp } from '../helpers/enterEncoreApp';
  * `accessDenied`, which swaps the whole shell for the access screen and unmounts the dialog.
  *
  * Whether the click opens a popup depends on the build: CI sets the session BFF URL, so a real
- * popup opens and would sit there forever; a build with no Google config fails without one. Closing
- * every popup as it opens makes both builds take the same path — the user closing the window —
- * which is exactly the case that used to throw the draft away.
+ * popup opens; a build with no Google config fails without one. The BFF start call is stubbed to
+ * fail, so both builds take the same path: a sign-in that does not finish.
+ *
+ * The test used to reach the live BFF and close the popup, relying on the app noticing. The app
+ * does not watch the popup (it waits out a 3-minute timeout), so the test only passed while the
+ * live start call happened to fail fast. Once the BFF answered, the test hung on "Signing in…".
+ * A smoke must not depend on a production service.
  */
 test.describe('Encore performance editor sign-in', () => {
   test('sign in from the video link notice keeps the dialog and the draft', async ({ page }) => {
@@ -40,6 +44,9 @@ test.describe('Encore performance editor sign-in', () => {
       .fill('https://drive.google.com/file/d/1AbCdEfGhIjKlMnOpQrStUvWxYz012345/view');
 
     await expect(editor.getByText('Sign in to read this Drive link.')).toBeVisible({ timeout: 5_000 });
+    await page.route('**/v1/oauth/google/start**', (route) =>
+      route.fulfill({ status: 503, contentType: 'application/json', body: '{"error":"Stubbed sign-in failure"}' }),
+    );
     page.context().on('page', (popup) => void popup.close());
     await editor.getByRole('button', { name: 'Sign in with Google' }).click();
 
