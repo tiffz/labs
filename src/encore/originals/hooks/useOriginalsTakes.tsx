@@ -19,7 +19,7 @@ import {
   originalTakeBlobKey,
   saveOriginalTakeBlob,
 } from '../originalTakeLocalAudio';
-import { ORIGINALS_DEMO_TAKE_AUDIO_ACCEPT } from '../originalsSongFileSlots';
+import { ORIGINALS_DEMO_TAKE_ACCEPT } from '../originalsSongFileSlots';
 import { preferredOriginalTake, type EncoreOriginalSong, type OriginalAudioTake } from '../types';
 
 /**
@@ -434,7 +434,7 @@ export function useOriginalsTakes({
         <input
           ref={replaceInputRef}
           type="file"
-          accept={ORIGINALS_DEMO_TAKE_AUDIO_ACCEPT}
+          accept={ORIGINALS_DEMO_TAKE_ACCEPT}
           hidden
           onChange={(e) => {
             const file = e.target.files?.[0];
@@ -448,7 +448,7 @@ export function useOriginalsTakes({
         <input
           ref={takeFileInputRef}
           type="file"
-          accept={ORIGINALS_DEMO_TAKE_AUDIO_ACCEPT}
+          accept={ORIGINALS_DEMO_TAKE_ACCEPT}
           hidden
           multiple
           onChange={(e) => {

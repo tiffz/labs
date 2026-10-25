@@ -5,7 +5,7 @@ import LinearProgress from '@mui/material/LinearProgress';
 import Typography from '@mui/material/Typography';
 import { useCallback, useState, type DragEvent as ReactDragEvent, type ReactElement } from 'react';
 import { encoreHairline, encoreSoftPinkWash } from '../../theme/encoreUiTokens';
-import { originalsFileDragRelevant } from '../originalsSongFileDrag';
+import { isOriginalsTakeMediaFile, originalsFileDragRelevant } from '../originalsSongFileDrag';
 import { useOriginalsTakes } from '../hooks/useOriginalsTakes';
 import { OriginalsTakeRow } from './OriginalsTakeRow';
 import type { EncoreOriginalSong } from '../types';
@@ -16,11 +16,9 @@ export type OriginalsTakesWorkspaceProps = {
   readOnly?: boolean;
 };
 
-function audioFilesFromDrop(dataTransfer: DataTransfer | null): File[] {
+function takeFilesFromDrop(dataTransfer: DataTransfer | null): File[] {
   if (!dataTransfer) return [];
-  return Array.from(dataTransfer.files).filter(
-    (f) => f.type.startsWith('audio/') || /\.(mp3|m4a|wav|webm|aac|ogg|flac)$/i.test(f.name),
-  );
+  return Array.from(dataTransfer.files).filter(isOriginalsTakeMediaFile);
 }
 
 /**
@@ -44,7 +42,7 @@ export function OriginalsTakesWorkspace({
       e.preventDefault();
       setDragOver(false);
       if (readOnly) return;
-      const files = audioFilesFromDrop(e.dataTransfer);
+      const files = takeFilesFromDrop(e.dataTransfer);
       if (files.length > 0) void takes.addFiles(files);
     },
     [readOnly, takes],
@@ -104,7 +102,7 @@ export function OriginalsTakesWorkspace({
 
       {count === 0 ? (
         <Typography variant="body2" sx={{ color: 'text.secondary', py: 1 }}>
-          {readOnly ? 'None yet.' : 'None yet. Drop an audio file here or add one below.'}
+          {readOnly ? 'None yet.' : 'None yet. Drop an audio or video file here, or add one below.'}
         </Typography>
       ) : (
         <Box

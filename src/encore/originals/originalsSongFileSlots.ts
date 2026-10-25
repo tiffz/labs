@@ -23,7 +23,13 @@ export const ORIGINALS_SONG_FILE_SLOT_META: Record<
   },
 };
 
-export const ORIGINALS_DEMO_TAKE_AUDIO_ACCEPT = 'audio/*,.mp3,.m4a,.wav,.webm';
+/**
+ * Takes are audio OR video: a phone recording of a demo is a `.mov`, and playback already routes
+ * `video/*` takes to the floating video player. `isOriginalsTakeMediaFile` is the drop-side twin;
+ * keep the two in step.
+ */
+export const ORIGINALS_DEMO_TAKE_ACCEPT =
+  'audio/*,video/*,.mp3,.m4a,.wav,.aac,.ogg,.flac,.webm,.mp4,.mov,.m4v';
 
 export const ORIGINALS_REFERENCE_FILE_ACCEPT =
   'audio/*,image/*,.pdf,.txt,.md,.doc,.docx,.pro,.chordpro,application/pdf,text/*';
