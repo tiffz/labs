@@ -123,3 +123,32 @@ describe('useOriginalsChartLayout', () => {
     vi.useRealTimers();
   });
 });
+
+describe('painting chords onto a line with no words (instrumentals)', () => {
+  it('appends the armed chord to a chord-only line instead of replacing the line', () => {
+    // Every chord on a chord-only line sits at column 0, so the old upsert replaced the whole
+    // line with the new chord: stamping G onto `[Am][F]` left just `[G]`.
+    const onChange = vi.fn();
+    const { result } = renderHook(() => useOriginalsChartLayout('[Solo]\n[Am][F]', onChange, 'C'));
+    const section = result.current.layout.sections[0]!;
+    const line = section.lines[0]!;
+
+    act(() => result.current.setArmedChord('C'));
+    act(() => result.current.onStamp(section.sectionId, line.lineId, 0));
+    act(() => result.current.onStamp(section.sectionId, line.lineId, 0));
+
+    expect(result.current.layout.sections[0]!.lines[0]!.chords.map((c) => c.chordName)).toEqual(['Am', 'F', 'C', 'C']);
+  });
+
+  it('starts a chord line on an empty line', () => {
+    const onChange = vi.fn();
+    const { result } = renderHook(() => useOriginalsChartLayout('[Intro]\n\n[Verse]\nWords', onChange, 'C'));
+    const intro = result.current.layout.sections[0]!;
+    const blank = intro.lines[0]!;
+
+    act(() => result.current.setArmedChord('Am'));
+    act(() => result.current.onStamp(intro.sectionId, blank.lineId, 0));
+
+    expect(serializeChartLayoutToChordPro(result.current.layout)).toContain('[Intro]\n[Am]');
+  });
+});
