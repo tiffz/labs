@@ -226,3 +226,98 @@ test.describe('Darbuka Rhythm Trainer - User Interactions', () => {
       .toBe('|: DKTKD-TK| D-TKTKTK:|x2 |: DKTKD-TK| TKD-TKTS:|x2');
   });
 });
+
+/*
+ * Complex editing, driven through the score the way a person edits. The editing core is fuzzed in
+ * `notationEdits.fuzz.test.ts`; these cover the wiring around it that a unit test cannot see —
+ * keyboard handling, the clipboard, undo/redo history, and the toolbar.
+ */
+test.describe('Darbuka editing journeys', () => {
+  const rhythmParam = (page: import('@playwright/test').Page) =>
+    new URL(page.url()).searchParams.get('rhythm');
+
+  const open = async (page: import('@playwright/test').Page, rhythm: string, time: string, notes: number) => {
+    await page.goto(`/drums/?rhythm=${encodeURIComponent(rhythm)}&bpm=75&time=${encodeURIComponent(time)}`);
+    const staveNotes = page.locator('.vexflow-container .vf-stavenote');
+    await expect(staveNotes).toHaveCount(notes, { timeout: 20000 });
+    return staveNotes;
+  };
+
+  /** Click a note's head. A stave note's box runs well below the head, which sits ~92px down. */
+  const clickNote = async (notes: import('@playwright/test').Locator, index: number, shift = false) => {
+    const box = await notes.nth(index).boundingBox();
+    expect(box).not.toBeNull();
+    const page = notes.page();
+    // `mouse.click` takes no modifiers option, so hold Shift on the keyboard.
+    if (shift) await page.keyboard.down('Shift');
+    await page.mouse.click(box!.x + box!.width / 2, box!.y + 92);
+    if (shift) await page.keyboard.up('Shift');
+  };
+
+  const TWO_SECTIONS = '|: DKTKD-TK| D-TKTKTK:|x2 |: DKTKD-TK| TKD-TKTK:|x2';
+
+  test('arrow to a note in the last measure, delete it, undo, redo', async ({ page }) => {
+    const notes = await open(page, TWO_SECTIONS, '2/4', 28);
+    await clickNote(notes, 21); // T, first note of the last measure
+    await page.keyboard.press('ArrowRight'); // → K
+    await page.keyboard.press('Delete');
+    await expect.poll(() => rhythmParam(page)).toBe('|: DKTKD-TK| D-TKTKTK:|x2 |: DKTKD-TK| TD-TKTK:|x2');
+
+    await page.keyboard.press('ControlOrMeta+z');
+    await expect.poll(() => rhythmParam(page)).toBe(TWO_SECTIONS);
+
+    await page.getByRole('button', { name: 'Redo' }).click();
+    await expect.poll(() => rhythmParam(page)).toBe('|: DKTKD-TK| D-TKTKTK:|x2 |: DKTKD-TK| TD-TKTK:|x2');
+  });
+
+  test('copy a held note across sections and paste it over another', async ({ page, context }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    const notes = await open(page, TWO_SECTIONS, '2/4', 28);
+    await clickNote(notes, 7); // D-, first note of measure 2
+    await page.keyboard.press('ControlOrMeta+c');
+    await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe('D-');
+
+    // Select the last two sixteenths of the final measure and paste the eighth over them.
+    await clickNote(notes, 26);
+    await clickNote(notes, 27, true);
+    await page.keyboard.press('ControlOrMeta+v');
+    await expect.poll(() => rhythmParam(page)).toBe('|: DKTKD-TK| D-TKTKTK:|x2 |: DKTKD-TK| TKD-TKD-:|x2');
+  });
+
+  test('dropping on a % measure writes out that measure only', async ({ page }) => {
+    // Three measures: a written one, a `%` copy of it, and a `%` copy of the copy.
+    await open(page, 'DKTKD-TK|%|%', '2/4', 7);
+    const simile = page.locator('.vexflow-container .vf-simile').first();
+    await expect(simile).toBeVisible();
+
+    await page.evaluate(() => {
+      const target = document.querySelector('.vexflow-container .vf-simile')!.getBoundingClientRect();
+      const point = { clientX: target.left + target.width / 2, clientY: target.top + target.height / 2 };
+      const source = document.querySelector('[aria-label="Slap sixteenth"]')!;
+      const container = document.querySelector('.vexflow-container')!;
+      const dataTransfer = new DataTransfer();
+      source.dispatchEvent(new DragEvent('dragstart', { bubbles: true, dataTransfer }));
+      container.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer, ...point }));
+      container.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer, ...point }));
+      source.dispatchEvent(new DragEvent('dragend', { bubbles: true, dataTransfer }));
+    });
+
+    // Measure 2 is written out and edited; measure 3 still plays measure 1, so it is written out
+    // as the original rather than following the edit.
+    await expect.poll(() => {
+      const r = rhythmParam(page) ?? '';
+      return { written: !r.includes('%'), measures: r.split('|').map((m) => m.trim()).filter(Boolean).length };
+    }).toEqual({ written: true, measures: 3 });
+    const measures = (rhythmParam(page) ?? '').split('|').map((m) => m.trim());
+    expect(measures[0]).toBe('DKTKD-TK');
+    expect(measures[1]).not.toBe('DKTKD-TK');
+    expect(measures[1]).toContain('S');
+    expect(measures[2]).toBe('DKTKD-TK');
+  });
+
+  test('Delete last note keeps the closing repeat sign', async ({ page }) => {
+    await open(page, TWO_SECTIONS, '2/4', 28);
+    await page.getByRole('button', { name: 'Delete last note' }).click();
+    await expect.poll(() => rhythmParam(page)).toBe('|: DKTKD-TK| D-TKTKTK:|x2 |: DKTKD-TK| TKD-TKT:|x2');
+  });
+});

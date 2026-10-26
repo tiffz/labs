@@ -116,21 +116,24 @@ export function mapLogicalToStringIndex(
   // edit in the measure lands that many ticks early — on the tied note itself.
   const tiedBefore = ticksTiedIntoMeasure(parsedRhythm, probe);
   if (tiedBefore > 0) {
-    currentIdx = findStringIndexForDuration(notation, currentIdx, tiedBefore).endIndex;
+    currentIdx = findStringIndexForDuration(notation, currentIdx, tiedBefore, sixteenthsPerMeasure).endIndex;
   }
 
   // 1. Skip full measures in the chunk
   for (let m = 0; m < skipMeasures; m++) {
     currentIdx = consumeStructure(notation, currentIdx); // FIXED: Skip structure (e.g. barlines) FIRST
-    const res = findStringIndexForDuration(notation, currentIdx, sixteenthsPerMeasure);
+    const res = findStringIndexForDuration(notation, currentIdx, sixteenthsPerMeasure, sixteenthsPerMeasure);
     currentIdx = res.endIndex;
   }
 
   // 2. Skip offset within the target measure
   currentIdx = consumeStructure(notation, currentIdx); // FIXED: Skip structure for target measure too
-  const res = findStringIndexForDuration(notation, currentIdx, offset);
+  const res = findStringIndexForDuration(notation, currentIdx, offset, sixteenthsPerMeasure);
 
-  return { index: res.endIndex, logicalReached: logicalPos };
+  // Short of the target means it lies in padding the parser added: ticks the string does not
+  // contain. Report where the string actually got to, not the tick asked for, so a caller writing
+  // there can fill the gap. (This always echoed `logicalPos`, so the gap was never seen.)
+  return { index: res.endIndex, logicalReached: logicalPos - Math.max(0, offset - res.ticksConsumed) };
 }
 
 /**
@@ -170,7 +173,8 @@ function consumeStructure(notation: string, idx: number): number {
 function findStringIndexForDuration(
   notation: string,
   startIndex: number,
-  targetDuration: number
+  targetDuration: number,
+  sixteenthsPerMeasure: number = 16
 ): { endIndex: number; ticksConsumed: number } {
   let ticksConsumed = 0;
   let i = startIndex;
@@ -188,14 +192,12 @@ function findStringIndexForDuration(
       i++;
     }
     else if (char === '%') {
-      // Simile counts as 16 ticks
-      // If the target falls with this 16 tick block, return this index
-      if (ticksConsumed + 16 > targetDuration) {
-        // We reached the target within this symbol
-        // Do NOT increment i, return current position
+      // A simile is one whole measure of THIS meter (it was 16, which is only 4/4's length).
+      // If the target falls inside it, stop on the `%` itself.
+      if (ticksConsumed + sixteenthsPerMeasure > targetDuration) {
         break;
       }
-      ticksConsumed += 16;
+      ticksConsumed += sixteenthsPerMeasure;
       i++;
     }
     else if (/[_\s]/.test(char)) {
@@ -222,7 +224,7 @@ function findStringIndexForDuration(
 }
 
 // Helper to find the note head for a given position by scanning backwards
-function findNoteHead(notation: string, index: number): string {
+export function findNoteHead(notation: string, index: number): string {
   // Scan backwards from index-1 (or index if we are on a dash?)
   // If we are on a dash, we want the head that started it.
   // If we are on a note head, it defines itself.
@@ -248,7 +250,7 @@ export function replacePatternAtPosition(
   const startStringIndex = mapResult.index;
 
   // Calculate the end index based on duration, avoiding structure consumption
-  const { endIndex: endStringIndex, ticksConsumed } = findStringIndexForDuration(notation, startStringIndex, patternDuration);
+  const { endIndex: endStringIndex, ticksConsumed } = findStringIndexForDuration(notation, startStringIndex, patternDuration, getSixteenthsPerMeasure(timeSignature));
 
   // BLOCKING LOGIC (Fix for Issue 1 & 2):
   // If we consumed fewer ticks than required, it implies we hit a boundary (Barline, structure, or EOF).
