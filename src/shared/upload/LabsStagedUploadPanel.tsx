@@ -101,7 +101,7 @@ export function LabsStagedUploadPanel<TPlan>({
           {error}
         </Typography>
       ) : null}
-      <Stack direction="row" spacing={1} sx={{ justifyContent: 'flex-end', mt: 1.5 }}>
+      <Stack direction="row" useFlexGap sx={{ justifyContent: 'flex-end', flexWrap: 'wrap', gap: 1, mt: 1.5 }}>
         <Button size="small" color="inherit" disabled={staged.committing} onClick={staged.clear}>
           Cancel
         </Button>

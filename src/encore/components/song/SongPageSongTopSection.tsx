@@ -37,8 +37,10 @@ export function SongPageSongTopSection(props: {
     song: EncoreSong;
     onSongChange: PracticeResourceSongChange;
   } | null;
+  /** Review for files staged into the hub (ADR 0030); renders under the resources. */
+  stagedUploadPanel?: ReactNode;
 }): ReactElement {
-  const { blocks, mediaHubFileDrop, practiceResourceDnD } = props;
+  const { blocks, mediaHubFileDrop, practiceResourceDnD, stagedUploadPanel } = props;
   const { spotifyAlerts, resourceGroups, catalogStrip, searchWebFooter, ...heroBlocks } = blocks;
   const { albumArt, titleField, artistField, tagsKeyPractice } = heroBlocks;
   const theme = useTheme();
@@ -155,6 +157,7 @@ export function SongPageSongTopSection(props: {
           ) : (
             <PracticeResourcesPanel groups={resourceGroups} fileDrop={mediaHubFileDrop} />
           )}
+          {stagedUploadPanel}
         </Stack>
       </Stack>
     </Stack>

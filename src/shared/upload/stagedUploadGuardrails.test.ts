@@ -27,12 +27,14 @@ const SRC = path.resolve(__dirname, '..', '..');
 
 const INTAKE =
   /type="file"|\bonFiles=|dataTransfer\??\.files|showOpenFilePicker|showDirectoryPicker|\.getAsFile\(\)|webkitGetAsEntry/;
-const STAGED = /shared\/upload\/|\bstage[A-Z]\w*\(/;
+/** Imports the shared staging, or calls a `stage*()` function (directly or through a ref). */
+const STAGED = /shared\/upload\/|\bstage[A-Z]\w*(?:Ref\.current)?\(/;
 
 const FORWARDS = new Map([
   ['shared/components/DragDropFileUpload.tsx', 'drop zone primitive; passes files to onFiles'],
   ['shared/utils/readDataTransferEntryFiles.ts', 'reads dropped folders for its caller'],
   ['encore/ui/EncoreMediaTrackAddMenu.tsx', 'add menu; its caller owns the input or handler'],
+  ['encore/components/EncoreResourceLinksPanel.tsx', 'passes picked and dropped files to onUploadFiles'],
   ['encore/originals/originalsSongFileDrag.ts', 'classifies a drag for slot highlighting'],
   ['encore/components/song/encoreDragPayload.ts', 'classifies a drag for slot highlighting'],
   ['gesture/drive/gestureFolderPicker.ts', 'wraps showDirectoryPicker for its caller'],
@@ -54,12 +56,7 @@ const SAVES_NOTHING = new Map([
 
 /** Migration plan (ADR 0030 § Rollout). Delete a row when its module stages. */
 const PENDING = new Map([
-  // Encore: references and brainstorm in the song-files panel; song page media hub
-  ['encore/originals/hooks/useOriginalsSongFilesPanel.tsx', 'takes stage; references and brainstorm do not yet'],
-  ['encore/components/EncoreResourceLinksPanel.tsx', 'references / misc files upload on pick'],
-  ['encore/components/song/useSongPageMediaHub.tsx', 'charts, tracks, takes, misc upload on pick'],
-  ['encore/components/SongPage.tsx', 'page-wide drop asks for a slot, then uploads'],
-  ['encore/components/PracticeScreen.tsx', 'practice page drop'],
+  // Encore: performance videos stage until Save, and bulk imports review, each in their own UI
   ['encore/components/song/SongPerformancesPanel.tsx', 'drop opens the performance editor (stages until Save)'],
   ['encore/components/song/SongPerformancesCompactPanel.tsx', 'drop opens the performance editor (stages until Save)'],
   ['encore/components/song/usePerformanceSectionDrop.ts', 'drop opens the performance editor (stages until Save)'],

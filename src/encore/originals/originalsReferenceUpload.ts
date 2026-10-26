@@ -1,11 +1,8 @@
 import { driveUploadFileResumable } from '../drive/driveFetch';
 import { inferMediaMimeType } from '../../shared/drive/inferMediaMimeType';
-import { createResourceFromLocalFile } from '../repertoire/encoreResourceLinks';
+import { createResourceFromDriveFile } from '../repertoire/encoreResourceLinks';
 import { ensureOriginalsDriveLayout } from './drive/originalsSharded';
-import {
-  appendSongReference,
-  appendSongReferenceFromDriveFile,
-} from './originalsResourceLinks';
+import type { EncoreMiscResource } from '../types';
 import type { EncoreOriginalSong } from './types';
 
 export type OriginalsReferenceUploadDeps = {
@@ -18,18 +15,30 @@ export type OriginalsReferenceUploadDeps = {
   registerUploadedDriveFile: (driveFileId: string, indexLabel: string) => Promise<void>;
 };
 
-/** Upload a reference file (chart/PDF/etc.) onto an original — shared by song page and dashboard. */
-export async function uploadOriginalSongReference(
-  song: EncoreOriginalSong,
+/** Where on the original the uploaded file is listed. */
+export type OriginalsUploadTarget = 'songReferences' | 'brainstormResources';
+
+/**
+ * Upload a reference or brainstorm file for an original, into the Originals references folder, and
+ * return the resource to list. The caller appends it to the song as it is AFTER the upload: a big
+ * file takes a while, and appending to the snapshot taken before would drop edits made meanwhile.
+ *
+ * Needs Drive. It used to fall back to `URL.createObjectURL` when signed out, which looked saved and
+ * was gone on reload (and synced to other devices as a dead link); brainstorm files took that path
+ * every time. Callers stage files first and refuse them while signed out (ADR 0030).
+ */
+export async function uploadOriginalSongFile(
+  song: Pick<EncoreOriginalSong, 'title'>,
   file: File,
   deps: OriginalsReferenceUploadDeps,
-): Promise<EncoreOriginalSong> {
+  target: OriginalsUploadTarget,
+): Promise<EncoreMiscResource | null> {
   const { googleAccessToken, uploadWithDuplicateCheck, registerUploadedDriveFile } = deps;
   if (!googleAccessToken) {
-    return appendSongReference(song, createResourceFromLocalFile(file));
+    throw new Error('Sign in with Google to save files here.');
   }
 
-  const indexLabel = `${song.title.trim() || 'Original'} · Reference`;
+  const indexLabel = `${song.title.trim() || 'Original'} · ${target === 'songReferences' ? 'Reference' : 'Brainstorm'}`;
   const driveFileId = await uploadWithDuplicateCheck({
     file,
     uploadNew: async () => {
@@ -51,8 +60,8 @@ export async function uploadOriginalSongReference(
     },
   });
 
-  if (!driveFileId) return song;
-  return appendSongReferenceFromDriveFile(song, driveFileId, {
+  if (!driveFileId) return null;
+  return createResourceFromDriveFile(driveFileId, {
     label: file.name,
     mimeType: inferMediaMimeType(file),
   });

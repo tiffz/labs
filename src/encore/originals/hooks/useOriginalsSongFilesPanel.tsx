@@ -18,16 +18,16 @@ import { useOriginalsTakes } from './useOriginalsTakes';
 import { OriginalsTakeAddMenu } from '../components/OriginalsTakeAddMenu';
 import { useEncoreAuth } from '../../context/EncoreAuthContext';
 import { useEncoreDriveUploadDedup } from '../../context/EncoreDriveUploadDedupContext';
-import { uploadOriginalSongReference } from '../originalsReferenceUpload';
-import {
-  addResourceFromUrl,
-  createResourceFromLocalFile,
-} from '../../repertoire/encoreResourceLinks';
+import { uploadOriginalSongFile, type OriginalsUploadTarget } from '../originalsReferenceUpload';
+import { appendBrainstormResource, appendSongReference } from '../originalsResourceLinks';
+import { useLabsStagedFileUploads } from '../../../shared/upload/useLabsStagedFileUploads';
+import { fileMatchesAccept } from '../../../shared/utils/fileMatchesAccept';
+import { describeDriveWriteFailure } from '../../../shared/drive/describeDriveWriteFailure';
+import { addResourceFromUrl } from '../../repertoire/encoreResourceLinks';
 import { scheduleEncoreResourceLabelEnrichment } from '../../repertoire/encoreResourceLinkMeta';
 import { extractFirstUrlFromDataTransfer } from '../../components/song/songMediaUrlDrop';
 import { shouldEncoreMediaHubHighlightDrag } from '../../components/song/encoreDropSurface';
 import { practiceResourceChipFieldSx } from '../../theme/encoreUiTokens';
-import type { EncoreMiscResource } from '../../types';
 import {
   eligibleOriginalsSlotsForDragDataTransfer,
   originalsFileDragRelevant,
@@ -53,15 +53,6 @@ function patchSongTimestamp(song: EncoreOriginalSong): EncoreOriginalSong {
   return { ...song, updatedAt: new Date().toISOString() };
 }
 
-function appendBrainstormResource(song: EncoreOriginalSong, resource: EncoreMiscResource): EncoreOriginalSong {
-  const cur = song.brainstormResources ?? [];
-  if (cur.some((r) => r.id === resource.id)) return song;
-  return patchSongTimestamp({
-    ...song,
-    brainstormResources: [...cur, resource],
-  });
-}
-
 export function useOriginalsSongFilesPanel({
   song,
   onChange,
@@ -81,7 +72,6 @@ export function useOriginalsSongFilesPanel({
   const takes = useOriginalsTakes({ song, onChange, readOnly });
   const { stageFiles: stageTakeFiles } = takes;
 
-  const [refsUploading, setRefsUploading] = useState(false);
   const [fileDragActive, setFileDragActive] = useState(false);
   const [hoveredSlot, setHoveredSlot] = useState<OriginalsSongFileSlot | null>(null);
   const [eligibleSlots, setEligibleSlots] = useState<Set<OriginalsSongFileSlot> | null>(null);
@@ -153,45 +143,50 @@ export function useOriginalsSongFilesPanel({
     };
   }, [readOnly]);
 
-  const uploadReferenceFile = useCallback(
-    async (file: File) => {
-      if (readOnly) return;
-      const next = await uploadOriginalSongReference(songRef.current, file, {
-        googleAccessToken,
-        uploadWithDuplicateCheck,
-        registerUploadedDriveFile,
-      });
-      applySong(next);
+  // References and brainstorm files stage for review, then upload to Drive (ADR 0030). Both need
+  // Drive: the signed-out fallback used to keep a blob: link that was gone on reload.
+  const uploadOriginalFile = useCallback(
+    async (file: File, target: OriginalsUploadTarget) => {
+      const resource = await uploadOriginalSongFile(
+        songRef.current,
+        file,
+        { googleAccessToken, uploadWithDuplicateCheck, registerUploadedDriveFile },
+        target,
+      );
+      if (!resource) return;
+      // Append to the song as it is now: a large upload takes a while.
+      const cur = songRef.current;
+      applySong(
+        target === 'songReferences' ? appendSongReference(cur, resource) : appendBrainstormResource(cur, resource),
+      );
     },
-    [applySong, googleAccessToken, readOnly, registerUploadedDriveFile, uploadWithDuplicateCheck],
+    [applySong, googleAccessToken, registerUploadedDriveFile, uploadWithDuplicateCheck],
   );
 
-  const uploadReferenceFiles = useCallback(
-    async (files: File[]) => {
-      if (files.length === 0) return;
-      setRefsUploading(true);
-      try {
-        for (const file of files) {
-          await uploadReferenceFile(file);
-        }
-      } finally {
-        setRefsUploading(false);
-      }
-    },
-    [uploadReferenceFile],
-  );
+  const signedOutMessage = googleAccessToken ? null : 'Sign in with Google to save files here.';
+  const describeUploadError = (error: unknown) => describeDriveWriteFailure(error).message;
 
-  const uploadBrainstormFiles = useCallback(
-    (files: File[]) => {
-      if (readOnly || files.length === 0) return;
-      let next = songRef.current;
-      for (const file of files) {
-        next = appendBrainstormResource(next, createResourceFromLocalFile(file));
-      }
-      applySong(next);
-    },
-    [applySong, readOnly],
-  );
+  const referenceUploads = useLabsStagedFileUploads({
+    accepts: (file) => fileMatchesAccept(file, ORIGINALS_REFERENCE_FILE_ACCEPT),
+    outcome: 'Uploads to your Drive',
+    unavailable: signedOutMessage,
+    onCommit: (file) => uploadOriginalFile(file, 'songReferences'),
+    describeError: describeUploadError,
+    confirmLabel: (n) => (n === 1 ? 'Add reference' : `Add ${n} references`),
+    title: 'References ready to add',
+  });
+
+  const brainstormUploads = useLabsStagedFileUploads({
+    accepts: (file) => fileMatchesAccept(file, ORIGINALS_BRAINSTORM_FILE_ACCEPT),
+    outcome: 'Uploads to your Drive',
+    unavailable: signedOutMessage,
+    onCommit: (file) => uploadOriginalFile(file, 'brainstormResources'),
+    describeError: describeUploadError,
+    confirmLabel: (n) => (n === 1 ? 'Add file' : `Add ${n} files`),
+    title: 'Brainstorm files ready to add',
+  });
+  const { stageFiles: stageReferenceFiles } = referenceUploads;
+  const { stageFiles: stageBrainstormFiles } = brainstormUploads;
 
   const uploadFilesToSlot = useCallback(
     async (slot: OriginalsSongFileSlot, files: File[]) => {
@@ -202,14 +197,14 @@ export function useOriginalsSongFilesPanel({
           stageTakeFiles(list);
           break;
         case 'references':
-          await uploadReferenceFiles(list);
+          stageReferenceFiles(list);
           break;
         case 'brainstormRefs':
-          uploadBrainstormFiles(list);
+          stageBrainstormFiles(list);
           break;
       }
     },
-    [stageTakeFiles, readOnly, uploadBrainstormFiles, uploadReferenceFiles],
+    [stageTakeFiles, readOnly, stageBrainstormFiles, stageReferenceFiles],
   );
 
   const addReferenceLink = useCallback(
@@ -377,7 +372,6 @@ export function useOriginalsSongFilesPanel({
         })}
         {!readOnly && !takes.hasStaged ? <OriginalsTakeAddMenu takes={takes} variant="chip" /> : null}
       </Stack>
-      {takes.stagedPanel}
     </>
   );
 
@@ -388,13 +382,13 @@ export function useOriginalsSongFilesPanel({
       resources={song.songReferences ?? []}
       onChange={(next) => applySong(patchSongTimestamp({ ...songRef.current, songReferences: next }))}
       onAddLink={addReferenceLink}
-      onUploadFiles={uploadReferenceFiles}
+      onUploadFiles={stageReferenceFiles}
       emptyHint="Charts, PDFs, and other files you reference while writing or recording."
       addButtonLabel="Add reference"
       fileAccept={ORIGINALS_REFERENCE_FILE_ACCEPT}
-      driveUploading={refsUploading}
       canUploadToDrive={Boolean(googleAccessToken)}
       readOnly={readOnly}
+      hideAddButton={referenceUploads.hasStaged}
     />
   );
 
@@ -409,12 +403,13 @@ export function useOriginalsSongFilesPanel({
       resources={song.brainstormResources ?? []}
       onChange={(next) => applySong(patchSongTimestamp({ ...songRef.current, brainstormResources: next }))}
       onAddLink={addBrainstormLink}
-      onUploadFiles={uploadBrainstormFiles}
+      onUploadFiles={stageBrainstormFiles}
       emptyHint="Links and files you use while writing."
-      addButtonLabel="Add reference"
+      addButtonLabel="Add to brainstorm"
       fileAccept={ORIGINALS_BRAINSTORM_FILE_ACCEPT}
-      canUploadToDrive={false}
+      canUploadToDrive={Boolean(googleAccessToken)}
       readOnly={readOnly}
+      hideAddButton={brainstormUploads.hasStaged}
       prepend={brainstormDocChip}
     />
   );
@@ -457,6 +452,14 @@ export function useOriginalsSongFilesPanel({
         fileDrop={fileDrop}
         ariaLabel="Song files"
       />
+      {/* Reviews span the whole panel: inside a group they squeeze into the narrow body column. */}
+      {takes.hasStaged || referenceUploads.hasStaged || brainstormUploads.hasStaged ? (
+        <Stack spacing={1} sx={{ mt: 1 }}>
+          {takes.stagedPanel}
+          {referenceUploads.panel}
+          {brainstormUploads.panel}
+        </Stack>
+      ) : null}
     </>
   );
 

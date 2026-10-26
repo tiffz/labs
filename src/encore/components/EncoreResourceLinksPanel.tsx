@@ -80,6 +80,11 @@ export type EncoreResourceLinksPanelProps = {
   fillHeight?: boolean;
   /** View-only: list resources without add, upload, or drop. */
   readOnly?: boolean;
+  /**
+   * Hide the "Add …" button while the caller's staged-upload review is open, so its confirm is the
+   * only "Add …" on screen (ADR 0030). Drops still reach `onUploadFiles`.
+   */
+  hideAddButton?: boolean;
   /** Renders before resource chips (practice-list / hub layouts). */
   prepend?: ReactNode;
   /** Wrap each practice-list chip (e.g. drag-and-drop). */
@@ -101,6 +106,7 @@ export function EncoreResourceLinksPanel({
   className,
   fillHeight = false,
   readOnly = false,
+  hideAddButton = false,
   prepend,
   wrapResourceChip,
 }: EncoreResourceLinksPanelProps): ReactElement {
@@ -279,7 +285,7 @@ export function EncoreResourceLinksPanel({
       </Typography>
     ) : null;
 
-  const addButton = !readOnly ? (
+  const addButton = !readOnly && !hideAddButton ? (
     <Button
       size="small"
       variant="outlined"
