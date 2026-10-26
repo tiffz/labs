@@ -1,5 +1,9 @@
-
-// ... (Imports and Interfaces matching previous full file)
+import {
+  buildMeasureLayout,
+  lookupVisualTick,
+  measureSourceMappingFromLayout,
+  type MeasureSlot,
+} from './measureLayout';
 import { sectionRepeatMeasureSpan } from './sectionRepeatSpan';
 import type {
   Note,
@@ -72,11 +76,10 @@ function countMeasuresInNotation(notation: string, sixteenthsPerMeasure: number)
   return measureCount;
 }
 
-function countDurationInSixteenths(notation: string): number {
+function countDurationInSixteenths(notation: string, sixteenthsPerMeasure: number): number {
   let totalSixteenths = 0;
   let currentMeasureTicks = 0;
   let i = 0;
-  const sixteenthsPerMeasure = 16;
 
   while (i < notation.length) {
     const char = notation[i];
@@ -84,7 +87,7 @@ function countDurationInSixteenths(notation: string): number {
     if (char === '|') {
       if (currentMeasureTicks > 0) {
         const missing = sixteenthsPerMeasure - (currentMeasureTicks % sixteenthsPerMeasure);
-        if (missing < 16 && (currentMeasureTicks % sixteenthsPerMeasure) !== 0) {
+        if (missing < sixteenthsPerMeasure && (currentMeasureTicks % sixteenthsPerMeasure) !== 0) {
           totalSixteenths += missing;
         }
         currentMeasureTicks = 0;
@@ -206,7 +209,7 @@ function processSingleRepeats(notation: string, sixteenthsPerMeasure: number): {
 
     const count = parseInt(match[2], 10);
     let paddedContent = content;
-    const contentSixteenths = countDurationInSixteenths(content);
+    const contentSixteenths = countDurationInSixteenths(content, sixteenthsPerMeasure);
 
     if (contentSixteenths > 0 && contentSixteenths < sixteenthsPerMeasure) {
       const missing = sixteenthsPerMeasure - contentSixteenths;
@@ -355,7 +358,7 @@ function processSectionRepeats(notation: string, sixteenthsPerMeasure: number, i
     const content = match[1].trim();
     let actualPaddedContent = content;
     const count = match[2] ? parseInt(match[2], 10) : 1;
-    const contentSixteenths = countDurationInSixteenths(content);
+    const contentSixteenths = countDurationInSixteenths(content, sixteenthsPerMeasure);
     if (contentSixteenths > 0 && contentSixteenths < sixteenthsPerMeasure) {
       actualPaddedContent += ' ' + '_'.repeat(sixteenthsPerMeasure - contentSixteenths);
     } else if (contentSixteenths > sixteenthsPerMeasure && contentSixteenths % sixteenthsPerMeasure !== 0) {
@@ -606,18 +609,9 @@ export function parseRhythm(notation: string, timeSignature: TimeSignature): Par
     // DISABLING implicit repeats per user request (Phase 4). Only explicit % or repeat bars should be effective.
     // repeats = detectIdenticalMeasures(measures, repeats);
 
-    const measureSourceMapping: Record<number, number> = {};
-    repeats.forEach(rep => {
-      if (rep.type === 'measure') { rep.repeatMeasures.forEach(mIdx => { measureSourceMapping[mIdx] = rep.sourceMeasure; }); }
-      else if (rep.type === 'section') {
-        const length = rep.endMeasure - rep.startMeasure + 1;
-        let currentRepeatStart = rep.endMeasure + 1;
-        for (let i = 1; i <= rep.repeatCount; i++) {
-          for (let m = 0; m < length; m++) { measureSourceMapping[currentRepeatStart + m] = rep.startMeasure + m; }
-          currentRepeatStart += length;
-        }
-      }
-    });
+    const measureSourceMapping = measureSourceMappingFromLayout(
+      buildMeasureLayout({ measures, repeats, timeSignature }),
+    );
 
     return { measures, timeSignature, isValid: validation.isValid, error: validation.error, repeats: repeats.length > 0 ? repeats : undefined, measureSourceMapping, measureMapping, };
   } catch (error) {
@@ -625,142 +619,72 @@ export function parseRhythm(notation: string, timeSignature: TimeSignature): Par
   }
 }
 
-/**
- * Finds the Logical Measure Index (Expanded/Visual Index) corresponding to a specific tick position.
- * This replaces naive `Math.floor(tick / 16)` calculations which fail when measures are overfull/underfull.
- * It iterates the Expanded Timeline (via measureMapping) to match VexFlow's coordinate system.
- */
-export function findMeasureIndexAtTick(parsed: ParsedRhythm, targetTick: number): { index: number; measureStartTick: number } {
-  if (!parsed.measureMapping || parsed.measureMapping.length === 0) {
-    if (!parsed.measures || parsed.measures.length === 0) return { index: 0, measureStartTick: 0 };
-    // Fallback: Naive calculation if no mapping
-    return {
-      index: Math.floor(targetTick / 16),
-      measureStartTick: Math.floor(targetTick / 16) * 16
-    };
+const layoutCache = new WeakMap<ParsedRhythm, MeasureSlot[]>();
+
+/** The parsed rhythm's measure layout, built once per parse. See `measureLayout.ts`. */
+export function measureLayoutOf(parsed: ParsedRhythm): MeasureSlot[] {
+  let layout = layoutCache.get(parsed);
+  if (!layout) {
+    layout = buildMeasureLayout(parsed);
+    layoutCache.set(parsed, layout);
   }
-
-  let currentTick = 0;
-  // Iterate EXPANDED timeline via mapping
-  for (let i = 0; i < parsed.measureMapping.length; i++) {
-    const mapping = parsed.measureMapping[i];
-    const sourceMeasure = parsed.measures[mapping.sourceMeasureIndex];
-    if (!sourceMeasure) continue;
-
-    // Use totalDuration calculated during split.
-    // This matches VexFlow's visual duration calculation if splitIntoMeasures is the source of truth.
-    // NOTE: VexFlowRenderer uses Math.max(sum, 16) for rendering width.
-    // We must match that logic to stay in sync with UI.
-    const duration = Math.max(sourceMeasure.totalDuration, 16);
-
-    // Check if target is within this measure [start, end)
-    if (targetTick >= currentTick && targetTick < currentTick + duration) {
-      return { index: i, measureStartTick: currentTick };
-    }
-
-    currentTick += duration;
-  }
-
-  // If past the end, return index = length (Append)
-  return { index: parsed.measureMapping.length, measureStartTick: currentTick };
+  return layout;
 }
 
 /**
- * Maps a VISUAL tick position (from VexFlow click/drag) to the actual logical measure index.
- * This is critical because VexFlow HIDES section repeats (ghosts), creating a Compressed Visual Timeline
- * that differs from the Expanded Logical Timeline.
- * 
- * Logic must match VexFlowRenderer's hiddenMeasureIndices calculation.
+ * Finds the expanded measure index containing a played (logical) tick.
+ * Past the end returns `index = measures.length`, the append position.
+ */
+export function findMeasureIndexAtTick(parsed: ParsedRhythm, targetTick: number): { index: number; measureStartTick: number } {
+  const layout = measureLayoutOf(parsed);
+  for (const slot of layout) {
+    if (targetTick >= slot.logicalStartTick && targetTick < slot.logicalStartTick + slot.durationTicks) {
+      return { index: slot.index, measureStartTick: slot.logicalStartTick };
+    }
+  }
+  const last = layout[layout.length - 1];
+  return { index: layout.length, measureStartTick: last ? last.logicalStartTick + last.durationTicks : 0 };
+}
+
+/**
+ * Maps a drawn-score (visual) tick — what VexFlow clicks and drags report — to the expanded
+ * measure that contains it. The score hides section-repeat copies, so the drawn timeline is
+ * shorter than the played one.
+ *
+ * Past the end returns the last visible measure with `localTick = 0` and both start ticks at the
+ * end of their timelines, which is where an append lands.
  */
 export function findMeasureIndexFromVisualTick(parsed: ParsedRhythm, visualTick: number): { index: number; visualMeasureStartTick: number; logicalMeasureStartTick: number; localTick: number } {
-  if (!parsed.measures || parsed.measures.length === 0) return { index: 0, visualMeasureStartTick: 0, logicalMeasureStartTick: 0, localTick: 0 };
+  const layout = measureLayoutOf(parsed);
+  if (layout.length === 0) return { index: 0, visualMeasureStartTick: 0, logicalMeasureStartTick: 0, localTick: 0 };
 
-  // 1. Identify Hidden Indices (Must match VexFlowRenderer logic exactly)
-  const hiddenMeasureIndices = new Set<number>();
-  if (parsed.repeats) {
-    parsed.repeats.forEach(repeat => {
-      // (x3) => Source + 3 Ghosts. Total 4.
-      // We hide ALL ghosts. Source remains visible.
-      // NOTE: We only hide SECTION repeats (where Visual = 1 measure, Logical = N measures).
-      // Simile Repeats (x6) are usually rendered sequentially effectively (or handled differently).
-      // VexFlowRenderer lines 461-476 confirms only 'section' repeats are hidden.
-      if (repeat.type === 'section' && repeat.repeatCount > 0) {
-        const blockLength = repeat.endMeasure - repeat.startMeasure + 1;
-        // FIX Phase 77: Total Count implies repeatCount - 1 Ghosts.
-        const measuresToHide = blockLength * (repeat.repeatCount - 1);
-        const startHiddenIndex = repeat.endMeasure + 1;
-
-        for (let i = 0; i < measuresToHide; i++) {
-          hiddenMeasureIndices.add(startHiddenIndex + i);
-        }
-      }
-    });
+  const lookup = lookupVisualTick(layout, visualTick);
+  if (lookup) {
+    return {
+      index: lookup.slot.index,
+      visualMeasureStartTick: lookup.slot.visualStartTick ?? 0,
+      logicalMeasureStartTick: lookup.slot.logicalStartTick,
+      localTick: lookup.localTick,
+    };
   }
 
-  // 2. Iterate Measures in Visual Order (Skipping Hidden)
-  let currentVisualTick = 0;
-  let currentLogicalTick = 0;
-
-  for (let i = 0; i < parsed.measures.length; i++) {
-    const measure = parsed.measures[i];
-
-    // Determine duration (Same logic as Logical Mapping - use actual content duration)
-    const duration = Math.max(measure.notes.reduce((sum, n) => sum + (n.durationInSixteenths || 0), 0), 16);
-
-    // SKIP Hidden measures (They consume 0 visual time)
-    if (hiddenMeasureIndices.has(i)) {
-      currentLogicalTick += duration;
-      continue;
-    }
-
-    const measureEndTick = currentVisualTick + duration;
-
-    // Check if target is within this Visible Measure
-    if (visualTick >= currentVisualTick && visualTick < measureEndTick) {
-      return {
-        index: i,
-        visualMeasureStartTick: currentVisualTick,
-        logicalMeasureStartTick: currentLogicalTick,
-        localTick: visualTick - currentVisualTick
-      };
-    }
-
-    currentVisualTick += duration;
-    currentLogicalTick += duration;
-  }
-
-  // If beyond end, return last visible measure
-  // We need to find the last non-hidden index
-  let lastVisibleIndex = parsed.measures.length - 1;
-  while (lastVisibleIndex > 0 && hiddenMeasureIndices.has(lastVisibleIndex)) {
-    lastVisibleIndex--;
-  }
-
+  const visible = layout.filter((slot) => slot.visualStartTick !== null);
+  const lastVisible = visible[visible.length - 1] ?? layout[0];
+  const lastSlot = layout[layout.length - 1];
   return {
-    index: lastVisibleIndex,
-    visualMeasureStartTick: currentVisualTick,
-    logicalMeasureStartTick: currentLogicalTick,
-    localTick: 0 // Default to start of appended measure
+    index: lastVisible.index,
+    visualMeasureStartTick: (lastVisible.visualStartTick ?? 0) + lastVisible.durationTicks,
+    logicalMeasureStartTick: lastSlot.logicalStartTick + lastSlot.durationTicks,
+    localTick: 0,
   };
 }
 
 /**
- * Expand a visual tick range to include all iterations of repeated measures.
- * 
- * Handles two types of repeats:
- * 
- * 1. **Section repeats** (`|: ... :|x3`): Ghost measures are hidden in visual space.
- *    The user selects the source measure(s), and this function includes the hidden
- *    ghost iterations in the unrolled range.
- * 
- * 2. **Measure repeats** (`|x3`): Ghost measures are visible in visual space (rendered
- *    as simile/% symbols). The user selects only the source measure, and this function
- *    detects that it belongs to a repeat group and includes all iterations.
- * 
- * @param parsed - Parsed rhythm with measure and repeat info
- * @param visualStartTick - Start of selection in visual ticks
- * @param visualEndTick - End of selection in visual ticks
- * @returns Unrolled tick range { startTick, endTick }
+ * Expand a drawn-score tick range to the played range it covers.
+ *
+ * Section repeats (`|: ... :|xN`) hide their copies, so selecting the end of a section includes
+ * the hidden copies that follow it. Measure repeats (`|xN`) draw each copy as a `%` the user can
+ * select on its own, so their selection is taken as drawn.
  */
 export function expandSelectionToRepeats(
   parsed: ParsedRhythm,
@@ -771,86 +695,29 @@ export function expandSelectionToRepeats(
     return { startTick: visualStartTick, endTick: visualEndTick };
   }
 
-  // --- Phase 1: Handle section repeats (hidden ghosts) ---
-  // Build set of hidden measure indices
-  const hiddenMeasureIndices = new Set<number>();
-  parsed.repeats.forEach(repeat => {
-    if (repeat.type === 'section' && repeat.repeatCount > 0) {
-      const blockLength = repeat.endMeasure - repeat.startMeasure + 1;
-      const measuresToHide = blockLength * (repeat.repeatCount - 1);
-      const startHiddenIndex = repeat.endMeasure + 1;
-      for (let j = 0; j < measuresToHide; j++) {
-        hiddenMeasureIndices.add(startHiddenIndex + j);
-      }
-    }
-  });
-
-  // Walk through measures tracking visual and unrolled ticks
-  let currentVisualTick = 0;
-  let currentUnrolledTick = 0;
   let unrolledStart: number | null = null;
   let unrolledEnd: number | null = null;
+  // Hidden copies extend the range only until the next visible measure past the selection.
+  let extensionDone = false;
 
-  // Track which measure indices overlap the selection (for measure repeat detection)
-  const selectedMeasureIndices = new Set<number>();
-
-  // Map from measure index → unrolled tick start
-  const measureUnrolledStarts: number[] = [];
-
-  // Once we encounter a visible measure past the selection, stop extending
-  // through hidden ghosts (those would belong to a different repeat group).
-  let sectionRepeatExtensionDone = false;
-
-  for (let i = 0; i < parsed.measures.length; i++) {
-    const measure = parsed.measures[i];
-    const duration = Math.max(
-      measure.notes.reduce((sum, n) => sum + (n.durationInSixteenths || 0), 0),
-      16
-    );
-    measureUnrolledStarts.push(currentUnrolledTick);
-
-    if (hiddenMeasureIndices.has(i)) {
-      // Hidden ghost (section repeat) - include if source was selected
-      // and we haven't moved past the selected region
-      if (!sectionRepeatExtensionDone && unrolledStart !== null && unrolledEnd !== null) {
-        unrolledEnd = currentUnrolledTick + duration;
-      }
-      currentUnrolledTick += duration;
+  for (const slot of measureLayoutOf(parsed)) {
+    if (slot.visualStartTick === null) {
+      if (!extensionDone && unrolledEnd !== null) unrolledEnd = slot.logicalStartTick + slot.durationTicks;
       continue;
     }
-
-    // Visible measure
-    const measureVisualEnd = currentVisualTick + duration;
-
-    if (currentVisualTick < visualEndTick && measureVisualEnd > visualStartTick) {
-      // Overlaps with selection
-      const localStart = Math.max(0, visualStartTick - currentVisualTick);
-      const localEnd = Math.min(duration, visualEndTick - currentVisualTick);
-
-      if (unrolledStart === null) {
-        unrolledStart = currentUnrolledTick + localStart;
-      }
-      unrolledEnd = currentUnrolledTick + localEnd;
-      selectedMeasureIndices.add(i);
+    const visualEnd = slot.visualStartTick + slot.durationTicks;
+    if (slot.visualStartTick < visualEndTick && visualEnd > visualStartTick) {
+      const localStart = Math.max(0, visualStartTick - slot.visualStartTick);
+      const localEnd = Math.min(slot.durationTicks, visualEndTick - slot.visualStartTick);
+      if (unrolledStart === null) unrolledStart = slot.logicalStartTick + localStart;
+      unrolledEnd = slot.logicalStartTick + localEnd;
     } else if (unrolledStart !== null) {
-      // Past the selection - stop extending through hidden ghosts
-      sectionRepeatExtensionDone = true;
+      extensionDone = true;
     }
-
-    currentVisualTick += duration;
-    currentUnrolledTick += duration;
   }
 
-  // Note: No expansion for measure repeats (|x3).
-  // For measure repeats, all iterations are visible as simile (%) symbols
-  // which are individually clickable/selectable. The user's visual selection
-  // should be respected exactly — selecting 2 of 3 iterations means loop 2,
-  // not all 3. Only section repeats (|: ... :|x3) need expansion because
-  // their ghost iterations are hidden and can't be selected individually.
   if (unrolledStart !== null && unrolledEnd !== null) {
     return { startTick: unrolledStart, endTick: unrolledEnd };
   }
-
-  // Fallback: return original range
   return { startTick: visualStartTick, endTick: visualEndTick };
 }

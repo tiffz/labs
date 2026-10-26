@@ -2,7 +2,8 @@
 import { useState, useCallback, useEffect, type RefObject } from 'react';
 import { getPatternDuration, replacePatternAtIndex, insertPatternAtIndex, mapLogicalToStringIndex } from '../utils/dragAndDrop';
 import { expandSimileMeasure } from '../utils/notationUtils';
-import { parseRhythm, findMeasureIndexAtTick, findMeasureIndexFromVisualTick } from '../../shared/rhythm/rhythmParser';
+import { parseRhythm, findMeasureIndexAtTick, findMeasureIndexFromVisualTick, measureLayoutOf } from '../../shared/rhythm/rhythmParser';
+import { visualToLogicalTick } from '../../shared/rhythm/measureLayout';
 // getSixteenthsPerMeasure removed (unused)
 import type { TimeSignature, ParsedRhythm } from '../types';
 import {
@@ -16,7 +17,6 @@ interface UseRhythmSelectionProps {
     addToHistory: (notation: string) => void;
     setNotationWithoutHistory: (notation: string) => void;
     noteDisplayRef: RefObject<HTMLElement>;
-    measureSourceMapping?: Record<number, number>;
     parsedRhythm: ParsedRhythm;
     /**
      * Live playback flag. A ref because `isPlaying` is declared after this hook in `App`, and
@@ -241,14 +241,13 @@ export function useRhythmSelection({
             setNotationWithoutHistory(currentNotation);
         }
 
-        // Re-calculate String Indices using potentially Updated Notation/ParsedRhythm
-        const endLookup = findMeasureIndexFromVisualTick(currentParsed, selection.endCharPosition);
-        const logicalEndCharPosition = endLookup.logicalMeasureStartTick + endLookup.localTick;
+        // The end is exclusive: a selection ending on a barline must resolve to the end of its own
+        // measure, not to the start of the next visible one (which, after a section repeat, lies
+        // past the hidden copies and the `:|xN` token).
+        const logicalEndCharPosition = visualToLogicalTick(measureLayoutOf(currentParsed), selection.endCharPosition, 'end');
 
         const startMap = mapLogicalToStringIndex(currentNotation, logicalCharPosition, currentParsed, timeSignature);
-        const endMap = mapLogicalToStringIndex(currentNotation, logicalEndCharPosition, currentParsed, timeSignature);
-
-        // ... wait, I need to add imports first.
+        const endMap = mapLogicalToStringIndex(currentNotation, logicalEndCharPosition, currentParsed, timeSignature, 'end');
 
         addToHistory(notation); // Save OLD notation to history
 
@@ -261,20 +260,20 @@ export function useRhythmSelection({
         clearSelection();
     }, [notation, selection, addToHistory, setNotationWithoutHistory, clearSelection, parsedRhythm, timeSignature]);
 
-    // Handle moving selected notes to a new position
-    // Now using string indices exclusively
-    const handleMoveSelection = useCallback((fromStartLogical: number, fromEndLogical: number, toPositionLogical: number) => {
+    // Handle moving selected notes to a new position.
+    // The renderer reports drawn-score (visual) ticks; resolve them to played ticks before touching
+    // the string, or a move after a section repeat lands on the hidden copy's measure.
+    const handleMoveSelection = useCallback((fromStartVisual: number, fromEndVisual: number, toPositionVisual: number) => {
         let currentNotation = notation;
         let currentParsed = parsedRhythm;
 
-        // Phase 27: Expand Multi-Measure Repeats at Source AND Target?
-        // Source Expansion
-        // FIX Phase 38: Use findMeasureIndexAtTick for robust lookup
-        const startLookup = findMeasureIndexAtTick(parsedRhythm, fromStartLogical);
-        const startMeasureIdx = startLookup.index;
+        const layout = measureLayoutOf(parsedRhythm);
+        const fromStartLogical = visualToLogicalTick(layout, fromStartVisual);
+        const fromEndLogical = visualToLogicalTick(layout, fromEndVisual, 'end');
+        const toPositionLogical = visualToLogicalTick(layout, toPositionVisual);
 
-        const targetLookup = findMeasureIndexAtTick(parsedRhythm, toPositionLogical);
-        const targetMeasureIdx = targetLookup.index;
+        const startMeasureIdx = findMeasureIndexAtTick(parsedRhythm, fromStartLogical).index;
+        const targetMeasureIdx = findMeasureIndexAtTick(parsedRhythm, toPositionLogical).index;
 
         let expanded = expandSimileMeasure(currentNotation, startMeasureIdx, currentParsed);
         if (expanded !== currentNotation) {
@@ -282,19 +281,7 @@ export function useRhythmSelection({
             currentParsed = parseRhythm(currentNotation, timeSignature);
         }
 
-        // Target Expansion (if moving INTO a simile measure)
-        // If we drop into a Simile, we must expand it to insert.
-        // But wait, if we are inserting, we shift things?
-        // Drag/Drop logic usually replaces or inserts.
-        // If replace, we need explicit content.
-
-        // Note: expandSimileMeasure uses parsedRhythm.
-        // We must re-check if target is Simile in the NEW parsed layout?
-        // If we expanded Source, Target index might have shifted?
-        // Actually, expandSimileMeasure uses Logical Measure Index.
-        // Logical Measure Indices don't shift (unless we inserted measures?).
-        // Expansion just changes string form.
-
+        // Moving into a simile measure needs its notes written out first.
         expanded = expandSimileMeasure(currentNotation, targetMeasureIdx, currentParsed);
         if (expanded !== currentNotation) {
             currentNotation = expanded;
@@ -303,7 +290,7 @@ export function useRhythmSelection({
 
         // Convert all Logical Ticks -> String Indices (using Updated Notation)
         const startMap = mapLogicalToStringIndex(currentNotation, fromStartLogical, currentParsed, timeSignature);
-        const endMap = mapLogicalToStringIndex(currentNotation, fromEndLogical, currentParsed, timeSignature);
+        const endMap = mapLogicalToStringIndex(currentNotation, fromEndLogical, currentParsed, timeSignature, 'end');
         const targetMap = mapLogicalToStringIndex(currentNotation, toPositionLogical, currentParsed, timeSignature);
 
         // 1. Extract content

@@ -17301,6 +17301,120 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-drive-importdrivefile-ts-describedrivefileimportrejection",
+    "name": "describeDriveFileImportRejection",
+    "path": "src/shared/drive/importDriveFile.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "One sentence per rejection, for a field's error text.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-importdrivefile-ts-drivefileimportcandidate",
+    "name": "DriveFileImportCandidate",
+    "path": "src/shared/drive/importDriveFile.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "The fields a caller's `accepts` filter can judge by.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-importdrivefile-ts-drivefileimportplan",
+    "name": "DriveFileImportPlan",
+    "path": "src/shared/drive/importDriveFile.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "What Drive says about the file a plan describes (the shortcut target, never the shortcut).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-importdrivefile-ts-drivefileimportplanresult",
+    "name": "DriveFileImportPlanResult",
+    "path": "src/shared/drive/importDriveFile.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "What Drive says about the file a plan describes (the shortcut target, never the shortcut).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-importdrivefile-ts-drivefileimportrejection",
+    "name": "DriveFileImportRejection",
+    "path": "src/shared/drive/importDriveFile.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "What Drive says about the file a plan describes (the shortcut target, never the shortcut).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-importdrivefile-ts-drivefileimportresult",
+    "name": "DriveFileImportResult",
+    "path": "src/shared/drive/importDriveFile.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "What Drive says about the file a plan describes (the shortcut target, never the shortcut).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-importdrivefile-ts-executedrivefileimport",
+    "name": "executeDriveFileImport",
+    "path": "src/shared/drive/importDriveFile.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Carry out a plan. A reference returns at once with no Drive call. A copy needs the source's bytes. Builds whose session token lacks `drive.readonly` are refused with 403/404; `requestReadAccess` is then called once (it may open a consent popup, so callers pass it only from a user gesture) and the copy retried with the token it returns. A second refusal propagates: the user really cannot read the file.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-importdrivefile-ts-plandrivefileimport",
+    "name": "planDriveFileImport",
+    "path": "src/shared/drive/importDriveFile.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Decide reference vs copy from metadata. Never writes. Ownership is read from the shortcut's **target**. A user's own shortcut to a friend's file reports `ownedByMe: true` on the shortcut row, and trusting the row stores a pointer at the friend's file — the exact failure this module exists to prevent. `ownedByMe` missing is treated as foreign. A spare copy of your own file is easy to delete; a pointer at a stranger's file fails silently months later. Throws only for failures that are not about this file (offline, rate limits, expired token), so a transient error is never reported to the user as \"you cannot open this link\".",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-drive-infermediamimetype-ts-infermediamimetype",
     "name": "inferMediaMimeType",
     "path": "src/shared/drive/inferMediaMimeType.ts",
@@ -31651,6 +31765,127 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-rhythm-measurelayout-ts-buildmeasurelayout",
+    "name": "buildMeasureLayout",
+    "path": "src/shared/rhythm/measureLayout.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "rhythm-core",
+    "description": "One measure of the parser's expanded timeline, placed on both timelines the editor uses. The parser writes every repeat out in full, so `measures[i]` is the measure that PLAYS i-th. The score hides section-repeat expansions, so the drawn score is a shorter timeline. Editing needs both: a click arrives in drawn (visual) ticks, and the notation string is reached through played (logical) ticks. Before this module, seven call sites each derived \"which measures are hidden\" and \"where does measure N start\" on their own, and they disagreed: - the parser's `measureSourceMapping` counted one section copy too many, so a second section's own measures were marked as copies of the first — selecting a note highlighted it in both sections, drops matched both, and the last measure had no drop targets of its own; - the tick lookups padded every measure to 16 sixteenths, so in any meter shorter than 4/4 a click on measure 2 resolved to the end of measure 1; - the player re-expanded repeats the parser had already expanded, so `x2` played three times. Ask this module instead of re-deriving any of that.",
+    "tags": [
+      "rhythm"
+    ],
+    "appsUsing": [
+      "drums"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-rhythm-measurelayout-ts-hiddenmeasureindices",
+    "name": "hiddenMeasureIndices",
+    "path": "src/shared/rhythm/measureLayout.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "rhythm-core",
+    "description": "Expanded indices of the measures the score hides.",
+    "tags": [
+      "rhythm"
+    ],
+    "appsUsing": [
+      "drums"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-rhythm-measurelayout-ts-lookupvisualtick",
+    "name": "lookupVisualTick",
+    "path": "src/shared/rhythm/measureLayout.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "rhythm-core",
+    "description": "Resolve a drawn-score tick to the visible measure that contains it. `edge: 'end'` treats the tick as an exclusive end, so a selection ending on a barline resolves to the end of the measure before it — not to the start of whatever follows, which after a section repeat is past the hidden copies and the `:|xN` token. Returns `undefined` for a tick past the end of the score; callers decide whether that appends.",
+    "tags": [
+      "rhythm"
+    ],
+    "appsUsing": [
+      "drums"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-rhythm-measurelayout-ts-measureslot",
+    "name": "MeasureSlot",
+    "path": "src/shared/rhythm/measureLayout.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "rhythm-core",
+    "description": "One measure of the parser's expanded timeline, placed on both timelines the editor uses. The parser writes every repeat out in full, so `measures[i]` is the measure that PLAYS i-th. The score hides section-repeat expansions, so the drawn score is a shorter timeline. Editing needs both: a click arrives in drawn (visual) ticks, and the notation string is reached through played (logical) ticks. Before this module, seven call sites each derived \"which measures are hidden\" and \"where does measure N start\" on their own, and they disagreed: - the parser's `measureSourceMapping` counted one section copy too many, so a second section's own measures were marked as copies of the first — selecting a note highlighted it in both sections, drops matched both, and the last measure had no drop targets of its own; - the tick lookups padded every measure to 16 sixteenths, so in any meter shorter than 4/4 a click on measure 2 resolved to the end of measure 1; - the player re-expanded repeats the parser had already expanded, so `x2` played three times. Ask this module instead of re-deriving any of that.",
+    "tags": [
+      "rhythm",
+      "api"
+    ],
+    "appsUsing": [
+      "drums"
+    ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-rhythm-measurelayout-ts-measuresourcemappingfromlayout",
+    "name": "measureSourceMappingFromLayout",
+    "path": "src/shared/rhythm/measureLayout.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "rhythm-core",
+    "description": "`measureIndex → sourceIndex` for every repeat copy; written measures are absent.",
+    "tags": [
+      "rhythm"
+    ],
+    "appsUsing": [
+      "drums"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-rhythm-measurelayout-ts-visualticklookup",
+    "name": "VisualTickLookup",
+    "path": "src/shared/rhythm/measureLayout.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "rhythm-core",
+    "description": "One measure of the parser's expanded timeline, placed on both timelines the editor uses. The parser writes every repeat out in full, so `measures[i]` is the measure that PLAYS i-th. The score hides section-repeat expansions, so the drawn score is a shorter timeline. Editing needs both: a click arrives in drawn (visual) ticks, and the notation string is reached through played (logical) ticks. Before this module, seven call sites each derived \"which measures are hidden\" and \"where does measure N start\" on their own, and they disagreed: - the parser's `measureSourceMapping` counted one section copy too many, so a second section's own measures were marked as copies of the first — selecting a note highlighted it in both sections, drops matched both, and the last measure had no drop targets of its own; - the tick lookups padded every measure to 16 sixteenths, so in any meter shorter than 4/4 a click on measure 2 resolved to the end of measure 1; - the player re-expanded repeats the parser had already expanded, so `x2` played three times. Ask this module instead of re-deriving any of that.",
+    "tags": [
+      "rhythm",
+      "api"
+    ],
+    "appsUsing": [
+      "drums"
+    ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-rhythm-measurelayout-ts-visualtologicaltick",
+    "name": "visualToLogicalTick",
+    "path": "src/shared/rhythm/measureLayout.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "rhythm-core",
+    "description": "Convert a drawn-score tick to a played tick. Ticks past the end of the score map to the end of the played timeline, which is where an append goes.",
+    "tags": [
+      "rhythm"
+    ],
+    "appsUsing": [
+      "drums"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-rhythm-metronomeplaybackprefs-ts-torhythmmetronomeplaybackprefs",
     "name": "toRhythmMetronomePlaybackPrefs",
     "path": "src/shared/rhythm/metronomePlaybackPrefs.ts",
@@ -32084,7 +32319,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "rhythm-core",
-    "description": "Expand a visual tick range to include all iterations of repeated measures. Handles two types of repeats: 1. **Section repeats** (`|: ... :|x3`): Ghost measures are hidden in visual space. The user selects the source measure(s), and this function includes the hidden ghost iterations in the unrolled range. 2. **Measure repeats** (`|x3`): Ghost measures are visible in visual space (rendered as simile/% symbols). The user selects only the source measure, and this function detects that it belongs to a repeat group and includes all iterations.",
+    "description": "Expand a drawn-score tick range to the played range it covers. Section repeats (`|: ... :|xN`) hide their copies, so selecting the end of a section includes the hidden copies that follow it. Measure repeats (`|xN`) draw each copy as a `%` the user can select on its own, so their selection is taken as drawn.",
     "tags": [
       "rhythm"
     ],
@@ -32102,7 +32337,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "rhythm-core",
-    "description": "Finds the Logical Measure Index (Expanded/Visual Index) corresponding to a specific tick position. This replaces naive `Math.floor(tick / 16)` calculations which fail when measures are overfull/underfull. It iterates the Expanded Timeline (via measureMapping) to match VexFlow's coordinate system.",
+    "description": "Finds the expanded measure index containing a played (logical) tick. Past the end returns `index = measures.length`, the append position.",
     "tags": [
       "rhythm"
     ],
@@ -32120,7 +32355,25 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "rhythm-core",
-    "description": "Maps a VISUAL tick position (from VexFlow click/drag) to the actual logical measure index. This is critical because VexFlow HIDES section repeats (ghosts), creating a Compressed Visual Timeline that differs from the Expanded Logical Timeline. Logic must match VexFlowRenderer's hiddenMeasureIndices calculation.",
+    "description": "Maps a drawn-score (visual) tick — what VexFlow clicks and drags report — to the expanded measure that contains it. The score hides section-repeat copies, so the drawn timeline is shorter than the played one. Past the end returns the last visible measure with `localTick = 0` and both start ticks at the end of their timelines, which is where an append lands.",
+    "tags": [
+      "rhythm"
+    ],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-rhythm-rhythmparser-ts-measurelayoutof",
+    "name": "measureLayoutOf",
+    "path": "src/shared/rhythm/rhythmParser.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "rhythm-core",
+    "description": "The parsed rhythm's measure layout, built once per parse. See `measureLayout.ts`.",
     "tags": [
       "rhythm"
     ],
