@@ -9,40 +9,21 @@
  */
 import { execSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
+import { scopedSpecsForApp } from './scopedE2eSpecs.mjs';
 
+/**
+ * Explicit per-app entries. `e2e/smoke/<app>-*.spec.ts` files are added automatically
+ * (scopedE2eSpecs.mjs); list only cross-app specs, greps, and `src/<app>/e2e` specs here.
+ */
 const APP_SMOKE_SPECS = {
   encore: [
-    'e2e/smoke/encore-account-menu.spec.ts',
-    'e2e/smoke/encore-guest-share.spec.ts',
-    'e2e/smoke/encore-performance-routes.spec.ts',
-    'e2e/smoke/encore-performance-signin.spec.ts',
-    'e2e/smoke/encore-performance-drive-ownership.spec.ts',
-    'e2e/smoke/encore-originals-bulk-play.spec.ts',
-    'e2e/smoke/encore-originals-brainstorm-chip.spec.ts',
-    'e2e/smoke/encore-originals-video-take.spec.ts',
-    'e2e/smoke/encore-originals-drive-take.spec.ts',
-    'e2e/smoke/encore-originals-staged-references.spec.ts',
-    'e2e/smoke/encore-song-staged-uploads.spec.ts',
-    'e2e/smoke/encore-originals-instrumental.spec.ts',
-    'e2e/smoke/encore-song-instrumental.spec.ts',
-    'e2e/smoke/encore-originals-instrumental-paint.spec.ts',
-    'e2e/smoke/encore-library-interaction.spec.ts',
-    'e2e/smoke/encore-add-track-menu.spec.ts',
-    'e2e/smoke/encore-practice-resource-dnd.spec.ts',
     'e2e/smoke/drive-sync-merge-guards.spec.ts',
-    'e2e/smoke/encore-tab-navigation-interaction.spec.ts',
     'e2e/smoke/layout-heuristics-encore.spec.ts',
     'e2e/smoke/scroll-sanity-encore.spec.ts',
     { file: 'e2e/smoke/app-shells.spec.ts', grep: '/encore/' },
     { file: 'e2e/smoke/responsive-all-apps.spec.ts', grep: '/encore/' },
   ],
   gesture: [
-    'e2e/smoke/gesture-preview-strip.spec.ts',
-    'e2e/smoke/gesture-upload-offline-resume.spec.ts',
-    'e2e/smoke/gesture-upload-skip-empty.spec.ts',
-    'e2e/smoke/gesture-practice-interaction.spec.ts',
-    'e2e/smoke/gesture-collections-scroll.spec.ts',
-    'e2e/smoke/gesture-session-heap-soak.spec.ts',
     'e2e/smoke/drive-sync-merge-guards.spec.ts',
     'e2e/smoke/layout-heuristics-gesture.spec.ts',
     'e2e/smoke/scroll-sanity-gesture.spec.ts',
@@ -50,14 +31,11 @@ const APP_SMOKE_SPECS = {
     { file: 'e2e/smoke/responsive-all-apps.spec.ts', grep: '/gesture/' },
   ],
   sight: [
-    'e2e/smoke/sight-practice-interaction.spec.ts',
     'e2e/smoke/layout-heuristics-sight.spec.ts',
     { file: 'e2e/smoke/app-shells.spec.ts', grep: '/sight/' },
     { file: 'e2e/smoke/responsive-all-apps.spec.ts', grep: '/sight/' },
   ],
   drums: [
-    'e2e/smoke/drums-load-interaction.spec.ts',
-    'e2e/smoke/drums-score-export.spec.ts',
     'e2e/smoke/metronome-advanced-settings.spec.ts',
     'e2e/smoke/layout-heuristics-drums.spec.ts',
     'src/drums/e2e/drums-init.spec.ts',
@@ -66,12 +44,6 @@ const APP_SMOKE_SPECS = {
     { file: 'e2e/smoke/responsive-all-apps.spec.ts', grep: '/drums/' },
   ],
   stanza: [
-    'e2e/smoke/stanza-practice-rail.spec.ts',
-    'e2e/smoke/stanza-library.spec.ts',
-    'e2e/smoke/stanza-dual-source-switch.spec.ts',
-    'e2e/smoke/stanza-loop-whole-song.spec.ts',
-    'e2e/smoke/stanza-playthrough-tail.spec.ts',
-    'e2e/smoke/stanza-playback-soak.spec.ts',
     'e2e/smoke/drive-sync-merge-guards.spec.ts',
     'e2e/smoke/layout-heuristics-stanza.spec.ts',
     'e2e/smoke/scroll-sanity-stanza.spec.ts',
@@ -79,37 +51,29 @@ const APP_SMOKE_SPECS = {
     { file: 'e2e/smoke/responsive-all-apps.spec.ts', grep: '/stanza/' },
   ],
   words: [
-    'e2e/smoke/words-practice-interaction.spec.ts',
     'e2e/smoke/layout-heuristics-words.spec.ts',
     'src/words/e2e/words-init.spec.ts',
     { file: 'e2e/smoke/app-shells.spec.ts', grep: '/words/' },
     { file: 'e2e/smoke/responsive-all-apps.spec.ts', grep: '/words/' },
   ],
   chords: [
-    'e2e/smoke/chords-play-interaction.spec.ts',
     'src/chords/e2e/chords-init.spec.ts',
     { file: 'e2e/smoke/app-shells.spec.ts', grep: '/chords/' },
     { file: 'e2e/smoke/responsive-all-apps.spec.ts', grep: '/chords/' },
   ],
   story: [
-    'e2e/smoke/story-load-interaction.spec.ts',
     'src/story/e2e/story-init.spec.ts',
     'src/story/e2e/story-generation.spec.ts',
     { file: 'e2e/smoke/app-shells.spec.ts', grep: '/story/' },
     { file: 'e2e/smoke/responsive-all-apps.spec.ts', grep: '/story/' },
   ],
   zinebox: [
-    'e2e/smoke/zinebox-library.spec.ts',
-    'e2e/smoke/zinebox-library-scroll.spec.ts',
-    'e2e/smoke/zinebox-drive-import.spec.ts',
     'e2e/smoke/drive-sync-merge-guards.spec.ts',
     'e2e/smoke/layout-heuristics-zinebox.spec.ts',
     { file: 'e2e/smoke/app-shells.spec.ts', grep: '/zinebox/' },
     { file: 'e2e/smoke/responsive-all-apps.spec.ts', grep: '/zinebox/' },
   ],
   lyrefly: [
-    'e2e/smoke/lyrefly-gallery.spec.ts',
-    'e2e/smoke/lyrefly-thumbs.spec.ts',
     'e2e/smoke/drive-sync-merge-guards.spec.ts',
     { file: 'e2e/smoke/app-shells.spec.ts', grep: '/lyrefly/' },
     { file: 'e2e/smoke/responsive-all-apps.spec.ts', grep: '/lyrefly/' },
@@ -121,20 +85,16 @@ const APP_SMOKE_SPECS = {
   ],
   scrapboard: [
     'e2e/smoke/scrapboard.spec.ts',
-    'e2e/smoke/scrapboard-bubbles.spec.ts',
     { file: 'e2e/smoke/app-shells.spec.ts', grep: '/scrapboard/' },
     { file: 'e2e/smoke/responsive-all-apps.spec.ts', grep: '/scrapboard/' },
   ],
   muscle: [
-    'e2e/smoke/muscle-shell.spec.ts',
-    'e2e/smoke/muscle-study-journey.spec.ts',
     'e2e/smoke/layout-heuristics-muscle.spec.ts',
     { file: 'e2e/smoke/app-shells.spec.ts', grep: '/muscle/' },
     { file: 'e2e/smoke/responsive-all-apps.spec.ts', grep: '/muscle/' },
   ],
   midi: [{ file: 'e2e/smoke/app-shells.spec.ts', grep: '/midi/' }],
   maqam: [
-    'e2e/smoke/maqam-playground.spec.ts',
     { file: 'e2e/smoke/app-shells.spec.ts', grep: '/maqam/' },
   ],
   agility: [{ file: 'e2e/smoke/app-shells.spec.ts', grep: '/agility/' }],
@@ -248,13 +208,13 @@ if (apps.length === 0) {
 
 const args = [];
 for (const app of apps) {
-  const specs = APP_SMOKE_SPECS[app];
-  if (!specs) {
+  const explicit = APP_SMOKE_SPECS[app];
+  if (!explicit) {
     console.log(`run-scoped-e2e: no scoped map for ${app}; running full smoke`);
     execSync('npm run test:e2e:smoke', { stdio: 'inherit' });
     process.exit(0);
   }
-  for (const entry of specs) {
+  for (const entry of scopedSpecsForApp(app, explicit)) {
     if (typeof entry === 'string') {
       if (existsSync(entry)) args.push(entry);
     } else {
@@ -275,8 +235,7 @@ const uniqueArgs = [...new Set(args)];
 console.log(`run-scoped-e2e: apps=${apps.join(',')} specs=${uniqueArgs.join(' ')}`);
 
 for (const app of apps) {
-  const specs = APP_SMOKE_SPECS[app] ?? [];
-  for (const entry of specs) {
+  for (const entry of scopedSpecsForApp(app, APP_SMOKE_SPECS[app] ?? [])) {
     if (typeof entry === 'string') {
       execSync(`npx playwright test "${entry}"`, { stdio: 'inherit' });
     } else if (entry.grep) {
