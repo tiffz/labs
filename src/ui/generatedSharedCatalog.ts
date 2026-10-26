@@ -22213,7 +22213,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "music-core",
-    "description": "Map one chord per lyric line in a section, looping the progression as needed. Each line gets a single chord at the first word (column 0 when the line is empty).",
+    "description": "Put a progression into a section. - A lyric line gets one chord at its first word, looping the progression across the lines. - A chord-only line (an intro, a solo) is a chord chart, so it gets the whole progression, one chord per measure. It used to get one chord, so `Am F C G` collapsed to `Am`. - An empty section gets the progression as one new chord-only line. It used to change nothing and report success, so applying a progression to a fresh instrumental section did nothing.",
     "tags": [
       "music"
     ],
@@ -22244,7 +22244,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "music-core",
-    "description": "No JSDoc summary provided.",
+    "description": "Lines the progression will land on. An empty section still counts one: applying writes the progression as a new chord-only line, rather than reporting success while changing nothing.",
     "tags": [
       "music"
     ],
@@ -22305,7 +22305,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "music-core",
-    "description": "Assume 4/4: each lyric line spans two measures; one chord change per measure.",
+    "description": "Assume 4/4: a lyric line spans at least two measures; one chord change per measure.",
     "tags": [
       "music",
       "api"
@@ -22321,7 +22321,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "music-core",
-    "description": "Assume 4/4: each lyric line spans two measures; one chord change per measure.",
+    "description": "Assume 4/4: a lyric line spans at least two measures; one chord change per measure.",
     "tags": [
       "music",
       "api"
@@ -22367,7 +22367,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "music-core",
-    "description": "Build a measure-aligned playback schedule: two measures per lyric line, chord at each measure boundary, holding/repeating the previous chord when a line has fewer changes.",
+    "description": "Build a measure-aligned playback schedule: measures per line, one chord per measure in order, holding the last chord when a line has fewer chords than measures.",
     "tags": [
       "music"
     ],
@@ -22397,7 +22397,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "model",
     "stability": "stable",
     "owner": "music-core",
-    "description": "Assume 4/4: each lyric line spans two measures; one chord change per measure.",
+    "description": "Assume 4/4: a lyric line spans at least two measures; one chord change per measure.",
     "tags": [
       "music",
       "api"
@@ -22483,13 +22483,28 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-music-chordpro-chartplaybacksequence-ts-playbackmeasuresforline",
+    "name": "playbackMeasuresForLine",
+    "path": "src/shared/music/chordPro/chartPlaybackSequence.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "How many measures a line spans in playback. A chord-only line (an intro, a solo, an instrumental) is a chord chart: one measure per chord. A lyric line spans two measures, or one per chord when it has more than two. Before this, every line was two measures holding at most `chords[0]` and `chords[1]`, so `[Am][F][C][G]` played `Am F` and C and G were silently dropped.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-music-chordpro-chartplaybacksequence-ts-sectionhasplayablechartsteps",
     "name": "sectionHasPlayableChartSteps",
     "path": "src/shared/music/chordPro/chartPlaybackSequence.ts",
     "kind": "utility",
     "stability": "stable",
     "owner": "music-core",
-    "description": "Assume 4/4: each lyric line spans two measures; one chord change per measure.",
+    "description": "Assume 4/4: a lyric line spans at least two measures; one chord change per measure.",
     "tags": [
       "music"
     ],

@@ -1,7 +1,7 @@
 import { parseChordSymbol } from '../chordMatcher';
 import { tokenizeLyricLine, snapChordColumnToCharIndex, type ChartLayout, type ChordMarker, type LyricLine } from './chordChartLayout';
 
-/** Assume 4/4: each lyric line spans two measures; one chord change per measure. */
+/** Assume 4/4: a lyric line spans at least two measures; one chord change per measure. */
 export const CHART_PLAYBACK_MEASURES_PER_LINE = 2;
 export const CHART_PLAYBACK_BEATS_PER_MEASURE = 4;
 
@@ -32,18 +32,31 @@ function wordTokens(text: string): Array<{ start: number; end: number }> {
     .map((t) => ({ start: t.start, end: t.start + t.token.length }));
 }
 
-function lyricSpanForMeasure(text: string, measureIndex: number): { start: number; end: number } {
+/** The words sung in measure `measureIndex` of `measureCount`, split as evenly as the words allow. */
+function lyricSpanForMeasure(
+  text: string,
+  measureIndex: number,
+  measureCount: number,
+): { start: number; end: number } {
   const words = wordTokens(text);
   if (words.length === 0) return { start: 0, end: 0 };
-  const mid = Math.ceil(words.length / 2);
-  const slice = measureIndex === 0 ? words.slice(0, mid) : words.slice(mid);
-  const group = slice.length > 0 ? slice : words;
+  const per = Math.ceil(words.length / measureCount);
+  const slice = words.slice(measureIndex * per, (measureIndex + 1) * per);
+  const group = slice.length > 0 ? slice : words.slice(-1);
   return { start: group[0]!.start, end: group[group.length - 1]!.end };
 }
 
-function chordForMeasure(chords: ChordMarker[], measureIndex: number, carryChord: ChordMarker | null): ChordMarker | null {
-  if (measureIndex === 0) return chords[0] ?? carryChord;
-  return chords[1] ?? chords[0] ?? carryChord;
+/**
+ * How many measures a line spans in playback.
+ *
+ * A chord-only line (an intro, a solo, an instrumental) is a chord chart: one measure per chord.
+ * A lyric line spans two measures, or one per chord when it has more than two. Before this, every
+ * line was two measures holding at most `chords[0]` and `chords[1]`, so `[Am][F][C][G]` played
+ * `Am F` and C and G were silently dropped.
+ */
+export function playbackMeasuresForLine(line: LyricLine): number {
+  if (line.text.trim().length === 0) return line.chords.length;
+  return Math.max(CHART_PLAYBACK_MEASURES_PER_LINE, line.chords.length);
 }
 
 function lineHasPlaybackContent(line: LyricLine): boolean {
@@ -51,8 +64,8 @@ function lineHasPlaybackContent(line: LyricLine): boolean {
 }
 
 /**
- * Build a measure-aligned playback schedule: two measures per lyric line, chord at each
- * measure boundary, holding/repeating the previous chord when a line has fewer changes.
+ * Build a measure-aligned playback schedule: {@link playbackMeasuresForLine} measures per line, one
+ * chord per measure in order, holding the last chord when a line has fewer chords than measures.
  */
 export function chartLayoutToPlaybackSequence(layout: ChartLayout): ChartPlaybackStep[] {
   const steps: ChartPlaybackStep[] = [];
@@ -64,13 +77,15 @@ export function chartLayoutToPlaybackSequence(layout: ChartLayout): ChartPlaybac
       if (!lineHasPlaybackContent(line)) continue;
 
       const chords = [...line.chords].sort((a, b) => a.charIndex - b.charIndex);
+      const measureCount = playbackMeasuresForLine(line);
 
-      for (let measureIndex = 0; measureIndex < CHART_PLAYBACK_MEASURES_PER_LINE; measureIndex += 1) {
-        const active = chordForMeasure(chords, measureIndex, carry);
+      for (let measureIndex = 0; measureIndex < measureCount; measureIndex += 1) {
+        // Each chord in order; past the last, hold it; a line with none holds the previous line's.
+        const active: ChordMarker | null = chords[measureIndex] ?? chords[chords.length - 1] ?? carry;
         if (!active) continue;
 
         carry = active;
-        const { start, end } = lyricSpanForMeasure(line.text, measureIndex);
+        const { start, end } = lyricSpanForMeasure(line.text, measureIndex, measureCount);
 
         steps.push({
           tickId: `tick-${tickCounter++}`,
@@ -137,7 +152,9 @@ export function estimateMeasuresForLine(line: LyricLine): number {
   if (hasChordMarkers && !playable) return 0;
   const words = wordTokens(line.text);
   const anchors = distinctChordAnchors(line);
-  if (words.length === 0) return anchors > 0 ? 1 : 0;
+  // A chord-only line plays one measure per chord; estimate the same so the duration matches.
+  if (words.length === 0) return playbackMeasuresForLine(line);
+  if (anchors > CHART_PLAYBACK_MEASURES_PER_LINE) return playbackMeasuresForLine(line);
   if (words.length <= 4) return 1;
   if (anchors >= 2) return CHART_PLAYBACK_MEASURES_PER_LINE;
   // No two-chord signal to widen the line. Chord charts keep single-chord lines at one
