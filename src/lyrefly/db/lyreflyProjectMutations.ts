@@ -94,18 +94,27 @@ export async function ensureLyreflyArchive(project: ComicProject): Promise<Comic
   return archive;
 }
 
+/**
+ * Saves an archive edit and advances its project's clock. Other devices decide whether to pull a
+ * comic by that clock, so an archive edit that left it alone never reached them.
+ */
+async function saveLyreflyArchive(updated: ComicArchiveBinder): Promise<ComicArchiveBinder> {
+  const now = new Date().toISOString();
+  await lyreflyDb.archives.put(updated);
+  await lyreflyDb.projects.update(updated.projectId, { updatedAt: now });
+  await markLyreflyDirtyRow('archive', updated.id, 'upsert', updated.projectId);
+  notifyLyreflyLocalChange();
+  return updated;
+}
+
 export async function addPublishLogEntry(
   archive: ComicArchiveBinder,
   entry: Omit<PublishLogEntry, 'id'>,
 ): Promise<ComicArchiveBinder> {
-  const updated: ComicArchiveBinder = {
+  return saveLyreflyArchive({
     ...archive,
-    publishLog: [...archive.publishLog, { ...entry, id: crypto.randomUUID() }],
-  };
-  await lyreflyDb.archives.put(updated);
-  await markLyreflyDirtyRow('archive', updated.id, 'upsert', archive.projectId);
-  notifyLyreflyLocalChange();
-  return updated;
+    publishLog: [...archive.publishLog, { ...entry, id: crypto.randomUUID(), updatedAt: new Date().toISOString() }],
+  });
 }
 
 export async function updatePublishLogEntry(
@@ -113,44 +122,34 @@ export async function updatePublishLogEntry(
   entryId: string,
   patch: Partial<Pick<PublishLogEntry, 'platform' | 'publishedAt' | 'url' | 'notes'>>,
 ): Promise<ComicArchiveBinder> {
-  const updated: ComicArchiveBinder = {
+  const updatedAt = new Date().toISOString();
+  return saveLyreflyArchive({
     ...archive,
     publishLog: archive.publishLog.map((entry) =>
-      entry.id === entryId ? { ...entry, ...patch } : entry,
+      entry.id === entryId ? { ...entry, ...patch, updatedAt } : entry,
     ),
-  };
-  await lyreflyDb.archives.put(updated);
-  await markLyreflyDirtyRow('archive', updated.id, 'upsert', archive.projectId);
-  notifyLyreflyLocalChange();
-  return updated;
+  });
 }
 
 export async function addPressMemorabiliaEntry(
   archive: ComicArchiveBinder,
   entry: Omit<PressMemorabiliaEntry, 'id'>,
 ): Promise<ComicArchiveBinder> {
-  const updated: ComicArchiveBinder = {
+  return saveLyreflyArchive({
     ...archive,
-    pressEntries: [...archive.pressEntries, { ...entry, id: crypto.randomUUID() }],
-  };
-  await lyreflyDb.archives.put(updated);
-  await markLyreflyDirtyRow('archive', updated.id, 'upsert', archive.projectId);
-  notifyLyreflyLocalChange();
-  return updated;
+    pressEntries: [...archive.pressEntries, { ...entry, id: crypto.randomUUID(), updatedAt: new Date().toISOString() }],
+  });
 }
 
 export async function deletePressMemorabiliaEntry(
   archive: ComicArchiveBinder,
   entryId: string,
 ): Promise<ComicArchiveBinder> {
-  const updated: ComicArchiveBinder = {
+  return saveLyreflyArchive({
     ...archive,
     pressEntries: archive.pressEntries.filter((entry) => entry.id !== entryId),
-  };
-  await lyreflyDb.archives.put(updated);
-  await markLyreflyDirtyRow('archive', updated.id, 'upsert', archive.projectId);
-  notifyLyreflyLocalChange();
-  return updated;
+    deletedRowIds: { ...archive.deletedRowIds, [entryId]: new Date().toISOString() },
+  });
 }
 
 export async function createVisualDevAsset(

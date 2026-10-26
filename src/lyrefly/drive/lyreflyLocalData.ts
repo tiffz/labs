@@ -1,6 +1,7 @@
 import { lyreflyDb } from '../db/lyreflyDb';
 import { projectToSummary, type ComicProject } from '../types';
 import type { LyreflySyncPayload } from './lyreflyDriveEnvelope';
+import { markLyreflyPackagePullPending } from './lyreflyPendingPackagePulls';
 
 export async function readLyreflyLocalPayload(): Promise<LyreflySyncPayload> {
   const projects = await lyreflyDb.projects.toArray();
@@ -47,6 +48,9 @@ export async function writeLyreflyLocalPayload(payload: LyreflySyncPayload): Pro
         await lyreflyDb.projects.put(stub);
         continue;
       }
+      // Stamping the newer clock below hides that this device has not applied the remote
+      // package yet; record it so the package download does not skip this project.
+      if (summary.updatedAt > current.updatedAt) markLyreflyPackagePullPending(summary.id);
       await lyreflyDb.projects.put({
         ...current,
         title: summary.title,
