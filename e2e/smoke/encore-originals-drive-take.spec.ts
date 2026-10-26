@@ -5,8 +5,9 @@ import { seedZineboxE2eGoogleSession } from '../helpers/zineboxDriveImport';
 import { stubEncoreSignedInDrive, type E2eDriveFiles } from '../helpers/encoreDriveStub';
 
 /**
- * "Add take" → paste a Google Drive link. A file you own becomes a take where it is (plus a
- * shortcut in Encore's audio folder); a friend's file is copied into your Drive first (ADR 0029).
+ * "Add take" → paste a Google Drive link → review → confirm. A file you own becomes a take where it
+ * is (plus a shortcut in Encore's audio folder); a friend's file is copied into your Drive first
+ * (ADR 0029). Pasting only stages: Drive sees no write until the user confirms (ADR 0030).
  */
 const OWNED = 'e2eOwnedOriginalTakeFile00001';
 const FRIEND = 'e2eFriendOriginalTakeFile0001';
@@ -16,9 +17,9 @@ const FILES: E2eDriveFiles = {
   [FRIEND]: { id: FRIEND, name: 'Friend harmony.m4a', mimeType: 'audio/mp4', ownedByMe: false },
 };
 
-for (const { label, fileId, name, copied, shortcutTargets } of [
-  { label: 'a file you own is added as a pointer', fileId: OWNED, name: 'Bedroom demo.mov', copied: [], shortcutTargets: [OWNED] },
-  { label: 'a friend’s file is copied first', fileId: FRIEND, name: 'Friend harmony.m4a', copied: [FRIEND], shortcutTargets: [] },
+for (const { label, fileId, name, outcome, copied, shortcutTargets } of [
+  { label: 'a file you own is added as a pointer', fileId: OWNED, name: 'Bedroom demo.mov', outcome: 'Links to your file in Drive', copied: [], shortcutTargets: [OWNED] },
+  { label: 'a friend’s file is copied first', fileId: FRIEND, name: 'Friend harmony.m4a', outcome: 'Copies into your Drive', copied: [FRIEND], shortcutTargets: [] },
 ]) {
   test(`Encore Originals Drive take: ${label}`, async ({ page }) => {
     test.setTimeout(60_000);
@@ -34,6 +35,17 @@ for (const { label, fileId, name, copied, shortcutTargets } of [
     const field = page.getByPlaceholder('Paste link');
     await field.fill(`https://drive.google.com/file/d/${fileId}/view`);
     await field.press('Enter');
+
+    // Staged, not added: the review row says what will happen, and Drive has seen no write yet.
+    const review = page.getByRole('region', { name: 'Takes ready to add' });
+    await expect(review.getByText(name)).toBeVisible({ timeout: 15_000 });
+    await expect(review.getByText(outcome)).toBeVisible();
+    await expect(takes.getByRole('textbox', { name: 'Take name' })).toHaveCount(1);
+    expect(drive.copied).toEqual([]);
+    expect(drive.shortcutTargets).toEqual([]);
+
+    await review.getByRole('button', { name: 'Add take' }).click();
+    await expect(review).toBeHidden({ timeout: 15_000 });
 
     // The row shows the name, sometimes without its extension.
     const names = takes.getByRole('textbox', { name: 'Take name' });

@@ -5,9 +5,9 @@ import type { OriginalsTakesController } from '../hooks/useOriginalsTakes';
 /**
  * "Add take": paste a Google Drive link, or upload from this device.
  *
- * The same menu the song page uses to add tracks, so a take is added the way every other media
- * file in Encore is. Both take surfaces (the Record-takes stage and the song-files panel) render
- * this, against one `useOriginalsTakes` controller, so they cannot drift apart again.
+ * The same menu the song page uses to add tracks. Either path only STAGES the take: it appears in
+ * the controller's review panel, and nothing is saved until the user confirms there (ADR 0030).
+ * Both take surfaces render this against one `useOriginalsTakes` controller.
  */
 export function OriginalsTakeAddMenu({
   takes,
@@ -18,26 +18,10 @@ export function OriginalsTakeAddMenu({
 }): ReactElement {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   const [pasteValue, setPasteValue] = useState('');
-  const [pasteError, setPasteError] = useState<string | null>(null);
-  const [adding, setAdding] = useState(false);
 
   const close = () => {
     setAnchor(null);
-    setPasteError(null);
     setPasteValue('');
-  };
-
-  const addLink = async (raw: string) => {
-    if (adding) return;
-    setAdding(true);
-    setPasteError(null);
-    try {
-      const result = await takes.addFromDriveLink(raw);
-      if (result.ok) close();
-      else setPasteError(result.message);
-    } finally {
-      setAdding(false);
-    }
   };
 
   return (
@@ -48,14 +32,12 @@ export function OriginalsTakeAddMenu({
       onOpenMenu={setAnchor}
       onCloseMenu={close}
       pasteValue={pasteValue}
-      onPasteValueChange={(next) => {
-        setPasteValue(next);
-        setPasteError(null);
+      onPasteValueChange={setPasteValue}
+      onPasteApply={(raw) => {
+        takes.stageLink(raw);
+        close();
       }}
-      onPasteApply={(raw) => void addLink(raw)}
-      pasteError={pasteError}
       pasteHint="Google Drive"
-      pasteBusy={adding}
       uploadDisabled={takes.uploading}
       onUploadClick={takes.openFilePicker}
     />

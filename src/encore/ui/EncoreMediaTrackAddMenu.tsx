@@ -47,8 +47,6 @@ export type EncoreMediaTrackAddMenuProps = {
   pasteError?: string | null;
   /** Which links the field takes, under "Paste a link". */
   pasteHint?: string;
-  /** Disables the paste field while a pasted link is being added. */
-  pasteBusy?: boolean;
   /** Omit the Spotify props (or pass `spotifyLinked: false`) for surfaces that only take files. */
   spotifyLinked?: boolean;
   clientId?: string;
@@ -86,7 +84,6 @@ export function EncoreMediaTrackAddMenu(props: EncoreMediaTrackAddMenuProps): Re
     onPasteApply,
     pasteError,
     pasteHint = 'Spotify, YouTube, Stanza, or Drive',
-    pasteBusy = false,
     spotifyLinked = false,
     clientId = '',
     searchValue = '',
@@ -170,7 +167,6 @@ export function EncoreMediaTrackAddMenu(props: EncoreMediaTrackAddMenuProps): Re
             onChange={onPasteValueChange}
             onApply={onPasteApply}
             placeholder="Paste link"
-            disabled={pasteBusy}
             embedInMenu
           />
           {pasteError ? (

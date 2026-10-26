@@ -33,6 +33,9 @@ import {
   type SharedCatalogKind,
 } from './generatedSharedCatalog';
 import type { ExportAudioRenderRequest, ExportSourceAdapter } from '../shared/music/exportTypes';
+import { LabsStagedUploadPanel } from '../shared/upload/LabsStagedUploadPanel';
+import type { LabsStagedUploadSource } from '../shared/upload/stagedUploads';
+import { useLabsStagedUploads } from '../shared/upload/useLabsStagedUploads';
 import RegressionPanel from './RegressionPanel';
 import MelodiaCorpusReview from './melodia/MelodiaCorpusReview';
 
@@ -862,6 +865,53 @@ function NumericStepperFieldDemo() {
   );
 }
 
+/** Staged uploads: a ready file, a refused file, and a link still being checked. */
+function StagedUploadPanelDemo() {
+  const [added, setAdded] = useState<string[]>([]);
+  const staged = useLabsStagedUploads<null>({
+    inspect: async (source: LabsStagedUploadSource) => {
+      if (source.kind === 'link') {
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+        return { ok: true, name: 'Friend harmony.m4a', mimeType: 'audio/mp4', sizeBytes: null, outcome: 'Copies into your Drive', plan: null };
+      }
+      if (!source.file.type.startsWith('audio/')) {
+        return { ok: false, name: source.file.name, message: "That file isn't an audio or video file." };
+      }
+      return { ok: true, name: source.file.name, mimeType: source.file.type, sizeBytes: source.file.size, outcome: 'Saved on this device', plan: null };
+    },
+  });
+  return (
+    <div style={{ maxWidth: 420, display: 'grid', gap: 12 }}>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <button
+          type="button"
+          onClick={() =>
+            staged.stageFiles([
+              new File([new Uint8Array(48_000)], 'Bedroom demo.mp3', { type: 'audio/mpeg' }),
+              new File(['notes'], 'lyrics.txt', { type: 'text/plain' }),
+            ])
+          }
+        >
+          Stage 2 files
+        </button>
+        <button type="button" onClick={() => staged.stageLink('https://drive.google.com/file/d/demo/view')}>
+          Stage a Drive link
+        </button>
+      </div>
+      <LabsStagedUploadPanel
+        staged={staged}
+        confirmLabel={(n) => (n === 1 ? 'Add take' : `Add ${n} takes`)}
+        onConfirm={() =>
+          void staged.confirm(async (ready) => {
+            setAdded((prev) => [...prev, ...ready.map((item) => item.name)]);
+          })
+        }
+      />
+      {added.length > 0 ? <div>Added: {added.join(', ')}</div> : null}
+    </div>
+  );
+}
+
 function ChordPlaybackSettingsPanelDemo() {
   const [settings, setSettings] = useState(DEFAULT_CHORD_PLAYBACK_SETTINGS);
   return (
@@ -1224,6 +1274,8 @@ function DemoPanel({
       return <PlaybackVolumeRowDemo />;
     case 'numeric-stepper-field':
       return <NumericStepperFieldDemo />;
+    case 'staged-upload-panel':
+      return <StagedUploadPanelDemo />;
     case 'chord-playback-settings-panel':
       return <ChordPlaybackSettingsPanelDemo />;
     default:
