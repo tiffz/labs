@@ -21,7 +21,7 @@ export const armNodes = [
     layout: { position: [0.58, 0.88, 0.05], rotation: [0, 0, -0.2], scale: [0.08, 0.22, 0.08] },
     cameraPresetKey: 'forearm',
   }),
-  muscle('muscle_extensor_carpi_radialis', 'Extensor carpi radialis', 'arm', 0, 'cylinder', {
+  muscle('muscle_extensor_carpi_radialis', 'Extensor carpi radialis longus', 'arm', 0, 'cylinder', {
     layout: { position: [0.56, 0.72, -0.04], scale: [0.07, 0.28, 0.07] },
     cameraPresetKey: 'forearm',
   }),

@@ -89,7 +89,7 @@ export const ARTIST_STUDY_MANIFEST: ArtistStudyEntry[] = [
   { id: 'muscle_triceps_long_head', displayName: 'Triceps (long head)', moduleId: 'arm', studyGroupPath: [], defaultVisible: true, quizEligible: true, prokoLessonRef: 'Arms' },
   { id: 'muscle_brachialis', displayName: 'Brachialis', moduleId: 'arm', studyGroupPath: [], defaultVisible: true, quizEligible: true, prokoLessonRef: 'Arms' },
   { id: 'muscle_brachioradialis', displayName: 'Brachioradialis', moduleId: 'arm', studyGroupPath: [], defaultVisible: true, quizEligible: true, prokoLessonRef: 'Arms' },
-  { id: 'muscle_extensor_carpi_radialis', displayName: 'Extensor carpi radialis', moduleId: 'arm', studyGroupPath: [], defaultVisible: true, quizEligible: true, prokoLessonRef: 'Arms' },
+  { id: 'muscle_extensor_carpi_radialis', displayName: 'Extensor carpi radialis longus', moduleId: 'arm', studyGroupPath: [], defaultVisible: true, quizEligible: true, prokoLessonRef: 'Arms' },
   { id: 'muscle_flexor_carpi_radialis', displayName: 'Flexor carpi radialis', moduleId: 'arm', studyGroupPath: [], defaultVisible: true, quizEligible: true, prokoLessonRef: 'Arms' },
   // Hand
   { id: 'bone_carpals', displayName: 'Carpals', moduleId: 'hand', studyGroupPath: ['Bones'], defaultVisible: true, quizEligible: true, prokoLessonRef: 'Hands', afsChapterTag: 'Arm and Hand in Motion' },
