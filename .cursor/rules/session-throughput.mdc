@@ -25,9 +25,12 @@ For **multi-bug / upgrade / spot-check** sessions, optimize for wall-clock and t
    `pre-push` runs the whole presubmit (380-520s, over its own 300s budget because
    `test:changed-apps` falls back to the full suite whenever `src/shared/**` is touched). Ten small
    commits and five pushes is roughly an hour of gate time. Group related work into one commit.
-7. **Never edit the working tree while a hook is running** — the hook reads the tree it is
+7. **Never touch the checkout while a hook is running** — the hook reads the tree it is
    validating, so a concurrent edit produces a failure that has nothing to do with your change.
-   Background the commit/push and wait for it.
+   That includes running Playwright (it shares the hook's dev server and CPU: a side e2e run made
+   a drums smoke fail mid-push) and `git checkout` of another branch (refused only because the
+   hook had already modified a file). Background the commit/push, read code if you must, and wait
+   for the notification.
 8. **Verify a commit landed by checking `HEAD` moved**, not by the exit code of a backgrounded
    `git commit`. A rejected pre-commit hook still leaves files staged and can look like success.
 9. **Scoped tests first** — touched-file Vitest/e2e, then one `presubmit`. Do not babysit unrelated dirty-tree failures.
