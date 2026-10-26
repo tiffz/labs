@@ -38,6 +38,11 @@ const FORWARDS = new Map([
   ['encore/originals/originalsSongFileDrag.ts', 'classifies a drag for slot highlighting'],
   ['encore/components/song/encoreDragPayload.ts', 'classifies a drag for slot highlighting'],
   ['gesture/drive/gestureFolderPicker.ts', 'wraps showDirectoryPicker for its caller'],
+  // Stanza: these hand files to StanzaWorkspace, which stages them (useStanzaUploadStaging).
+  ['stanza/components/stanzaWorkspace/StanzaLandingHero.tsx', 'passes the picked file to onUploadFile'],
+  ['stanza/components/stanzaWorkspace/StanzaLibraryFooterPanel.tsx', 'passes the picked file to onUploadFile'],
+  ['stanza/components/stanzaWorkspace/StanzaPracticeMixSection.tsx', 'passes the picked stem to onAddStemFromFile'],
+  ['stanza/hooks/useStanzaFileDrop.ts', 'passes dropped files to onAudioFiles'],
 ]);
 
 const SAVES_NOTHING = new Map([
@@ -63,11 +68,6 @@ const PENDING = new Map([
   // Zine Box: one PDF imports at once; two or more review in a dialog
   ['zinebox/components/ZineboxLibraryAddPanel.tsx', 'single PDF imports on pick'],
   ['zinebox/hooks/useZineboxLibraryDrop.ts', 'single PDF imports on drop'],
-  // Stanza: a new song is created on pick or drop
-  ['stanza/components/stanzaWorkspace/StanzaLandingHero.tsx', 'creates a song on pick'],
-  ['stanza/components/stanzaWorkspace/StanzaLibraryFooterPanel.tsx', 'creates a song on pick'],
-  ['stanza/components/stanzaWorkspace/StanzaPracticeMixSection.tsx', 'adds a stem on pick'],
-  ['stanza/hooks/useStanzaFileDrop.ts', 'creates a song on drop'],
   // Gesture: photo uploads start on pick or drop
   ['gesture/components/AddCollectionActions.tsx', 'uploads photos on pick'],
   ['gesture/components/InterruptedUploadBanner.tsx', 'resumes an upload on re-pick'],

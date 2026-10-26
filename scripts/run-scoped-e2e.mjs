@@ -66,6 +66,7 @@ const APP_SMOKE_SPECS = {
   stanza: [
     'e2e/smoke/stanza-practice-rail.spec.ts',
     'e2e/smoke/stanza-library.spec.ts',
+    'e2e/smoke/stanza-staged-upload.spec.ts',
     'e2e/smoke/stanza-dual-source-switch.spec.ts',
     'e2e/smoke/stanza-loop-whole-song.spec.ts',
     'e2e/smoke/stanza-playthrough-tail.spec.ts',

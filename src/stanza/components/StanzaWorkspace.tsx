@@ -62,6 +62,7 @@ import {
 import { getStanzaLocalMainMediaElement } from '../utils/stanzaLocalMainMediaElement';
 import { runStanzaLibraryDedupeMigrationOnce } from '../db/stanzaConsolidateLocalLibrary';
 import { useStanzaFileDrop } from '../hooks/useStanzaFileDrop';
+import { useStanzaUploadStaging } from '../hooks/useStanzaUploadStaging';
 import { canResolveYoutubePaste, resolveYoutubePaste } from '../utils/youtubePasteImport';
 import {
   areContiguousSegmentIndices,
@@ -1528,6 +1529,13 @@ export default function StanzaWorkspace() {
     }
   }, [isReplayingRef, pushUndo]);
 
+  // Picks and drops stage for review; they are added on confirm (ADR 0030).
+  const { stageSongFiles, stageStemFiles, panels: stagedUploadPanels } = useStanzaUploadStaging({
+    addLocalSong,
+    addStemFromFile,
+    openSongTitle: selected?.title ?? null,
+  });
+
   /**
    * Drag-and-drop: OS files onto the Stanza surface import as a new library song, or — when a
    * piece is already open and each file's metadata duration matches the loaded track (±0.28s) —
@@ -1544,7 +1552,7 @@ export default function StanzaWorkspace() {
         const canTryStemHeuristic = Boolean(row && refDur > 0.25);
 
         if (!canTryStemHeuristic) {
-          await addLocalSong(files[0]);
+          stageSongFiles(files);
           return;
         }
 
@@ -1558,7 +1566,7 @@ export default function StanzaWorkspace() {
         const matching = probed.filter((p) => p.dur != null && Math.abs(p.dur - refDur) <= eps);
 
         if (matching.length === 0) {
-          await addLocalSong(files[0]);
+          stageSongFiles(files);
           return;
         }
 
@@ -1573,7 +1581,7 @@ export default function StanzaWorkspace() {
         setLocalUploadError(e instanceof Error ? e.message : String(e));
       }
     },
-    [addLocalSong],
+    [stageSongFiles],
   );
 
   const fileDropDisabled = Boolean(stemDropConfirm);
@@ -2655,12 +2663,12 @@ export default function StanzaWorkspace() {
       ) : null}
       {showLandingHero && (
         <StanzaLandingHero
-          alerts={driveDeepLinkAlerts}
+          alerts={<>{driveDeepLinkAlerts}{stagedUploadPanels}</>}
           ytPaste={ytPaste}
           onYtPasteChange={setYtPaste}
           canLoadYoutube={canResolveYoutubePaste(ytPaste)}
           onLoadYoutube={() => void addYoutubeSong()}
-          onUploadFile={(f) => void addLocalSong(f)}
+          onUploadFile={(f) => stageSongFiles([f])}
           librarySongs={sortedLibrarySongs}
           libraryCount={songs?.length ?? 0}
           selectedId={selectedId}
@@ -2671,7 +2679,7 @@ export default function StanzaWorkspace() {
       {selected && (
         <StanzaViewerErrorBoundary>
         <StanzaViewerLayout
-          alerts={driveDeepLinkAlerts}
+          alerts={<>{driveDeepLinkAlerts}{stagedUploadPanels}</>}
           header={
           <StanzaViewerHeaderBar
             song={selected}
@@ -2694,7 +2702,7 @@ export default function StanzaWorkspace() {
             onYtPasteChange={setYtPaste}
             canAddYoutube={canResolveYoutubePaste(ytPaste)}
             onAddYoutube={() => void addYoutubeSong()}
-            onUploadFile={(f) => void addLocalSong(f)}
+            onUploadFile={(f) => stageSongFiles([f])}
             librarySongs={sortedLibrarySongs}
             libraryCount={songs?.length ?? 0}
             selectedId={selectedId}
@@ -3174,7 +3182,7 @@ export default function StanzaWorkspace() {
                     onStemDragLeave={(stemId) => setStemReorderOverId((id) => (id === stemId ? null : id))}
                     onReorderStems={reorderStemsPersist}
                     stemFileInputRef={stemFileInputRef}
-                    onAddStemFromFile={addStemFromFile}
+                    onAddStemFromFile={(f) => stageStemFiles([f])}
                   />
                 </Stack>
                 </Box>
