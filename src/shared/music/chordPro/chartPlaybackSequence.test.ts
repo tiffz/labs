@@ -7,7 +7,7 @@ import {
   estimateChartPlaybackMeasureCount,
   formatChartPlaybackDuration,
 } from './chartPlaybackSequence';
-import type { ChartLayout } from './chordChartLayout';
+import { parseChordProToChartLayout, type ChartLayout } from './chordChartLayout';
 
 describe('chartPlaybackSequence', () => {
   it('orders chords by section, line, and char index with two measures per line', () => {
@@ -188,5 +188,29 @@ describe('chartPlaybackSequence', () => {
     expect(estimateChartPlaybackMeasureCount(layout)).toBe(3);
     // 3 measures at 120 BPM = 6000ms (2000ms/measure) — a real, non-zero estimate.
     expect(estimateChartPlaybackDurationMs(layout, 120)).toBe(6000);
+  });
+});
+
+describe('every chord plays (chord charts and instrumentals)', () => {
+  const chordsPlayed = (chordPro: string) =>
+    chartLayoutToPlaybackSequence(parseChordProToChartLayout(chordPro)).map((step) => step.chordName);
+
+  it('plays all four chords of a chord-only line, one measure each', () => {
+    // Used to play only the first two: `[Am][F][C][G]` sounded as `Am F`.
+    expect(chordsPlayed('[Solo]\n[Am][F][C][G]')).toEqual(['Am', 'F', 'C', 'G']);
+  });
+
+  it('gives a lyric line with more than two chords a measure per chord', () => {
+    expect(chordsPlayed('[Verse]\n[C]I [G]walk [Am]the [F]line today')).toEqual(['C', 'G', 'Am', 'F']);
+  });
+
+  it('keeps two measures for an ordinary lyric line', () => {
+    expect(chordsPlayed('[Verse]\n[C]Hello [G]world')).toEqual(['C', 'G']);
+    expect(chordsPlayed('[Verse]\n[C]Hello world')).toEqual(['C', 'C']);
+  });
+
+  it('estimates a chord-only chart at the measures it plays', () => {
+    const layout = parseChordProToChartLayout('[Intro]\n[Am][F][C][G]\n[Am][F][C][G]');
+    expect(estimateChartPlaybackMeasureCount(layout)).toBe(chartLayoutToPlaybackSequence(layout).length);
   });
 });
