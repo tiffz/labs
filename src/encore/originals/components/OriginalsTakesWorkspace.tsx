@@ -3,7 +3,7 @@ import LinearProgress from '@mui/material/LinearProgress';
 import Typography from '@mui/material/Typography';
 import { useCallback, useState, type DragEvent as ReactDragEvent, type ReactElement } from 'react';
 import { encoreHairline, encoreSoftPinkWash } from '../../theme/encoreUiTokens';
-import { isOriginalsTakeMediaFile, originalsFileDragRelevant } from '../originalsSongFileDrag';
+import { originalsFileDragRelevant } from '../originalsSongFileDrag';
 import { useOriginalsTakes } from '../hooks/useOriginalsTakes';
 import { OriginalsTakeAddMenu } from './OriginalsTakeAddMenu';
 import { OriginalsTakeRow } from './OriginalsTakeRow';
@@ -14,11 +14,6 @@ export type OriginalsTakesWorkspaceProps = {
   onChange: (next: EncoreOriginalSong) => void;
   readOnly?: boolean;
 };
-
-function takeFilesFromDrop(dataTransfer: DataTransfer | null): File[] {
-  if (!dataTransfer) return [];
-  return Array.from(dataTransfer.files).filter(isOriginalsTakeMediaFile);
-}
 
 /**
  * Record-takes stage: a surface built only for managing takes.
@@ -34,6 +29,7 @@ export function OriginalsTakesWorkspace({
   readOnly = false,
 }: OriginalsTakesWorkspaceProps): ReactElement {
   const takes = useOriginalsTakes({ song, onChange, readOnly });
+  const { stageFiles } = takes;
   const [dragOver, setDragOver] = useState(false);
 
   const handleDrop = useCallback(
@@ -41,10 +37,12 @@ export function OriginalsTakesWorkspace({
       e.preventDefault();
       setDragOver(false);
       if (readOnly) return;
-      const files = takeFilesFromDrop(e.dataTransfer);
-      if (files.length > 0) void takes.addFiles(files);
+      // Stage everything dropped: a file that can't be a take shows up with the reason, rather than
+      // vanishing without a word.
+      const files = Array.from(e.dataTransfer?.files ?? []);
+      if (files.length > 0) stageFiles(files);
     },
-    [readOnly, takes],
+    [readOnly, stageFiles],
   );
 
   const handleDragOver = useCallback(
@@ -151,7 +149,8 @@ export function OriginalsTakesWorkspace({
         </Box>
       )}
 
-      {!readOnly ? <OriginalsTakeAddMenu takes={takes} variant="button" /> : null}
+      {takes.stagedPanel}
+      {!readOnly && !takes.hasStaged ? <OriginalsTakeAddMenu takes={takes} variant="button" /> : null}
 
       {takes.hiddenInputs}
     </Box>

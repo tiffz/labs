@@ -25,7 +25,8 @@
     "PlaybackSpeedControl": "playback-speed-control",
     "PlaybackVolumeRow": "playback-volume-row",
     "AnchoredPopover": "anchored-popover",
-    "NumericStepperField": "numeric-stepper-field"
+    "NumericStepperField": "numeric-stepper-field",
+    "LabsStagedUploadPanel": "staged-upload-panel"
   },
   "stabilityOverrides": {
     "src/shared/music/ARCHITECTURE.md": "stable"

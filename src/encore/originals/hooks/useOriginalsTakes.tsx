@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import type { DriveWriteFailure } from '../../../shared/drive/describeDriveWriteFailure';
 import { useDriveBackupFailures } from './useDriveBackupFailures';
+import { useOriginalsTakeStaging } from './useOriginalsTakeStaging';
 import { useEncoreAuth } from '../../context/EncoreAuthContext';
 import { useEncoreDriveUploadDedup } from '../../context/EncoreDriveUploadDedupContext';
 import {
@@ -12,8 +13,6 @@ import { driveFileWebUrl } from '../../drive/driveWebUrls';
 import { inferMediaMimeType } from '../../../shared/drive/inferMediaMimeType';
 import { useEncoreOriginalsPlayback } from '../context/EncoreOriginalsPlaybackContext';
 import { buildLocalOriginalTake, uploadOriginalTakeToDrive } from '../originalTakeUpload';
-import { importOriginalTakeFromDrive } from '../originalTakeDriveImport';
-import { ensureDriveCopyAccessToken } from '../../drive/driveReadonlyAccess';
 import {
   deleteOriginalTakeBlob,
   hasOriginalTakeBlob,
@@ -68,13 +67,20 @@ export type OriginalsTakesController = {
   rename: (takeId: string, label: string) => void;
   setNotes: (takeId: string, notes: string) => void;
   remove: (takeId: string) => void;
-  addFiles: (files: File[]) => Promise<void>;
   /**
-   * Add a take from a pasted Google Drive link: referenced if the user owns the file, copied
-   * otherwise (ADR 0029). Resolves with a message for the field when the link cannot become a take.
+   * Stage files or a Google Drive link for review (ADR 0030). Nothing is saved until the user
+   * confirms in {@link stagedPanel}; there is deliberately no way to add a take without that step.
    */
-  addFromDriveLink: (raw: string) => Promise<{ ok: true } | { ok: false; message: string }>;
+  stageFiles: (files: readonly File[]) => void;
+  stageLink: (url: string) => void;
   openFilePicker: () => void;
+  /** The review list and its confirm button; render once, where the takes are. Empty when idle. */
+  stagedPanel: ReactElement;
+  /**
+   * True while something is staged. Surfaces hide their "Add take" trigger then, so the panel's
+   * confirm is the only "Add take" on screen; dropping still stages more.
+   */
+  hasStaged: boolean;
   /** Hidden `<input type="file">` elements; render once inside the consuming surface. */
   hiddenInputs: ReactElement;
 };
@@ -214,44 +220,6 @@ export function useOriginalsTakes({
       recordBackupFailure,
       clearBackupFailure,
     ],
-  );
-
-  const addFromDriveLink = useCallback(
-    async (raw: string): Promise<{ ok: true } | { ok: false; message: string }> => {
-      if (readOnly) return { ok: false, message: 'This song is read-only.' };
-      if (!googleAccessToken) {
-        return { ok: false, message: 'Sign in with Google to add a take from Drive.' };
-      }
-      const songId = songRef.current.id;
-      setUploading(true);
-      try {
-        const result = await importOriginalTakeFromDrive(raw, {
-          accessToken: googleAccessToken,
-          existingTakes: songRef.current.takes,
-          requestReadAccess: ensureDriveCopyAccessToken,
-        });
-        if (!result.ok) return result;
-        // Re-read after the await: a copy can take a while, and the user may have added, removed or
-        // left the song meanwhile. Appending to a stale snapshot would drop their edits.
-        const cur = songRef.current;
-        if (cur.id !== songId) {
-          return { ok: false, message: 'The song changed before the take was added. Try again.' };
-        }
-        applySong(
-          patchSongTimestamp({
-            ...cur,
-            takes: [...cur.takes, result.take],
-            mainTakeId: cur.mainTakeId ?? result.take.id,
-          }),
-        );
-        return { ok: true };
-      } catch {
-        return { ok: false, message: "Couldn't reach Google Drive. Check your connection and try again." };
-      } finally {
-        setUploading(false);
-      }
-    },
-    [applySong, googleAccessToken, readOnly],
   );
 
   const replaceTakeFile = useCallback(
@@ -473,6 +441,17 @@ export function useOriginalsTakes({
     [isPlayingTake],
   );
 
+  // Every way in only stages (ADR 0030); see useOriginalsTakeStaging.
+  const { stageFiles, stageLink, stagedPanel, hasStaged, markReplacement } = useOriginalsTakeStaging({
+    songRef,
+    applySong,
+    readOnly,
+    googleAccessToken,
+    addFiles,
+    replaceTakeFile,
+    setUploading,
+  });
+
   const hiddenInputs = useMemo(
     () => (
       <>
@@ -487,7 +466,8 @@ export function useOriginalsTakes({
             const takeId = replaceTakeIdRef.current;
             replaceTakeIdRef.current = null;
             if (!file || !takeId) return;
-            void replaceTakeFile(takeId, file);
+            markReplacement(file, takeId);
+            stageFiles([file]);
           }}
         />
         <input
@@ -499,12 +479,12 @@ export function useOriginalsTakes({
           onChange={(e) => {
             const files = e.target.files ? Array.from(e.target.files) : [];
             e.target.value = '';
-            if (files.length > 0) void addFiles(files);
+            if (files.length > 0) stageFiles(files);
           }}
         />
       </>
     ),
-    [addFiles, replaceTakeFile],
+    [markReplacement, stageFiles],
   );
 
   const preferred = preferredOriginalTake(song);
@@ -525,9 +505,11 @@ export function useOriginalsTakes({
     rename,
     setNotes,
     remove,
-    addFiles,
-    addFromDriveLink,
+    stageFiles,
+    stageLink,
     openFilePicker,
+    stagedPanel,
+    hasStaged,
     hiddenInputs,
   };
 }
