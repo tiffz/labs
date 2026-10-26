@@ -108,6 +108,9 @@ export function useOriginalsTakeStaging({
           plan: target ? { kind: 'replace-file', file, takeId: target.id } : { kind: 'new-file', file },
         };
       }
+      if (source.kind === 'batch') {
+        return { ok: false, name: source.name, message: 'Add takes one file at a time.' };
+      }
       if (!googleAccessToken) {
         return { ok: false, name: source.url, message: 'Sign in with Google to add a take from Drive.' };
       }

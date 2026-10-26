@@ -38,6 +38,14 @@ const FORWARDS = new Map([
   ['encore/originals/originalsSongFileDrag.ts', 'classifies a drag for slot highlighting'],
   ['encore/components/song/encoreDragPayload.ts', 'classifies a drag for slot highlighting'],
   ['gesture/drive/gestureFolderPicker.ts', 'wraps showDirectoryPicker for its caller'],
+  // Gesture: these hand picks to useGestureCollectionUpload, which stages them (useGestureUploadStaging).
+  ['gesture/components/AddCollectionActions.tsx', 'passes picked photos and folders to the upload hook'],
+  ['gesture/drive/gestureLocalFolderUpload.ts', 'reads a picked folder for the upload hook'],
+  // Resuming an interrupted upload continues one the user already confirmed; it does not restage.
+  ['gesture/components/InterruptedUploadBanner.tsx', 'resumes an upload already confirmed'],
+  // Lyrefly: these hand files to a component that stages them.
+  ['lyrefly/components/LyreflyArtEmptyUpload.tsx', 'passes picked, dropped and pasted pages to ArtStage'],
+  ['lyrefly/components/BrainstormResourceDialog.tsx', 'holds the picked file, named, until "Add"'],
   // Zine Box's LibraryView sends every pick and drop to its "Review import" dialog, which shows
   // new vs duplicate PDFs before "Import N PDFs" (kept over the shared panel for the dedupe view).
   ['zinebox/components/ZineboxLibraryAddPanel.tsx', 'passes picked PDFs to the Review import dialog'],
@@ -69,20 +77,6 @@ const PENDING = new Map([
   ['stanza/components/stanzaWorkspace/StanzaLibraryFooterPanel.tsx', 'creates a song on pick'],
   ['stanza/components/stanzaWorkspace/StanzaPracticeMixSection.tsx', 'adds a stem on pick'],
   ['stanza/hooks/useStanzaFileDrop.ts', 'creates a song on drop'],
-  // Gesture: photo uploads start on pick or drop
-  ['gesture/components/AddCollectionActions.tsx', 'uploads photos on pick'],
-  ['gesture/components/InterruptedUploadBanner.tsx', 'resumes an upload on re-pick'],
-  ['gesture/drive/gestureLocalFolderUpload.ts', 'folder upload'],
-  // Lyrefly: pages, versions, concept art and sketchbook files save on pick, drop or paste
-  ['lyrefly/components/ArtPageGrid.tsx', 'pages and revisions save on pick'],
-  ['lyrefly/components/ArtStage.tsx', 'pages save on drop'],
-  ['lyrefly/components/ArtVersionPanel.tsx', 'versions save on pick'],
-  ['lyrefly/components/BrainstormResourceDialog.tsx', 'confirms with Add but shows nothing to review'],
-  ['lyrefly/components/LyreflyArtEmptyUpload.tsx', 'pages save on pick, drop or paste'],
-  ['lyrefly/components/LyreflyConceptShelf.tsx', 'concept art saves on pick'],
-  ['lyrefly/components/SketchbookSeedEditor.tsx', 'attachments save on pick'],
-  ['lyrefly/components/SketchbookTab.tsx', 'seeds save on drop, paste or import'],
-  ['lyrefly/utils/conceptShelfFileIntake.ts', 'concept art saves on drop or paste'],
 ]);
 
 function sourceFiles(dir: string): string[] {

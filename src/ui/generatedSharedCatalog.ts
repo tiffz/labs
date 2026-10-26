@@ -34656,7 +34656,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "model",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "What the user brought in.",
+    "description": "What the user brought in. A `batch` is a named group reviewed as one row: a folder that becomes a Gesture collection, say, where listing hundreds of photos would bury the decision.",
     "tags": [
       "api"
     ],
@@ -34673,7 +34673,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "model",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "What the user brought in.",
+    "description": "What the user brought in. A `batch` is a named group reviewed as one row: a folder that becomes a Gesture collection, say, where listing hundreds of photos would bury the decision.",
     "tags": [
       "api"
     ],
@@ -34707,7 +34707,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "model",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "What the user brought in.",
+    "description": "What the user brought in. A `batch` is a named group reviewed as one row: a folder that becomes a Gesture collection, say, where listing hundreds of photos would bury the decision.",
     "tags": [
       "api"
     ],
@@ -34724,7 +34724,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "What the user brought in.",
+    "description": "What the user brought in. A `batch` is a named group reviewed as one row: a folder that becomes a Gesture collection, say, where listing hundreds of photos would bury the decision.",
     "tags": [],
     "appsUsing": [
       "ui"
@@ -34739,7 +34739,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "What the user brought in.",
+    "description": "What the user brought in. A `batch` is a named group reviewed as one row: a folder that becomes a Gesture collection, say, where listing hundreds of photos would bury the decision.",
     "tags": [],
     "appsUsing": [
       "ui"
@@ -34763,6 +34763,23 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-upload-stageduploads-ts-staged-upload-summary-threshold",
+    "name": "STAGED_UPLOAD_SUMMARY_THRESHOLD",
+    "path": "src/shared/upload/stagedUploads.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Above this many items the review collapses to one summary line, with \"Show all\".",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [
+      "ui"
+    ],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
     "id": "src-shared-upload-stageduploads-ts-stagedsourcename",
     "name": "stagedSourceName",
     "path": "src/shared/upload/stagedUploads.ts",
@@ -34778,13 +34795,28 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-upload-stageduploads-ts-stageduploadsummary",
+    "name": "stagedUploadSummary",
+    "path": "src/shared/upload/stagedUploads.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "\"312 photos · 1.4 GB · 3 can't be added · 2 checking\". Sizes only sum known ones.",
+    "tags": [],
+    "appsUsing": [
+      "ui"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-upload-stageduploads-ts-stagesources",
     "name": "stageSources",
     "path": "src/shared/upload/stagedUploads.ts",
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "What the user brought in.",
+    "description": "What the user brought in. A `batch` is a named group reviewed as one row: a folder that becomes a Gesture collection, say, where listing hundreds of photos would bury the decision.",
     "tags": [],
     "appsUsing": [
       "ui"

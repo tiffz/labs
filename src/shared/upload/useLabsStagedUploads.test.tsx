@@ -7,6 +7,7 @@ import {
   formatStagedUploadSize,
   resolveStagedUpload,
   stageSources,
+  stagedSourceName,
   type LabsStagedUploadInspection,
   type LabsStagedUploadSource,
 } from './stagedUploads';
@@ -77,7 +78,7 @@ describe('useLabsStagedUploads', () => {
   it('stages without committing, and commits only the ready items on confirm', async () => {
     const commit = vi.fn(async () => {});
     const inspect = vi.fn(async (source: LabsStagedUploadSource) =>
-      source.kind === 'file' ? ok(source.file.name) : ({ ok: false, name: source.url, message: 'Not a file' } as const),
+      source.kind === 'file' ? ok(source.file.name) : ({ ok: false, name: stagedSourceName(source), message: 'Not a file' } as const),
     );
     const { result } = renderHook(() => useLabsStagedUploads<Plan>({ inspect }));
 
@@ -189,7 +190,7 @@ describe('useLabsStagedUploads partial commits', () => {
   it('removes what was written and keeps what failed, with its reason', async () => {
     const { result } = renderHook(() =>
       useLabsStagedUploads<Plan>({
-        inspect: async (source) => ok(source.kind === 'file' ? source.file.name : source.url),
+        inspect: async (source) => ok(stagedSourceName(source)),
       }),
     );
     await act(async () => result.current.stageFiles([file('a.mp3'), file('b.mp3')]));
@@ -202,5 +203,48 @@ describe('useLabsStagedUploads partial commits', () => {
     ]);
     // A failed item is not ready, so confirming again cannot re-send it by accident.
     expect(result.current.canConfirm).toBe(false);
+  });
+});
+
+describe('LabsStagedUploadPanel with many items', () => {
+  function ManyHarness({ count }: { count: number }) {
+    const staged = useLabsStagedUploads<Plan>({
+      inspect: async (source) =>
+        source.kind === 'file' && source.file.name.endsWith('.txt')
+          ? { ok: false, name: source.file.name, message: 'Not a photo' }
+          : { ...ok(source.kind === 'file' ? source.file.name : 'x'), sizeBytes: 1024 },
+    });
+    return (
+      <>
+        <button
+          type="button"
+          onClick={() =>
+            staged.stageFiles([
+              ...Array.from({ length: count }, (_, i) => file(`IMG_${i}.jpg`)),
+              new File(['x'], 'notes.txt', { type: 'text/plain' }),
+            ])
+          }
+        >
+          stage
+        </button>
+        <LabsStagedUploadPanel staged={staged} onConfirm={() => {}} confirmLabel={(n) => `Upload ${n} photos`} itemNoun="photo" />
+      </>
+    );
+  }
+
+  it('summarises a large batch on one line, and can show every row', async () => {
+    render(<ManyHarness count={12} />);
+    await act(async () => fireEvent.click(screen.getByText('stage')));
+    expect(screen.getByText("12 photos · 12 KB · 1 can't be added")).toBeTruthy();
+    expect(screen.queryByText('IMG_0.jpg')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Show all' }));
+    expect(screen.getByText('IMG_0.jpg')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Upload 12 photos' })).toBeTruthy();
+  });
+
+  it('lists rows when the batch is small', async () => {
+    render(<ManyHarness count={3} />);
+    await act(async () => fireEvent.click(screen.getByText('stage')));
+    expect(screen.getByText('IMG_0.jpg')).toBeTruthy();
   });
 });

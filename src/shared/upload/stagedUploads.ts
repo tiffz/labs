@@ -14,8 +14,14 @@
  * renders it, so the rule holds no matter which surface uses it.
  */
 
-/** What the user brought in. */
-export type LabsStagedUploadSource = { kind: 'file'; file: File } | { kind: 'link'; url: string };
+/**
+ * What the user brought in. A `batch` is a named group reviewed as one row: a folder that becomes a
+ * Gesture collection, say, where listing hundreds of photos would bury the decision.
+ */
+export type LabsStagedUploadSource =
+  | { kind: 'file'; file: File }
+  | { kind: 'link'; url: string }
+  | { kind: 'batch'; name: string; files: File[] };
 
 /**
  * The app's verdict on one source, from `inspect`. `outcome` is the short line the row shows to say
@@ -50,7 +56,9 @@ export type LabsReadyStagedUpload<TPlan> = Extract<LabsStagedUpload<TPlan>, { st
 
 /** Best name to show before `inspect` answers. */
 export function stagedSourceName(source: LabsStagedUploadSource): string {
-  return source.kind === 'file' ? source.file.name : source.url.trim();
+  if (source.kind === 'file') return source.file.name;
+  if (source.kind === 'batch') return source.name;
+  return source.url.trim();
 }
 
 export function stageSources<TPlan>(
@@ -130,3 +138,27 @@ export function formatStagedUploadSize(bytes: number | null): string | null {
   }
   return `${value < 10 ? value.toFixed(1) : Math.round(value)} ${units[unit]}`;
 }
+
+/** Above this many items the review collapses to one summary line, with "Show all". */
+export const STAGED_UPLOAD_SUMMARY_THRESHOLD = 8;
+
+function plural(n: number, noun: string): string {
+  return `${n} ${noun}${n === 1 ? '' : 's'}`;
+}
+
+/** "312 photos · 1.4 GB · 3 can't be added · 2 checking". Sizes only sum known ones. */
+export function stagedUploadSummary<TPlan>(items: readonly LabsStagedUpload<TPlan>[], noun: string): string {
+  const ready = items.filter((i) => i.status === 'ready');
+  const bytes = ready.reduce((sum, i) => sum + (i.status === 'ready' && i.sizeBytes != null ? i.sizeBytes : 0), 0);
+  const rejected = items.filter((i) => i.status === 'rejected').length;
+  const checking = items.filter((i) => i.status === 'checking').length;
+  return [
+    plural(ready.length, noun),
+    ready.length > 0 ? formatStagedUploadSize(bytes) : null,
+    rejected > 0 ? `${rejected} can't be added` : null,
+    checking > 0 ? `${checking} checking` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+}
+
