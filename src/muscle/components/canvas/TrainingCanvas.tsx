@@ -15,7 +15,6 @@ import AnatomyFocusCamera from './AnatomyFocusCamera';
 import QuizCameraRig from './QuizCameraRig';
 import { useQuizCameraPreset } from './useQuizCameraPreset';
 import TermSceneOverlay from '../terms/TermSceneOverlay';
-import OriginInsertionGizmo from './OriginInsertionGizmo';
 
 function readPerfFlag(): boolean {
   if (typeof window === 'undefined') return false;
@@ -113,7 +112,6 @@ function AnatomySceneInner({ showPerf }: { showPerf: boolean }) {
         <RegionModel region={activeModuleId} />
       )}
       <TermSceneOverlay />
-      <OriginInsertionGizmo />
       <AnatomyFocusCamera />
       <QuizCameraRig
         preset={cameraPreset}
