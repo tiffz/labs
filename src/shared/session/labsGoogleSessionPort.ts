@@ -57,8 +57,11 @@ const BFF_SIGN_IN_USER_ABORT_MESSAGES = [
 
 const BFF_OAUTH_POPUP_NAME = 'labs_google_oauth';
 const BFF_OAUTH_POPUP_FEATURES = 'width=520,height=640';
-/** Abandon interactive sign-in if the bridge never posts back (closed popup, COOP, etc.). */
+/** Backstop: abandon interactive sign-in if the bridge never posts back and the popup never reads closed. */
 const BFF_OAUTH_SIGN_IN_TIMEOUT_MS = 3 * 60 * 1000;
+const BFF_OAUTH_POPUP_CLOSED_POLL_MS = 500;
+/** The bridges post, then close themselves 200ms later; let that last message land first. */
+const BFF_OAUTH_POPUP_CLOSED_GRACE_MS = 1000;
 
 function closeOAuthPopupSafely(popup: Window): void {
   try {
@@ -251,6 +254,8 @@ export async function signInWithGoogleViaBff(options?: {
       settled = true;
       window.removeEventListener('message', onMessage);
       window.clearTimeout(signInTimeout);
+      window.clearInterval(popupClosedPoll);
+      window.clearTimeout(popupClosedGrace);
       try {
         broadcastChannel?.close();
       } catch {
@@ -308,7 +313,28 @@ export async function signInWithGoogleViaBff(options?: {
       broadcastChannel = null;
     }
 
-    // Do not poll popup.closed — after redirect to Google, COOP makes that noisy and unreliable.
+    // `popup.closed` reads true in two cases: the user closed the window, or a page with an
+    // enforced COOP severed the opener (Chrome reports a severed popup as closed while it is
+    // still open). Both mean the bridge's `window.opener.postMessage` can no longer reach this
+    // window, so no sign-in that would have finished is cut short. Google's sign-in pages send
+    // COOP report-only today, so Chrome logs a de-duplicated "would block window.closed" line.
+    let popupClosedGrace: number | undefined;
+    const popupClosedPoll = window.setInterval(() => {
+      let closed: boolean;
+      try {
+        closed = popup.closed;
+      } catch {
+        return;
+      }
+      if (!closed || popupClosedGrace !== undefined) return;
+      window.clearInterval(popupClosedPoll);
+      popupClosedGrace = window.setTimeout(() => {
+        finish(() =>
+          reject(new Error('Google sign-in closed before finishing. Try again and complete the Google window.')),
+        );
+      }, BFF_OAUTH_POPUP_CLOSED_GRACE_MS);
+    }, BFF_OAUTH_POPUP_CLOSED_POLL_MS);
+
     const signInTimeout = window.setTimeout(() => {
       finish(() =>
         reject(new Error('Google sign-in timed out. Try again and complete the Google window.')),
