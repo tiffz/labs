@@ -22498,6 +22498,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-music-chordpro-chordchartlayout-ts-appendchordtochordonlyline",
+    "name": "appendChordToChordOnlyLine",
+    "path": "src/shared/music/chordPro/chordChartLayout.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Add a chord to the end of a line with no lyric text (an intro, a solo, an instrumental). Every chord on such a line sits at column 0, so would replace the whole line with one chord. Appending keeps the line's order, which is the order it plays in.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-music-chordpro-chordchartlayout-ts-assignchordcharindicesfromcolumns",
     "name": "assignChordCharIndicesFromColumns",
     "path": "src/shared/music/chordPro/chordChartLayout.ts",

@@ -130,10 +130,43 @@ export function OriginalsPaintLine({
   const chordMap = groupChordsByTokenStart(line);
   const hasChordSelection = !readOnly && selectedChordId !== null;
 
+  /*
+   * A line with no words is a chord chart (an intro, a solo, an instrumental). Stamping needs a word
+   * to click, so these lines get their own slot while a chord is armed; it appends the chord.
+   * Without it an instrumental could not be painted at all, only pasted in.
+   */
+  const addSlot =
+    !readOnly && armedChord && onStamp ? (
+      <Box
+        component="button"
+        type="button"
+        className="encore-originals-chord-add-slot"
+        aria-label={`Add ${formatChordForDisplay(armedChord, songKey, notation)} to this line`}
+        onClick={() => onStamp(0)}
+        sx={{
+          font: 'inherit',
+          fontSize: '0.8125rem',
+          lineHeight: 1.6,
+          px: 0.75,
+          border: 1,
+          borderStyle: 'dashed',
+          borderColor: 'divider',
+          borderRadius: 1,
+          bgcolor: 'transparent',
+          color: 'text.secondary',
+          cursor: 'copy',
+        }}
+      >
+        + {formatChordForDisplay(armedChord, songKey, notation)}
+      </Box>
+    ) : null;
+
   if (!line.text.trim()) {
     if (line.chords.length === 0) {
       return (
-        <Box className="encore-originals-paint-line encore-originals-paint-line--empty" sx={{ minHeight: 14, mb: 0.5 }} />
+        <Box className="encore-originals-paint-line encore-originals-paint-line--empty" sx={{ minHeight: 14, mb: 0.5 }}>
+          {addSlot}
+        </Box>
       );
     }
     const sorted = [...line.chords].sort((a, b) => a.charIndex - b.charIndex);
@@ -152,6 +185,7 @@ export function OriginalsPaintLine({
               onSelect={() => onSelectChord?.(chord.charIndex, chord.id)}
             />
           ))}
+          {addSlot}
         </Box>
       </Box>
     );
