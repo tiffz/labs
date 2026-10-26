@@ -182,6 +182,65 @@ describe('labsGoogleSessionPort', () => {
     openSpy.mockRestore();
   });
 
+  describe('when the popup closes', () => {
+    const authUrl = 'https://accounts.google.com/o/oauth2/v2/auth?state=test';
+
+    function startSignInWithPopup() {
+      vi.stubEnv('VITE_LABS_SESSION_BFF_URL', 'http://127.0.0.1:8787');
+      const popup = { closed: false, close: vi.fn(), location: { href: 'about:blank' }, document: { title: '', body: { textContent: '' } } };
+      vi.spyOn(window, 'open').mockReturnValue(popup as unknown as Window);
+      vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify({ authUrl }), { status: 200 }));
+      const signIn = signInWithGoogleViaBff();
+      // Attach a handler now so a rejection before the assertion is not reported as unhandled.
+      const outcome = signIn.then(
+        (value) => ({ value }),
+        (error: Error) => ({ error }),
+      );
+      return { popup, outcome };
+    }
+
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('rejects as a user abort within seconds, not after the 3-minute timeout', async () => {
+      const { popup, outcome } = startSignInWithPopup();
+      await vi.waitFor(() => expect(popup.location.href).toBe(authUrl));
+
+      popup.closed = true;
+      await vi.advanceTimersByTimeAsync(3_000);
+
+      const result = await Promise.race([outcome, Promise.resolve('pending' as const)]);
+      expect(result).not.toBe('pending');
+      const { error } = result as { error: Error };
+      expect(error.message).toMatch(/^Google sign-in closed before finishing/);
+      expect(isRecoverableBffSignInFailure(error)).toBe(false);
+    });
+
+    it('still resolves when the bridge posts its result just before closing itself', async () => {
+      const { popup, outcome } = startSignInWithPopup();
+      await vi.waitFor(() => expect(popup.location.href).toBe(authUrl));
+
+      // The success bridge posts, then calls window.close() 200ms later. A poll can land between
+      // the close and the message task, so the close must not win that race.
+      popup.closed = true;
+      await vi.advanceTimersByTimeAsync(600);
+      window.dispatchEvent(
+        new MessageEvent('message', {
+          origin: 'http://127.0.0.1:8787',
+          data: { type: 'labs_google_oauth_done', access_token: 'tok', expires_in: 3600 },
+        }),
+      );
+      await vi.advanceTimersByTimeAsync(3_000);
+
+      await expect(outcome).resolves.toEqual({ value: expect.objectContaining({ access_token: 'tok' }) });
+    });
+  });
+
   it('signInWithGoogleViaBff throws when start fetch fails (network)', async () => {
     vi.stubEnv('VITE_LABS_SESSION_BFF_URL', 'http://127.0.0.1:8787');
     const popup = { closed: false, close: vi.fn(), location: { href: 'about:blank' }, document: { title: '', body: { textContent: '' } } };

@@ -15,10 +15,10 @@ import { enterEncoreApp } from '../helpers/enterEncoreApp';
  * popup opens; a build with no Google config fails without one. The BFF start call is stubbed to
  * fail, so both builds take the same path: a sign-in that does not finish.
  *
- * The test used to reach the live BFF and close the popup, relying on the app noticing. The app
- * does not watch the popup (it waits out a 3-minute timeout), so the test only passed while the
- * live start call happened to fail fast. Once the BFF answered, the test hung on "Signing in…".
- * A smoke must not depend on a production service.
+ * The test used to reach the live BFF and close the popup. It hung on "Signing in…" whenever the
+ * BFF answered, because the app did not then notice a closed popup. It does now (unit-tested in
+ * labsGoogleSessionPort.test.ts; e2e builds have no BFF URL, so that path cannot run here), but
+ * a smoke still must not depend on a production service.
  */
 test.describe('Encore performance editor sign-in', () => {
   test('sign in from the video link notice keeps the dialog and the draft', async ({ page }) => {
