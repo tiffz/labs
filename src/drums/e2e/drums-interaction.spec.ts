@@ -177,4 +177,52 @@ test.describe('Darbuka Rhythm Trainer - User Interactions', () => {
       .poll(async () => page.locator('.vexflow-container svg .vf-stave').count(), { timeout: 10000 })
       .toBe(8);
   });
+
+  /*
+   * The owner's report: two x2 sections in 2/4. The parser mapped the second section onto the
+   * first, so the score gave both the same positions — one click highlighted a note in two
+   * measures, and the final measure had no drop targets of its own. Unit tests on the parser
+   * were green throughout; these drive the score itself.
+   */
+  const TWO_SECTIONS = '|: DKTKD-TK| D-TKTKTK:|x2 |: DKTKD-TK| TKD-TKTK:|x2';
+  const openTwoSections = async (page: import('@playwright/test').Page) => {
+    await page.goto(`/drums/?rhythm=${encodeURIComponent(TWO_SECTIONS)}&bpm=75&time=2%2F4`);
+    const notes = page.locator('.vexflow-container .vf-stavenote');
+    // 4 drawn measures × 7 notes; the x2 copies are not drawn.
+    await expect(notes).toHaveCount(28, { timeout: 20000 });
+    return notes;
+  };
+
+  test('clicking a note after two repeated sections highlights that note only', async ({ page }) => {
+    const notes = await openTwoSections(page);
+    const box = await notes.nth(21).boundingBox(); // first note of the last measure
+    expect(box).not.toBeNull();
+    // A stave note's box runs well below its head; the head sits ~92px under the top.
+    await page.mouse.click(box!.x + box!.width / 2, box!.y + 92);
+
+    await expect(page.locator('.vexflow-container .selection-highlight')).toHaveCount(1);
+  });
+
+  test('dropping a pattern on the last measure replaces that note', async ({ page }) => {
+    await openTwoSections(page);
+    await expect(page.getByRole('button', { name: 'Slap sixteenth' })).toBeVisible();
+
+    // Synthetic DragEvents: Playwright's mouse drag does not carry an HTML5 DataTransfer.
+    await page.evaluate(() => {
+      const target = document.querySelectorAll('.vexflow-container .vf-stavenote')[27].getBoundingClientRect();
+      // Inside the note, past its left edge: the edge zone means "insert before", not replace.
+      const point = { clientX: target.left + 18, clientY: target.top + 92 };
+      const source = document.querySelector('[aria-label="Slap sixteenth"]')!;
+      const container = document.querySelector('.vexflow-container')!;
+      const dataTransfer = new DataTransfer();
+      source.dispatchEvent(new DragEvent('dragstart', { bubbles: true, dataTransfer }));
+      container.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer, ...point }));
+      container.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer, ...point }));
+      source.dispatchEvent(new DragEvent('dragend', { bubbles: true, dataTransfer }));
+    });
+
+    await expect
+      .poll(() => new URL(page.url()).searchParams.get('rhythm'))
+      .toBe('|: DKTKD-TK| D-TKTKTK:|x2 |: DKTKD-TK| TKD-TKTS:|x2');
+  });
 });
