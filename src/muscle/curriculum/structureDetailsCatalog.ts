@@ -16,7 +16,7 @@ export const STRUCTURE_DETAILS_BY_ID: Record<string, StructureDetails> = {
     wikipediaUrl: 'https://en.wikipedia.org/wiki/Sternum',
   },
   bone_ribcage: {
-    definition: 'Thoracic egg widening from sternum; ribs arc back and down, not a flat front plane.',
+    definition: 'Thoracic egg; each rib slopes down from the spine as it wraps forward, so the front is not a flat plane.',
     colloquialNames: ['ribs', 'thoracic cage'],
     latinName: 'Thorax',
     wikipediaUrl: 'https://en.wikipedia.org/wiki/Rib_cage',
@@ -73,7 +73,7 @@ export const STRUCTURE_DETAILS_BY_ID: Record<string, StructureDetails> = {
     wikipediaUrl: 'https://en.wikipedia.org/wiki/Elbow',
   },
   joint_hip: {
-    definition: 'Ball-and-socket hip joint medial in the pelvis; leg attachment and tilt read start here.',
+    definition: 'Ball-and-socket hip joint deep in the pelvis socket, inside the greater trochanter; leg attachment and tilt read start here.',
     latinName: 'Articulatio coxae',
     wikipediaUrl: 'https://en.wikipedia.org/wiki/Hip_joint',
   },
@@ -83,7 +83,7 @@ export const STRUCTURE_DETAILS_BY_ID: Record<string, StructureDetails> = {
     wikipediaUrl: 'https://en.wikipedia.org/wiki/Knee',
   },
   muscle_rectus_abdominis: {
-    definition: 'Front torso segmentation (six-pack rhythm); compresses on the near side in twist.',
+    definition: 'Front torso segmentation (six-pack rhythm) from pubis to rib cage; shortens and folds when the torso bends forward.',
     colloquialNames: ['abs', 'six-pack'],
     latinName: 'Musculus rectus abdominis',
     wikipediaUrl: 'https://en.wikipedia.org/wiki/Rectus_abdominis_muscle',
@@ -131,7 +131,7 @@ export const STRUCTURE_DETAILS_BY_ID: Record<string, StructureDetails> = {
     wikipediaUrl: 'https://en.wikipedia.org/wiki/Scapula',
   },
   muscle_deltoid_anterior: {
-    definition: 'Front shoulder cap; cascades downward and is thinner than the posterior head.',
+    definition: 'Front shoulder cap from the clavicle; raises the arm forward.',
     colloquialNames: ['front delt', 'anterior deltoid'],
     latinName: 'Musculus deltoideus',
     wikipediaUrl: 'https://en.wikipedia.org/wiki/Deltoid_muscle',
@@ -143,7 +143,7 @@ export const STRUCTURE_DETAILS_BY_ID: Record<string, StructureDetails> = {
     wikipediaUrl: 'https://en.wikipedia.org/wiki/Deltoid_muscle',
   },
   muscle_deltoid_posterior: {
-    definition: 'Back shoulder cap; thinner and lower than the anterior head.',
+    definition: 'Back shoulder cap from the scapular spine; pulls the raised arm back.',
     colloquialNames: ['rear delt', 'posterior deltoid'],
     latinName: 'Musculus deltoideus',
     wikipediaUrl: 'https://en.wikipedia.org/wiki/Deltoid_muscle',
@@ -244,7 +244,7 @@ export const STRUCTURE_DETAILS_BY_ID: Record<string, StructureDetails> = {
     wikipediaUrl: 'https://en.wikipedia.org/wiki/Carpal_bones',
   },
   bone_phalanges_hand: {
-    definition: 'Finger segments in three linked cylinders; knuckle spacing drives hand gesture.',
+    definition: 'Finger segments in linked cylinders, three per finger and two in the thumb; knuckle spacing drives hand gesture.',
     colloquialNames: ['finger bones'],
     latinName: 'Phalanges of the hand',
     wikipediaUrl: 'https://en.wikipedia.org/wiki/Phalanx_bone',
@@ -252,22 +252,22 @@ export const STRUCTURE_DETAILS_BY_ID: Record<string, StructureDetails> = {
   muscle_thenar_eminence: {
     definition: 'Thumb pad mass on the palm; rolls across the palm in opposition.',
     colloquialNames: ['thenar'],
-    latinName: 'Eminence thenar',
+    latinName: 'Eminentia thenaris',
     wikipediaUrl: 'https://en.wikipedia.org/wiki/Thenar_eminence',
   },
   muscle_hypothenar_eminence: {
     definition: 'Pinky-side palm mound balancing hand volume.',
     colloquialNames: ['hypothenar'],
-    latinName: 'Eminence hypothenar',
+    latinName: 'Eminentia hypothenaris',
     wikipediaUrl: 'https://en.wikipedia.org/wiki/Hypothenar_eminence',
   },
   muscle_flexor_pollicis_brevis: {
-    definition: 'Short thumb flexor forming the thenar pad with abductor pollicis.',
+    definition: 'Short thumb flexor forming the thenar pad with abductor pollicis brevis and opponens pollicis.',
     latinName: 'Musculus flexor pollicis brevis',
     wikipediaUrl: 'https://en.wikipedia.org/wiki/Flexor_pollicis_brevis_muscle',
   },
   muscle_lumbricals_hand: {
-    definition: 'Four small palm muscles between metacarpals; fine-tune finger spread and flexion.',
+    definition: 'Four small palm muscles on the deep flexor tendons; bend the knuckles while straightening the fingers.',
     latinName: 'Musculi lumbricales manus',
     wikipediaUrl: 'https://en.wikipedia.org/wiki/Lumbricals_of_the_hand',
   },
@@ -277,12 +277,12 @@ export const STRUCTURE_DETAILS_BY_ID: Record<string, StructureDetails> = {
     wikipediaUrl: 'https://en.wikipedia.org/wiki/Dorsal_interossei_of_the_hand',
   },
   muscle_flexor_digitorum_superficialis: {
-    definition: 'Palm-side finger flexor tendons; rhythm along finger cylinders on flexion.',
+    definition: 'Front forearm finger flexor from the inner elbow; its tendons run through the palm to the middle finger bones.',
     latinName: 'Musculus flexor digitorum superficialis',
     wikipediaUrl: 'https://en.wikipedia.org/wiki/Flexor_digitorum_superficialis_muscle',
   },
   muscle_extensor_digitorum: {
-    definition: 'Dorsal tendons over knuckles; elevates on finger extension.',
+    definition: 'Back forearm finger extender from the outer elbow; its tendons rise over the knuckles on finger extension.',
     latinName: 'Musculus extensor digitorum',
     wikipediaUrl: 'https://en.wikipedia.org/wiki/Extensor_digitorum_muscle',
   },
@@ -355,12 +355,12 @@ export const STRUCTURE_DETAILS_BY_ID: Record<string, StructureDetails> = {
     wikipediaUrl: 'https://en.wikipedia.org/wiki/Abductor_hallucis_muscle',
   },
   muscle_flexor_digitorum_brevis: {
-    definition: 'Plantar muscle flexing the middle toes; shapes the forefoot pad on the sole.',
+    definition: 'Plantar muscle flexing the four small toes; shapes the forefoot pad on the sole.',
     latinName: 'Musculus flexor digitorum brevis',
     wikipediaUrl: 'https://en.wikipedia.org/wiki/Flexor_digitorum_brevis_muscle',
   },
   muscle_lumbricals_foot: {
-    definition: 'Small sole muscles between metatarsals; stabilize toe flexion on push-off.',
+    definition: 'Small sole muscles on the long toe-flexor tendons; bend the toe knuckles while straightening the toes.',
     latinName: 'Musculi lumbricales pedis',
     wikipediaUrl: 'https://en.wikipedia.org/wiki/Lumbricals_of_the_foot',
   },
@@ -370,7 +370,7 @@ export const STRUCTURE_DETAILS_BY_ID: Record<string, StructureDetails> = {
     wikipediaUrl: 'https://en.wikipedia.org/wiki/Extensor_digitorum_brevis_muscle',
   },
   muscle_peroneus_longus: {
-    definition: 'Lateral ankle tendon wrapping to the outer foot; tight on eversion.',
+    definition: 'Outer lower-leg muscle whose tendon passes behind the outer ankle and under the sole to the big toe side; tight on eversion.',
     colloquialNames: ['fibularis longus'],
     latinName: 'Musculus fibularis longus',
     wikipediaUrl: 'https://en.wikipedia.org/wiki/Fibularis_longus_muscle',
@@ -396,7 +396,7 @@ export const STRUCTURE_DETAILS_BY_ID: Record<string, StructureDetails> = {
   },
   muscle_tensor_fasciae_latae: {
     definition: 'Small front hip muscle feeding the iliotibial band; shapes outer thigh sweep.',
-    colloquialNames: ['TFL', 'IT band origin'],
+    colloquialNames: ['TFL'],
     latinName: 'Musculus tensor fasciae latae',
     wikipediaUrl: 'https://en.wikipedia.org/wiki/Tensor_fasciae_latae_muscle',
   },

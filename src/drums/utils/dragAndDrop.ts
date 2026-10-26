@@ -109,7 +109,15 @@ export function mapLogicalToStringIndex(
   const sourceMeasureStart = parsedRhythm.measureMapping[probe].sourceMeasureIndex;
   const skipMeasures = def.sourceMeasureIndex - sourceMeasureStart;
 
-  let currentIdx = startIdx;
+  let currentIdx = consumeStructure(notation, startIdx);
+
+  // A measure that starts mid-note (a tie across the barline) maps to that note's head, which
+  // sits in an earlier measure. Count the ticks the note played before the barline, or every
+  // edit in the measure lands that many ticks early — on the tied note itself.
+  const tiedBefore = ticksTiedIntoMeasure(parsedRhythm, probe);
+  if (tiedBefore > 0) {
+    currentIdx = findStringIndexForDuration(notation, currentIdx, tiedBefore).endIndex;
+  }
 
   // 1. Skip full measures in the chunk
   for (let m = 0; m < skipMeasures; m++) {
@@ -123,6 +131,23 @@ export function mapLogicalToStringIndex(
   const res = findStringIndexForDuration(notation, currentIdx, offset);
 
   return { index: res.endIndex, logicalReached: logicalPos };
+}
+
+/**
+ * Ticks a tied note played before `measureIdx` began, or 0 when the measure starts on its own note.
+ * `tiedDuration` is the whole note; subtract the parts from this measure on.
+ */
+function ticksTiedIntoMeasure(parsedRhythm: ParsedRhythm, measureIdx: number): number {
+  const first = parsedRhythm.measures[measureIdx]?.notes[0];
+  if (!first?.isTiedFrom || !first.tiedDuration) return 0;
+  let fromHere = 0;
+  for (let m = measureIdx; m < parsedRhythm.measures.length; m++) {
+    for (const note of parsedRhythm.measures[m].notes) {
+      fromHere += note.durationInSixteenths;
+      if (!note.isTiedTo) return Math.max(0, first.tiedDuration - fromHere);
+    }
+  }
+  return Math.max(0, first.tiedDuration - fromHere);
 }
 
 /**
@@ -329,8 +354,16 @@ export function insertPatternAtIndex(
   index: number,
   pattern: string
 ): string {
+  if (!pattern) return notation;
   const safeIndex = Math.max(0, Math.min(index, notation.length));
-  return notation.slice(0, safeIndex) + pattern + notation.slice(safeIndex);
+  const prefix = notation.slice(0, safeIndex);
+  let suffix = notation.slice(safeIndex);
+  // Inserting inside a held note splits it; give the remainder its own head, or the inserted
+  // note absorbs the rest of the held one.
+  if (suffix.startsWith('-')) {
+    suffix = findNoteHead(prefix, prefix.length) + suffix.slice(1);
+  }
+  return prefix + pattern + suffix;
 }
 
 /**
@@ -351,7 +384,18 @@ export function replacePatternAtIndex(
   while (i < notation.length && currentDuration < patternDuration) {
     const char = notation[i];
 
-    if (/[ \t\n|:x\d]/.test(char)) {
+    if (/[ \t\n]/.test(char)) {
+      i++;
+      continue;
+    }
+    // Never consume repeat structure (`|:`, `:|`, `xN`). A plain barline is crossed only by a
+    // selection already under way: reaching one first means the selection is the padding rest the
+    // parser adds to a short measure. That rest is not in the string, so the pattern goes
+    // before the barline. Skipping it here wrote the pattern over the next measure.
+    if (/[:x\d%]/.test(char) || (char === '|' && (currentDuration === 0 || notation[i + 1] === ':'))) {
+      break;
+    }
+    if (char === '|') {
       i++;
       continue;
     }

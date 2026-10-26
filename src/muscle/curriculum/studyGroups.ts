@@ -154,7 +154,7 @@ export const STUDY_GROUPS_BY_MODULE: Partial<Record<MuscleRegion, StudyGroup[]>>
     leaf('arm_triceps', 'Triceps brachii', 'arm', 'muscle_triceps_long_head'),
     leaf('arm_brachialis', 'Brachialis', 'arm', 'muscle_brachialis'),
     leaf('arm_brachioradialis', 'Brachioradialis', 'arm', 'muscle_brachioradialis'),
-    leaf('arm_ecr', 'Extensor carpi radialis', 'arm', 'muscle_extensor_carpi_radialis'),
+    leaf('arm_ecr', 'Extensor carpi radialis longus', 'arm', 'muscle_extensor_carpi_radialis'),
     leaf('arm_fcr', 'Flexor carpi radialis', 'arm', 'muscle_flexor_carpi_radialis'),
   ],
   hand: [

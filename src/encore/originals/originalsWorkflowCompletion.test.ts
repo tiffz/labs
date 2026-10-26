@@ -67,20 +67,38 @@ describe('originalsWorkflowCompletion', () => {
     expect(formatOriginalStageSummary(song)).toBe('Demo ready');
   });
 
-  it('is NOT demo-ready from a take alone — monotonic display must not leak into the predicate', () => {
-    // `isStageComplete` is monotonic ("you're on lyrics, so brainstorm is behind you"). Using it in
-    // `isOriginalDemoReady` collapsed the predicate to `takes.length > 0`, so importing one voice
-    // memo into a song with no lyrics and no chords labelled it "Demo ready" across the library.
+  it('is demo ready from a take alone: the owner\'s rule, "I recorded a demo"', () => {
+    // An earlier rule required all four stages, which stranded songs with takes short of "Demo
+    // ready" for missing brainstorm notes, chords kept in a PDF, or an instrumental's absent lyrics.
     const takeOnly = {
       ...createBlankOriginalSong(),
       lyricsAndChords: '',
       takes: [{ id: 't1', label: 'memo.m4a', timestamp: 1, source: 'imported' as const }],
       mainTakeId: 't1',
     };
-    expect(isOriginalDemoReady(takeOnly)).toBe(false);
-    expect(originalsLibraryStageLabel(takeOnly)).not.toBe('Demo ready');
-    // ...while the stepper still treats the earlier stages as behind you.
-    expect(isStageComplete(takeOnly, 'brainstorm')).toBe(true);
+    expect(isOriginalDemoReady(takeOnly)).toBe(true);
+    expect(originalsLibraryStageLabel(takeOnly)).toBe('Demo ready');
+    expect(formatOriginalStageSummary(takeOnly)).toBe('Demo ready');
+  });
+
+  it('is not demo ready without a take, however complete the rest is', () => {
+    const noTake = {
+      ...createBlankOriginalSong(),
+      brainstormHtml: '<p>idea</p>',
+      lyricsAndChords: '[Verse]\n[C]Hello world',
+    };
+    expect(isOriginalDemoReady(noTake)).toBe(false);
+    expect(originalsLibraryStageLabel(noTake)).toBe('Record takes');
+    expect(formatOriginalStageSummary(noTake)).toBe('3/4 stages');
+  });
+
+  it('respects a takes stage manually marked not done', () => {
+    const song = {
+      ...createBlankOriginalSong(),
+      takes: [{ id: 't1', label: 'memo.m4a', timestamp: 1, source: 'imported' as const }],
+      stageCompletion: { takes: false },
+    };
+    expect(isOriginalDemoReady(song)).toBe(false);
   });
 
   it('shows current in-progress stage, not last completed', () => {
@@ -104,7 +122,7 @@ describe('originalsWorkflowCompletion', () => {
   });
 });
 
-describe('a song with takes but a genuinely missing earlier stage', () => {
+describe('a song with takes but a missing earlier stage', () => {
   /** Takes recorded, lyrics present, but no chord markers anywhere. */
   const takesButNoChords = (): EncoreOriginalSong =>
     normalizeEncoreOriginalSong({
@@ -115,31 +133,15 @@ describe('a song with takes but a genuinely missing earlier stage', () => {
       brainstormHtml: '<p>An idea</p>',
     } as unknown as EncoreOriginalSong);
 
-  it('is not demo ready', () => {
-    expect(isOriginalDemoReady(takesButNoChords())).toBe(false);
+  /** The reported bug: originals with takes that never reached "Demo ready". */
+  it('is demo ready, because it has a take', () => {
+    expect(isOriginalDemoReady(takesButNoChords())).toBe(true);
+    expect(originalsLibraryStageLabel(takesButNoChords())).toBe('Demo ready');
+    expect(originalsLibraryStageProgressDetail(takesButNoChords())).toBeNull();
   });
 
-  /**
-   * The reported bug. `isStageComplete` is monotonic, so one take made every stage report done and
-   * this parked on 'takes' — the library said "Record Takes" on a song that already had takes,
-   * "Demo ready" never arrived, and nothing named the missing stage.
-   */
-  it('names the outstanding stage instead of parking on takes', () => {
-    expect(inferredWorkflowStage(takesButNoChords())).toBe('chords');
-  });
-
-  it('does not claim 4/4 stages while refusing to say demo ready', () => {
-    const summary = formatOriginalStageSummary(takesButNoChords());
-    expect(summary).not.toBe('Demo ready');
-    expect(summary).toBe('3/4 stages');
-  });
-
-  it('still reports demo ready once the missing stage is filled in', () => {
-    const complete = {
-      ...takesButNoChords(),
-      lyricsAndChords: '[Verse 1]\n[C]Just words, [F]now with chords\n',
-    };
-    expect(isOriginalDemoReady(complete)).toBe(true);
-    expect(formatOriginalStageSummary(complete)).toBe('Demo ready');
+  it('treats the earlier stages as behind it in the stepper', () => {
+    expect(isStageComplete(takesButNoChords(), 'chords')).toBe(true); // stepper: behind you
+    expect(inferredWorkflowStage(takesButNoChords())).toBe('takes');
   });
 });

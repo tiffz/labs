@@ -6,6 +6,7 @@
  * Zinebox/Stanza portfolio patterns). Blobs are never overwritten here — only metadata rows.
  */
 import type {
+  ComicArchiveBinder,
   ComicProject,
   PageNode,
   PageRevision,
@@ -180,4 +181,62 @@ export function mergeLyreflyProjectFields(local: ComicProject, remote: ComicProj
     finalArtVersionId: local.finalArtVersionId ?? remote.finalArtVersionId,
     updatedAt: local.updatedAt >= remote.updatedAt ? local.updatedAt : remote.updatedAt,
   };
+}
+
+type ArchiveRow = { id: string; updatedAt?: string };
+
+function mergeArchiveRows<T extends ArchiveRow>(
+  local: readonly T[],
+  remote: readonly T[],
+  deleted: Readonly<Record<string, string>>,
+): T[] {
+  const byId = new Map(local.map((r) => [r.id, r] as const));
+  for (const r of remote) {
+    const prev = byId.get(r.id);
+    // Rows without a clock predate edit stamps: keep this device's copy.
+    if (!prev || (r.updatedAt ?? '') > (prev.updatedAt ?? '')) byId.set(r.id, r);
+  }
+  return [...byId.values()].filter((r) => !(r.id in deleted));
+}
+
+function unionDeletedRowIds(
+  local: Readonly<Record<string, string>> | undefined,
+  remote: Readonly<Record<string, string>> | undefined,
+): Record<string, string> {
+  const out: Record<string, string> = { ...local };
+  for (const [id, at] of Object.entries(remote ?? {})) {
+    if (!out[id] || at > out[id]) out[id] = at;
+  }
+  return out;
+}
+
+/**
+ * Row-level union of two archives for the same project. Keeps the local archive's id: two devices
+ * that each created an archive before syncing hold different ids for the same binder, and rows
+ * must land in the one this device's project points at. A row deleted on either side stays
+ * deleted. `remoteLacksLocalRows` says Drive is missing something this device holds, so the
+ * caller must queue a push.
+ */
+export function mergeLyreflyArchive(
+  local: ComicArchiveBinder,
+  remote: ComicArchiveBinder,
+): { archive: ComicArchiveBinder; remoteLacksLocalRows: boolean } {
+  const deletedRowIds = unionDeletedRowIds(local.deletedRowIds, remote.deletedRowIds);
+  const archive: ComicArchiveBinder = {
+    ...local,
+    publishLog: mergeArchiveRows(local.publishLog, remote.publishLog, deletedRowIds),
+    pressEntries: mergeArchiveRows(local.pressEntries, remote.pressEntries, deletedRowIds),
+    salesLedger: mergeArchiveRows(local.salesLedger, remote.salesLedger, deletedRowIds),
+    ...(Object.keys(deletedRowIds).length > 0 ? { deletedRowIds } : {}),
+  };
+
+  const remoteRows = new Map<string, string>();
+  for (const r of [...remote.publishLog, ...remote.pressEntries, ...remote.salesLedger]) {
+    remoteRows.set(r.id, r.updatedAt ?? '');
+  }
+  const mergedRows = [...archive.publishLog, ...archive.pressEntries, ...archive.salesLedger];
+  const remoteLacksLocalRows =
+    mergedRows.some((r) => !remoteRows.has(r.id) || (r.updatedAt ?? '') > (remoteRows.get(r.id) ?? '')) ||
+    Object.keys(deletedRowIds).some((id) => !remote.deletedRowIds?.[id]);
+  return { archive, remoteLacksLocalRows };
 }

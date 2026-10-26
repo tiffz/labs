@@ -37,6 +37,7 @@ import {
   lyreflyNeedsSidecarDownload,
   uploadLyreflyProjectSidecars,
 } from './lyreflyProjectPackageDriveSync';
+import { backfillLyreflyPackagePullsOnce } from './lyreflyPendingPackagePulls';
 
 const driveListFilesMock = driveListFiles as unknown as ReturnType<typeof vi.fn>;
 const driveCreateFolderMock = driveCreateFolder as unknown as ReturnType<typeof vi.fn>;
@@ -65,6 +66,7 @@ let fileCounter = 0;
 
 describe('uploadLyreflyProjectSidecars', () => {
   beforeEach(async () => {
+    window.localStorage.clear();
     await clearAllLyreflyTables();
     vi.clearAllMocks();
     folderCounter = 0;
@@ -211,6 +213,7 @@ describe('downloadMissingLyreflyProjectSidecars + lyreflyNeedsSidecarDownload', 
   });
 
   it('skips a project that already looks fully hydrated locally (no network calls)', async () => {
+    backfillLyreflyPackagePullsOnce([]); // this device already ran the one-time catch-up
     const project = createBlankComicProject();
     project.projectFolderId = 'folder-1';
     project.pageCount = 1;

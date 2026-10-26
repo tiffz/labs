@@ -296,6 +296,8 @@ export interface PublishLogEntry {
   publishedAt: string;
   url?: string;
   notes?: string;
+  /** Last edit; the newer side wins when two devices edited the same row. */
+  updatedAt?: string;
 }
 
 export interface PressMemorabiliaEntry {
@@ -304,6 +306,7 @@ export interface PressMemorabiliaEntry {
   markdown: string;
   url?: string;
   occurredAt?: string;
+  updatedAt?: string;
 }
 
 export interface SalesLedgerRow {
@@ -314,6 +317,7 @@ export interface SalesLedgerRow {
   unitCostCents?: number;
   revenueCents?: number;
   notes?: string;
+  updatedAt?: string;
 }
 
 export interface ComicArchiveBinder {
@@ -322,6 +326,9 @@ export interface ComicArchiveBinder {
   publishLog: PublishLogEntry[];
   pressEntries: PressMemorabiliaEntry[];
   salesLedger: SalesLedgerRow[];
+  /** Row id → deletedAt for every row removed from any of the lists above, so a merge with a
+   *  device that still holds the row does not bring it back. */
+  deletedRowIds?: Record<string, string>;
 }
 
 export interface SketchbookSeed {

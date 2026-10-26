@@ -20,6 +20,8 @@ Base path: `/muscle/`.
 
 Canonical curriculum manifest: [`curriculum/ARTIST_CURRICULUM.md`](curriculum/ARTIST_CURRICULUM.md).
 
+Content verification, unit by unit against Proko and OpenStax: [`VERIFICATION_CHECKLIST.md`](VERIFICATION_CHECKLIST.md).
+
 Progress persists in IndexedDB (`muscle-memory` Dexie database). Session UI state uses Zustand.
 
 ## Modes

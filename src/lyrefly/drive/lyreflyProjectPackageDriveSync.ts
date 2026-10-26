@@ -42,6 +42,11 @@ import {
 } from './constants';
 import type { LyreflySyncPayload } from './lyreflyDriveEnvelope';
 import { applyLyreflyProjectPackageToDb, buildLyreflyProjectPackageFromDb } from './lyreflyProjectPackageDb';
+import {
+  backfillLyreflyPackagePullsOnce,
+  clearLyreflyPackagePullPending,
+  isLyreflyPackagePullPending,
+} from './lyreflyPendingPackagePulls';
 import { projectPackageFromFiles, projectPackageToFiles, type LyreflyProjectPackageFiles } from './projectPackage';
 import { escapeDriveQueryLiteral } from '../../shared/drive/escapeDriveQueryLiteral';
 import { formatMissingSidecarsMessage, runSidecarBatch } from '../../shared/drive/sidecarBatchTolerance';
@@ -381,6 +386,7 @@ async function downloadOneLyreflyProjectPackage(
 
   const pkg = projectPackageFromFiles(files);
   await applyLyreflyProjectPackageToDb(pkg);
+  clearLyreflyPackagePullPending(summary.id);
   // Summary carries the Drive folder id; package JSON may omit it.
   await lyreflyDb.projects.update(summary.id, { projectFolderId });
 
@@ -413,8 +419,10 @@ async function downloadOneLyreflyProjectPackage(
 
 /**
  * `downloadSidecars` for {@link lyreflyPortfolioDriveBackupConfig}. Skips projects that already
- * look fully hydrated *and* are not behind the gallery summary clock, so steady-state devices
- * avoid re-listing Drive folders — but same-row remote edits (script, captions) still re-apply.
+ * look fully hydrated, are not behind the gallery summary clock, *and* have no pending pull, so
+ * steady-state devices avoid re-listing Drive folders. The pending flag is what lets same-row
+ * remote edits (script, captions, publish log) through: the gallery merge has already stamped the
+ * remote clock onto the local row by the time this runs, so the clock check alone always passes.
  */
 export async function downloadMissingLyreflyProjectSidecars(
   accessToken: string,
@@ -423,6 +431,7 @@ export async function downloadMissingLyreflyProjectSidecars(
 ): Promise<void> {
   const candidates = merged.projects.filter((p) => Boolean(p.projectFolderId));
   if (candidates.length === 0) return;
+  backfillLyreflyPackagePullsOnce(candidates.map((p) => p.id));
 
   // One project folder trashed on Drive used to abort this loop, leaving every later project in the
   // library unfetched on every subsequent sync.
@@ -438,7 +447,7 @@ export async function downloadMissingLyreflyProjectSidecars(
         localPageCount > 0 && (remotePageCount === 0 || localPageCount >= remotePageCount);
       const clockCaughtUp =
         localProject != null && localProject.updatedAt >= (summary.updatedAt || '');
-      if (pagesCaughtUp && clockCaughtUp) return;
+      if (pagesCaughtUp && clockCaughtUp && !isLyreflyPackagePullPending(summary.id)) return;
       onProgress(`Downloading project ${i + 1} of ${candidates.length}: ${summary.title}`);
       await downloadOneLyreflyProjectPackage(accessToken, summary, onProgress);
     },

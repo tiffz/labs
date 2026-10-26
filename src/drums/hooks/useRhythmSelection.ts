@@ -182,10 +182,13 @@ export function useRhythmSelection({
 
         let startIndex = map.index;
 
-        // "Wrong Note" Bug Fix (Phase 24) - Refined for Mapped Indices
-        // IMPORTANT: Must use currentNotation (not original notation) since simile
-        // expansion may have changed the string, shifting indices.
-        while (startIndex > 0 && (currentNotation[startIndex] === '-' || currentNotation[startIndex] === ' ')) {
+        // The mapped index can land on a space between note groups; the selected note is the
+        // next one. (Walking back over spaces, as this once did, replaced the note BEFORE it.)
+        // Landing on a '-' means mid-note, so walk back to that note's head.
+        while (startIndex < currentNotation.length && /\s/.test(currentNotation[startIndex])) {
+            startIndex++;
+        }
+        while (startIndex > 0 && currentNotation[startIndex] === '-') {
             startIndex--;
         }
 
@@ -293,8 +296,13 @@ export function useRhythmSelection({
         const endMap = mapLogicalToStringIndex(currentNotation, fromEndLogical, currentParsed, timeSignature, 'end');
         const targetMap = mapLogicalToStringIndex(currentNotation, toPositionLogical, currentParsed, timeSignature);
 
-        // 1. Extract content
+        // 1. Extract content. Nothing to move means the selection is padding the parser added
+        // (an implicit rest), which has no characters in the string.
         const content = currentNotation.slice(startMap.index, endMap.index);
+        if (!content.trim()) {
+            clearSelection();
+            return;
+        }
 
         // 2. Remove content
         const remainingNotation = currentNotation.slice(0, startMap.index) + currentNotation.slice(endMap.index);
