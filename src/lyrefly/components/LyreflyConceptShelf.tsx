@@ -8,6 +8,7 @@ import type { VisualDevAsset } from '../types';
 import { partitionConceptShelfAssets } from '../utils/conceptShelfUtils';
 import type { ConceptShelfFileIntakeHandlers } from '../utils/conceptShelfFileIntake';
 import { ConceptArtFilmstripThumb } from './ConceptArtFilmstripThumb';
+import { LabsStagedUploadPanel } from '../../shared/upload/LabsStagedUploadPanel';
 
 const CONCEPT_FILE_ACCEPT =
   'image/*,.pdf,.txt,.md,.doc,.docx,application/pdf,text/*,.mp3,.m4a,.wav,.webm,.aac,.flac,.ogg';
@@ -42,6 +43,12 @@ export function LyreflyConceptShelf({
       className={['lyrefly-concept-studio', embedded ? 'lyrefly-concept-studio--embedded' : ''].filter(Boolean).join(' ')}
       data-testid="lyrefly-concept-shelf"
     >
+      <LabsStagedUploadPanel
+        staged={intake.staged}
+        onConfirm={intake.confirmStaged}
+        confirmLabel={(n) => (n === 1 ? 'Add image' : `Add ${n} images`)}
+        title="Concept art ready to add"
+      />
       {embedded ? null : (
         <Box className="lyrefly-concept-studio__header">
           <Box sx={{ minWidth: 0 }}>

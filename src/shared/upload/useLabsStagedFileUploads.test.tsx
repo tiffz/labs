@@ -81,4 +81,17 @@ describe('useLabsStagedFileUploads', () => {
     expect(screen.getByText('b.pdf')).toBeTruthy();
     expect(screen.getByText('Your Google Drive is full.')).toBeTruthy();
   });
+
+  it('hands every ready file to onCommitAll in one call, in order', async () => {
+    const onCommitAll = vi.fn(async (files: File[]) => {
+      void files;
+    });
+    render(<Harness files={[pdf('a.pdf'), pdf('b.pdf')]} onCommit={undefined} onCommitAll={onCommitAll} />);
+    await stage();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Upload 2 files' }));
+    });
+    expect(onCommitAll).toHaveBeenCalledTimes(1);
+    expect((onCommitAll.mock.calls[0]![0] as File[]).map((f) => f.name)).toEqual(['a.pdf', 'b.pdf']);
+  });
 });

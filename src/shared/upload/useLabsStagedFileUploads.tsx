@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactElement } from 'react';
 import { LabsStagedUploadPanel } from './LabsStagedUploadPanel';
-import type { LabsStagedUploadInspection, LabsStagedUploadSource } from './stagedUploads';
+import { stagedSourceName, type LabsStagedUploadInspection, type LabsStagedUploadSource } from './stagedUploads';
 import { useLabsStagedUploads, type LabsStagedUploadCommitResult } from './useLabsStagedUploads';
 
 export type LabsStagedFileUploadsOptions = {
@@ -15,7 +15,12 @@ export type LabsStagedFileUploadsOptions = {
    */
   unavailable?: string | null;
   /** Save one file. Throw to mark that file failed; the others still save. */
-  onCommit: (file: File) => Promise<void>;
+  onCommit?: (file: File) => Promise<void>;
+  /**
+   * Save every ready file in one call, for writers that work on a batch (ordering new pages, say).
+   * Throwing marks them all failed. Use this or `onCommit`.
+   */
+  onCommitAll?: (files: File[]) => Promise<void>;
   /** Plain-language reason for a failed file. Never show raw HTTP text. */
   describeError?: (error: unknown) => string;
   confirmLabel: (count: number) => string;
@@ -41,7 +46,7 @@ export function useLabsStagedFileUploads(options: LabsStagedFileUploadsOptions):
 
   const inspect = useCallback(async (source: LabsStagedUploadSource): Promise<LabsStagedUploadInspection<File>> => {
     const { accepts, rejectMessage, outcome, unavailable } = optionsRef.current;
-    if (source.kind !== 'file') return { ok: false, name: source.url, message: DEFAULT_REJECT };
+    if (source.kind !== 'file') return { ok: false, name: stagedSourceName(source), message: DEFAULT_REJECT };
     const { file } = source;
     if (unavailable) return { ok: false, name: file.name, message: unavailable };
     if (accepts && !accepts(file)) return { ok: false, name: file.name, message: rejectMessage ?? DEFAULT_REJECT };
@@ -62,8 +67,18 @@ export function useLabsStagedFileUploads(options: LabsStagedFileUploadsOptions):
     setError(null);
     void staged
       .confirm(async (ready): Promise<LabsStagedUploadCommitResult> => {
-        const { onCommit, describeError } = optionsRef.current;
+        const { onCommit, onCommitAll, describeError } = optionsRef.current;
         const failed: LabsStagedUploadCommitResult['failed'] = [];
+        if (onCommitAll) {
+          try {
+            await onCommitAll(ready.map((item) => item.plan));
+          } catch (e) {
+            const message = describeError ? describeError(e) : DEFAULT_ERROR;
+            for (const item of ready) failed.push({ id: item.id, message });
+          }
+          return { failed };
+        }
+        if (!onCommit) return { failed };
         for (const item of ready) {
           try {
             await onCommit(item.plan);

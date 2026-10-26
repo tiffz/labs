@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactElement } from 'react';
 import { LabsStagedUploadPanel } from '../../../shared/upload/LabsStagedUploadPanel';
-import type { LabsStagedUploadInspection, LabsStagedUploadSource } from '../../../shared/upload/stagedUploads';
+import { stagedSourceName, type LabsStagedUploadInspection, type LabsStagedUploadSource } from '../../../shared/upload/stagedUploads';
 import {
   useLabsStagedUploads,
   type LabsStagedUploadCommitResult,
@@ -41,7 +41,7 @@ export function useSongMediaStaging({
 
   const inspect = useCallback(
     async (source: LabsStagedUploadSource): Promise<LabsStagedUploadInspection<SongMediaStagePlan>> => {
-      if (source.kind !== 'file') return { ok: false, name: source.url, message: "That isn't a file." };
+      if (source.kind !== 'file') return { ok: false, name: stagedSourceName(source), message: "That isn't a file." };
       const { file } = source;
       const slot = slotsRef.current.get(file) ?? 'misc';
       if (!fileMatchesAccept(file, SONG_MEDIA_SLOT_ACCEPT[slot])) {

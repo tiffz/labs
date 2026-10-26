@@ -18,6 +18,8 @@ export type LabsStagedUploadsController<TPlan> = {
   items: LabsStagedUpload<TPlan>[];
   stageFiles: (files: readonly File[]) => void;
   stageLink: (url: string) => void;
+  /** Stage a named group of files as one row (a folder, a collection). */
+  stageBatch: (name: string, files: readonly File[]) => void;
   remove: (id: string) => void;
   clear: () => void;
   /** True once every item is checked and at least one can be added. */
@@ -81,6 +83,12 @@ export function useLabsStagedUploads<TPlan>({
     },
     [stage],
   );
+  const stageBatch = useCallback(
+    (name: string, files: readonly File[]) => {
+      if (files.length > 0) stage([{ kind: 'batch', name, files: [...files] }]);
+    },
+    [stage],
+  );
   const remove = useCallback((id: string) => setItems((current) => removeStagedUpload(current, id)), []);
   const clear = useCallback(() => setItems([]), []);
 
@@ -116,5 +124,5 @@ export function useLabsStagedUploads<TPlan>({
 
   const canConfirm = useMemo(() => canConfirmStagedUploads(items), [items]);
 
-  return { items, stageFiles, stageLink, remove, clear, canConfirm, committing, confirm };
+  return { items, stageFiles, stageLink, stageBatch, remove, clear, canConfirm, committing, confirm };
 }

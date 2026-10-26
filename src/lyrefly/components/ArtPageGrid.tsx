@@ -18,6 +18,8 @@ import {
   loadRevisionBlobUrl,
   setActivePageRevision,
 } from '../db/lyreflyProjectMutations';
+import { useLabsStagedFileUploads } from '../../shared/upload/useLabsStagedFileUploads';
+import { filterImageFilesForPageUpload } from '../utils/artPageUploadUtils';
 
 export const PAGE_IMAGE_ACCEPT = 'image/*,.png,.jpg,.jpeg,.webp,.gif,.avif,.bmp,.tiff,.tif';
 
@@ -49,6 +51,7 @@ type ArtPageGridTileProps = {
   revisions: PageRevision[];
   viewingRevisionId?: string | null;
   strictVersionView?: boolean;
+  onStageVersion: (pageNodeId: string, file: File) => void;
 };
 
 function ArtPageGridTile({
@@ -57,10 +60,10 @@ function ArtPageGridTile({
   revisions,
   viewingRevisionId,
   strictVersionView = false,
+  onStageVersion,
 }: ArtPageGridTileProps): ReactElement {
   const theme = useTheme();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [busy, setBusy] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
   const nodeRevisions = revisions
     .filter((r) => r.pageNodeId === node.id)
@@ -74,19 +77,13 @@ function ArtPageGridTile({
   const outsideVersion = strictVersionView && !viewingRevisionId;
 
   const onUpload = useCallback(
-    async (event: ChangeEvent<HTMLInputElement>) => {
+    (event: ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0];
-      if (!file) return;
-      setBusy(true);
-      try {
-        const label = `v${nodeRevisions.length + 1}`;
-        await addPageRevisionFromFile(node, file, label);
-      } finally {
-        setBusy(false);
-        event.target.value = '';
-      }
+      event.target.value = '';
+      // Staged for review above the grid; the version is added on confirm (ADR 0030).
+      if (file) onStageVersion(node.id, file);
     },
-    [node, nodeRevisions.length],
+    [node.id, onStageVersion],
   );
 
   const onDeletePage = async (): Promise<void> => {
@@ -115,7 +112,7 @@ function ArtPageGridTile({
         <button
           type="button"
           className="lyrefly-art-grid__thumb"
-          disabled={busy || outsideVersion}
+          disabled={outsideVersion}
           onClick={() => fileInputRef.current?.click()}
           aria-label={
             outsideVersion
@@ -144,7 +141,7 @@ function ArtPageGridTile({
             </Typography>
           </Box>
         </button>
-        <input ref={fileInputRef} type="file" accept={PAGE_IMAGE_ACCEPT} hidden onChange={(e) => void onUpload(e)} />
+        <input ref={fileInputRef} type="file" accept={PAGE_IMAGE_ACCEPT} hidden onChange={onUpload} />
         <IconButton
           size="small"
           className="lyrefly-art-grid__delete"
@@ -288,7 +285,44 @@ export function ArtPageGrid({
   viewingRevisionByPageId,
   strictVersionView = false,
 }: ArtPageGridProps): ReactElement {
+  // A page's "New version" upload stages here; on confirm it is added to the page as it is then,
+  // not a copy from when it was staged (the write replaces the page record).
+  const pageNodesRef = useRef(pageNodes);
+  const revisionsRef = useRef(revisions);
+  useEffect(() => {
+    pageNodesRef.current = pageNodes;
+    revisionsRef.current = revisions;
+  });
+  const targetsRef = useRef(new WeakMap<File, string>());
+  const versionUploads = useLabsStagedFileUploads({
+    accepts: (file) => filterImageFilesForPageUpload([file]).length === 1,
+    rejectMessage: "That file isn't an image. Use PNG, JPG, or WebP page art.",
+    outcome: (file) => {
+      const node = pageNodesRef.current.find((n) => n.id === targetsRef.current.get(file));
+      return `New version of ${node?.displayName ?? 'this page'}`;
+    },
+    onCommit: async (file) => {
+      const node = pageNodesRef.current.find((n) => n.id === targetsRef.current.get(file));
+      if (!node) throw new Error('That page was removed.');
+      const count = revisionsRef.current.filter((r) => r.pageNodeId === node.id).length;
+      await addPageRevisionFromFile(node, file, `v${count + 1}`);
+    },
+    describeError: (e) => (e instanceof Error ? e.message : "Couldn't add that version. Try again."),
+    confirmLabel: (n) => (n === 1 ? 'Add version' : `Add ${n} versions`),
+    title: 'Page versions ready to add',
+  });
+  const { stageFiles: stageVersionFiles } = versionUploads;
+  const onStageVersion = useCallback(
+    (pageNodeId: string, file: File) => {
+      targetsRef.current.set(file, pageNodeId);
+      stageVersionFiles([file]);
+    },
+    [stageVersionFiles],
+  );
+
   return (
+    <>
+    {versionUploads.panel}
     <div className="lyrefly-art-grid" data-testid="lyrefly-art-page-grid">
       {pageNodes.map((node) => (
         <ArtPageGridTile
@@ -298,6 +332,7 @@ export function ArtPageGrid({
           revisions={revisions}
           viewingRevisionId={viewingRevisionByPageId?.[node.id] ?? null}
           strictVersionView={strictVersionView}
+          onStageVersion={onStageVersion}
         />
       ))}
       {onBulkUpload ? (
@@ -321,5 +356,6 @@ export function ArtPageGrid({
         />
       ) : null}
     </div>
+    </>
   );
 }
