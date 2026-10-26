@@ -27,6 +27,7 @@ import {
   isSketchbookImageFile,
 } from '../utils/sketchbookCaptureUtils';
 import { promoteSketchbookSeed } from '../utils/promoteSketchbookSeed';
+import { useLabsStagedFileUploads } from '../../shared/upload/useLabsStagedFileUploads';
 
 const AUTOSAVE_MS = 450;
 
@@ -285,10 +286,20 @@ export function SketchbookSeedEditor({
     }
   };
 
+  // Picked files stage for review; they attach on confirm (ADR 0030).
+  const attachmentUploads = useLabsStagedFileUploads({
+    accepts: isSketchbookAttachableFile,
+    rejectMessage: "That file type can't be attached.",
+    outcome: 'Attached to this idea',
+    onCommitAll: onAddFiles,
+    confirmLabel: (n) => (n === 1 ? 'Attach file' : `Attach ${n} files`),
+    title: 'Attachments ready to add',
+  });
+
   const onFileInput = (event: ChangeEvent<HTMLInputElement>): void => {
     const files = event.target.files ? [...event.target.files] : [];
     event.target.value = '';
-    void onAddFiles(files);
+    attachmentUploads.stageFiles(files);
   };
 
   const attachments = localSeed.attachments ?? [];
@@ -402,6 +413,7 @@ export function SketchbookSeedEditor({
           </button>
           <input ref={fileInputRef} type="file" multiple hidden onChange={onFileInput} />
         </div>
+        {attachmentUploads.panel}
       </section>
 
       <div className="lyrefly-sketchbook-editor__actions">

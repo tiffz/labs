@@ -8,6 +8,8 @@ import { createPageNode, createPageNodesFromFiles } from '../db/lyreflyProjectMu
 import { revisionMapForArtVersionView, type ArtVersionViewId } from '../utils/artVersionUtils';
 import { ArtPageGrid } from './ArtPageGrid';
 import { ArtVersionPanel } from './ArtVersionPanel';
+import { useLabsStagedFileUploads } from '../../shared/upload/useLabsStagedFileUploads';
+import { filterImageFilesForPageUpload } from '../utils/artPageUploadUtils';
 import { LyreflyArtEmptyUpload } from './LyreflyArtEmptyUpload';
 import { LyreflyPrintSpecPanel } from './LyreflyPrintSpecPanel';
 
@@ -66,6 +68,17 @@ export function ArtStage({
     [project],
   );
 
+  // Picks, drops and pastes stage for review; pages are created on confirm (ADR 0030).
+  const pageUploads = useLabsStagedFileUploads({
+    accepts: (file) => filterImageFilesForPageUpload([file]).length === 1,
+    rejectMessage: "That file isn't an image. Use PNG, JPG, or WebP page art.",
+    outcome: 'Adds a new page',
+    onCommitAll: handleBulkUpload,
+    confirmLabel: (n) => (n === 1 ? 'Add page' : `Add ${n} pages`),
+    title: 'Pages ready to add',
+  });
+  const { stageFiles: stagePageFiles } = pageUploads;
+
   const busy = adding || importing;
 
   return (
@@ -85,13 +98,14 @@ export function ArtStage({
           {importStatus}
         </Typography>
       ) : null}
+      {pageUploads.panel}
       <LyreflyPrintSpecPanel project={project} onProjectChange={onProjectChange} />
       {pageNodes.length === 0 ? (
         <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
           <p className="lyrefly-art-empty__lede">
             Add your first pages from a folder, or start with one blank tile and build the grid by hand.
           </p>
-          <LyreflyArtEmptyUpload disabled={busy} onFiles={(files) => void handleBulkUpload(files)} />
+          <LyreflyArtEmptyUpload disabled={busy} onFiles={stagePageFiles} />
           <button
             type="button"
             className="lyrefly-art-empty__secondary-action"
@@ -132,7 +146,7 @@ export function ArtStage({
             pageNodes={pageNodes}
             revisions={revisions}
             busy={busy}
-            onBulkUpload={strictVersionView ? undefined : (files) => void handleBulkUpload(files)}
+            onBulkUpload={strictVersionView ? undefined : stagePageFiles}
             onAddBlankPage={strictVersionView ? undefined : () => void handleAddPage()}
             viewingRevisionByPageId={viewingRevisionByPageId}
             strictVersionView={strictVersionView}

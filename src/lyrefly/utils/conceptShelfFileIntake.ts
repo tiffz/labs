@@ -7,6 +7,8 @@ import {
 import { createVisualDevAsset } from '../db/lyreflyProjectMutations';
 import { buildConceptShelfCreateInput } from './conceptShelfUtils';
 import { extractConceptShelfImageUrl, extractImageUrlFromHtml, fetchRemoteImageAsFile } from './conceptShelfRemoteImage';
+import type { LabsStagedUploadInspection, LabsStagedUploadSource } from '../../shared/upload/stagedUploads';
+import { useLabsStagedUploads, type LabsStagedUploadsController } from '../../shared/upload/useLabsStagedUploads';
 
 export function collectFilesFromDataTransfer(dataTransfer: DataTransfer): File[] {
   const fromFiles = dataTransfer.files?.length ? Array.from(dataTransfer.files) : [];
@@ -157,8 +159,15 @@ export type ConceptShelfFileIntakeHandlers = {
   onPaste: (event: ClipboardEvent) => void;
   /** Returns true when the paste was consumed (image / remote art → concept shelf). */
   tryHandlePaste: (event: ClipboardEvent) => boolean;
-  uploadFiles: (files: File[]) => Promise<void>;
+  /** Stage picked files for review (ADR 0030); nothing is added until {@link confirmStaged}. */
+  uploadFiles: (files: File[]) => void;
+  /** Staged images and image links; render with `LabsStagedUploadPanel`. */
+  staged: LabsStagedUploadsController<ConceptShelfIntake>;
+  confirmStaged: () => void;
 };
+
+/** One staged item: a file, or a remote image URL to fetch on confirm. */
+type ConceptShelfIntake = { files: File[]; imageUrl: string | null };
 
 export function useConceptShelfFileIntake({
   projectId,
@@ -171,36 +180,69 @@ export function useConceptShelfFileIntake({
   const [fileDragActive, setFileDragActive] = useState(false);
   const [fileDragHover, setFileDragHover] = useState(false);
 
-  const uploadFiles = useCallback(
-    async (files: File[]) => {
-      if (!enabled || files.length === 0 || busyRef.current) return;
-      busyRef.current = true;
-      setBusy(true);
-      try {
-        await uploadConceptShelfFiles(projectId, files);
-      } finally {
-        busyRef.current = false;
-        setBusy(false);
+  /*
+   * Drops, pastes and the file picker only STAGE (ADR 0030). A staged image says it goes to the
+   * concept shelf; a pasted or dropped image link says it will be fetched. Confirming adds them.
+   */
+  const inspect = useCallback(
+    async (source: LabsStagedUploadSource): Promise<LabsStagedUploadInspection<ConceptShelfIntake>> => {
+      if (source.kind === 'link') {
+        return {
+          ok: true,
+          name: source.url,
+          mimeType: null,
+          sizeBytes: null,
+          outcome: 'Fetches the image and adds it to the concept shelf',
+          plan: { files: [], imageUrl: source.url },
+        };
       }
+      const { file } = source;
+      if (!file.type.startsWith('image/')) {
+        return { ok: false, name: file.name, message: "That file isn't an image." };
+      }
+      return {
+        ok: true,
+        name: file.name,
+        mimeType: file.type,
+        sizeBytes: file.size,
+        outcome: 'Adds to the concept shelf',
+        plan: { files: [file], imageUrl: null },
+      };
     },
-    [enabled, projectId],
+    [],
+  );
+  const staged = useLabsStagedUploads<ConceptShelfIntake>({ inspect });
+  const { stageFiles, stageLink } = staged;
+
+  const uploadFiles = useCallback(
+    (files: File[]) => {
+      if (enabled && files.length > 0) stageFiles(files);
+    },
+    [enabled, stageFiles],
   );
 
   const uploadIntake = useCallback(
-    async (intake: { files: File[]; imageUrl: string | null }) => {
-      if (!enabled || busyRef.current) return;
-      if (intake.files.length === 0 && !intake.imageUrl) return;
-      busyRef.current = true;
-      setBusy(true);
-      try {
-        await processConceptShelfIntake(projectId, intake);
-      } finally {
+    (intake: ConceptShelfIntake) => {
+      if (!enabled) return;
+      if (intake.files.length > 0) stageFiles(intake.files);
+      else if (intake.imageUrl) stageLink(intake.imageUrl);
+    },
+    [enabled, stageFiles, stageLink],
+  );
+
+  const confirmStaged = useCallback(() => {
+    if (busyRef.current) return;
+    busyRef.current = true;
+    setBusy(true);
+    void staged
+      .confirm(async (ready) => {
+        for (const item of ready) await processConceptShelfIntake(projectId, item.plan);
+      })
+      .finally(() => {
         busyRef.current = false;
         setBusy(false);
-      }
-    },
-    [enabled, projectId],
-  );
+      });
+  }, [projectId, staged]);
 
   const endFileDrag = useCallback(() => {
     dragDepthRef.current = 0;
@@ -258,7 +300,7 @@ export function useConceptShelfFileIntake({
       void (async () => {
         const drop = await readDataTransferDropFromSnapshot(snapshot);
         const files = drop.files.length > 0 ? drop.files : collectFilesFromDataTransfer(e.dataTransfer);
-        await uploadIntake({ files, imageUrl: files.length === 0 ? imageUrl : null });
+        uploadIntake({ files, imageUrl: files.length === 0 ? imageUrl : null });
       })();
     },
     [enabled, endFileDrag, uploadIntake],
@@ -280,7 +322,7 @@ export function useConceptShelfFileIntake({
 
       event.preventDefault();
       event.stopPropagation();
-      void uploadIntake({ files: decision.files, imageUrl: decision.imageUrl });
+      uploadIntake({ files: decision.files, imageUrl: decision.imageUrl });
       return true;
     },
     [enabled, scopeRef, uploadIntake],
@@ -311,5 +353,7 @@ export function useConceptShelfFileIntake({
     onPaste,
     tryHandlePaste,
     uploadFiles,
+    staged,
+    confirmStaged,
   };
 }

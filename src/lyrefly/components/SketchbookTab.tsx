@@ -36,6 +36,7 @@ import {
 import { isSketchbookImportFileName, parseSketchbookImportFile } from '../utils/sketchbookImportParser';
 import { LyreflyDateChip } from './LyreflyDateChip';
 import { SketchbookSeedEditor } from './SketchbookSeedEditor';
+import { useLabsStagedFileUploads } from '../../shared/upload/useLabsStagedFileUploads';
 
 export type SketchbookTabProps = {
   onOpenProject: (projectId: string) => void;
@@ -403,9 +404,29 @@ export function SketchbookTab({ onOpenProject }: SketchbookTabProps): ReactEleme
     [seeds?.length],
   );
 
+  // Drops, pastes and picks stage for review; ideas are created on confirm (ADR 0030).
+  const attachUploads = useLabsStagedFileUploads({
+    accepts: isSketchbookAttachableFile,
+    rejectMessage: "That file type can't be attached.",
+    outcome: 'Attached to a new idea',
+    onCommitAll: onAttachFiles,
+    confirmLabel: () => 'Add idea',
+    title: 'Files ready to add',
+  });
+  const importUploads = useLabsStagedFileUploads({
+    accepts: (file) => isSketchbookImportFileName(file.name),
+    rejectMessage: 'Not supported. Export PDFs to text or Markdown first.',
+    outcome: 'Imports ideas from this file',
+    onCommitAll: onImportFiles,
+    confirmLabel: (n) => (n === 1 ? 'Import file' : `Import ${n} files`),
+    title: 'Idea files ready to import',
+  });
+  const { stageFiles: stageAttachFiles } = attachUploads;
+  const { stageFiles: stageImportFiles } = importUploads;
+
   const { dragActive, handlers } = useDragDropHighlight({
     disabled: busy,
-    onDrop: (event) => void onAttachFiles(collectFilesFromDataTransfer(event.dataTransfer)),
+    onDrop: (event) => stageAttachFiles(collectFilesFromDataTransfer(event.dataTransfer)),
   });
 
   useEffect(() => {
@@ -420,7 +441,7 @@ export function SketchbookTab({ onOpenProject }: SketchbookTabProps): ReactEleme
       const files = collectImageFilesFromDataTransfer(clipboard);
       if (files.length > 0) {
         event.preventDefault();
-        void onAttachFiles(files);
+        stageAttachFiles(files);
         return;
       }
       const text = clipboard.getData('text/plain')?.trim();
@@ -432,13 +453,13 @@ export function SketchbookTab({ onOpenProject }: SketchbookTabProps): ReactEleme
     };
     document.addEventListener('paste', onPaste);
     return () => document.removeEventListener('paste', onPaste);
-  }, [onAttachFiles]);
+  }, [stageAttachFiles]);
 
   const onComposerPaste = (event: ReactClipboardEvent<HTMLTextAreaElement>): void => {
     const files = collectImageFilesFromDataTransfer(event.clipboardData);
     if (files.length > 0) {
       event.preventDefault();
-      void onAttachFiles(files);
+      stageAttachFiles(files);
     }
   };
 
@@ -462,13 +483,13 @@ export function SketchbookTab({ onOpenProject }: SketchbookTabProps): ReactEleme
   const onFileInput = (event: ChangeEvent<HTMLInputElement>): void => {
     const files = event.target.files ? [...event.target.files] : [];
     event.target.value = '';
-    void onAttachFiles(files);
+    stageAttachFiles(files);
   };
 
   const onImportFileInput = (event: ChangeEvent<HTMLInputElement>): void => {
     const files = event.target.files ? [...event.target.files] : [];
     event.target.value = '';
-    void onImportFiles(files);
+    stageImportFiles(files);
   };
 
   const onComposerContainerKeyDown = (event: KeyboardEvent<HTMLDivElement>): void => {
@@ -508,6 +529,8 @@ export function SketchbookTab({ onOpenProject }: SketchbookTabProps): ReactEleme
         />
       </header>
 
+      {attachUploads.panel}
+      {importUploads.panel}
       {importSummary ? (
         <p
           className="lyrefly-sketchbook__import-summary"

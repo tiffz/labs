@@ -46,6 +46,8 @@ import {
 import { PAGE_IMAGE_ACCEPT } from './ArtPageGrid';
 import { LyreflyVersionPreviewDialog } from './LyreflyVersionPreviewDialog';
 import { PublishDateChip } from './PublishDateChip';
+import { useLabsStagedFileUploads } from '../../shared/upload/useLabsStagedFileUploads';
+import { filterImageFilesForPageUpload } from '../utils/artPageUploadUtils';
 
 export type ArtVersionPanelProps = {
   project: ComicProject;
@@ -124,10 +126,8 @@ export function ArtVersionPanel({
     }
   };
 
-  const onUploadInput = async (event: ChangeEvent<HTMLInputElement>): Promise<void> => {
-    const files = event.target.files ? [...event.target.files] : [];
-    event.target.value = '';
-    if (files.length === 0) return;
+  /** Runs on confirm in the review below (ADR 0030). Throws so a failed import stays listed. */
+  const importVersionFiles = async (files: File[]): Promise<void> => {
     setBusy(true);
     setStatus(null);
     try {
@@ -141,11 +141,25 @@ export function ArtVersionPanel({
       setStatus(
         `Matched ${result.matchedPageCount} page${result.matchedPageCount === 1 ? '' : 's'} as "${result.version.label}". Your latest page picks were not changed.${extra}`,
       );
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : 'Upload failed');
     } finally {
       setBusy(false);
     }
+  };
+
+  const versionImport = useLabsStagedFileUploads({
+    accepts: (file) => filterImageFilesForPageUpload([file]).length === 1,
+    rejectMessage: "That file isn't an image. Use PNG, JPG, or WebP page art.",
+    outcome: 'Matched to a page by name, as a new version',
+    onCommitAll: importVersionFiles,
+    describeError: (e) => (e instanceof Error ? e.message : 'Upload failed'),
+    confirmLabel: () => 'Import version',
+    title: 'Version files ready to import',
+  });
+
+  const onUploadInput = (event: ChangeEvent<HTMLInputElement>): void => {
+    const files = event.target.files ? [...event.target.files] : [];
+    event.target.value = '';
+    versionImport.stageFiles(files);
   };
 
   const onApplyToPicks = async (): Promise<void> => {
@@ -363,7 +377,7 @@ export function ArtVersionPanel({
             accept={PAGE_IMAGE_ACCEPT}
             multiple
             hidden
-            onChange={(e) => void onUploadInput(e)}
+            onChange={onUploadInput}
           />
         </div>
       </div>
@@ -548,6 +562,7 @@ export function ArtVersionPanel({
           </label>
         </section>
       ) : null}
+      {versionImport.panel}
       {status ? (
         <Typography variant="body2" className="lyrefly-version-panel__status" aria-live="polite" sx={{
           color: "text.secondary"

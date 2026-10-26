@@ -38,6 +38,9 @@ const FORWARDS = new Map([
   ['encore/originals/originalsSongFileDrag.ts', 'classifies a drag for slot highlighting'],
   ['encore/components/song/encoreDragPayload.ts', 'classifies a drag for slot highlighting'],
   ['gesture/drive/gestureFolderPicker.ts', 'wraps showDirectoryPicker for its caller'],
+  // Lyrefly: these hand files to a component that stages them.
+  ['lyrefly/components/LyreflyArtEmptyUpload.tsx', 'passes picked, dropped and pasted pages to ArtStage'],
+  ['lyrefly/components/BrainstormResourceDialog.tsx', 'holds the picked file, named, until "Add"'],
   // Zine Box's LibraryView sends every pick and drop to its "Review import" dialog, which shows
   // new vs duplicate PDFs before "Import N PDFs" (kept over the shared panel for the dedupe view).
   ['zinebox/components/ZineboxLibraryAddPanel.tsx', 'passes picked PDFs to the Review import dialog'],
@@ -73,16 +76,6 @@ const PENDING = new Map([
   ['gesture/components/AddCollectionActions.tsx', 'uploads photos on pick'],
   ['gesture/components/InterruptedUploadBanner.tsx', 'resumes an upload on re-pick'],
   ['gesture/drive/gestureLocalFolderUpload.ts', 'folder upload'],
-  // Lyrefly: pages, versions, concept art and sketchbook files save on pick, drop or paste
-  ['lyrefly/components/ArtPageGrid.tsx', 'pages and revisions save on pick'],
-  ['lyrefly/components/ArtStage.tsx', 'pages save on drop'],
-  ['lyrefly/components/ArtVersionPanel.tsx', 'versions save on pick'],
-  ['lyrefly/components/BrainstormResourceDialog.tsx', 'confirms with Add but shows nothing to review'],
-  ['lyrefly/components/LyreflyArtEmptyUpload.tsx', 'pages save on pick, drop or paste'],
-  ['lyrefly/components/LyreflyConceptShelf.tsx', 'concept art saves on pick'],
-  ['lyrefly/components/SketchbookSeedEditor.tsx', 'attachments save on pick'],
-  ['lyrefly/components/SketchbookTab.tsx', 'seeds save on drop, paste or import'],
-  ['lyrefly/utils/conceptShelfFileIntake.ts', 'concept art saves on drop or paste'],
 ]);
 
 function sourceFiles(dir: string): string[] {
