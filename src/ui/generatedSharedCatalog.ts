@@ -22581,7 +22581,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "music-core",
-    "description": "Plain-text document for Write Mode (headers + lyrics, no chord tokens).",
+    "description": "Plain-text document for Write Mode (headers + lyrics, no chord tokens). A chord-only line (an intro, a solo, a whole instrumental) has no text, so it shows as a blank line. That blank line must stay: `parseWriteDocumentToLayout` reconciles chords by line, and a line missing from the document is a line deleted. Trimming trailing blanks used to drop every chord-only line at the end of a section, so the first edit in Write Mode erased an instrumental's whole chart. Only blanks that carry no chords are trimmed.",
     "tags": [
       "music"
     ],
