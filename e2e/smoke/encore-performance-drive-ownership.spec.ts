@@ -1,6 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { enterEncoreApp } from '../helpers/enterEncoreApp';
 import { seedZineboxE2eGoogleSession } from '../helpers/zineboxDriveImport';
+import { stubEncoreSignedInDrive, type E2eDriveFiles } from '../helpers/encoreDriveStub';
 
 /**
  * Pasting a Drive link into the performance editor: a file you own is referenced, a file someone
@@ -12,17 +13,11 @@ import { seedZineboxE2eGoogleSession } from '../helpers/zineboxDriveImport';
  * `ownedByMe: true` on the shortcut row. The editor trusted the row and stored a pointer at the
  * friend's file. Ownership must come from the shortcut's target.
  */
-const CORS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Authorization, Content-Type',
-  'Access-Control-Expose-Headers': 'ETag',
-};
-
 const OWNED = 'e2eOwnedPerformanceVideo000001';
 const FRIEND = 'e2eFriendPerformanceVideo00001';
 const MY_SHORTCUT_TO_FRIEND = 'e2eMyShortcutToFriendVideo0001';
 
-const FILES: Record<string, Record<string, unknown>> = {
+const FILES: E2eDriveFiles = {
   [OWNED]: {
     id: OWNED,
     name: 'My gig.mov',
@@ -43,55 +38,6 @@ const FILES: Record<string, Record<string, unknown>> = {
     shortcutDetails: { targetId: FRIEND, targetMimeType: 'video/quicktime' },
   },
 };
-
-async function stubDrive(page: Page): Promise<{ copied: string[] }> {
-  const copied: string[] = [];
-  await page.route(
-    /googleapis\.com|accounts\.google\.com\/gsi/,
-    async (route) => {
-      const url = route.request().url();
-      const method = route.request().method();
-      const json = (body: unknown, status = 200) =>
-        route.fulfill({
-          status,
-          contentType: 'application/json',
-          headers: CORS,
-          body: JSON.stringify(body),
-        });
-      if (url.includes('accounts.google.com/gsi')) {
-        return route.fulfill({
-          status: 200,
-          contentType: 'application/javascript',
-          headers: CORS,
-          body: '',
-        });
-      }
-      if (method === 'OPTIONS')
-        return route.fulfill({ status: 204, headers: CORS });
-      if (url.includes('userinfo'))
-        return json({ email: 'e2e@test.example', name: 'E2E' });
-      const id = Object.keys(FILES).find((key) =>
-        url.includes(`/files/${key}`)
-      );
-      if (id && method === 'POST' && url.includes(`/files/${id}/copy`)) {
-        copied.push(id);
-        return json({
-          id: 'e2eCopiedVideoInMyDrive000001',
-          name: (FILES[id] as { name: string }).name,
-        });
-      }
-      if (id && method === 'GET' && !url.includes('alt=media'))
-        return json(FILES[id]);
-      // Encore's signed-in startup sync: answer with an empty, writable Drive.
-      if (method === 'GET' && url.includes('/files?'))
-        return json({ files: [] });
-      if (method === 'GET')
-        return json({ error: { message: 'not found' } }, 404);
-      return json({ id: `e2e-created-${Math.random().toString(36).slice(2)}` });
-    }
-  );
-  return { copied };
-}
 
 async function openNewPerformance(page: Page) {
   await page.goto('/encore/#/library');
@@ -140,7 +86,7 @@ test.describe('Encore performance editor Drive ownership', () => {
       // a cold dev-server compile pushed the first run past it (2 of 6 failed, then 30 green).
       test.setTimeout(60_000);
       await seedZineboxE2eGoogleSession(page);
-      const drive = await stubDrive(page);
+      const drive = await stubEncoreSignedInDrive(page, FILES);
       await enterEncoreApp(page);
       const editor = await openNewPerformance(page);
       await editor

@@ -1,5 +1,3 @@
-import AddIcon from '@mui/icons-material/Add';
-import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import {
   useCallback,
@@ -16,17 +14,11 @@ import type { PracticeResourceGroup } from '../../components/song/practiceResour
 import { EncoreResourceLinksPanel } from '../../components/EncoreResourceLinksPanel';
 import { EncoreMediaLinkRow } from '../../ui/EncoreMediaLinkRow';
 import { EncoreStaticResourceHoverCard } from '../../components/EncoreStreamingHoverCard';
-import { useDriveBackupFailures } from './useDriveBackupFailures';
+import { useOriginalsTakes } from './useOriginalsTakes';
+import { OriginalsTakeAddMenu } from '../components/OriginalsTakeAddMenu';
 import { useEncoreAuth } from '../../context/EncoreAuthContext';
 import { useEncoreDriveUploadDedup } from '../../context/EncoreDriveUploadDedupContext';
-import {
-  encoreResourceDownloadDisabled,
-  encoreResourceDownloadTargetFromTake,
-  triggerEncoreResourceDownload,
-} from '../../drive/encoreResourceDownload';
 import { uploadOriginalSongReference } from '../originalsReferenceUpload';
-import { inferMediaMimeType } from '../../../shared/drive/inferMediaMimeType';
-import { driveFileWebUrl } from '../../drive/driveWebUrls';
 import {
   addResourceFromUrl,
   createResourceFromLocalFile,
@@ -34,31 +26,19 @@ import {
 import { scheduleEncoreResourceLabelEnrichment } from '../../repertoire/encoreResourceLinkMeta';
 import { extractFirstUrlFromDataTransfer } from '../../components/song/songMediaUrlDrop';
 import { shouldEncoreMediaHubHighlightDrag } from '../../components/song/encoreDropSurface';
-import { encoreMediaHubAddButtonSx, practiceResourceChipFieldSx } from '../../theme/encoreUiTokens';
+import { practiceResourceChipFieldSx } from '../../theme/encoreUiTokens';
 import type { EncoreMiscResource } from '../../types';
-import { useEncoreOriginalsPlayback } from '../context/EncoreOriginalsPlaybackContext';
-import {
-  buildLocalOriginalTake,
-  uploadOriginalTakeToDrive,
-} from '../originalTakeUpload';
-import {
-  deleteOriginalTakeBlob,
-  hasOriginalTakeBlob,
-  originalTakeBlobKey,
-  saveOriginalTakeBlob,
-} from '../originalTakeLocalAudio';
 import {
   eligibleOriginalsSlotsForDragDataTransfer,
   originalsFileDragRelevant,
 } from '../originalsSongFileDrag';
 import {
   ORIGINALS_BRAINSTORM_FILE_ACCEPT,
-  ORIGINALS_DEMO_TAKE_ACCEPT,
   ORIGINALS_REFERENCE_FILE_ACCEPT,
   ORIGINALS_SONG_FILE_SLOT_META,
   type OriginalsSongFileSlot,
 } from '../originalsSongFileSlots';
-import { preferredOriginalTake, type EncoreOriginalSong, type OriginalAudioTake } from '../types';
+import { preferredOriginalTake, type EncoreOriginalSong } from '../types';
 import { OriginalsBrainstormDocChip } from '../components/OriginalsBrainstormDocChip';
 
 export type OriginalsSongFilesPanelProps = {
@@ -68,10 +48,6 @@ export type OriginalsSongFilesPanelProps = {
   /** Opens the built-in Encore brainstorm doc editor. */
   onOpenBrainstorm?: () => void;
 };
-
-function takeIsPlayable(take: OriginalAudioTake, localAudioIds: ReadonlySet<string>): boolean {
-  return Boolean(take.driveFileId?.trim()) || take.hasLocalAudio === true || localAudioIds.has(take.id);
-}
 
 function patchSongTimestamp(song: EncoreOriginalSong): EncoreOriginalSong {
   return { ...song, updatedAt: new Date().toISOString() };
@@ -100,20 +76,16 @@ export function useOriginalsSongFilesPanel({
 } {
   const { googleAccessToken } = useEncoreAuth();
   const { uploadWithDuplicateCheck, registerUploadedDriveFile } = useEncoreDriveUploadDedup();
-  const { playTake, isPlayingTake, stopPlayback } = useEncoreOriginalsPlayback();
+  // Takes go through the same controller as the Record-takes workspace, so both surfaces share
+  // one add / replace / backup path instead of two copies that drift.
+  const takes = useOriginalsTakes({ song, onChange, readOnly });
+  const { addFiles: addTakeFiles } = takes;
 
-  const [uploading, setUploading] = useState(false);
-
-  const backupFailures = useDriveBackupFailures();
   const [refsUploading, setRefsUploading] = useState(false);
-  const [localAudioIds, setLocalAudioIds] = useState<Set<string>>(() => new Set());
   const [fileDragActive, setFileDragActive] = useState(false);
   const [hoveredSlot, setHoveredSlot] = useState<OriginalsSongFileSlot | null>(null);
   const [eligibleSlots, setEligibleSlots] = useState<Set<OriginalsSongFileSlot> | null>(null);
   const fileDragDepthRef = useRef(0);
-  const replaceInputRef = useRef<HTMLInputElement>(null);
-  const replaceTakeIdRef = useRef<string | null>(null);
-  const takeFileInputRef = useRef<HTMLInputElement>(null);
 
   const songRef = useRef(song);
   songRef.current = song;
@@ -125,24 +97,6 @@ export function useOriginalsSongFilesPanel({
     },
     [onChange],
   );
-
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      const found = new Set<string>();
-      await Promise.all(
-        song.takes.map(async (t) => {
-          if (t.hasLocalAudio || (await hasOriginalTakeBlob(song.id, t.id))) {
-            found.add(t.id);
-          }
-        }),
-      );
-      if (!cancelled) setLocalAudioIds(found);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [song.id, song.takes]);
 
   useEffect(() => {
     if (readOnly) {
@@ -199,128 +153,6 @@ export function useOriginalsSongFilesPanel({
     };
   }, [readOnly]);
 
-  const updateTake = useCallback(
-    (takeId: string, patch: Partial<OriginalAudioTake>) => {
-      applySong(
-        patchSongTimestamp({
-          ...songRef.current,
-          takes: songRef.current.takes.map((t) => (t.id === takeId ? { ...t, ...patch } : t)),
-        }),
-      );
-    },
-    [applySong],
-  );
-
-  const addTakes = useCallback(
-    async (files: File[]) => {
-      if (files.length === 0 || readOnly) return;
-      setUploading(true);
-      try {
-        // Local-first: save each take's blob and persist its metadata BEFORE the slow
-        // resumable Drive upload. A refresh mid-upload can no longer lose a take — its
-        // blob + song row are already durable. Drive is a background enrichment that
-        // patches in the `driveFileId` when it lands.
-        const songId = songRef.current.id;
-        const pairs = await Promise.all(
-          files.map(async (file) => ({ file, take: await buildLocalOriginalTake(file, songId) })),
-        );
-        const newTakes = pairs.map((p) => p.take);
-        setLocalAudioIds((prev) => {
-          const next = new Set(prev);
-          for (const t of newTakes) next.add(t.id);
-          return next;
-        });
-        const cur = songRef.current;
-        applySong(
-          patchSongTimestamp({
-            ...cur,
-            takes: [...cur.takes, ...newTakes],
-            mainTakeId: cur.mainTakeId ?? newTakes[0]?.id ?? null,
-          }),
-        );
-
-        if (googleAccessToken) {
-          const songTitle = songRef.current.title;
-          await Promise.all(
-            pairs.map(async ({ file, take }) => {
-              try {
-                const driveFileId = await uploadOriginalTakeToDrive(
-                  file,
-                  take,
-                  songTitle,
-                  googleAccessToken,
-                  uploadWithDuplicateCheck,
-                  registerUploadedDriveFile,
-                );
-                if (driveFileId) {
-                  updateTake(take.id, { driveFileId });
-                  backupFailures.clear(take.id);
-                }
-              } catch (error) {
-                // Same durability rule as the Record-takes workspace: never fail silently.
-                backupFailures.record(take.id, error);
-              }
-            }),
-          );
-        }
-      } finally {
-        setUploading(false);
-      }
-    },
-    [
-      applySong,
-      googleAccessToken,
-      readOnly,
-      registerUploadedDriveFile,
-      updateTake,
-      uploadWithDuplicateCheck,
-      backupFailures,
-    ],
-  );
-
-  const replaceTakeFile = useCallback(
-    async (takeId: string, file: File) => {
-      if (readOnly) return;
-      setUploading(true);
-      try {
-        await saveOriginalTakeBlob(songRef.current.id, takeId, file);
-        setLocalAudioIds((prev) => new Set(prev).add(takeId));
-        const patch: Partial<OriginalAudioTake> = {
-          label: file.name,
-          mimeType: inferMediaMimeType(file),
-          hasLocalAudio: true,
-        };
-        if (googleAccessToken) {
-          const take = songRef.current.takes.find((t) => t.id === takeId);
-          if (take) {
-            try {
-              const driveFileId = await uploadOriginalTakeToDrive(
-                file,
-                take,
-                songRef.current.title,
-                googleAccessToken,
-                uploadWithDuplicateCheck,
-                registerUploadedDriveFile,
-              );
-              if (driveFileId) {
-                patch.driveFileId = driveFileId;
-                backupFailures.clear(takeId);
-              }
-            } catch (error) {
-              backupFailures.record(takeId, error);
-            }
-          }
-        }
-        updateTake(takeId, patch);
-      } finally {
-        setUploading(false);
-      }
-    },
-    [googleAccessToken, readOnly, registerUploadedDriveFile, updateTake, uploadWithDuplicateCheck,
-      backupFailures,
-    ],
-  );
-
   const uploadReferenceFile = useCallback(
     async (file: File) => {
       if (readOnly) return;
@@ -367,7 +199,7 @@ export function useOriginalsSongFilesPanel({
       if (list.length === 0 || readOnly) return;
       switch (slot) {
         case 'demoTakes':
-          await addTakes(list);
+          await addTakeFiles(list);
           break;
         case 'references':
           await uploadReferenceFiles(list);
@@ -377,7 +209,7 @@ export function useOriginalsSongFilesPanel({
           break;
       }
     },
-    [addTakes, readOnly, uploadBrainstormFiles, uploadReferenceFiles],
+    [addTakeFiles, readOnly, uploadBrainstormFiles, uploadReferenceFiles],
   );
 
   const addReferenceLink = useCallback(
@@ -497,37 +329,6 @@ export function useOriginalsSongFilesPanel({
     ],
   );
 
-  const hiddenInputs = (
-    <>
-      <input
-        ref={replaceInputRef}
-        type="file"
-        accept={ORIGINALS_DEMO_TAKE_ACCEPT}
-        hidden
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          e.target.value = '';
-          const takeId = replaceTakeIdRef.current;
-          replaceTakeIdRef.current = null;
-          if (!file || !takeId) return;
-          void replaceTakeFile(takeId, file);
-        }}
-      />
-      <input
-        ref={takeFileInputRef}
-        type="file"
-        accept={ORIGINALS_DEMO_TAKE_ACCEPT}
-        hidden
-        multiple
-        onChange={(e) => {
-          const files = e.target.files ? Array.from(e.target.files) : [];
-          e.target.value = '';
-          if (files.length > 0) void addTakes(files);
-        }}
-      />
-    </>
-  );
-
   const demoTakesBody: ReactNode = (
     <>
       <Stack
@@ -537,44 +338,21 @@ export function useOriginalsSongFilesPanel({
           flexWrap: "wrap",
           alignItems: "center"
         }, (t) => practiceResourceChipFieldSx(t)]}>
-        {song.takes.map((t) => {
-          const playable = takeIsPlayable(t, localAudioIds);
-          const openUrl = t.driveFileId ? driveFileWebUrl(t.driveFileId) : undefined;
+        {takes.takes.map((t) => {
+          const playable = takes.isPlayable(t);
+          const openUrl = takes.driveOpenUrl(t);
+          const download = takes.downloadProps(t);
           const row = (
             <EncoreMediaLinkRow
               slot="reference"
-              isPrimary={song.mainTakeId === t.id}
+              isPrimary={takes.preferredTakeId === t.id}
               caption={t.label}
               openUrl={openUrl}
               openAriaLabel={`Open ${t.label}`}
-              onMakePrimary={
-                readOnly
-                  ? undefined
-                  : () => applySong(patchSongTimestamp({ ...songRef.current, mainTakeId: t.id }))
-              }
-              onRemove={
-                readOnly
-                  ? undefined
-                  : () => {
-                      if (isPlayingTake(song.id, t.id)) stopPlayback();
-                      void deleteOriginalTakeBlob(song.id, t.id);
-                      const remaining = songRef.current.takes.filter((x) => x.id !== t.id);
-                      applySong(
-                        patchSongTimestamp({
-                          ...songRef.current,
-                          takes: remaining,
-                          mainTakeId:
-                            songRef.current.mainTakeId === t.id
-                              ? (remaining[0]?.id ?? null)
-                              : songRef.current.mainTakeId,
-                        }),
-                      );
-                    }
-              }
+              onMakePrimary={readOnly ? undefined : () => takes.setPreferred(t.id)}
+              onRemove={readOnly ? undefined : () => takes.remove(t.id)}
             />
           );
-          const downloadTarget = encoreResourceDownloadTargetFromTake(t);
-          const downloadGate = encoreResourceDownloadDisabled({ driveFileId: t.driveFileId }, googleAccessToken);
           return (
             <EncoreStaticResourceHoverCard
               key={t.id}
@@ -582,59 +360,22 @@ export function useOriginalsSongFilesPanel({
               subtitle="Take"
               driveOpenUrl={openUrl}
               editNickname={readOnly ? undefined : t.label}
-              onEditNicknameChange={
-                readOnly ? undefined : (value) => updateTake(t.id, { label: value.trim() || t.label })
-              }
+              onEditNicknameChange={readOnly ? undefined : (value) => takes.rename(t.id, value)}
               resourceNotes={t.notes ?? ''}
-              onResourceNotesChange={
-                readOnly ? undefined : (value) => updateTake(t.id, { notes: value.trim() || undefined })
-              }
-              onPlay={() => {
-                if (!playable) {
-                  replaceTakeIdRef.current = t.id;
-                  replaceInputRef.current?.click();
-                  return;
-                }
-                playTake({
-                  songId: song.id,
-                  songTitle: song.title,
-                  takeId: t.id,
-                  takeLabel: t.label,
-                  driveFileId: t.driveFileId,
-                  localTakeKey: originalTakeBlobKey(song.id, t.id),
-                  mimeType: t.mimeType,
-                });
-              }}
-              isPlaying={isPlayingTake(song.id, t.id)}
+              onResourceNotesChange={readOnly ? undefined : (value) => takes.setNotes(t.id, value)}
+              onPlay={() => takes.play(t)}
+              isPlaying={takes.isPlaying(t.id)}
               playDisabled={false}
               playDisabledReason={
                 playable ? undefined : 'Choose the audio file again to enable playback on this device'
               }
-              {...(downloadTarget
-                ? {
-                    onDownload: () => triggerEncoreResourceDownload(downloadTarget, googleAccessToken),
-                    downloadDisabled: downloadGate.disabled,
-                    downloadDisabledReason: downloadGate.reason,
-                  }
-                : {})}
+              {...(download ?? {})}
             >
               {row}
             </EncoreStaticResourceHoverCard>
           );
         })}
-        {!readOnly ? (
-          <Button
-            size="small"
-            variant="outlined"
-            color="inherit"
-            disabled={uploading}
-            startIcon={<AddIcon sx={{ fontSize: 14 }} />}
-            onClick={() => takeFileInputRef.current?.click()}
-            sx={(t) => encoreMediaHubAddButtonSx(t)}
-          >
-            Add take
-          </Button>
-        ) : null}
+        {!readOnly ? <OriginalsTakeAddMenu takes={takes} variant="chip" /> : null}
       </Stack>
     </>
   );
@@ -709,7 +450,7 @@ export function useOriginalsSongFilesPanel({
 
   const panel = (
     <>
-      {hiddenInputs}
+      {takes.hiddenInputs}
       <PracticeResourcesPanel<OriginalsSongFileSlot>
         groups={resourceGroups}
         fileDrop={fileDrop}

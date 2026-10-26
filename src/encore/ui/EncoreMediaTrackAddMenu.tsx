@@ -36,6 +36,8 @@ const menuSectionHintSx = {
 
 export type EncoreMediaTrackAddMenuProps = {
   addButtonLabel?: string;
+  /** `chip` is the media-hub chip; `button` is a full-size outlined button for a focused stage. */
+  triggerVariant?: 'chip' | 'button';
   menuAnchor: HTMLElement | null;
   onOpenMenu: (anchor: HTMLElement) => void;
   onCloseMenu: () => void;
@@ -43,27 +45,39 @@ export type EncoreMediaTrackAddMenuProps = {
   onPasteValueChange: (next: string) => void;
   onPasteApply: (raw: string) => void;
   pasteError?: string | null;
-  spotifyLinked: boolean;
-  clientId: string;
-  searchValue: string;
-  onSearchValueChange: (next: string) => void;
+  /** Which links the field takes, under "Paste a link". */
+  pasteHint?: string;
+  /** Disables the paste field while a pasted link is being added. */
+  pasteBusy?: boolean;
+  /** Omit the Spotify props (or pass `spotifyLinked: false`) for surfaces that only take files. */
+  spotifyLinked?: boolean;
+  clientId?: string;
+  searchValue?: string;
+  onSearchValueChange?: (next: string) => void;
   /** Prefill and search on focus when the field is empty (usually title + artist). */
   searchSeed?: string;
-  spotifyOptions: SpotifySearchTrack[];
-  spotifyLoading: boolean;
-  onPickSpotifyTrack: (track: SpotifySearchTrack) => void;
+  spotifyOptions?: SpotifySearchTrack[];
+  spotifyLoading?: boolean;
+  onPickSpotifyTrack?: (track: SpotifySearchTrack) => void;
   uploadDisabled: boolean;
   uploadDisabledReason?: string;
+  /** Secondary line under "Upload file". */
+  uploadHint?: string;
   onUploadClick: () => void;
-  onFileChange: (event: ChangeEvent<HTMLInputElement>) => void;
-  fileInputRef: React.RefObject<HTMLInputElement | null>;
-  fileAccept: string;
+  /**
+   * The menu's own file input. Omit all three when the caller already owns an input (and passes
+   * `onUploadClick` to open it), so the page does not carry two pickers for one action.
+   */
+  onFileChange?: (event: ChangeEvent<HTMLInputElement>) => void;
+  fileInputRef?: React.RefObject<HTMLInputElement | null>;
+  fileAccept?: string;
 };
 
 /** Add track chip + dropdown with link paste, optional Spotify search, and file upload. */
 export function EncoreMediaTrackAddMenu(props: EncoreMediaTrackAddMenuProps): ReactElement {
   const {
     addButtonLabel = 'Add track',
+    triggerVariant = 'chip',
     menuAnchor,
     onOpenMenu,
     onCloseMenu,
@@ -71,33 +85,41 @@ export function EncoreMediaTrackAddMenu(props: EncoreMediaTrackAddMenuProps): Re
     onPasteValueChange,
     onPasteApply,
     pasteError,
-    spotifyLinked,
-    clientId,
-    searchValue,
+    pasteHint = 'Spotify, YouTube, Stanza, or Drive',
+    pasteBusy = false,
+    spotifyLinked = false,
+    clientId = '',
+    searchValue = '',
     onSearchValueChange,
     searchSeed,
-    spotifyOptions,
-    spotifyLoading,
+    spotifyOptions = [],
+    spotifyLoading = false,
     onPickSpotifyTrack,
     uploadDisabled,
     uploadDisabledReason,
+    uploadHint = 'Audio or video',
     onUploadClick,
     onFileChange,
     fileInputRef,
     fileAccept,
   } = props;
 
-  const showSpotifySearch = spotifyLinked && Boolean(clientId);
+  const showSpotifySearch =
+    spotifyLinked && Boolean(clientId) && Boolean(onSearchValueChange) && Boolean(onPickSpotifyTrack);
 
   return (
     <>
       <Button
-        size="small"
+        size={triggerVariant === 'chip' ? 'small' : 'medium'}
         variant="outlined"
         color="inherit"
-        startIcon={<AddIcon sx={{ fontSize: 14 }} />}
+        startIcon={triggerVariant === 'chip' ? <AddIcon sx={{ fontSize: 14 }} /> : <AddIcon />}
         onClick={(e) => onOpenMenu(e.currentTarget)}
-        sx={(t) => encoreMediaHubAddButtonSx(t)}
+        sx={
+          triggerVariant === 'chip'
+            ? (t) => encoreMediaHubAddButtonSx(t)
+            : { alignSelf: 'flex-start', mt: 0.5 }
+        }
         aria-haspopup="menu"
         aria-expanded={Boolean(menuAnchor)}
       >
@@ -141,13 +163,14 @@ export function EncoreMediaTrackAddMenu(props: EncoreMediaTrackAddMenuProps): Re
             sx={[{
               color: "text.secondary"
             }, ...(Array.isArray(menuSectionHintSx) ? menuSectionHintSx : [menuSectionHintSx])]}>
-            Spotify, YouTube, Stanza, or Drive
+            {pasteHint}
           </Typography>
           <EncoreMediaUrlPasteField
             value={pasteValue}
             onChange={onPasteValueChange}
             onApply={onPasteApply}
             placeholder="Paste link"
+            disabled={pasteBusy}
             embedInMenu
           />
           {pasteError ? (
@@ -175,9 +198,9 @@ export function EncoreMediaTrackAddMenu(props: EncoreMediaTrackAddMenuProps): Re
               options={spotifyOptions}
               loading={spotifyLoading}
               inputValue={searchValue}
-              onInputChange={onSearchValueChange}
+              onInputChange={onSearchValueChange!}
               searchSeed={searchSeed}
-              onPickTrack={onPickSpotifyTrack}
+              onPickTrack={onPickSpotifyTrack!}
             />
           </Box>
         ) : null}
@@ -196,14 +219,16 @@ export function EncoreMediaTrackAddMenu(props: EncoreMediaTrackAddMenuProps): Re
           </ListItemIcon>
           <ListItemText
             primary="Upload file"
-            secondary={uploadDisabledReason ?? 'Audio or video'}
+            secondary={uploadDisabledReason ?? uploadHint}
             slotProps={{
               primary: { sx: { fontWeight: 600 } }
             }}
           />
         </MenuItem>
       </Menu>
-      <input ref={fileInputRef} type="file" hidden accept={fileAccept} onChange={onFileChange} />
+      {fileInputRef && onFileChange ? (
+        <input ref={fileInputRef} type="file" hidden accept={fileAccept} onChange={onFileChange} />
+      ) : null}
     </>
   );
 }
