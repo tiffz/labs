@@ -4,14 +4,16 @@
 
 ## Palette
 
-| Token              | Hex       | Use                               |
-| ------------------ | --------- | --------------------------------- |
-| `--muscle-navy`    | `#1a2744` | Canvas background, primary chrome |
-| `--muscle-cream`   | `#f5f0e8` | Workout panel, page background    |
-| `--muscle-amber`   | `#d4a017` | Subcutaneous glow, accents        |
-| `--muscle-lapis`   | `#2563eb` | Selection / quiz highlight        |
-| `--muscle-emerald` | `#059669` | Correct rep flash                 |
-| `--muscle-crimson` | `#dc2626` | Incorrect rep flash               |
+| Token                | Hex       | Use                               |
+| -------------------- | --------- | --------------------------------- |
+| `--muscle-navy`      | `#1a2744` | Canvas background, primary chrome |
+| `--muscle-cream`     | `#f5f0e8` | Workout panel, page background    |
+| `--muscle-amber`     | `#d4a017` | Subcutaneous glow, accents        |
+| `--muscle-lapis`     | `#2563eb` | Selection / quiz highlight        |
+| `--muscle-emerald`   | `#059669` | Correct rep flash                 |
+| `--muscle-crimson`   | `#dc2626` | Incorrect rep flash               |
+| `--muscle-origin`    | `#14b8a6` | Origin marker (sphere)            |
+| `--muscle-insertion` | `#a78bfa` | Insertion marker (diamond)        |
 
 ## Typography
 
@@ -26,14 +28,15 @@ CSS tokens: `--muscle-canvas-split` (default `60%`), `--muscle-panel-split` (`40
 
 ## 3D interaction states
 
-| State               | Visual                                                             |
-| ------------------- | ------------------------------------------------------------------ |
-| Default             | Warm muscle/bone tones                                             |
-| Warmup faded        | Low-opacity wireframe context                                      |
-| Hover               | White Outlines contour                                             |
-| Quiz highlight      | Lapis **Outlines** + subtle emissive (keep muscle/bone base color) |
-| Correct / incorrect | Emerald / crimson **Outlines** + emissive flash                    |
-| Subcutaneous        | Amber Outlines on landmark bones                                   |
+| State               | Visual                                                                                                            |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Default             | Warm muscle/bone tones                                                                                            |
+| Warmup faded        | Low-opacity wireframe context                                                                                     |
+| Hover               | White Outlines contour                                                                                            |
+| Quiz highlight      | Lapis **Outlines** + subtle emissive (keep muscle/bone base color)                                                |
+| Correct / incorrect | Emerald / crimson **Outlines** + emissive flash                                                                   |
+| Subcutaneous        | Amber Outlines on landmark bones                                                                                  |
+| Origin / insertion  | Teal sphere at the origin end, violet diamond at the insertion end, drawn over the muscle; sidebar legend matches |
 
 ## Robo-Skelly
 

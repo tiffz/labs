@@ -4,6 +4,7 @@ import { jointTypeTermIdForJoint } from '../../curriculum/anatomyTermMatches';
 import { LAYER_DEPTH_LABELS } from '../../layerDepthView';
 import type { MuscleMemoryNode } from '../../types/node';
 import { useMuscleStore } from '../../store/useMuscleStore';
+import { ATTACHMENT_MARKER_STYLE } from '../canvas/attachmentMarkers';
 import { StructureDetailsBody } from './StructureDetailsBody';
 import StructureMemberChips from './StructureMemberChips';
 
@@ -22,6 +23,19 @@ export default function WarmupStructureCard({
 }): React.ReactElement {
   const focusStructure = useMuscleStore((s) => s.focusStructure);
   const focusedNodeId = useMuscleStore((s) => s.focusedNodeId);
+  // Swatches double as the canvas legend, so show them only while the markers are drawn.
+  const markersShown = useMuscleStore(
+    (s) => s.showAttachments && s.mode === 'warmup' && s.bodyView === 'region',
+  );
+  const attachments = (
+    [
+      ['origin', previewNode.originBoneId],
+      ['insertion', previewNode.insertionBoneId],
+    ] as const
+  ).flatMap(([role, boneId]) => {
+    const bone = boneId ? getNodeById(boneId) : undefined;
+    return bone ? [{ role, bone }] : [];
+  });
   const memberNodes =
     groupNodeIds
       ?.map((id) => getNodeById(id))
@@ -69,6 +83,27 @@ export default function WarmupStructureCard({
           <span className="muscle-structure-focus__label">Landmarks</span>
           {previewNode.subcutaneousLandmarks.join(' · ')}
         </p>
+      ) : null}
+      {attachments.length > 0 ? (
+        <div className="muscle-structure-focus__attachments" data-testid="muscle-structure-attachments">
+          <span className="muscle-structure-focus__label">Attachments</span>
+          <ul>
+            {attachments.map(({ role, bone }) => (
+              <li key={role} data-attachment-role={role}>
+                {markersShown ? (
+                  <span
+                    className={`muscle-attachment-swatch muscle-attachment-swatch--${role}`}
+                    aria-hidden="true"
+                  />
+                ) : null}
+                <span className="muscle-structure-focus__attachment-role">
+                  {ATTACHMENT_MARKER_STYLE[role].label}
+                </span>{' '}
+                {bone.name}
+              </li>
+            ))}
+          </ul>
+        </div>
       ) : null}
       {groupNodeIds && memberNodes.length > 1 && !isHoverPreview ? (
         <StructureMemberChips
