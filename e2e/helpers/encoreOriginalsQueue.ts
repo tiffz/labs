@@ -37,3 +37,15 @@ export async function gotoEncoreOriginalsQueue(
     await expect(page.locator('tbody tr')).toHaveCount(2, { timeout: 15_000 });
   }
 }
+
+/**
+ * Open a seeded original at a workflow stage. Demo-ready songs (any song with a take) open in View
+ * mode, which hides the stage stepper, so switch to Write first when needed.
+ */
+export async function openSeededOriginalStage(page: Page, title: string, stage: string): Promise<void> {
+  await page.getByText(title, { exact: true }).click();
+  const writeMode = page.getByRole('button', { name: 'Write mode' });
+  await expect(writeMode).toBeVisible({ timeout: 15_000 });
+  if ((await writeMode.getAttribute('aria-pressed')) !== 'true') await writeMode.click();
+  await page.getByRole('button', { name: stage }).click();
+}

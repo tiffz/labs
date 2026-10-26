@@ -64,9 +64,15 @@ export function reportInteractionLatency(
       `[interaction-latency] ${prefix}${formatInteractionBudgetMessage(measuredMs, budgetMs)} — exceeds hard ceiling ${hardCeilingMs}ms (${HARD_FAIL_MULTIPLIER}x budget)`,
     );
   }
-  if (measuredMs > budgetMs) {
-    console.warn(`[interaction-latency] ${prefix}${formatInteractionBudgetMessage(measuredMs, budgetMs)} (advisory)`);
-  }
+  /*
+   * Log within-budget samples too. The annotations above land in the HTML report, which CI only
+   * uploads on failure, so the job log is the one record every run keeps. When it carried only the
+   * over-budget lines, a 2026-10-26 ceiling breach could be compared against the slow tail and
+   * nothing else: 13 samples from 53 main-CI runs, and no way to tell whether the rest were 400ms
+   * or 1100ms.
+   */
+  const tier = measuredMs > budgetMs ? 'advisory' : 'within budget';
+  console.warn(`[interaction-latency] ${prefix}${formatInteractionBudgetMessage(measuredMs, budgetMs)} (${tier})`);
 }
 
 function annotateInteractionMeasurement(entry: {
