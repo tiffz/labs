@@ -203,3 +203,41 @@ Ab     Bb
     ]);
   });
 });
+
+/**
+ * Write Mode shows lyrics only, so a chord-only line is a blank line there. The first edit used to
+ * erase every chord-only line at the end of a section, which for an instrumental (all chord-only
+ * lines) meant the whole chart. Parametrised over the shapes that put chord-only lines at a
+ * section's end, where the trim lived, and in the last section, where a second trim lived.
+ */
+describe('Write Mode keeps chord-only lines', () => {
+  const chordsOf = (chordPro: string) =>
+    parseChordProToChartLayout(chordPro).sections.flatMap((s) => s.lines.flatMap((l) => l.chords.map((c) => c.chordName)));
+
+  const CHARTS: Record<string, string> = {
+    'an instrumental (every line chord-only)': '[Intro]\n[Am][F][C][G]\n[Am][F][C][G]\n\n[Solo]\n[Dm][G]\n[C]',
+    'a chord-only line ending a lyric section': '[Verse]\n[C]Hello [G]world\n[Am][F]\n\n[Chorus]\n[F]Sing',
+    'a chord-only outro as the last section': '[Verse]\n[C]Hello\n\n[Outro]\n[C][G][Am]',
+    'chord-only lines between lyrics': '[Verse]\n[C]Hello\n[F][G]\n[C]Bye',
+  };
+
+  for (const [name, chart] of Object.entries(CHARTS)) {
+    it(`survives an edit: ${name}`, () => {
+      const layout = parseChordProToChartLayout(chart);
+      const doc = layoutToWriteDocument(layout);
+      // An edit elsewhere in the chart: rename the first header.
+      const edited = doc.replace(/^\[([^\]]+)\]/, '[$1 again]');
+      const after = serializeChartLayoutToChordPro(parseWriteDocumentToLayout(edited, layout));
+      expect(chordsOf(after)).toEqual(chordsOf(chart));
+    });
+
+    it(`is stable over repeated round trips: ${name}`, () => {
+      let layout = parseChordProToChartLayout(chart);
+      const first = serializeChartLayoutToChordPro(parseWriteDocumentToLayout(layoutToWriteDocument(layout), layout));
+      for (let i = 0; i < 3; i += 1) {
+        layout = parseWriteDocumentToLayout(layoutToWriteDocument(layout), layout);
+      }
+      expect(serializeChartLayoutToChordPro(layout)).toBe(first);
+    });
+  }
+});

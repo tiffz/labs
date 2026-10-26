@@ -238,7 +238,15 @@ export function serializeChartLayoutToChordPro(layout: ChartLayout): string {
   return blocks.join('\n\n').replace(/\n{3,}/g, '\n\n').trimEnd();
 }
 
-/** Plain-text document for Write Mode (headers + lyrics, no chord tokens). */
+/**
+ * Plain-text document for Write Mode (headers + lyrics, no chord tokens).
+ *
+ * A chord-only line (an intro, a solo, a whole instrumental) has no text, so it shows as a blank
+ * line. That blank line must stay: `parseWriteDocumentToLayout` reconciles chords by line, and a
+ * line missing from the document is a line deleted. Trimming trailing blanks used to drop every
+ * chord-only line at the end of a section, so the first edit in Write Mode erased an instrumental's
+ * whole chart. Only blanks that carry no chords are trimmed.
+ */
 export function layoutToWriteDocument(layout: ChartLayout): string {
   const blocks: string[] = [];
   for (const section of layout.sections) {
@@ -249,9 +257,16 @@ export function layoutToWriteDocument(layout: ChartLayout): string {
     for (const line of section.lines) {
       sectionLines.push(line.text);
     }
-    blocks.push(trimTrailingEmptySectionLines(sectionLines, section.header ? 1 : 0).join('\n'));
+    const headerLines = section.header ? 1 : 0;
+    const lastWithChords = section.lines.reduce((last, line, i) => (line.chords.length > 0 ? i : last), -1);
+    const keep = Math.max(headerLines, headerLines + lastWithChords + 1);
+    const trimmed = trimTrailingEmptySectionLines(sectionLines, keep);
+    blocks.push(trimmed.join('\n'));
   }
-  return blocks.join('\n\n').trimEnd();
+  const doc = blocks.join('\n\n');
+  // The last section's blank chord-only lines are content too; only strip a genuinely empty tail.
+  const last = blocks[blocks.length - 1] ?? '';
+  return last.trim() === '' ? doc.trimEnd() : doc.replace(/[ \t]+$/, '');
 }
 
 function splitWriteDocumentSections(writeDoc: string): Array<{ header: string; bodyLines: string[] }> {

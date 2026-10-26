@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { importOriginalTakeFromDrive } from './originalTakeDriveImport';
+import { checkOriginalTakeDriveLink, commitOriginalTakeDriveLink } from './originalTakeDriveImport';
 import type { OriginalAudioTake } from './types';
 
 vi.mock('./drive/originalsSharded', () => ({
@@ -67,7 +67,35 @@ afterEach(() => {
 
 const link = (id: string) => `https://drive.google.com/file/d/${id}/view`;
 
-describe('importOriginalTakeFromDrive', () => {
+/** Stage (check) then confirm (commit), the way the take UI does. */
+async function importOriginalTakeFromDrive(
+  raw: string,
+  opts: { accessToken: string; existingTakes: OriginalAudioTake[] },
+) {
+  const checked = await checkOriginalTakeDriveLink(raw, opts);
+  if (!checked.ok) return { ok: false as const, message: checked.message };
+  const committed = await commitOriginalTakeDriveLink(checked.plan, { accessToken: opts.accessToken });
+  if (!committed.ok) return committed;
+  return {
+    ok: true as const,
+    take: committed.take,
+    via: checked.plan.kind === 'reference' ? ('reference' as const) : ('copy' as const),
+  };
+}
+
+describe('checkOriginalTakeDriveLink', () => {
+  it('says what will happen without writing anything', async () => {
+    files[ID(9)] = { name: 'Friend demo.mp3', mimeType: 'audio/mpeg', ownedByMe: false };
+    files[ID(10)] = { name: 'My demo.mp3', mimeType: 'audio/mpeg', ownedByMe: true };
+    const foreign = await checkOriginalTakeDriveLink(link(ID(9)), { accessToken: 't', existingTakes: [] });
+    const owned = await checkOriginalTakeDriveLink(link(ID(10)), { accessToken: 't', existingTakes: [] });
+    expect(foreign).toMatchObject({ ok: true, outcome: 'Copies into your Drive' });
+    expect(owned).toMatchObject({ ok: true, outcome: 'Links to your file in Drive' });
+    expect(writes).toEqual([]);
+  });
+});
+
+describe('check then commit', () => {
   it('references a file you own, and only adds a shortcut beside it', async () => {
     files[ID(1)] = { name: 'Demo 3.mov', mimeType: 'video/quicktime', ownedByMe: true };
     const result = await importOriginalTakeFromDrive(link(ID(1)), { accessToken: 't', existingTakes: [] });

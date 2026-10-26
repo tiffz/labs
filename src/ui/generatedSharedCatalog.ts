@@ -22581,7 +22581,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "music-core",
-    "description": "Plain-text document for Write Mode (headers + lyrics, no chord tokens).",
+    "description": "Plain-text document for Write Mode (headers + lyrics, no chord tokens). A chord-only line (an intro, a solo, a whole instrumental) has no text, so it shows as a blank line. That blank line must stay: `parseWriteDocumentToLayout` reconciles chords by line, and a line missing from the document is a line deleted. Trimming trailing blanks used to drop every chord-only line at the end of a section, so the first edit in Write Mode erased an instrumental's whole chart. Only blanks that carry no chords are trimmed.",
     "tags": [
       "music"
     ],
@@ -34536,6 +34536,264 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "words"
     ],
     "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-upload-labsstageduploadpanel-tsx-labsstageduploadpanel",
+    "name": "LabsStagedUploadPanel",
+    "path": "src/shared/upload/LabsStagedUploadPanel.tsx",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "The review step every upload goes through (ADR 0030): what was picked, dropped or pasted, what will happen to each item, and one button that does it. Render it where the items will land, and only while something is staged. Class hook: `.labs-staged-upload-panel`. Colours come from the MUI theme, so each app's palette applies without an `appearance` prop.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [
+      "ui"
+    ],
+    "exportType": "function",
+    "demoId": "staged-upload-panel"
+  },
+  {
+    "id": "src-shared-upload-labsstageduploadpanel-tsx-labsstageduploadpanelprops",
+    "name": "LabsStagedUploadPanelProps",
+    "path": "src/shared/upload/LabsStagedUploadPanel.tsx",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [
+      "ui"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-upload-stageduploads-ts-canconfirmstageduploads",
+    "name": "canConfirmStagedUploads",
+    "path": "src/shared/upload/stagedUploads.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Confirm is offered only when every item has been checked and at least one can be added. Waiting for the checks means the button never commits a list the user has not finished seeing.",
+    "tags": [],
+    "appsUsing": [
+      "ui"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-upload-stageduploads-ts-formatstageduploadsize",
+    "name": "formatStagedUploadSize",
+    "path": "src/shared/upload/stagedUploads.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "\"1.2 MB\". `null` (unknown) yields `null` so the caller omits it rather than printing \"0 B\".",
+    "tags": [],
+    "appsUsing": [
+      "ui"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-upload-stageduploads-ts-labsreadystagedupload",
+    "name": "LabsReadyStagedUpload",
+    "path": "src/shared/upload/stagedUploads.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "What the user brought in.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [
+      "ui"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-upload-stageduploads-ts-labsstagedupload",
+    "name": "LabsStagedUpload",
+    "path": "src/shared/upload/stagedUploads.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "What the user brought in.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [
+      "ui"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-upload-stageduploads-ts-labsstageduploadinspection",
+    "name": "LabsStagedUploadInspection",
+    "path": "src/shared/upload/stagedUploads.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "The app's verdict on one source, from `inspect`. `outcome` is the short line the row shows to say where the item goes; `plan` is whatever the app needs to carry it out on confirm.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [
+      "ui"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-upload-stageduploads-ts-labsstageduploadsource",
+    "name": "LabsStagedUploadSource",
+    "path": "src/shared/upload/stagedUploads.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "What the user brought in.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [
+      "ui"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-upload-stageduploads-ts-readystageduploads",
+    "name": "readyStagedUploads",
+    "path": "src/shared/upload/stagedUploads.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "What the user brought in.",
+    "tags": [],
+    "appsUsing": [
+      "ui"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-upload-stageduploads-ts-removestagedupload",
+    "name": "removeStagedUpload",
+    "path": "src/shared/upload/stagedUploads.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "What the user brought in.",
+    "tags": [],
+    "appsUsing": [
+      "ui"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-upload-stageduploads-ts-resolvestagedupload",
+    "name": "resolveStagedUpload",
+    "path": "src/shared/upload/stagedUploads.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Record `inspect`'s answer. Ignores an id that was removed meanwhile, so a slow check cannot bring back an item the user already took out.",
+    "tags": [],
+    "appsUsing": [
+      "ui"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-upload-stageduploads-ts-stagedsourcename",
+    "name": "stagedSourceName",
+    "path": "src/shared/upload/stagedUploads.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Best name to show before `inspect` answers.",
+    "tags": [],
+    "appsUsing": [
+      "ui"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-upload-stageduploads-ts-stagesources",
+    "name": "stageSources",
+    "path": "src/shared/upload/stagedUploads.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "What the user brought in.",
+    "tags": [],
+    "appsUsing": [
+      "ui"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-upload-uselabsstageduploads-ts-labsstageduploadcommitresult",
+    "name": "LabsStagedUploadCommitResult",
+    "path": "src/shared/upload/useLabsStagedUploads.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Items the app could not write. They stay in the list, marked with `message`, for the user to see.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [
+      "ui"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-upload-uselabsstageduploads-ts-labsstageduploadscontroller",
+    "name": "LabsStagedUploadsController",
+    "path": "src/shared/upload/useLabsStagedUploads.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Items the app could not write. They stay in the list, marked with `message`, for the user to see.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [
+      "ui"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-upload-uselabsstageduploads-ts-uselabsstageduploads",
+    "name": "useLabsStagedUploads",
+    "path": "src/shared/upload/useLabsStagedUploads.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "React state for ./stagedUploads . `inspect` decides what each source will become; it must not write anything, because the user has not confirmed yet.",
+    "tags": [],
+    "appsUsing": [
+      "ui"
+    ],
+    "exportType": "function",
     "demoId": null
   },
   {

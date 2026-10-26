@@ -80,8 +80,15 @@ jobs:
       - name: Install Playwright browsers (fresh)
         run: npx playwright install --with-deps chromium
 
+      # Each step writes to its OWN results and report folder. They used to share
+      # `test-results/` and `playwright-report/`, and Playwright empties both at the start of a
+      # run, so the soak and visual steps deleted the smoke step's evidence before the upload ran.
+      # On 2026-10-26 the smoke failed and the artifact held only visual screenshots: no trace,
+      # no screenshot, nothing to diagnose the one failure the run was red for.
       - name: Run e2e smoke
-        run: npm run test:e2e:smoke
+        env:
+          PLAYWRIGHT_HTML_OUTPUT_DIR: playwright-report/smoke
+        run: npm run test:e2e:smoke -- --output=test-results/smoke
 
       # Each category runs even when an earlier one failed. The nightly exists to give a
       # portfolio-wide picture, and sequential fail-fast turned it into "the first thing that
@@ -90,11 +97,15 @@ jobs:
       # longer hides the rest of the evidence while doing so.
       - name: Run soak specs (excluded from PR CI)
         if: '!cancelled()'
-        run: npm run test:e2e:soak
+        env:
+          PLAYWRIGHT_HTML_OUTPUT_DIR: playwright-report/soak
+        run: npm run test:e2e:soak -- --output=test-results/soak
 
       - name: Run visual regression baselines
         if: '!cancelled()'
-        run: npm run test:e2e:visual
+        env:
+          PLAYWRIGHT_HTML_OUTPUT_DIR: playwright-report/visual
+        run: npm run test:e2e:visual -- --output=test-results/visual
 
       - name: Upload Playwright report on failure
         if: failure()

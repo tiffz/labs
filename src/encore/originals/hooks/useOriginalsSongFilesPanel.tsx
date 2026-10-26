@@ -79,7 +79,7 @@ export function useOriginalsSongFilesPanel({
   // Takes go through the same controller as the Record-takes workspace, so both surfaces share
   // one add / replace / backup path instead of two copies that drift.
   const takes = useOriginalsTakes({ song, onChange, readOnly });
-  const { addFiles: addTakeFiles } = takes;
+  const { stageFiles: stageTakeFiles } = takes;
 
   const [refsUploading, setRefsUploading] = useState(false);
   const [fileDragActive, setFileDragActive] = useState(false);
@@ -199,7 +199,7 @@ export function useOriginalsSongFilesPanel({
       if (list.length === 0 || readOnly) return;
       switch (slot) {
         case 'demoTakes':
-          await addTakeFiles(list);
+          stageTakeFiles(list);
           break;
         case 'references':
           await uploadReferenceFiles(list);
@@ -209,7 +209,7 @@ export function useOriginalsSongFilesPanel({
           break;
       }
     },
-    [addTakeFiles, readOnly, uploadBrainstormFiles, uploadReferenceFiles],
+    [stageTakeFiles, readOnly, uploadBrainstormFiles, uploadReferenceFiles],
   );
 
   const addReferenceLink = useCallback(
@@ -375,8 +375,9 @@ export function useOriginalsSongFilesPanel({
             </EncoreStaticResourceHoverCard>
           );
         })}
-        {!readOnly ? <OriginalsTakeAddMenu takes={takes} variant="chip" /> : null}
+        {!readOnly && !takes.hasStaged ? <OriginalsTakeAddMenu takes={takes} variant="chip" /> : null}
       </Stack>
+      {takes.stagedPanel}
     </>
   );
 

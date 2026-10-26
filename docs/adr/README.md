@@ -61,5 +61,6 @@ Skip an ADR for routine features, one-off UI tweaks, or purely internal refactor
 | [0027](./0027-encore-performances-of-originals.md)                        | Encore performances may be logged against an original (`subjectKind`; amends 0012)     |
 | [0028](./0028-stanza-organize-cross-source-merge-contract.md)             | Stanza Organize cross-source merge safety contract                                     |
 | [0029](./0029-drive-file-import-reference-or-copy.md)                     | Drive file import: reference what you own, copy what you don't                         |
+| [0030](./0030-every-upload-stages-before-it-saves.md)                     | Every upload stages for review before anything is saved                                |
 
 **Note:** A few early numbers were reused for unrelated topics (0007, 0010, 0012). Do **not** renumber — cite by full filename. Next new ADR is **0029**.

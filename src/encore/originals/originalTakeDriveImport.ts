@@ -4,55 +4,65 @@ import {
   describeDriveFileImportRejection,
   executeDriveFileImport,
   planDriveFileImport,
+  type DriveFileImportPlan,
 } from '../../shared/drive/importDriveFile';
 import { ensureOriginalsDriveLayout } from './drive/originalsSharded';
 import { isOriginalsTakeMediaFile } from './originalsSongFileDrag';
 import type { OriginalAudioTake } from './types';
 
-export type OriginalTakeDriveImportResult =
-  | { ok: true; take: OriginalAudioTake; via: 'reference' | 'copy' }
-  | { ok: false; message: string };
-
 const WHAT = 'an audio or video file';
 
 /**
- * Turn a pasted Google Drive link into a take, by the shared rule (ADR 0029): a file the user owns
- * is referenced where it is, a file someone else owns is copied into the Originals audio folder.
+ * Two halves, so the user reviews before anything is written (ADR 0030):
  *
- * Nothing is returned until the take is safe to store. A copy finishes first, so a failed or
- * abandoned copy leaves no take pointing at a stranger's file. The source still exists in Drive
- * while it runs, so unlike a device recording there is no unique work to protect locally.
+ *  1. {@link checkOriginalTakeDriveLink} runs while the link is staged. Metadata only, no writes.
+ *  2. {@link commitOriginalTakeDriveLink} runs when the user confirms.
  *
- * A reference never edits the original. Encore adds a shortcut in its own audio folder so the take
- * shows up in the Encore tree, the same as performance videos; that write is best-effort.
+ * By the shared rule (ADR 0029), a file the user owns is referenced where it is and a file someone
+ * else owns is copied into the Originals audio folder. A reference never edits the original;
+ * Encore only adds a shortcut in its own audio folder, best-effort, as it does for performances.
  */
-export async function importOriginalTakeFromDrive(
+export type OriginalTakeDriveCheck =
+  | { ok: true; plan: DriveFileImportPlan; outcome: string }
+  | { ok: false; name: string; message: string };
+
+export async function checkOriginalTakeDriveLink(
   raw: string,
+  opts: { accessToken: string; existingTakes: readonly OriginalAudioTake[] },
+): Promise<OriginalTakeDriveCheck> {
+  const planned = await planDriveFileImport(opts.accessToken, raw, {
+    accepts: ({ name, mimeType }) => isOriginalsTakeMediaFile({ name, type: mimeType ?? '' }),
+  });
+  if (!planned.ok) {
+    return { ok: false, name: raw, message: describeDriveFileImportRejection(planned.reason, WHAT) };
+  }
+  const { plan } = planned;
+  if (plan.kind === 'reference' && opts.existingTakes.some((t) => t.driveFileId === plan.fileId)) {
+    return { ok: false, name: plan.name, message: 'That file is already one of these takes.' };
+  }
+  return {
+    ok: true,
+    plan,
+    outcome: plan.kind === 'reference' ? 'Links to your file in Drive' : 'Copies into your Drive',
+  };
+}
+
+export type OriginalTakeDriveCommit =
+  | { ok: true; take: OriginalAudioTake }
+  | { ok: false; message: string };
+
+/**
+ * Carry out a checked link. Nothing is returned until the take is safe to store: a copy finishes
+ * first, so a failed copy leaves no take pointing at a stranger's file.
+ */
+export async function commitOriginalTakeDriveLink(
+  plan: DriveFileImportPlan,
   opts: {
     accessToken: string;
-    existingTakes: readonly OriginalAudioTake[];
     /** Broader read access for builds whose session cannot read a friend's file. User gesture only. */
     requestReadAccess?: () => Promise<string>;
-  }
-): Promise<OriginalTakeDriveImportResult> {
-  const planned = await planDriveFileImport(opts.accessToken, raw, {
-    accepts: ({ name, mimeType }) =>
-      isOriginalsTakeMediaFile({ name, type: mimeType ?? '' }),
-  });
-  if (!planned.ok)
-    return {
-      ok: false,
-      message: describeDriveFileImportRejection(planned.reason, WHAT),
-    };
-  const { plan } = planned;
-
-  if (
-    plan.kind === 'reference' &&
-    opts.existingTakes.some((t) => t.driveFileId === plan.fileId)
-  ) {
-    return { ok: false, message: 'That file is already one of these takes.' };
-  }
-
+  },
+): Promise<OriginalTakeDriveCommit> {
   const layout = await ensureOriginalsDriveLayout(opts.accessToken);
   let result;
   try {
@@ -74,12 +84,7 @@ export async function importOriginalTakeFromDrive(
 
   if (result.via === 'reference') {
     try {
-      await driveCreateShortcut(
-        opts.accessToken,
-        plan.name,
-        layout.audioFolderId,
-        result.fileId
-      );
+      await driveCreateShortcut(opts.accessToken, plan.name, layout.audioFolderId, result.fileId);
     } catch {
       // Organisation only: the take plays from the original either way, so a missing shortcut must
       // not cost the user the take they just added.
@@ -94,9 +99,5 @@ export async function importOriginalTakeFromDrive(
     driveFileId: result.fileId,
   };
   if (plan.mimeType) take.mimeType = plan.mimeType;
-  return {
-    ok: true,
-    take,
-    via: result.via === 'reference' ? 'reference' : 'copy',
-  };
+  return { ok: true, take };
 }
