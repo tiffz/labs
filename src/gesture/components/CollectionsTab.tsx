@@ -281,6 +281,7 @@ export default function CollectionsTab({
       aria-label="Drop folders or photos to upload"
       {...handlers}
     >
+      {upload.stagedUploadPanel}
       {upload.pendingBatchSession && upload.pendingBatchSession.pendingCount > 0 && !uploadSessionActive ? (
         <InterruptedBatchUploadBanner
           session={upload.pendingBatchSession}

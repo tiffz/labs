@@ -40,13 +40,14 @@ import {
 } from '../drive/gestureUploadBatchQueue';
 import { throttleUploadProgress } from '../drive/gestureUploadProgressReport';
 import type { GestureUploadActivity, GestureUploadPhase } from '../types';
+import { useGestureUploadStaging } from './useGestureUploadStaging';
 
 type UseGestureCollectionUploadOptions = {
   onComplete: (message: string) => void;
   onError: (message: string) => void;
 };
 
-type NewCollectionJob = {
+export type NewCollectionJob = {
   files: File[];
   suggestedFolderName?: string;
   directoryHandle?: FileSystemDirectoryHandle;
@@ -646,6 +647,16 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
     })();
   }, [extendUploadSession, drainQueue]);
 
+  // Every pick and drop stages for review first (ADR 0030); confirming queues the upload.
+  // `addPhotosToPackNow` is defined below; the ref lets the staging call it without reordering.
+  const addPhotosToPackNowRef = useRef<(packId: string, files: File[]) => Promise<void>>(async () => {});
+  const { stageNewCollections, stageAddToCollection, panel: stagedUploadPanel } =
+    useGestureUploadStaging<NewCollectionJob>({
+      jobName: (job) => resolveUploadCollectionName(job.files, job.suggestedFolderName) ?? 'Untitled collection',
+      enqueueJobs: enqueueNewCollectionJobs,
+      addToCollectionNow: (packId, files) => addPhotosToPackNowRef.current(packId, files),
+    });
+
   const continueUploadForPack = useCallback(
     async (packId: string, picked: File[]) => {
       const collectionName = resolveUploadCollectionName(picked, inferLocalFolderName(picked));
@@ -738,6 +749,26 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
           return;
         }
 
+        // Staged for review; the upload runs on confirm (ADR 0030).
+        const pack = await gestureDb.packs.get(packId);
+        stageAddToCollection(packId, pack?.name ?? 'collection', drop.files);
+      } catch (e) {
+        onError(e instanceof Error ? e.message : 'Could not read the dropped photos.');
+      } finally {
+        setBusy(false);
+        setActivity(null);
+      }
+    },
+    [onError, setUploadActivity, stageAddToCollection],
+  );
+
+  /** Upload photos into an existing collection. Only the staged review calls this, on confirm. */
+  const addPhotosToPackNow = useCallback(
+    async (packId: string, files: File[]) => {
+      setBusy(true);
+      onError('');
+      try {
+        const images = filterGestureUploadImageFiles(files);
         setUploadActivity(buildUploadActivity('checking', { total: images.length }));
         const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: true });
         const pack = await gestureDb.packs.get(packId);
@@ -754,7 +785,7 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
         const result = await addPhotosToExistingPack(
           token,
           packId,
-          drop.files,
+          files,
           uploadHandlers.onProgress,
           (hashed, total) => {
             setUploadActivity(buildUploadActivity('checking', { done: hashed, total, collectionName }));
@@ -796,6 +827,9 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
     },
     [isUploadCancelled, onComplete, onError, setUploadActivity],
   );
+  useEffect(() => {
+    addPhotosToPackNowRef.current = addPhotosToPackNow;
+  });
 
   const uploadFromSnapshot = useCallback(
     async (snapshot: DataTransferDropSnapshot) => {
@@ -846,37 +880,29 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
         }
 
         setBusy(false);
-        void enqueueNewCollectionJobs(jobs);
+        setActivity(null);
+        stageNewCollections(jobs);
       } catch (e) {
         onError(e instanceof Error ? e.message : 'Could not read dropped folder.');
         setBusy(false);
         setActivity(null);
       }
     },
-    [buildSessionActivity, enqueueNewCollectionJobs, onError, setUploadActivity],
+    [buildSessionActivity, onError, setUploadActivity, stageNewCollections],
   );
 
   const uploadFiles = useCallback(
-    async (picked: File[], suggestedFolderName?: string) => {
+    (picked: File[], suggestedFolderName?: string) => {
       if (picked.length === 0) return;
-      setBusy(true);
-      setUploadActivity((prev) => prev ?? buildUploadActivity('scanning', { scannedCount: 0 }));
-      const batches = batchesFromPickedFiles(picked, suggestedFolderName);
-      const jobs = newCollectionJobsFromBatches(batches);
+      const jobs = newCollectionJobsFromBatches(batchesFromPickedFiles(picked, suggestedFolderName));
       if (jobs.length === 0) {
-        setBusy(false);
-        setUploadActivity(null);
         onError('Use JPEG, PNG, WebP, GIF, or similar images.');
         return;
       }
-      if (drainingRef.current || queueRef.current.length > 0) {
-        void enqueueNewCollectionJobs(jobs);
-        return;
-      }
-      setUploadActivity(buildSessionActivity('scanning', { scannedCount: picked.length }));
-      void enqueueNewCollectionJobs(jobs);
+      // Staged for review; confirming queues the upload (ADR 0030).
+      stageNewCollections(jobs);
     },
-    [buildSessionActivity, enqueueNewCollectionJobs, onError, setUploadActivity],
+    [onError, stageNewCollections],
   );
 
   const uploadFolderBatches = useCallback(
@@ -898,6 +924,7 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
   );
 
   return {
+    stagedUploadPanel,
     busy,
     queuedCount,
     activity,

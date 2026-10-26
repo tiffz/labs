@@ -196,6 +196,9 @@ export function useConceptShelfFileIntake({
           plan: { files: [], imageUrl: source.url },
         };
       }
+      if (source.kind === 'batch') {
+        return { ok: false, name: source.name, message: 'Add images one at a time.' };
+      }
       const { file } = source;
       if (!file.type.startsWith('image/')) {
         return { ok: false, name: file.name, message: "That file isn't an image." };

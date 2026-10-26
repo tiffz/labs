@@ -874,6 +874,7 @@ function StagedUploadPanelDemo() {
         await new Promise((resolve) => setTimeout(resolve, 1500));
         return { ok: true, name: 'Friend harmony.m4a', mimeType: 'audio/mp4', sizeBytes: null, outcome: 'Copies into your Drive', plan: null };
       }
+      if (source.kind === 'batch') return { ok: false, name: source.name, message: 'Not in this demo.' };
       if (!source.file.type.startsWith('audio/')) {
         return { ok: false, name: source.file.name, message: "That file isn't an audio or video file." };
       }

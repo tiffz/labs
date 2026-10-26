@@ -38,6 +38,11 @@ const FORWARDS = new Map([
   ['encore/originals/originalsSongFileDrag.ts', 'classifies a drag for slot highlighting'],
   ['encore/components/song/encoreDragPayload.ts', 'classifies a drag for slot highlighting'],
   ['gesture/drive/gestureFolderPicker.ts', 'wraps showDirectoryPicker for its caller'],
+  // Gesture: these hand picks to useGestureCollectionUpload, which stages them (useGestureUploadStaging).
+  ['gesture/components/AddCollectionActions.tsx', 'passes picked photos and folders to the upload hook'],
+  ['gesture/drive/gestureLocalFolderUpload.ts', 'reads a picked folder for the upload hook'],
+  // Resuming an interrupted upload continues one the user already confirmed; it does not restage.
+  ['gesture/components/InterruptedUploadBanner.tsx', 'resumes an upload already confirmed'],
   // Lyrefly: these hand files to a component that stages them.
   ['lyrefly/components/LyreflyArtEmptyUpload.tsx', 'passes picked, dropped and pasted pages to ArtStage'],
   ['lyrefly/components/BrainstormResourceDialog.tsx', 'holds the picked file, named, until "Add"'],
@@ -72,10 +77,6 @@ const PENDING = new Map([
   ['stanza/components/stanzaWorkspace/StanzaLibraryFooterPanel.tsx', 'creates a song on pick'],
   ['stanza/components/stanzaWorkspace/StanzaPracticeMixSection.tsx', 'adds a stem on pick'],
   ['stanza/hooks/useStanzaFileDrop.ts', 'creates a song on drop'],
-  // Gesture: photo uploads start on pick or drop
-  ['gesture/components/AddCollectionActions.tsx', 'uploads photos on pick'],
-  ['gesture/components/InterruptedUploadBanner.tsx', 'resumes an upload on re-pick'],
-  ['gesture/drive/gestureLocalFolderUpload.ts', 'folder upload'],
 ]);
 
 function sourceFiles(dir: string): string[] {

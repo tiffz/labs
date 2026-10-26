@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactElement } from 'react';
 import { LabsStagedUploadPanel } from './LabsStagedUploadPanel';
-import type { LabsStagedUploadInspection, LabsStagedUploadSource } from './stagedUploads';
+import { stagedSourceName, type LabsStagedUploadInspection, type LabsStagedUploadSource } from './stagedUploads';
 import { useLabsStagedUploads, type LabsStagedUploadCommitResult } from './useLabsStagedUploads';
 
 export type LabsStagedFileUploadsOptions = {
@@ -46,7 +46,7 @@ export function useLabsStagedFileUploads(options: LabsStagedFileUploadsOptions):
 
   const inspect = useCallback(async (source: LabsStagedUploadSource): Promise<LabsStagedUploadInspection<File>> => {
     const { accepts, rejectMessage, outcome, unavailable } = optionsRef.current;
-    if (source.kind !== 'file') return { ok: false, name: source.url, message: DEFAULT_REJECT };
+    if (source.kind !== 'file') return { ok: false, name: stagedSourceName(source), message: DEFAULT_REJECT };
     const { file } = source;
     if (unavailable) return { ok: false, name: file.name, message: unavailable };
     if (accepts && !accepts(file)) return { ok: false, name: file.name, message: rejectMessage ?? DEFAULT_REJECT };
