@@ -62,7 +62,7 @@ export function PracticeExercisesSection({
   googleAccessToken,
   signInWithGoogle,
   withBlockingJob,
-}: PracticeExercisesSectionProps): ReactElement {
+}: PracticeExercisesSectionProps): ReactElement | null {
   const [focusKind, setFocusKind] = useState<EncorePracticeExerciseKind | null>(null);
 
   const closeDialog = useCallback(() => setFocusKind(null), []);
@@ -106,6 +106,10 @@ export function PracticeExercisesSection({
 
   const kinds = useMemo(() => Object.keys(ENCORE_PRACTICE_EXERCISE_CATALOG) as EncorePracticeExerciseKind[], []);
   const focusedRun = focusKind ? getSingleRunForKind(song, focusKind) : null;
+
+  // Every exercise is about lyrics, so an instrumental has none to do. Runs already started stay
+  // visible: hiding them would look like lost work.
+  if (song.instrumental && kinds.every((kind) => !getSingleRunForKind(song, kind))) return null;
 
   return (
     <Stack spacing={0}>
