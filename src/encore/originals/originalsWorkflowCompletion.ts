@@ -67,39 +67,29 @@ export function isStageComplete(song: EncoreOriginalSong, stage: OriginalsWorkfl
 }
 
 /**
- * All workflow stages complete — song has lyrics, chords, and at least one demo take.
+ * Demo ready = the song has a take. The owner's rule (October 2026): "I recorded a demo, so it's
+ * demo ready."
  *
- * Uses `isStageCompleteRaw`, NOT the monotonic `isStageComplete`. Monotonicity is a stepper
- * *display* rule ("you're on lyrics, so brainstorm is behind you"); folding it in here makes every
- * earlier stage true as soon as a take exists, collapsing the whole predicate to
- * `takes.length > 0` — so importing one voice memo into a song with no lyrics would label it
- * "Demo ready" in the library.
+ * The other stages are progress markers, never blockers. Requiring all four raw stages left songs
+ * with takes stuck short of "Demo ready" for reasons that did not matter: no brainstorm notes,
+ * chords kept in a PDF chart instead of inline, or an instrumental with no lyrics at all. An earlier
+ * version deliberately refused "a take alone"; that is now the intended behaviour, by the owner's
+ * decision, not a leak of the monotonic stepper rule.
+ *
+ * Reads the takes stage RAW, so a song whose takes stage was manually marked not-done stays not
+ * ready, and the manual flag keeps its meaning.
  */
 export function isOriginalDemoReady(song: EncoreOriginalSong): boolean {
-  return ORIGINALS_WORKFLOW_STAGES.every((step) => isStageCompleteRaw(song, step.id));
+  return isStageCompleteRaw(song, 'takes');
 }
 
-/** First incomplete stage, or `takes` when everything is done (use {@link isOriginalDemoReady} for display). */
+/** First incomplete stage, or `takes` when the song is demo ready (use {@link isOriginalDemoReady} for display). */
 export function inferredWorkflowStage(song: EncoreOriginalSong): OriginalsWorkflowStage {
   for (const step of ORIGINALS_WORKFLOW_STAGES) {
     if (!isStageComplete(song, step.id)) return step.id;
   }
 
-  /*
-   * Everything is *monotonically* complete, which a single take is enough to achieve: `takes` being
-   * done makes every earlier stage report done too. But `isOriginalDemoReady` asks the RAW question
-   * and needs all four on their own merits.
-   *
-   * Without the second pass those two disagree and the song parks on the last stage forever: the
-   * library reads "Record Takes" on a song that already has takes, "Demo ready" never arrives, and
-   * nothing says which stage is actually missing. That is the reported "originals stuck in Record
-   * Takes that I can't mark demo-ready".
-   *
-   * So when the song is not demo-ready, name the stage that is genuinely outstanding.
-   */
-  for (const step of ORIGINALS_WORKFLOW_STAGES) {
-    if (!isStageCompleteRaw(song, step.id)) return step.id;
-  }
+  // Every stage done in stepper terms means the takes stage is done: that is demo ready.
   return 'takes';
 }
 
