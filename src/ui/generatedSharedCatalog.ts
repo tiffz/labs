@@ -34748,6 +34748,37 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-upload-uselabsstagedfileuploads-tsx-labsstagedfileuploadsoptions",
+    "name": "LabsStagedFileUploadsOptions",
+    "path": "src/shared/upload/useLabsStagedFileUploads.tsx",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-upload-uselabsstagedfileuploads-tsx-uselabsstagedfileuploads",
+    "name": "useLabsStagedFileUploads",
+    "path": "src/shared/upload/useLabsStagedFileUploads.tsx",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "The common case of ADR 0030: files in, one function saves each. Pass `stageFiles` wherever the surface used to pass its upload function, and render `panel` where the files will land.",
+    "tags": [
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-upload-uselabsstageduploads-ts-labsstageduploadcommitresult",
     "name": "LabsStagedUploadCommitResult",
     "path": "src/shared/upload/useLabsStagedUploads.ts",

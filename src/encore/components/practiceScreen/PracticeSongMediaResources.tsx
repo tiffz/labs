@@ -17,7 +17,7 @@ export type PracticeSongMediaResourcesProps = {
   driveUploadFolderOverrides?: EncoreDriveUploadFolderOverrides | null;
   persistAfterMetadataRefresh: (song: EncoreSong) => Promise<void>;
   fileDrop?: ResourceGroupsFileDropConfig<SongMediaUploadSlot>;
-  onUploadReady?: (upload: (slot: SongMediaUploadSlot, files: File[]) => Promise<void>) => void;
+  onUploadReady?: (stage: (slot: SongMediaUploadSlot, files: File[]) => void) => void;
 };
 
 /** Lazy media hub — only mounts while Practice tab is active so hidden tabs skip hub hooks. */
@@ -40,16 +40,24 @@ export function PracticeSongMediaResources({
     applySongDraftChange,
   });
   useEffect(() => {
-    onUploadReady?.(mediaHub.uploadFilesToMediaSlot);
-  }, [mediaHub.uploadFilesToMediaSlot, onUploadReady]);
+    onUploadReady?.(mediaHub.stageFilesToMediaSlot);
+  }, [mediaHub.stageFilesToMediaSlot, onUploadReady]);
   if (mediaHub.practiceResourceDnD) {
     return (
-      <PracticeResourcesPanelWithDnD
-        groups={mediaHub.resourceGroups}
-        fileDrop={fileDrop}
-        practiceResourceDnD={mediaHub.practiceResourceDnD}
-      />
+      <>
+        <PracticeResourcesPanelWithDnD
+          groups={mediaHub.resourceGroups}
+          fileDrop={fileDrop}
+          practiceResourceDnD={mediaHub.practiceResourceDnD}
+        />
+        {mediaHub.stagedUploadPanel}
+      </>
     );
   }
-  return <PracticeResourcesPanel groups={mediaHub.resourceGroups} fileDrop={fileDrop} />;
+  return (
+    <>
+      <PracticeResourcesPanel groups={mediaHub.resourceGroups} fileDrop={fileDrop} />
+      {mediaHub.stagedUploadPanel}
+    </>
+  );
 }

@@ -121,17 +121,6 @@ export function patchResourceLabel(
   );
 }
 
-export function createResourceFromLocalFile(file: File): EncoreMiscResource {
-  const mimeType = inferMediaMimeType(file);
-  return {
-    id: crypto.randomUUID(),
-    kind: inferResourceKindFromFile(file),
-    label: file.name,
-    url: URL.createObjectURL(file),
-    mimeType: mimeType === 'application/octet-stream' ? undefined : mimeType,
-    createdAt: new Date().toISOString(),
-  };
-}
 
 export function createResourceFromDriveFile(
   driveFileId: string,
@@ -179,6 +168,3 @@ export function appendMiscResourceFromDriveFile(
   return appendMiscResource(song, createResourceFromDriveFile(driveFileId, opts));
 }
 
-export function appendMiscResourceFromLocalFile(song: EncoreSong, file: File): EncoreSong {
-  return appendMiscResource(song, createResourceFromLocalFile(file));
-}

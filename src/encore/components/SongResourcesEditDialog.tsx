@@ -147,6 +147,7 @@ export function SongResourcesEditDialog(props: {
             ) : (
               <PracticeResourcesPanel groups={mediaHub.resourceGroups} />
             )}
+            {mediaHub.stagedUploadPanel}
             {mediaHub.searchWebFooter}
           </Stack>
         ) : null}
