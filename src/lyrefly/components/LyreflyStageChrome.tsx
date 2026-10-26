@@ -1,7 +1,8 @@
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutlined';
-import Button from '@mui/material/Button';
+import Box from '@mui/material/Box';
+import Button, { type ButtonProps } from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import type { ReactElement } from 'react';
 
@@ -37,6 +38,56 @@ export function LyreflyStageActions({
 
   const continueVariant = emphasis === 'subtle' ? 'text' : 'contained';
 
+  const markCompleteButton = (done: boolean, props: ButtonProps = {}): ReactElement => (
+    <Button
+      size="small"
+      variant="text"
+      startIcon={done ? <CheckCircleIcon fontSize="small" /> : <CheckCircleOutlineIcon fontSize="small" />}
+      className="lyrefly-workbench__mark-complete"
+      sx={{
+        textTransform: 'none',
+        fontWeight: 600,
+        color: done ? 'primary.main' : 'text.secondary',
+        whiteSpace: 'nowrap',
+      }}
+      {...props}
+    >
+      {done ? 'Completed' : 'Mark complete'}
+    </Button>
+  );
+
+  const continueButton = (label: string, props: ButtonProps = {}): ReactElement => (
+    <Button
+      size="small"
+      variant={continueVariant}
+      endIcon={<ArrowForwardIcon />}
+      sx={{ whiteSpace: 'nowrap', fontWeight: emphasis === 'subtle' ? 600 : undefined }}
+      {...props}
+    >
+      Continue to {label}
+    </Button>
+  );
+
+  const finishButton = (props: ButtonProps = {}): ReactElement => (
+    <Button
+      size="small"
+      variant="text"
+      sx={{ whiteSpace: 'nowrap', fontWeight: 600, color: 'text.secondary' }}
+      {...props}
+    >
+      Back to gallery
+    </Button>
+  );
+
+  // Every stage's variants are laid out invisibly behind the live button, so the slot is always
+  // as wide as its widest label and the stepper beside it holds still when the stage changes.
+  const continueGhosts = [
+    ...LYREFLY_WORKFLOW_STAGES.slice(1)
+      .filter((s) => s.label !== nextLabel)
+      .map((s) => continueButton(s.label, GHOST_BUTTON_PROPS)),
+    ...(nextLabel ? [finishButton(GHOST_BUTTON_PROPS)] : []),
+  ];
+
   return (
     <Stack
       direction="row"
@@ -50,43 +101,30 @@ export function LyreflyStageActions({
         flexShrink: 0,
         minWidth: 0
       }}>
-      <Button
-        size="small"
-        variant="text"
-        onClick={onToggleComplete}
-        startIcon={stageDone ? <CheckCircleIcon fontSize="small" /> : <CheckCircleOutlineIcon fontSize="small" />}
-        className="lyrefly-workbench__mark-complete"
-        sx={{
-          textTransform: 'none',
-          fontWeight: 600,
-          color: stageDone ? 'primary.main' : 'text.secondary',
-          whiteSpace: 'nowrap',
-        }}
-      >
-        {stageDone ? 'Completed' : 'Mark complete'}
-      </Button>
-      {nextLabel ? (
-        <Button
-          size="small"
-          variant={continueVariant}
-          endIcon={<ArrowForwardIcon />}
-          onClick={onContinue}
-          data-testid="lyrefly-continue-next-stage"
-          sx={{ whiteSpace: 'nowrap', fontWeight: emphasis === 'subtle' ? 600 : undefined }}
-        >
-          Continue to {nextLabel}
-        </Button>
-      ) : (
-        <Button
-          size="small"
-          variant="text"
-          onClick={onContinue}
-          data-testid="lyrefly-finish-workflow"
-          sx={{ whiteSpace: 'nowrap', fontWeight: 600, color: 'text.secondary' }}
-        >
-          Back to gallery
-        </Button>
-      )}
+      <ReservedWidthSlot ghosts={[markCompleteButton(!stageDone, GHOST_BUTTON_PROPS)]}>
+        {markCompleteButton(stageDone, { onClick: onToggleComplete })}
+      </ReservedWidthSlot>
+      <ReservedWidthSlot ghosts={continueGhosts}>
+        {nextLabel
+          ? continueButton(nextLabel, { onClick: onContinue, 'data-testid': 'lyrefly-continue-next-stage' } as ButtonProps)
+          : finishButton({ onClick: onContinue, 'data-testid': 'lyrefly-finish-workflow' } as ButtonProps)}
+      </ReservedWidthSlot>
     </Stack>
+  );
+}
+
+const GHOST_BUTTON_PROPS: ButtonProps = { tabIndex: -1, disableRipple: true };
+
+/** Stacks the live child over invisible, inert ghosts in one grid cell; the cell takes the widest. */
+function ReservedWidthSlot({ children, ghosts }: { children: ReactElement; ghosts: ReactElement[] }): ReactElement {
+  return (
+    <Box sx={{ display: 'grid', justifyItems: 'end', alignItems: 'center', '& > *': { gridArea: '1 / 1' } }}>
+      {ghosts.map((ghost, index) => (
+        <Box key={index} aria-hidden inert sx={{ visibility: 'hidden', display: 'flex' }}>
+          {ghost}
+        </Box>
+      ))}
+      {children}
+    </Box>
   );
 }
