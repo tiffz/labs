@@ -21,7 +21,7 @@ import { OriginalsSongViewMode } from './OriginalsSongViewMode';
 import { OriginalsSongWorkspace } from './OriginalsSongWorkspace';
 import { OriginalsWorkflowStepper } from './OriginalsWorkflowStepper';
 import { readPersistedWorkflowStage, persistWorkflowStage, readSessionWorkflowStage } from '../originalsWorkflowStagePersistence';
-import type { OriginalsWorkflowStage } from '../originalsWorkflowStages';
+import { applicableWorkflowStage, type OriginalsWorkflowStage } from '../originalsWorkflowStages';
 
 export type OriginalSongPageProps = {
   id: string;
@@ -330,7 +330,9 @@ export function OriginalSongPage({ id, isNew }: OriginalSongPageProps): ReactEle
     );
   }
 
-  const chordsPaintScroll = mode === 'write' && workflowStage === 'chords';
+  // An instrumental has no "Write lyrics" stage; show its chords instead (see applicableWorkflowStage).
+  const shownWorkflowStage = activeSong ? applicableWorkflowStage(activeSong, workflowStage) : workflowStage;
+  const chordsPaintScroll = mode === 'write' && shownWorkflowStage === 'chords';
   const pageScrollIntegrated = true;
 
   const songHeader = (
@@ -369,7 +371,7 @@ export function OriginalSongPage({ id, isNew }: OriginalSongPageProps): ReactEle
       >
         <OriginalsWorkflowStepper
           song={activeSong}
-          stage={workflowStage}
+          stage={shownWorkflowStage}
           onStageChange={handleWorkflowStageChange}
         />
       </Box>
@@ -402,9 +404,9 @@ export function OriginalSongPage({ id, isNew }: OriginalSongPageProps): ReactEle
 
   const writeWorkspace = (
     <OriginalsSongWorkspace
-      key={`${activeSong.id}-${workflowStage}`}
+      key={`${activeSong.id}-${shownWorkflowStage}`}
       song={activeSong}
-      initialWorkflowStage={workflowStage}
+      initialWorkflowStage={shownWorkflowStage}
       integratedPageScroll={chordsPaintScroll}
       pageScrollIntegrated={pageScrollIntegrated}
       onWorkflowStageChange={setWorkflowStage}

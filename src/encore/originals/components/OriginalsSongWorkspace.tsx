@@ -28,7 +28,7 @@ import {
   isStageComplete,
   toggleStageCompletion,
 } from '../originalsWorkflowCompletion';
-import { workflowStageCaption, workflowStageShortLabel, type OriginalsWorkflowStage } from '../originalsWorkflowStages';
+import { applicableWorkflowStage, workflowStageCaption, workflowStageShortLabel, type OriginalsWorkflowStage } from '../originalsWorkflowStages';
 import {
   persistWorkflowStage,
   readPersistedWorkflowStage,
@@ -74,9 +74,11 @@ export function OriginalsSongWorkspace({
   onPersist,
 }: OriginalsSongWorkspaceProps): ReactElement {
   const theme = useTheme();
-  const [stage, setStage] = useState<OriginalsWorkflowStage>(
+  const [storedStage, setStage] = useState<OriginalsWorkflowStage>(
     () => initialWorkflowStage ?? readPersistedWorkflowStage(song.id, song),
   );
+  // An instrumental has no "Write lyrics" stage; a song left there (or just switched) shows chords.
+  const stage = applicableWorkflowStage(song, storedStage);
   const [chartPasteSnack, setChartPasteSnack] = useState<string | null>(null);
   const [applySnack, setApplySnack] = useState<string | null>(null);
   const { undo: undoLast } = useLabsUndo();

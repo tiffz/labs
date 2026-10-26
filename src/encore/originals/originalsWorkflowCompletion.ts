@@ -2,7 +2,7 @@ import { parseChordProToChartLayout } from '../../shared/music/chordPro/chordCha
 import { isRichTextEmpty } from '../../shared/utils/richTextContent';
 import type { EncoreOriginalSong } from './types';
 import { FULL_STRUCTURAL_BLUEPRINT } from './originalsStructurePresets';
-import { ORIGINALS_WORKFLOW_STAGES, type OriginalsWorkflowStage, workflowStageShortLabel } from './originalsWorkflowStages';
+import { type OriginalsWorkflowStage, workflowStageShortLabel, workflowStagesFor } from './originalsWorkflowStages';
 
 function hasSubstantialLyrics(chordPro: string): boolean {
   const layout = parseChordProToChartLayout(chordPro);
@@ -58,10 +58,11 @@ export function isStageComplete(song: EncoreOriginalSong, stage: OriginalsWorkfl
   // ones are done. So a stage counts complete if it — or any stage after it — is complete
   // on its own. Without this the stepper shows "brainstorm incomplete" while you're already
   // writing lyrics, which reads as inconsistent.
-  const startIndex = ORIGINALS_WORKFLOW_STAGES.findIndex((step) => step.id === stage);
+  const stages = workflowStagesFor(song);
+  const startIndex = stages.findIndex((step) => step.id === stage);
   if (startIndex === -1) return isStageCompleteRaw(song, stage);
-  for (let i = startIndex; i < ORIGINALS_WORKFLOW_STAGES.length; i += 1) {
-    if (isStageCompleteRaw(song, ORIGINALS_WORKFLOW_STAGES[i].id)) return true;
+  for (let i = startIndex; i < stages.length; i += 1) {
+    if (isStageCompleteRaw(song, stages[i]!.id)) return true;
   }
   return false;
 }
@@ -85,7 +86,7 @@ export function isOriginalDemoReady(song: EncoreOriginalSong): boolean {
 
 /** First incomplete stage, or `takes` when the song is demo ready (use {@link isOriginalDemoReady} for display). */
 export function inferredWorkflowStage(song: EncoreOriginalSong): OriginalsWorkflowStage {
-  for (const step of ORIGINALS_WORKFLOW_STAGES) {
+  for (const step of workflowStagesFor(song)) {
     if (!isStageComplete(song, step.id)) return step.id;
   }
 
@@ -114,8 +115,9 @@ export function formatOriginalStageSummary(song: EncoreOriginalSong): string {
    * song holding one take reported "4/4 stages" while refusing to say "Demo ready" — a direct
    * contradiction in the same table row.
    */
-  const done = ORIGINALS_WORKFLOW_STAGES.filter((s) => isStageCompleteRaw(song, s.id)).length;
-  return `${done}/${ORIGINALS_WORKFLOW_STAGES.length} stages`;
+  const stages = workflowStagesFor(song);
+  const done = stages.filter((s) => isStageCompleteRaw(song, s.id)).length;
+  return `${done}/${stages.length} stages`;
 }
 
 /** Stage label for library surfaces — current in-progress step, or Demo ready when complete. */
@@ -131,5 +133,5 @@ export function originalsLibraryStageProgressDetail(song: EncoreOriginalSong): s
 }
 
 export function originalsLibraryStageSortKey(song: EncoreOriginalSong): number {
-  return ORIGINALS_WORKFLOW_STAGES.filter((s) => isStageComplete(song, s.id)).length;
+  return workflowStagesFor(song).filter((s) => isStageComplete(song, s.id)).length;
 }
