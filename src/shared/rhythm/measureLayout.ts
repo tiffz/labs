@@ -93,6 +93,13 @@ export function buildMeasureLayout({ measures, repeats, timeSignature }: LayoutI
     }
   }
 
+  // Follow chains to the written measure: a `%` after an `x3` section repeats the section's last
+  // hidden pass, whose own source is the section's first measure. Sources always come earlier,
+  // so one in-order pass resolves every chain.
+  for (const slot of slots) {
+    if (slot.sourceIndex !== slot.index) slot.sourceIndex = slots[slot.sourceIndex].sourceIndex;
+  }
+
   let logicalTick = 0;
   let visualTick = 0;
   for (const slot of slots) {

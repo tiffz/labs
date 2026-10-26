@@ -23,8 +23,16 @@ interface RepeatPreprocessResult {
   measureMapping: MeasureDefinition[];
 }
 
+/**
+ * Rest the parser writes into its expanded string to fill a short repeated measure. Never valid
+ * in user notation; it parses to a rest flagged `isPadding`, so padding cannot pass for a rest
+ * the user typed.
+ */
+const PADDING = '~';
+
 const NOTATION_MAP: Record<string, DrumSound> = {
   D: 'dum', d: 'dum', T: 'tak', t: 'tak', K: 'ka', k: 'ka', S: 'slap', s: 'slap', _: 'rest', '-': 'rest', '%': 'simile',
+  [PADDING]: 'rest',
 };
 
 function getDurationType(sixteenths: number): { duration: NoteDuration; isDotted: boolean } {
@@ -60,9 +68,9 @@ function countMeasuresInNotation(notation: string, sixteenthsPerMeasure: number)
     if (NOTATION_MAP[char]) {
       let duration = 1;
       let j = i + 1;
-      if (char === '_') { while (j < notation.length && notation[j] === '_') { duration++; j++; } }
+      if (char === '_' || char === PADDING) { while (j < notation.length && notation[j] === char) { duration++; j++; } }
       else { while (j < notation.length && notation[j] === '-') { duration++; j++; } }
-      if (char === '%') duration = 16;
+      if (char === '%') duration = sixteenthsPerMeasure; // a whole measure in THIS meter, not 4/4's 16
 
       currentMeasureTicks += duration;
       while (currentMeasureTicks >= sixteenthsPerMeasure) {
@@ -98,9 +106,9 @@ function countDurationInSixteenths(notation: string, sixteenthsPerMeasure: numbe
     if (NOTATION_MAP[char]) {
       let duration = 1;
       let j = i + 1;
-      if (char === '_') { while (j < notation.length && notation[j] === '_') { duration++; j++; } }
+      if (char === '_' || char === PADDING) { while (j < notation.length && notation[j] === char) { duration++; j++; } }
       else { while (j < notation.length && notation[j] === '-') { duration++; j++; } }
-      if (char === '%') duration = 16;
+      if (char === '%') duration = sixteenthsPerMeasure; // a whole measure in THIS meter, not 4/4's 16
 
       totalSixteenths += duration;
       currentMeasureTicks += duration;
@@ -151,9 +159,9 @@ function calculateMeasureOffsets(chunk: string, chunkStartIndex: number, sixteen
 
       let duration = 1;
       let j = idx + 1;
-      if (char === '_') while (j < chunk.length && chunk[j] === '_') { duration++; j++; }
+      if (char === '_' || char === PADDING) while (j < chunk.length && chunk[j] === char) { duration++; j++; }
       else while (j < chunk.length && chunk[j] === '-') { duration++; j++; }
-      if (char === '%') duration = 16;
+      if (char === '%') duration = sixteenthsPerMeasure; // a whole measure in THIS meter, not 4/4's 16
 
       currentMeasureTicks += duration;
 
@@ -201,9 +209,12 @@ function processSingleRepeats(notation: string, sixteenthsPerMeasure: number): {
     finalNotation += preMatchContent;
     currentMeasureIndex += preMatchMeasures;
 
-    let content = match[1];
-    const contentStartIndex = match.index;
-    content = content.trim();
+    const content = match[1].trim();
+    // Positions below are offsets into the TRIMMED content, so start counting after the leading
+    // whitespace. Counting from `match.index` put every position in an `|xN` block one character
+    // early — harmless at a note head after a space, but a measure that starts mid-note (a tie)
+    // pointed before its note's head, and an insert there split the wrong note.
+    const contentStartIndex = match.index + (match[1].length - match[1].trimStart().length);
 
     if (!content) { lastIndex = match.index + match[0].length; continue; }
 
@@ -213,11 +224,11 @@ function processSingleRepeats(notation: string, sixteenthsPerMeasure: number): {
 
     if (contentSixteenths > 0 && contentSixteenths < sixteenthsPerMeasure) {
       const missing = sixteenthsPerMeasure - contentSixteenths;
-      paddedContent += ' ' + '_'.repeat(missing);
+      paddedContent += ' ' + PADDING.repeat(missing);
     } else if (contentSixteenths > sixteenthsPerMeasure && contentSixteenths % sixteenthsPerMeasure !== 0) {
       const remaining = contentSixteenths % sixteenthsPerMeasure;
       const missing = sixteenthsPerMeasure - remaining;
-      paddedContent += ' ' + '_'.repeat(missing);
+      paddedContent += ' ' + PADDING.repeat(missing);
     }
 
     const measuresInContent = countMeasuresInNotation(paddedContent, sixteenthsPerMeasure);
@@ -240,16 +251,21 @@ function processSingleRepeats(notation: string, sixteenthsPerMeasure: number): {
         if (NOTATION_MAP[char]) {
           let dur = 1;
           let j = idx + 1;
-          if (char === '_') while (j < paddedContent.length && paddedContent[j] === '_') { dur++; j++; }
+          if (char === '_' || char === PADDING) while (j < paddedContent.length && paddedContent[j] === char) { dur++; j++; }
           else while (j < paddedContent.length && paddedContent[j] === '-') { dur++; j++; }
-          if (char === '%') dur = 16;
+          if (char === '%') dur = sixteenthsPerMeasure;
           accumulated += dur;
           idx = j;
         } else { idx++; }
       }
-      prefixContent = paddedContent.slice(0, idx);
-      repeatContent = paddedContent.slice(idx);
-      prefixMeasureCount = measuresInContent - 1;
+      if (accumulated === targetSixteenths) {
+        prefixContent = paddedContent.slice(0, idx);
+        repeatContent = paddedContent.slice(idx);
+        prefixMeasureCount = measuresInContent - 1;
+      }
+      // Otherwise a note crosses into the last measure, so there is no clean "last measure" to
+      // repeat. Repeat the whole block. (Splitting anyway put every note in the prefix and repeated
+      // an empty string — inserting one note into an `|x2` measure did it.)
     }
 
     if (prefixContent) {
@@ -323,10 +339,12 @@ function processSingleRepeats(notation: string, sixteenthsPerMeasure: number): {
   return { notation: finalNotation, repeats, measureMapping };
 }
 
-function processSectionRepeats(notation: string, sixteenthsPerMeasure: number, inputMapping: MeasureDefinition[]): { notation: string; repeats: RepeatMarker[]; measureMapping: MeasureDefinition[] } {
+function processSectionRepeats(notation: string, sixteenthsPerMeasure: number, inputMapping: MeasureDefinition[]): { notation: string; repeats: RepeatMarker[]; measureMapping: MeasureDefinition[]; preToPost: number[] } {
   let finalNotation = '';
   const repeats: RepeatMarker[] = [];
   const measureMapping: MeasureDefinition[] = [];
+  // Where each measure of the input lands once sections are expanded (its first pass).
+  const preToPost: number[] = [];
 
   let lastIndex = 0;
   let currentMeasureIndex = 0;
@@ -341,6 +359,7 @@ function processSectionRepeats(notation: string, sixteenthsPerMeasure: number, i
     const preMatchMeasures = countMeasuresInNotation(preMatchContent, sixteenthsPerMeasure);
 
     for (let i = 0; i < preMatchMeasures; i++) {
+      preToPost[inputMappingIndex + i] = currentMeasureIndex + i;
       if (inputMappingIndex + i < inputMapping.length) {
         // FIX Phase 32/37: Must shift sourceMeasureIndex by expansion drift
         const originalDef = inputMapping[inputMappingIndex + i];
@@ -360,9 +379,9 @@ function processSectionRepeats(notation: string, sixteenthsPerMeasure: number, i
     const count = match[2] ? parseInt(match[2], 10) : 1;
     const contentSixteenths = countDurationInSixteenths(content, sixteenthsPerMeasure);
     if (contentSixteenths > 0 && contentSixteenths < sixteenthsPerMeasure) {
-      actualPaddedContent += ' ' + '_'.repeat(sixteenthsPerMeasure - contentSixteenths);
+      actualPaddedContent += ' ' + PADDING.repeat(sixteenthsPerMeasure - contentSixteenths);
     } else if (contentSixteenths > sixteenthsPerMeasure && contentSixteenths % sixteenthsPerMeasure !== 0) {
-      actualPaddedContent += ' ' + '_'.repeat(sixteenthsPerMeasure - (contentSixteenths % sixteenthsPerMeasure));
+      actualPaddedContent += ' ' + PADDING.repeat(sixteenthsPerMeasure - (contentSixteenths % sixteenthsPerMeasure));
     }
 
     const measuresInContent = countMeasuresInNotation(actualPaddedContent, sixteenthsPerMeasure);
@@ -374,7 +393,9 @@ function processSectionRepeats(notation: string, sixteenthsPerMeasure: number, i
     // FIX Phase 23/32: Standard "Repeat 3 Times" implies Source + 3 Repetitions (Total 4).
     // Reverted Phase 75: Total Count. i < count.
     for (let i = 0; i < count; i++) {
-      finalNotation += actualPaddedContent + ' ';
+      // `|:` is a barline: a short measure before it ends there. Without the bar the section's
+      // first notes filled the short measure and the whole section parsed shifted.
+      finalNotation += (i === 0 ? '| ' : '') + actualPaddedContent + ' ';
 
       if (i === 0) {
         // Source Iteration: Consume input mapping
@@ -394,6 +415,7 @@ function processSectionRepeats(notation: string, sixteenthsPerMeasure: number, i
             else sourceMappings.push({ sourceMeasureIndex: startMeasure, sourceStringIndex: match.index });
           }
         }
+        for (let m = 0; m < measuresInContent; m++) preToPost[inputMappingIndex + m] = startMeasure + m;
         inputMappingIndex += measuresInContent;
         for (const def of sourceMappings) measureMapping.push({ ...def });
       } else {
@@ -416,6 +438,7 @@ function processSectionRepeats(notation: string, sixteenthsPerMeasure: number, i
   finalNotation += suffix;
   const suffixMeasures = countMeasuresInNotation(suffix, sixteenthsPerMeasure);
   for (let i = 0; i < suffixMeasures; i++) {
+    preToPost[inputMappingIndex + i] = currentMeasureIndex + i;
     // FIX Phase 32/37: Shift suffix check
     if (inputMappingIndex + i < inputMapping.length) {
       const originalDef = inputMapping[inputMappingIndex + i];
@@ -429,13 +452,20 @@ function processSectionRepeats(notation: string, sixteenthsPerMeasure: number, i
     }
   }
 
-  return { notation: finalNotation, repeats, measureMapping };
+  return { notation: finalNotation, repeats, measureMapping, preToPost };
 }
 
 export function preprocessRepeats(notation: string, sixteenthsPerMeasure: number = 16): RepeatPreprocessResult {
   const { notation: intermediateNotation, repeats: singleRepeats, measureMapping: intermediateMapping } = processSingleRepeats(notation, sixteenthsPerMeasure);
-  const { notation: finalNotation, repeats: sectionRepeats, measureMapping: finalMapping } = processSectionRepeats(intermediateNotation, sixteenthsPerMeasure, intermediateMapping);
-  return { expandedNotation: finalNotation, repeats: [...singleRepeats, ...sectionRepeats], measureMapping: finalMapping };
+  const { notation: finalNotation, repeats: sectionRepeats, measureMapping: finalMapping, preToPost } = processSectionRepeats(intermediateNotation, sixteenthsPerMeasure, intermediateMapping);
+  // `|xN` repeats were numbered before sections expanded. Renumber them, or a `|xN` after an
+  // `x3` section marks two of the section's hidden copies as its own and draws its real copy as
+  // written notes the string does not contain.
+  const post = (i: number) => preToPost[i] ?? i;
+  const shiftedSingles: RepeatMarker[] = singleRepeats.map((r) =>
+    r.type === 'measure' ? { ...r, sourceMeasure: post(r.sourceMeasure), repeatMeasures: r.repeatMeasures.map(post) } : r,
+  );
+  return { expandedNotation: finalNotation, repeats: [...shiftedSingles, ...sectionRepeats], measureMapping: finalMapping };
 }
 
 function measureToCanonical(measure: Measure): string {
@@ -489,10 +519,10 @@ export function parseNotation(notation: string): Note[] {
       const sound = NOTATION_MAP[char];
       let duration = 1;
       let j = i + 1;
-      if (char === '_') { while (j < notation.length && notation[j] === '_') { duration++; j++; } }
+      if (char === '_' || char === PADDING) { while (j < notation.length && notation[j] === char) { duration++; j++; } }
       else { while (j < notation.length && notation[j] === '-') { duration++; j++; } }
       const { duration: durationType, isDotted } = getDurationType(duration);
-      notes.push({ sound, duration: durationType, durationInSixteenths: duration, isDotted });
+      notes.push({ sound, duration: durationType, durationInSixteenths: duration, isDotted, ...(char === PADDING ? { isPadding: true } : {}) });
       i = j;
     } else if (char === '-') { i++; } else { i++; }
   }
@@ -511,7 +541,7 @@ function splitIntoMeasures(notes: Note[], timeSignature: TimeSignature): Measure
         if (currentDuration < sixteenthsPerMeasure) {
           const remainingSixteenths = sixteenthsPerMeasure - currentDuration;
           const { duration: durationType, isDotted } = getDurationType(remainingSixteenths);
-          currentMeasure.push({ sound: 'rest', duration: durationType, durationInSixteenths: remainingSixteenths, isDotted });
+          currentMeasure.push({ sound: 'rest', duration: durationType, durationInSixteenths: remainingSixteenths, isDotted, isPadding: true });
           currentDuration = sixteenthsPerMeasure;
         }
         measures.push({ notes: currentMeasure, totalDuration: currentDuration });
@@ -562,7 +592,7 @@ function splitIntoMeasures(notes: Note[], timeSignature: TimeSignature): Measure
     if (currentDuration < sixteenthsPerMeasure) {
       const remainingSixteenths = sixteenthsPerMeasure - currentDuration;
       const { duration: durationType, isDotted } = getDurationType(remainingSixteenths);
-      currentMeasure.push({ sound: 'rest', duration: durationType, durationInSixteenths: remainingSixteenths, isDotted });
+      currentMeasure.push({ sound: 'rest', duration: durationType, durationInSixteenths: remainingSixteenths, isDotted, isPadding: true });
       currentDuration = sixteenthsPerMeasure;
     }
     measures.push({ notes: currentMeasure, totalDuration: currentDuration });
@@ -599,7 +629,9 @@ export function parseRhythm(notation: string, timeSignature: TimeSignature): Par
           measures[i].notes = JSON.parse(JSON.stringify(measures[i - 1].notes));
           repeats.push({ type: 'measure', sourceMeasure: i - 1, repeatMeasures: [i] });
         } else {
-          measure.notes = measure.notes.map(n => ({ ...n, sound: 'rest' }));
+          // A `%` with nothing before it has nothing to repeat. Draw silence, flagged as padding so
+          // it cannot pass for a rest the user typed.
+          measure.notes = measure.notes.map(n => ({ ...n, sound: 'rest', isPadding: true }));
         }
       }
     }

@@ -12,6 +12,8 @@ export interface Note {
   tiedDuration?: number; // Original full duration before splitting (in sixteenths)
   isMeasureFiller?: boolean; // If true, this note fills the remainder of the current measure and stops (doesn't spill over)
   isBarline?: boolean; // If true, forces a measure boundary
+  /** A rest the parser added to fill a short measure. It is drawn and played, but is not in the notation string. */
+  isPadding?: boolean;
 }
 
 export interface Measure {
