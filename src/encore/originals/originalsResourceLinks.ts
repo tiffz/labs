@@ -1,6 +1,3 @@
-import {
-  createResourceFromDriveFile,
-} from '../repertoire/encoreResourceLinks';
 import type { EncoreMiscResource } from '../types';
 import type { EncoreOriginalSong } from './types';
 
@@ -17,10 +14,16 @@ export function appendSongReference(
   };
 }
 
-export function appendSongReferenceFromDriveFile(
+/** Append to the original's brainstorm list (no-op when already present). */
+export function appendBrainstormResource(
   song: EncoreOriginalSong,
-  driveFileId: string,
-  opts?: { label?: string; mimeType?: string },
+  resource: EncoreMiscResource,
 ): EncoreOriginalSong {
-  return appendSongReference(song, createResourceFromDriveFile(driveFileId, opts));
+  const cur = song.brainstormResources ?? [];
+  if (cur.some((r) => r.id === resource.id)) return song;
+  return {
+    ...song,
+    brainstormResources: [...cur, resource],
+    updatedAt: new Date().toISOString(),
+  };
 }

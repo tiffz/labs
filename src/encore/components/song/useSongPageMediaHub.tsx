@@ -84,6 +84,9 @@ import {
 } from '../../ui/encoreMediaLinkFormat';
 import { EncoreSpotifySearchOrPasteField } from '../../ui/EncoreSpotifySearchOrPasteField';
 import { EncoreMediaTrackAddMenu } from '../../ui/EncoreMediaTrackAddMenu';
+import { describeDriveWriteFailure } from '../../../shared/drive/describeDriveWriteFailure';
+import { SONG_MEDIA_SLOT_ACCEPT } from './songMediaUploadSlot';
+import { useSongMediaStaging } from './useSongMediaStaging';
 import { useEncoreMenuSpotifySearch } from '../../ui/useEncoreMenuSpotifySearch';
 import { applyParsedEncoreMediaUrlToSong } from '../../repertoire/applyParsedEncoreMediaUrlToSong';
 import {
@@ -92,7 +95,6 @@ import {
 } from '../../repertoire/parseEncoreMediaUrlInput';
 import {
   appendMiscResourceFromDriveFile,
-  appendMiscResourceFromLocalFile,
   appendMiscResourceFromUrl,
 } from '../../repertoire/songMiscResources';
 import { EncoreSongMiscResourcesPanel } from './EncoreSongMiscResourcesPanel';
@@ -106,12 +108,6 @@ import { useEncoreMediaPlaybackHoverProps } from '../../hooks/useEncoreMediaPlay
 import { inferMediaMimeType } from '../../../shared/drive/inferMediaMimeType';
 import type { SongMediaUploadSlot } from './songMediaUploadSlot';
 
-/**
- * Browsers (especially Safari) may not match Logic `.m4a` / some `.wav` exports to `audio/*` alone.
- * Explicit extensions keep the system file picker and Drive uploads aligned with `inferMediaMimeType` (shared drive helper).
- */
-const ENCORE_AUDIO_VIDEO_FILE_ACCEPT =
-  'audio/*,video/*,.m4a,.mp4,.mov,.m4v,.aac,.mp3,.wav,.wave,.aif,.aiff,.caf,.flac,.ogg,.oga,.opus,.webm,.mkv,.mpeg,.mpg,.avi';
 
 function staticHoverCardDownloadProps(
   filename: string,
@@ -179,8 +175,10 @@ export type SongPageMediaHubBundle = {
   spotifyLoading: boolean;
   applySpotifyDataSourceFromTrack: (t: SpotifySearchTrack) => void;
   resolveSpotifyDataSourcePaste: (rawOverride?: string) => Promise<void>;
-  /** Upload local files into Listen / Play / Charts / Takes (same as section file pickers). */
-  uploadFilesToMediaSlot: (slot: SongMediaUploadSlot, files: File[]) => Promise<void>;
+  /** Stage local files for Listen / Play / Charts / Takes / Misc; they upload on confirm (ADR 0030). */
+  stageFilesToMediaSlot: (slot: SongMediaUploadSlot, files: File[]) => void;
+  /** The review for staged files. Render under the practice resources. Empty when idle. */
+  stagedUploadPanel: ReactNode;
   /** Chip reorder + cross-section drag when draft is editable. */
   practiceResourceDnD: {
     song: EncoreSong;
@@ -810,91 +808,13 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
     [encoreDriveUploadLabel, miscUploadFolderId, setDraft, uploadDriveFileWithDedup],
   );
 
-  const onReferenceDriveFile = useCallback(
-    async (e: ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      e.target.value = '';
-      if (!file) return;
-      setDriveUploading(true);
-      setDriveAttachMsg(null);
-      try {
-        await withBlockingJob('Uploading reference file…', async () => {
-          await uploadReferenceDriveFile(file);
-          setDriveAttachMsg('Reference file linked.');
-        });
-      } catch (err) {
-        setDriveAttachMsg(err instanceof Error ? err.message : String(err));
-      } finally {
-        setDriveUploading(false);
-      }
-    },
-    [uploadReferenceDriveFile, withBlockingJob],
-  );
-
-  const onBackingDriveFile = useCallback(
-    async (e: ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      e.target.value = '';
-      if (!file) return;
-      setDriveUploading(true);
-      setDriveAttachMsg(null);
-      try {
-        await withBlockingJob('Uploading backing file…', async () => {
-          await uploadBackingDriveFile(file);
-          setDriveAttachMsg('Backing file linked.');
-        });
-      } catch (err) {
-        setDriveAttachMsg(err instanceof Error ? err.message : String(err));
-      } finally {
-        setDriveUploading(false);
-      }
-    },
-    [uploadBackingDriveFile, withBlockingJob],
-  );
-
-  const onTakesDriveFile = useCallback(
-    async (e: ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      e.target.value = '';
-      if (!file) return;
-      setDriveUploading(true);
-      setDriveAttachMsg(null);
-      try {
-        await withBlockingJob('Uploading take…', async () => {
-          await uploadTakeDriveFile(file);
-          setDriveAttachMsg('Take uploaded.');
-        });
-      } catch (err) {
-        setDriveAttachMsg(err instanceof Error ? err.message : String(err));
-      } finally {
-        setDriveUploading(false);
-      }
-    },
-    [uploadTakeDriveFile, withBlockingJob],
-  );
-
-  const handleDriveChartUpload = async (file: File | undefined) => {
-    if (!file) return;
-    setDriveUploading(true);
-    setDriveAttachMsg(null);
-    try {
-      await withBlockingJob('Uploading chart to Google Drive…', async () => {
-        await uploadChartDriveFile(file);
-        setDriveAttachMsg('Chart linked.');
-      });
-    } catch (e) {
-      setDriveAttachMsg(e instanceof Error ? e.message : String(e));
-    } finally {
-      setDriveUploading(false);
-    }
-  };
-
-  const uploadFilesToMediaSlot = useCallback(
-    async (slot: SongMediaUploadSlot, files: File[]) => {
+  /** Upload now. Only the staged review calls this, on confirm (ADR 0030). Returns an error or null. */
+  const uploadToMediaSlotNow = useCallback(
+    async (slot: SongMediaUploadSlot, files: File[]): Promise<string | null> => {
       const list = files.filter(Boolean);
-      if (list.length === 0) return;
+      if (list.length === 0) return null;
       setDriveAttachMsg(null);
-      if (!(await prepareDriveForMediaUpload())) return;
+      if (!(await prepareDriveForMediaUpload())) return "Couldn't connect to Google Drive. Try again.";
       setDriveUploading(true);
       const jobLabel =
         list.length === 1
@@ -945,9 +865,11 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
         });
       } catch (err) {
         setDriveAttachMsg(err instanceof Error ? err.message : String(err));
+        return describeDriveWriteFailure(err).message;
       } finally {
         setDriveUploading(false);
       }
+      return null;
     },
     [
       prepareDriveForMediaUpload,
@@ -959,6 +881,16 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
       uploadMiscDriveFile,
     ],
   );
+
+  const { stageToSlot: stageFilesToMediaSlot, panel: stagedUploadPanel } = useSongMediaStaging({
+    signedIn: Boolean(googleAccessToken),
+    upload: uploadToMediaSlotNow,
+  });
+  const stageFromInput = (slot: SongMediaUploadSlot) => (e: ChangeEvent<HTMLInputElement>) => {
+    const picked = Array.from(e.target.files ?? []);
+    e.target.value = '';
+    if (picked.length > 0) stageFilesToMediaSlot(slot, picked);
+  };
 
   const handleMiscResourcesChange = useCallback(
     (resources: EncoreMiscResource[]) => {
@@ -983,59 +915,8 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
   );
 
   const handleMiscUploadFiles = useCallback(
-    async (files: File[]) => {
-      const list = files.filter(Boolean);
-      if (list.length === 0) return;
-      setDriveAttachMsg(null);
-      if (googleAccessToken && miscUploadFolderId) {
-        setDriveUploading(true);
-        try {
-          await withBlockingJob(
-            list.length === 1 ? 'Uploading file…' : `Uploading ${list.length} files…`,
-            async () => {
-              for (const file of list) await uploadMiscDriveFile(file);
-              setDriveAttachMsg(list.length === 1 ? 'File added.' : `${list.length} files added.`);
-            },
-          );
-        } catch (err) {
-          setDriveAttachMsg(err instanceof Error ? err.message : String(err));
-        } finally {
-          setDriveUploading(false);
-        }
-        return;
-      }
-      if (await prepareDriveForMediaUpload()) {
-        setDriveUploading(true);
-        try {
-          await withBlockingJob(
-            list.length === 1 ? 'Uploading file…' : `Uploading ${list.length} files…`,
-            async () => {
-              for (const file of list) await uploadMiscDriveFile(file);
-              setDriveAttachMsg(list.length === 1 ? 'File added.' : `${list.length} files added.`);
-            },
-          );
-        } catch (err) {
-          setDriveAttachMsg(err instanceof Error ? err.message : String(err));
-        } finally {
-          setDriveUploading(false);
-        }
-        return;
-      }
-      setDraft((d) => {
-        if (!d) return d;
-        let next = d;
-        for (const file of list) next = appendMiscResourceFromLocalFile(next, file);
-        return next;
-      });
-    },
-    [
-      googleAccessToken,
-      miscUploadFolderId,
-      prepareDriveForMediaUpload,
-      setDraft,
-      uploadMiscDriveFile,
-      withBlockingJob,
-    ],
+    (files: File[]) => stageFilesToMediaSlot('misc', files),
+    [stageFilesToMediaSlot],
   );
 
   if (!draft) {
@@ -1048,7 +929,8 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
       spotifyLoading,
       applySpotifyDataSourceFromTrack,
       resolveSpotifyDataSourcePaste,
-      uploadFilesToMediaSlot: async () => {},
+      stageFilesToMediaSlot,
+      stagedUploadPanel,
       practiceResourceDnD: null,
     };
   }
@@ -1063,7 +945,8 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
       spotifyLoading,
       applySpotifyDataSourceFromTrack,
       resolveSpotifyDataSourcePaste,
-      uploadFilesToMediaSlot,
+      stageFilesToMediaSlot,
+      stagedUploadPanel,
       practiceResourceDnD: {
         song: draft,
         onSongChange: onPracticeResourceChange,
@@ -1598,9 +1481,9 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                         : undefined
                     }
                     onUploadClick={() => referenceDriveInputRef.current?.click()}
-                    onFileChange={(ev) => void onReferenceDriveFile(ev)}
+                    onFileChange={stageFromInput('listen')}
                     fileInputRef={referenceDriveInputRef}
-                    fileAccept={ENCORE_AUDIO_VIDEO_FILE_ACCEPT}
+                    fileAccept={SONG_MEDIA_SLOT_ACCEPT.listen}
                   />
                 </Stack>
 </>
@@ -1800,9 +1683,9 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                         : undefined
                     }
                     onUploadClick={() => backingDriveInputRef.current?.click()}
-                    onFileChange={(ev) => void onBackingDriveFile(ev)}
+                    onFileChange={stageFromInput('play')}
                     fileInputRef={backingDriveInputRef}
-                    fileAccept={ENCORE_AUDIO_VIDEO_FILE_ACCEPT}
+                    fileAccept={SONG_MEDIA_SLOT_ACCEPT.play}
                   />
                 </Stack>
 </>
@@ -1954,11 +1837,10 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                     ref={chartFileInputRef}
                     type="file"
                     hidden
-                    accept=".pdf,.xml,.musicxml,.mxl,image/*"
+                    accept={SONG_MEDIA_SLOT_ACCEPT.charts}
                     onChange={(e) => {
-                      void handleDriveChartUpload(e.target.files?.[0]);
+                      stageFromInput('charts')(e);
                       setChartAddAnchor(null);
-                      e.target.value = '';
                     }}
                   />
               </Stack>
@@ -2088,8 +1970,8 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                     ref={takesDriveInputRef}
                     type="file"
                     hidden
-                    accept={ENCORE_AUDIO_VIDEO_FILE_ACCEPT}
-                    onChange={(ev) => void onTakesDriveFile(ev)}
+                    accept={SONG_MEDIA_SLOT_ACCEPT.takes}
+                    onChange={stageFromInput('takes')}
                   />
               </Stack>
 </>
@@ -2249,7 +2131,8 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
     spotifyLoading,
     applySpotifyDataSourceFromTrack,
     resolveSpotifyDataSourcePaste,
-    uploadFilesToMediaSlot,
+    stageFilesToMediaSlot,
+    stagedUploadPanel,
     practiceResourceDnD: {
       song: draft,
       onSongChange: onPracticeResourceChange,

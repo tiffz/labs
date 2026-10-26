@@ -388,7 +388,7 @@ export function SongPage(props: {
     persistAfterMetadataRefresh: persistSongNow,
     applySongDraftChange,
   });
-  const { uploadFilesToMediaSlot } = mediaHub;
+  const { stageFilesToMediaSlot } = mediaHub;
 
   useEffect(() => {
     if (!draft || loadState !== 'ok') {
@@ -490,7 +490,7 @@ export function SongPage(props: {
         if (files.length === 0) return;
         e.preventDefault();
         e.stopPropagation();
-        void uploadFilesToMediaSlot(slot, files);
+        stageFilesToMediaSlot(slot, files);
         return;
       }
       if (hasPotentialUrlPayload(e.dataTransfer)) {
@@ -507,7 +507,7 @@ export function SongPage(props: {
         });
       }
     },
-    [mediaDragEligibleSlots, uploadFilesToMediaSlot, persistSongNow],
+    [mediaDragEligibleSlots, stageFilesToMediaSlot, persistSongNow],
   );
 
   const mediaHubFileDrop = useMemo(
@@ -901,6 +901,7 @@ export function SongPage(props: {
               blocks={songTopHalfBlocks}
               mediaHubFileDrop={mediaHubFileDrop}
               practiceResourceDnD={mediaHub.practiceResourceDnD}
+              stagedUploadPanel={mediaHub.stagedUploadPanel}
             />
           </Box>
         </Paper>
@@ -1051,7 +1052,7 @@ export function SongPage(props: {
         onChoose={(slot) => {
           const files = intentUploadFiles;
           setIntentUploadFiles(null);
-          if (files && files.length > 0) void uploadFilesToMediaSlot(slot, files);
+          if (files && files.length > 0) stageFilesToMediaSlot(slot, files);
         }}
       />
       {confirmDeleteSongDialog}

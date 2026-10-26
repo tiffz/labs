@@ -3,7 +3,7 @@ import type { Page } from '@playwright/test';
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'Authorization, Content-Type',
-  'Access-Control-Expose-Headers': 'ETag',
+  'Access-Control-Expose-Headers': 'ETag, Location',
 };
 
 /** Drive metadata rows the stub serves, keyed by file id (shape of `files.get`). */
@@ -19,9 +19,12 @@ export type E2eDriveFiles = Record<string, Record<string, unknown>>;
 export async function stubEncoreSignedInDrive(
   page: Page,
   files: E2eDriveFiles,
-): Promise<{ copied: string[]; shortcutTargets: string[] }> {
+): Promise<{ copied: string[]; shortcutTargets: string[]; uploads: string[] }> {
   const copied: string[] = [];
   const shortcutTargets: string[] = [];
+  /** Names of files uploaded through the resumable protocol, in order. */
+  const uploads: string[] = [];
+  const SESSION = 'https://www.googleapis.com/upload/drive/v3/e2e-resumable-session';
   await page.route(/googleapis\.com|accounts\.google\.com\/gsi/, async (route) => {
     const request = route.request();
     const url = request.url();
@@ -33,6 +36,21 @@ export async function stubEncoreSignedInDrive(
     }
     if (method === 'OPTIONS') return route.fulfill({ status: 204, headers: CORS });
     if (url.includes('userinfo')) return json({ email: 'e2e@test.example', name: 'E2E' });
+
+    // Resumable upload: the session request returns a Location; one PUT then finishes the file.
+    if (method === 'POST' && url.includes('uploadType=resumable')) {
+      let name = 'upload';
+      try {
+        name = (JSON.parse(request.postData() ?? '{}') as { name?: string }).name ?? name;
+      } catch {
+        /* metadata is JSON; keep the default if not */
+      }
+      uploads.push(name);
+      return route.fulfill({ status: 200, headers: { ...CORS, Location: SESSION }, body: '' });
+    }
+    if (method === 'PUT' && url.startsWith(SESSION)) {
+      return json({ id: `e2eUploadedFile${String(uploads.length).padStart(14, '0')}` });
+    }
 
     const id = Object.keys(files).find((key) => url.includes(`/files/${key}`));
     if (id && method === 'POST' && url.includes(`/files/${id}/copy`)) {
@@ -56,5 +74,5 @@ export async function stubEncoreSignedInDrive(
     if (method === 'GET') return json({ error: { message: 'not found' } }, 404);
     return json({ id: `e2e-created-${Math.random().toString(36).slice(2)}` });
   });
-  return { copied, shortcutTargets };
+  return { copied, shortcutTargets, uploads };
 }
