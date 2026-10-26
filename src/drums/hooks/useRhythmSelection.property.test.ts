@@ -45,7 +45,7 @@ interface DrawnNote {
   duration: number;
   sound: string;
   measureStart: number;
-  /** A rest closing its measure may be padding the parser added; it is not in the string. */
+  /** Padding the parser added to a short measure; it is not in the string. */
   mayBeImplicit: boolean;
 }
 
@@ -69,7 +69,7 @@ function drawnNotes(): DrawnNote[] {
         out.push({
           fixture, notation, ts, parsed, measure: slot.index, note: k, pos,
           duration: n.durationInSixteenths, sound: n.sound, measureStart: slot.visualStartTick!,
-          mayBeImplicit: n.sound === 'rest' && k === notes.length - 1,
+          mayBeImplicit: !!n.isPadding,
         });
       });
     }
@@ -86,7 +86,6 @@ function edit(notation: string, ts: TimeSignature, ...steps: Array<(h: Hook) => 
       addToHistory: () => {},
       setNotationWithoutHistory: (next) => { written = next; },
       noteDisplayRef: { current: document.createElement('div') },
-      parsedRhythm: parseRhythm(notation, ts),
     }),
   );
   for (const step of steps) act(() => step(hook.result.current));
@@ -165,7 +164,9 @@ describe('editing every drawn note', () => {
         const [moved] = notes.splice(n.note, 1);
         return { ...m, notes: [moved, ...notes] };
       });
-      const got = out === null ? 'no edit' : signature(parseRhythm(out, n.ts).measures);
+      // Reordering identical notes changes nothing; the edit then records nothing.
+      const unchanged = signature(expected) === signature(n.parsed.measures);
+      const got = out === null ? (unchanged ? signature(expected) : 'no edit') : signature(parseRhythm(out, n.ts).measures);
       if (got !== signature(expected)) failures.push(`${label(n)} → ${out}`);
     }
     expect(failures).toEqual([]);

@@ -9,6 +9,7 @@ import ProceduralRegionModel from './ProceduralRegionModel';
 import { extractGlbMeshes, computeAnatomyGroupTransform, computeStageFrame } from './extractGlbMeshes';
 import GlbAnatomyMesh from './GlbAnatomyMesh';
 import CrossRegionCurriculumMeshes from './CrossRegionCurriculumMeshes';
+import OriginInsertionGizmo from './OriginInsertionGizmo';
 import { Component, type ReactNode } from 'react';
 import { muscleRegionGlbUrl } from './muscleGlbUrl';
 import { useMuscleGltf, preloadMuscleGltf } from './muscleGltfLoader';
@@ -123,6 +124,7 @@ function GlbRegionModel({
           if (!node || !nodeId) return null;
           return <GlbAnatomyMesh key={mesh.name} mesh={mesh} node={node} />;
         })}
+        <OriginInsertionGizmo meshes={meshes} stageScale={groupLayout.scale} />
       </group>
       {(region === 'leg' || region === 'shoulder_neck') && (
         <AtlasSupplementMeshes

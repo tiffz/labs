@@ -17,9 +17,8 @@
  * - Moving right from a boundary → replaces the note to the right
  */
 
-import { getPatternDuration, replacePatternAtPosition } from './dragAndDrop';
-import { visualToLogicalTick } from '../../shared/rhythm/measureLayout';
-import { measureLayoutOf } from '../../shared/rhythm/rhythmParser';
+import { getPatternDuration } from './dragAndDrop';
+import { dropPattern } from './notationEdits';
 import { calculateReplacementHighlights, calculateNoteHighlightBounds } from './previewRenderer';
 import { findDropTarget } from './dropTargetFinder';
 import { calculateInsertionLineFromGap } from './insertionTargetFinder';
@@ -306,18 +305,13 @@ export function computeDropPreview(
     const dropPosition = dropTarget.exactCharPosition;
     const patternDuration = getPatternDuration(pattern);
 
-    // Validate the replacement where the drop will apply it. `dropPosition` is a drawn-score
-    // tick; the string edit works on played ticks, exactly as App's drop handler converts it.
-    const replacementResult = replacePatternAtPosition(
-      notation,
-      visualToLogicalTick(measureLayoutOf(parsedRhythm), dropPosition),
-      pattern,
-      patternDuration,
-      timeSignature,
-      parsedRhythm
-    );
+    // Valid exactly when the drop would apply: ask the function the drop calls. A separate check
+    // here once disagreed with it — it could not consume a `%`, so drops on a simile measure were
+    // refused while the drop itself would have worked.
+    const wouldApply = dropPattern(notation, timeSignature, pattern, dropPosition, 'replace') !== null;
+    void parsedRhythm;
 
-    if (replacementResult.replacedLength > 0) {
+    if (wouldApply) {
       // Replacement is possible - compute highlights
       const highlights = calculateReplacementHighlights(
         notePositions,

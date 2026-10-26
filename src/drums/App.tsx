@@ -14,7 +14,7 @@ import RhythmSequencer from './components/RhythmSequencer';
 import CollapsibleSection from './components/CollapsibleSection';
 // UniversalTomInput removed
 
-import { parseRhythm, findMeasureIndexFromVisualTick, expandSelectionToRepeats } from './utils/rhythmParser';
+import { parseRhythm, expandSelectionToRepeats } from './utils/rhythmParser';
 import { recognizeRhythm } from './utils/rhythmRecognition';
 import { useUrlState } from './hooks/useUrlState';
 import { useNotationHistory } from './hooks/useNotationHistory';
@@ -22,12 +22,8 @@ import { usePlayback } from '../shared/rhythm/usePlayback';
 import { usePlaybackWakeLock } from '../shared/audio/usePlaybackWakeLock';
 import { useRhythmSelection } from './hooks/useRhythmSelection';
 import { getDefaultBeatGrouping, getSixteenthsPerMeasure, getBeatGroupingInSixteenths } from './utils/timeSignatureUtils';
-import { calculateRemainingBeats, expandSimileMeasure } from './utils/notationUtils';
-import {
-  replacePatternAtPosition,
-  insertPatternAtPosition,
-  getPatternDuration,
-} from './utils/dragAndDrop';
+import { calculateRemainingBeats } from './utils/notationUtils';
+import { deleteLastNote, dropPattern } from './utils/notationEdits';
 import {
   isPasteableDarbukaPattern,
   normalizePastedDarbukaPattern,
@@ -131,7 +127,6 @@ const App: React.FC = () => {
     addToHistory,
     setNotationWithoutHistory,
     noteDisplayRef: noteDisplayRef as React.RefObject<HTMLElement>,
-    parsedRhythm,
     // Declared above the playback hook because `isPlaying` does not exist yet here; mirrored below.
     isPlayingRef,
   });
@@ -217,67 +212,14 @@ const App: React.FC = () => {
 
 
 
-  // Handle drop from canvas or text input
-  // operationType is determined automatically by the unified drop preview (cursor position relative to notes)
+  // Handle drop from canvas or text input. The preview picked `operationType` from where the
+  // cursor sits relative to the notes. A refused drop records no undo step.
   const handleDropPattern = useCallback((pattern: string, charPosition: number, operationType: 'replace' | 'insert') => {
-    // FIX Phase 39: Use findMeasureIndexFromVisualTick (Visual Coordinate Fix)
-    // Drag coordinates come from VexFlow which skips hidden measures.
-    const lookup = findMeasureIndexFromVisualTick(parsedRhythm, charPosition);
-    const targetMeasureIdx = lookup.index;
-    const logicalCharPosition = lookup.logicalMeasureStartTick + lookup.localTick;
-    const targetCharPosition = logicalCharPosition;
-
-    // Phase 27: Expand Simile (Drag Drop Support)
-    let expandedNotation = notation;
-    let expandedParsed = parsedRhythm;
-
-    const expanded = expandSimileMeasure(expandedNotation, targetMeasureIdx, expandedParsed);
-    if (expanded !== expandedNotation) {
-      expandedNotation = expanded;
-      expandedParsed = parseRhythm(expandedNotation, timeSignature);
-    }
-
-    const patternDuration = getPatternDuration(pattern);
-
+    const next = dropPattern(notation, timeSignature, pattern, charPosition, operationType);
+    if (next === null) return;
     addToHistory(notation);
-
-    if (operationType === 'replace') {
-      // Replace mode: overwrite notes at the drop position
-      const result = replacePatternAtPosition(
-        expandedNotation,
-        targetCharPosition,
-        pattern,
-        patternDuration,
-        timeSignature,
-        expandedParsed
-      );
-
-      // Phase 12: Block crossing repeat boundaries
-      const replacedContent = expandedNotation.slice(result.replacedStart, result.replacedEnd);
-      const spansBoundary = /[|:x]/.test(replacedContent);
-
-      if (result.blocked || spansBoundary) {
-        return;
-      }
-
-      if (result.replacedLength > 0) {
-        setNotationWithoutHistory(result.newNotation);
-      }
-      // If replacement failed, do nothing (the preview already validated this)
-    } else {
-      // Insert mode: insert pattern between notes at the drop position
-      // Pass the notation the parse describes: string positions in `expandedParsed` count its
-      // whitespace, so a stripped copy put the insert several characters early.
-      const newNotation = insertPatternAtPosition(
-        expandedNotation,
-        targetCharPosition,
-        pattern,
-        expandedParsed,
-        timeSignature
-      );
-      setNotationWithoutHistory(newNotation);
-    }
-  }, [notation, addToHistory, timeSignature, setNotationWithoutHistory, parsedRhythm]);
+    setNotationWithoutHistory(next);
+  }, [notation, addToHistory, timeSignature, setNotationWithoutHistory]);
 
   const handlePastePattern = useCallback(
     (rawPattern: string) => {
@@ -359,35 +301,8 @@ const App: React.FC = () => {
   }, [setNotation]);
 
   const handleDeleteLast = useCallback(() => {
-    if (notation.length === 0) return;
-
-    // Delete the entire last note, not just the last character
-    // Find the last note by working backwards
-    let i = notation.length - 1;
-
-    // Skip trailing spaces
-    while (i >= 0 && notation[i] === ' ') {
-      i--;
-    }
-
-    if (i < 0) {
-      setNotation('');
-      return;
-    }
-
-    // If we're on a dash, skip all dashes to find the note
-    if (notation[i] === '-') {
-      while (i >= 0 && notation[i] === '-') {
-        i--;
-      }
-    }
-
-    // Now we should be on the actual note character (D, T, K, or .)
-    // Delete this character and all its dashes
-    if (i >= 0) {
-      const newNotation = notation.slice(0, i);
-      setNotation(newNotation);
-    }
+    const next = deleteLastNote(notation);
+    if (next !== null) setNotation(next);
   }, [notation, setNotation]);
 
   const handleShare = useCallback(async (event?: React.MouseEvent<HTMLButtonElement>) => {

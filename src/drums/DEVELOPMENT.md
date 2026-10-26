@@ -100,6 +100,35 @@ Rules that follow from the two timelines:
   first measure.
 - `rhythm.measures` is already the play order. Never expand repeats again downstream.
 
+### Editing core
+
+**Decision**: every edit — replace, delete, move, drop (insert or replace), copy, Backspace — is a
+pure function in [`utils/notationEdits.ts`](utils/notationEdits.ts) taking drawn-score ticks. The
+hook, App, and drop preview only wire them to state. A `null` result means "nothing changed" and
+records no undo step; the drop preview is valid exactly when `dropPattern` returns non-null.
+
+Edits share one primitive, `spliceTicks`: replace played ticks [from, to) at tick precision,
+splitting a note cut at either edge and keeping repeat signs. Rules it enforces:
+
+- A note tied across a barline is split, never swallowed whole.
+- Repeat signs are never deleted by a range edit; a repeat left with no notes (`|: :|`, `| |xN`, a
+  `%` with nothing to copy) is removed with its last note.
+- Editing a `%` / `|xN` copy writes that copy out and changes only it; editing a written measure
+  changes its copies (linked editing).
+- Parser padding (`Note.isPadding`) is never written back as typed rests.
+
+**Testing**: [`notationEdits.fuzz.test.ts`](utils/notationEdits.fuzz.test.ts) generates seeded
+rhythms (every meter, section and measure repeats, `%`, ties, spaces, short measures) and checks
+chains of random edits against a model read from the string — the written notes — plus what must
+play. 300 rhythms run in the default suite; soak before changing the parser or an edit:
+
+```bash
+DRUMS_FUZZ_SEEDS=20000 npx vitest run src/drums/utils/notationEdits.fuzz.test.ts
+```
+
+Every failure it finds becomes a named case in `notationEdits.test.ts`, because the rare ones
+(one in 100,000 edits) will not recur in 300 seeds.
+
 ### Repeat Handling Strategy
 
 **Decision**: Use "Total Count" logic for Simile Repeats (`|xN`).

@@ -70,7 +70,7 @@ export function OriginalsPaintChordsEditor({
         isPointerInsideSelector(e, 'input, textarea, [contenteditable="true"]') ||
         isPointerInsideSelector(
           e,
-          '.encore-originals-chord-badge, .encore-originals-lyric-token, .encore-originals-chord-palette, .encore-originals-chord-palette-pick, .encore-originals-chord-palette-display, .encore-originals-chords-toolbar, .encore-originals-chords-playback-bar, .encore-originals-section-progression-menu, .encore-originals-section-playback-menu, .encore-originals-paint-section-playback-button',
+          '.encore-originals-chord-badge, .encore-originals-lyric-token, .encore-originals-chord-add-slot, .encore-originals-chord-palette, .encore-originals-chord-palette-pick, .encore-originals-chord-palette-display, .encore-originals-chords-toolbar, .encore-originals-chords-playback-bar, .encore-originals-section-progression-menu, .encore-originals-section-playback-menu, .encore-originals-paint-section-playback-button',
         )
       ) {
         return;

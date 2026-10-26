@@ -23,6 +23,7 @@ const APP_SMOKE_SPECS = {
     'e2e/smoke/encore-originals-drive-take.spec.ts',
     'e2e/smoke/encore-originals-staged-references.spec.ts',
     'e2e/smoke/encore-song-staged-uploads.spec.ts',
+    'e2e/smoke/encore-originals-instrumental-paint.spec.ts',
     'e2e/smoke/encore-library-interaction.spec.ts',
     'e2e/smoke/encore-add-track-menu.spec.ts',
     'e2e/smoke/encore-practice-resource-dnd.spec.ts',

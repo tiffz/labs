@@ -6,6 +6,8 @@
   --muscle-lapis: #2563eb;
   --muscle-emerald: #059669;
   --muscle-crimson: #dc2626;
+  --muscle-origin: #14b8a6;
+  --muscle-insertion: #a78bfa;
   --muscle-muted: #5c6478;
   --muscle-border: rgba(26, 39, 68, 0.12);
   --muscle-surface: #fff;
@@ -248,6 +250,53 @@ body {
 
 .muscle-structure-focus__landmarks .muscle-structure-focus__label {
   margin-bottom: 0.25rem;
+}
+
+.muscle-structure-focus__attachments {
+  margin: 0.55rem 0 0;
+  padding-top: 0.55rem;
+  border-top: 1px solid var(--muscle-border);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--muscle-navy);
+}
+
+.muscle-structure-focus__attachments ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.2rem;
+}
+
+.muscle-structure-focus__attachments li {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.muscle-structure-focus__attachment-role {
+  font-weight: 600;
+}
+
+/* Shapes match the canvas markers: origin sphere, insertion diamond. */
+.muscle-attachment-swatch {
+  flex: none;
+  width: 0.7rem;
+  height: 0.7rem;
+}
+
+.muscle-attachment-swatch--origin {
+  border-radius: 50%;
+  background: var(--muscle-origin);
+}
+
+.muscle-attachment-swatch--insertion {
+  width: 0.6rem;
+  height: 0.6rem;
+  margin: 0 0.05rem;
+  transform: rotate(45deg);
+  background: var(--muscle-insertion);
 }
 
 .muscle-study-toggles label {

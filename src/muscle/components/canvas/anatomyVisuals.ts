@@ -16,6 +16,9 @@ export const ANATOMY_COLORS = {
   correct: '#059669',
   incorrect: '#dc2626',
   subcutaneous: '#d4a017',
+  /** `--muscle-origin` / `--muscle-insertion` — attachment markers; the sidebar legend reuses them. */
+  origin: '#14b8a6',
+  insertion: '#a78bfa',
 } as const;
 
 export function baseColorForNode(node: MuscleMemoryNode | undefined): string {

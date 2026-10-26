@@ -11,6 +11,7 @@ import {
   snapChordColumnToCharIndex,
   updateLineInLayout,
   upsertChordAtIndex,
+  appendChordToChordOnlyLine,
   type ChartLayout,
 } from '../../../shared/music/chordPro/chordChartLayout';
 import { parseChordProSectionHeader } from '../../../shared/music/chordPro/chordProText';
@@ -234,7 +235,12 @@ export function useOriginalsChartLayout(
       }
       if (!armedChord) return;
       commitLayout(
-        updateLineInLayout(layout, sectionId, lineId, (line) => upsertChordAtIndex(line, charIndex, armedChord)),
+        updateLineInLayout(layout, sectionId, lineId, (line) =>
+          // A line with no words is a chord chart: add to it, never replace what is there.
+          line.text.trim()
+            ? upsertChordAtIndex(line, charIndex, armedChord)
+            : appendChordToChordOnlyLine(line, armedChord),
+        ),
       );
     },
     [armedChord, commitLayout, layout, selectedChord],

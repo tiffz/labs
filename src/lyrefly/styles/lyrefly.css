@@ -3378,10 +3378,17 @@
   flex: 0 0 auto;
 }
 
-@media (max-width: 520px) {
-  .lyrefly-workbench__nav-bar .lyrefly-workbench__title-block.MuiStack-root {
-    flex-direction: column;
-    align-items: flex-start;
+/* Phones: the stage actions reserve their widest label, so they get their own row under the
+   stepper instead of squeezing the title into a sliver. */
+@media (max-width: 639px) {
+  .lyrefly-workbench__nav-bar:not(.lyrefly-workbench__nav-bar--profile) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .lyrefly-workbench__nav-bar:not(.lyrefly-workbench__nav-bar--profile)
+    > .lyrefly-workbench__actions {
+    grid-column: 1;
+    grid-row: 3;
   }
 }
 
