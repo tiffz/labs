@@ -8,7 +8,7 @@ import {
   originalsLibraryStageLabel,
   originalsLibraryStageProgressDetail,
 } from './originalsWorkflowCompletion';
-import { ORIGINALS_WORKFLOW_STAGES, type OriginalsWorkflowStage } from './originalsWorkflowStages';
+import { workflowStagesFor, type OriginalsWorkflowStage } from './originalsWorkflowStages';
 import { originalSongStartedDate, type EncoreOriginalSong } from './types';
 
 export type OriginalsDashboardWorkflowStep = {
@@ -73,7 +73,7 @@ export function buildOriginalSongDashboardStatus(song: EncoreOriginalSong): Orig
     stageLabel: originalsLibraryStageLabel(song),
     stageProgress: originalsLibraryStageProgressDetail(song),
     demoReady,
-    workflowSteps: ORIGINALS_WORKFLOW_STAGES.map((step) => ({
+    workflowSteps: workflowStagesFor(song).map((step) => ({
       id: step.id,
       label: step.label,
       complete: isStageComplete(song, step.id),

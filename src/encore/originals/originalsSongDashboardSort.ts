@@ -1,10 +1,10 @@
 import { isOriginalDemoReady, isStageComplete } from './originalsWorkflowCompletion';
-import { ORIGINALS_WORKFLOW_STAGES } from './originalsWorkflowStages';
+import { workflowStagesFor } from './originalsWorkflowStages';
 import type { EncoreOriginalSong } from './types';
 
 /** Count of workflow stages marked complete (manual or heuristic). */
 export function completedOriginalWorkflowStageCount(song: EncoreOriginalSong): number {
-  return ORIGINALS_WORKFLOW_STAGES.filter((step) => isStageComplete(song, step.id)).length;
+  return workflowStagesFor(song).filter((step) => isStageComplete(song, step.id)).length;
 }
 
 /**

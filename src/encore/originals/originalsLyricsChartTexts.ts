@@ -1,4 +1,4 @@
-import { parseChordProToChartLayout, layoutToWriteDocument } from '../../shared/music/chordPro/chordChartLayout';
+import { parseChordProToChartLayout, layoutLyricsText } from '../../shared/music/chordPro/chordChartLayout';
 import { chartLayoutToAsciiExport } from '../../shared/music/chordChartAsciiExport';
 
 export function originalsLyricsChartTexts(lyricsAndChords: string): {
@@ -7,7 +7,7 @@ export function originalsLyricsChartTexts(lyricsAndChords: string): {
 } {
   const chartLayout = parseChordProToChartLayout(lyricsAndChords);
   return {
-    lyrics: layoutToWriteDocument(chartLayout).trim(),
+    lyrics: layoutLyricsText(chartLayout),
     chordChart: chartLayoutToAsciiExport(chartLayout).trim(),
   };
 }

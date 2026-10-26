@@ -1,4 +1,4 @@
-import { parseChordProToChartLayout, layoutToWriteDocument } from '../../shared/music/chordPro/chordChartLayout';
+import { parseChordProToChartLayout, layoutLyricsText } from '../../shared/music/chordPro/chordChartLayout';
 import { chartLayoutToAsciiExport } from '../../shared/music/chordChartAsciiExport';
 
 export type OriginalChartClipboardTexts = {
@@ -10,7 +10,7 @@ export type OriginalChartClipboardTexts = {
 
 export function originalChartClipboardTexts(lyricsAndChords: string): OriginalChartClipboardTexts {
   const layout = parseChordProToChartLayout(lyricsAndChords);
-  const lyrics = layoutToWriteDocument(layout).trim();
+  const lyrics = layoutLyricsText(layout);
   const chordChart = chartLayoutToAsciiExport(layout).trim();
   const previewKind = chordChart ? 'chordChart' : lyrics ? 'lyrics' : null;
   const previewText = previewKind === 'chordChart' ? chordChart : previewKind === 'lyrics' ? lyrics : '';

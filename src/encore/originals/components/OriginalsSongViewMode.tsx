@@ -267,9 +267,9 @@ export function OriginalsSongViewMode({
         </OriginalsViewSection>
 
         <OriginalsViewSection
-          title="Lyrics & chart"
+          title={song.instrumental ? 'Chart' : 'Lyrics & chart'}
           trailing={copyButtons}
-          onEdit={() => onEditStage(resolveOriginalsChartEditStage(chartShowsChords, hasPaintedChords))}
+          onEdit={() => onEditStage(resolveOriginalsChartEditStage(chartShowsChords, hasPaintedChords, song.instrumental))}
         >
           {hasLyricsSection ? (
             <OriginalsLyricsChartPanel

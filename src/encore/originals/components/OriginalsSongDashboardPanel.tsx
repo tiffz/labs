@@ -312,7 +312,7 @@ export const OriginalsSongDashboardPanel = memo(function OriginalsSongDashboardP
         </OriginalsDashboardSection>
 
         {hasLyricsSection ? (
-          <OriginalsDashboardSection title="Lyrics & chart">
+          <OriginalsDashboardSection title={song.instrumental ? 'Chart' : 'Lyrics & chart'}>
             <OriginalsLyricsChartPanel
               lyricsAndChords={song.lyricsAndChords}
               songId={song.id}

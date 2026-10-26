@@ -1,10 +1,12 @@
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import CheckIcon from '@mui/icons-material/Check';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import HistoryIcon from '@mui/icons-material/History';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
+import ListItemIcon from '@mui/material/ListItemIcon';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import Stack from '@mui/material/Stack';
@@ -18,6 +20,7 @@ import { OriginalsSongTitleField } from './OriginalsSongTitleField';
 import { encoreAppHref, handleSpaLinkClick, navigateEncore } from '../../routes/encoreAppHash';
 import { encoreHairline, encoreRadius } from '../../theme/encoreUiTokens';
 import type { EncoreOriginalSong, OriginalSongSnapshot } from '../types';
+import { instrumentalTogglePatch } from '../originalsInstrumental';
 
 export type OriginalsPageMode = 'write' | 'view';
 
@@ -156,6 +159,17 @@ export function OriginalsSongHeader({
         )}
       </Menu>
       <Menu anchorEl={moreAnchor} open={Boolean(moreAnchor)} onClose={() => setMoreAnchor(null)}>
+        <MenuItem
+          role="menuitemcheckbox"
+          aria-checked={Boolean(song.instrumental)}
+          onClick={() => {
+            setMoreAnchor(null);
+            onChange(instrumentalTogglePatch(song));
+          }}
+        >
+          <ListItemIcon>{song.instrumental ? <CheckIcon fontSize="small" /> : null}</ListItemIcon>
+          Instrumental (no lyrics)
+        </MenuItem>
         <MenuItem
           onClick={() => {
             setMoreAnchor(null);

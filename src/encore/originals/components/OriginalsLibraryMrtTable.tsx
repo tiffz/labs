@@ -218,7 +218,9 @@ export function OriginalsLibraryMrtTable({
         accessorFn: (row) => chordProLyricSnippet(row.lyricsAndChords, 120),
         Header: ({ column }) => <EncoreMrtColumnHeader label="Lyrics" column={column} />,
         Cell: ({ row }) => {
-          const snippet = chordProLyricSnippet(row.original.lyricsAndChords, 120) || '–';
+          const snippet =
+            chordProLyricSnippet(row.original.lyricsAndChords, 120) ||
+            (row.original.instrumental ? 'Instrumental' : '–');
           return (
             <OriginalsLyricsHoverCard songId={row.original.id} lyricsAndChords={row.original.lyricsAndChords}>
               <Typography
