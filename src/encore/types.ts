@@ -231,6 +231,11 @@ export interface EncoreSong {
    */
   miscResources?: EncoreMiscResource[];
   /** True when you are actively working on this song in your rotation (independent of milestone checkboxes). */
+  /**
+   * A piece with no lyrics (an instrumental solo, say). Hides the lyric-centred guided exercises.
+   * Absent means a song with lyrics.
+   */
+  instrumental?: boolean;
   practicing?: boolean;
   /**
    * Tombstone marker set when the user explicitly stops practicing a song. The Spotify Learning

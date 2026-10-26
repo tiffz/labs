@@ -172,6 +172,7 @@ describe('SONG_MERGE_POLICY', () => {
     attachments: [{ kind: 'chart', driveFileId: 'att-1' }],
     miscResources: [{ id: 'm', kind: 'link', label: 'L', url: 'https://x/m', createdAt: 't' }],
     practicing: true,
+    instrumental: true,
     practiceRemovedAt: '2026-01-01T00:00:00.000Z',
     milestoneProgress: { 'mile-1': { state: 'done' } },
     songOnlyMilestones: [{ id: 'so', label: 'L', state: 'todo' }],
@@ -283,3 +284,23 @@ describe('PERFORMANCE_MERGE_POLICY (P0-3)', () => {
     expect((p1.videos ?? []).map((v) => v.id).sort()).toEqual(['v1', 'v2']);
   });
 });
+
+describe('instrumental flag', () => {
+  it('follows the newer edit, in either direction', () => {
+    const older = { ...songFixtureForInstrumental(), instrumental: false, updatedAt: '2026-01-01T00:00:00.000Z' };
+    const newer = { ...songFixtureForInstrumental(), instrumental: true, updatedAt: '2026-02-01T00:00:00.000Z' };
+    expect(mergeSongRecords([older], [newer])[0]!.instrumental).toBe(true);
+    expect(mergeSongRecords([newer], [older])[0]!.instrumental).toBe(true);
+  });
+});
+
+function songFixtureForInstrumental(): EncoreSong {
+  return {
+    id: 'instr',
+    title: 'Solo',
+    artist: 'Me',
+    journalMarkdown: '',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+  } as EncoreSong;
+}

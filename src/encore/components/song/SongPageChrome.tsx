@@ -1,4 +1,5 @@
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import CheckIcon from '@mui/icons-material/Check';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import Box from '@mui/material/Box';
@@ -17,10 +18,13 @@ export type SongPageChromeProps = {
   songMenuAnchor: HTMLElement | null;
   onSongMenuAnchorChange: (el: HTMLElement | null) => void;
   onRequestDelete: () => void;
+  /** Whether the song is an instrumental (no lyrics); omit to hide the menu item. */
+  instrumental?: boolean;
+  onToggleInstrumental?: () => void;
 };
 
 export function SongPageChrome(props: SongPageChromeProps): ReactElement {
-  const { isNew, songMenuAnchor, onSongMenuAnchorChange, onRequestDelete } = props;
+  const { isNew, songMenuAnchor, onSongMenuAnchorChange, onRequestDelete, instrumental, onToggleInstrumental } = props;
 
   return (
     <Box
@@ -67,6 +71,19 @@ export function SongPageChrome(props: SongPageChromeProps): ReactElement {
             anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
             transformOrigin={{ vertical: 'top', horizontal: 'right' }}
           >
+            {onToggleInstrumental ? (
+              <MenuItem
+                role="menuitemcheckbox"
+                aria-checked={Boolean(instrumental)}
+                onClick={() => {
+                  onSongMenuAnchorChange(null);
+                  onToggleInstrumental();
+                }}
+              >
+                <ListItemIcon>{instrumental ? <CheckIcon fontSize="small" /> : null}</ListItemIcon>
+                <ListItemText>Instrumental (no lyrics)</ListItemText>
+              </MenuItem>
+            ) : null}
             <MenuItem
               onClick={() => {
                 onSongMenuAnchorChange(null);
