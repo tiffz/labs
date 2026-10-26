@@ -38,6 +38,11 @@ const FORWARDS = new Map([
   ['encore/originals/originalsSongFileDrag.ts', 'classifies a drag for slot highlighting'],
   ['encore/components/song/encoreDragPayload.ts', 'classifies a drag for slot highlighting'],
   ['gesture/drive/gestureFolderPicker.ts', 'wraps showDirectoryPicker for its caller'],
+  // Stanza: these hand files to StanzaWorkspace, which stages them (useStanzaUploadStaging).
+  ['stanza/components/stanzaWorkspace/StanzaLandingHero.tsx', 'passes the picked file to onUploadFile'],
+  ['stanza/components/stanzaWorkspace/StanzaLibraryFooterPanel.tsx', 'passes the picked file to onUploadFile'],
+  ['stanza/components/stanzaWorkspace/StanzaPracticeMixSection.tsx', 'passes the picked stem to onAddStemFromFile'],
+  ['stanza/hooks/useStanzaFileDrop.ts', 'passes dropped files to onAudioFiles'],
   // Gesture: these hand picks to useGestureCollectionUpload, which stages them (useGestureUploadStaging).
   ['gesture/components/AddCollectionActions.tsx', 'passes picked photos and folders to the upload hook'],
   ['gesture/drive/gestureLocalFolderUpload.ts', 'reads a picked folder for the upload hook'],
@@ -72,11 +77,6 @@ const PENDING = new Map([
   ['encore/components/performance/PerformanceEditorVideosDropZone.tsx', 'stages until Save in its own UI'],
   ['encore/components/BulkPerformanceImportDialog.tsx', 'reviews in its own dialog'],
   ['encore/components/BulkScoreImportDialog.tsx', 'reviews in its own dialog'],
-  // Stanza: a new song is created on pick or drop
-  ['stanza/components/stanzaWorkspace/StanzaLandingHero.tsx', 'creates a song on pick'],
-  ['stanza/components/stanzaWorkspace/StanzaLibraryFooterPanel.tsx', 'creates a song on pick'],
-  ['stanza/components/stanzaWorkspace/StanzaPracticeMixSection.tsx', 'adds a stem on pick'],
-  ['stanza/hooks/useStanzaFileDrop.ts', 'creates a song on drop'],
 ]);
 
 function sourceFiles(dir: string): string[] {
