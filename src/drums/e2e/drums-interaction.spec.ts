@@ -321,3 +321,22 @@ test.describe('Darbuka editing journeys', () => {
     await expect.poll(() => rhythmParam(page)).toBe('|: DKTKD-TK| D-TKTKTK:|x2 |: DKTKD-TK| TKD-TKT:|x2');
   });
 });
+
+test.describe('Darbuka sequencer', () => {
+  test('a click in the last measure edits that measure, keeping repeat signs and spaces', async ({ page }) => {
+    const rhythm = '|: DKTKD-TK| D-TKTKTK:|x2 |: DKTKD-TK| TKD-TKTK:|x2';
+    await page.goto(`/drums/?rhythm=${encodeURIComponent(rhythm)}&bpm=75&time=2%2F4`);
+    await expect(page.locator('.vexflow-container .vf-stavenote')).toHaveCount(28, { timeout: 20000 });
+    await page.getByRole('button', { name: /Sequencer/ }).click();
+
+    // Drawn measures: 1, 2, 5, 6 (the x2 passes are hidden), then one empty measure.
+    const measures = page.locator('.rhythm-sequencer .sequencer-measure');
+    await expect(measures).toHaveCount(5);
+    const SLAP_ROW = 2; // rows: ka, tak, slap, dum, rest
+    await measures.nth(3).locator('.sequencer-beat-cell').first().locator('button').nth(SLAP_ROW).click();
+
+    await expect
+      .poll(() => new URL(page.url()).searchParams.get('rhythm'))
+      .toBe('|: DKTKD-TK| D-TKTKTK:|x2 |: DKTKD-TK| SKD-TKTK:|x2');
+  });
+});

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { buildMeasureLayout } from '../../shared/rhythm/measureLayout';
 import { parseRhythm } from '../../shared/rhythm/rhythmParser';
 import type { TimeSignature } from '../types';
-import { copyRange, deleteLastNote, deleteRange, dropPattern, moveRange, replaceRange } from './notationEdits';
+import { copyRange, deleteLastNote, deleteRange, dropPattern, moveRange, replaceRange, setStrokeAt } from './notationEdits';
 
 /**
  * Every bug `notationEdits.fuzz.test.ts` has found, pinned as a named case.
@@ -128,5 +128,45 @@ describe('Backspace (delete last note)', () => {
 
   it('removes a repeat it empties', () => {
     expect(deleteLastNote('D-T- | K-K- |x2'.replace('K-K-', 'K-'))).toBe('D-T-');
+  });
+});
+
+describe('sequencer clicks (setStrokeAt, played ticks)', () => {
+  const two = ts(2, 4);
+
+  it('a stroke inside a held note splits it and holds for the rest', () => {
+    expect(setStrokeAt('D-------', two, 4, 'tak')).toBe('D---T---');
+  });
+
+  it('clearing a stroke lets the note before it hold on', () => {
+    expect(setStrokeAt('D-T-K-T-', two, 2, null)).toBe('D---K-T-');
+  });
+
+  it('clearing the first stroke after a bar leaves a rest: nothing can hold across the bar', () => {
+    expect(setStrokeAt('D-T-K-T-|T-K-T-K-', two, 8, null)).toBe('D-T-K-T-|__K-T-K-');
+  });
+
+  it('clearing a rest lets the stroke before it hold over it', () => {
+    expect(setStrokeAt('D-__T---', two, 2, null)).toBe('D---T---');
+  });
+
+  it('editing a written measure edits its repeat passes and keeps the sign', () => {
+    expect(setStrokeAt('|: D-T-K-T- :|x2', two, 0, 'slap')).toBe('|: S-T-K-T- :|x2');
+  });
+
+  it('editing a hidden pass writes that pass out and edits it alone', () => {
+    expect(setStrokeAt('|: D-T-K-T- :|x2', two, 8, 'slap')).toBe('|: D-T-K-T- :| | S-T-K-T-');
+  });
+
+  it('keeps the spaces between groups', () => {
+    expect(setStrokeAt('DKTK D-T-', two, 4, 'slap')).toBe('DKTK S-T-');
+  });
+
+  it('a stroke in padding the parser added is preceded by rests up to it', () => {
+    expect(setStrokeAt('D-T-|K-K-K-K-', two, 6, 'tak')).toBe('D-T-__T|K-K-K-K-');
+  });
+
+  it('a stroke past the end starts a new measure', () => {
+    expect(setStrokeAt('D-T-K-T-', two, 10, 'dum')).toBe('D-T-K-T- | __D');
   });
 });
