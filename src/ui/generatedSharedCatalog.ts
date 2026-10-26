@@ -17301,6 +17301,120 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-drive-importdrivefile-ts-describedrivefileimportrejection",
+    "name": "describeDriveFileImportRejection",
+    "path": "src/shared/drive/importDriveFile.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "One sentence per rejection, for a field's error text.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-importdrivefile-ts-drivefileimportcandidate",
+    "name": "DriveFileImportCandidate",
+    "path": "src/shared/drive/importDriveFile.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "The fields a caller's `accepts` filter can judge by.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-importdrivefile-ts-drivefileimportplan",
+    "name": "DriveFileImportPlan",
+    "path": "src/shared/drive/importDriveFile.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "What Drive says about the file a plan describes (the shortcut target, never the shortcut).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-importdrivefile-ts-drivefileimportplanresult",
+    "name": "DriveFileImportPlanResult",
+    "path": "src/shared/drive/importDriveFile.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "What Drive says about the file a plan describes (the shortcut target, never the shortcut).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-importdrivefile-ts-drivefileimportrejection",
+    "name": "DriveFileImportRejection",
+    "path": "src/shared/drive/importDriveFile.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "What Drive says about the file a plan describes (the shortcut target, never the shortcut).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-importdrivefile-ts-drivefileimportresult",
+    "name": "DriveFileImportResult",
+    "path": "src/shared/drive/importDriveFile.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "What Drive says about the file a plan describes (the shortcut target, never the shortcut).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-importdrivefile-ts-executedrivefileimport",
+    "name": "executeDriveFileImport",
+    "path": "src/shared/drive/importDriveFile.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Carry out a plan. A reference returns at once with no Drive call. A copy needs the source's bytes. Builds whose session token lacks `drive.readonly` are refused with 403/404; `requestReadAccess` is then called once (it may open a consent popup, so callers pass it only from a user gesture) and the copy retried with the token it returns. A second refusal propagates: the user really cannot read the file.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-importdrivefile-ts-plandrivefileimport",
+    "name": "planDriveFileImport",
+    "path": "src/shared/drive/importDriveFile.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Decide reference vs copy from metadata. Never writes. Ownership is read from the shortcut's **target**. A user's own shortcut to a friend's file reports `ownedByMe: true` on the shortcut row, and trusting the row stores a pointer at the friend's file — the exact failure this module exists to prevent. `ownedByMe` missing is treated as foreign. A spare copy of your own file is easy to delete; a pointer at a stranger's file fails silently months later. Throws only for failures that are not about this file (offline, rate limits, expired token), so a transient error is never reported to the user as \"you cannot open this link\".",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-drive-infermediamimetype-ts-infermediamimetype",
     "name": "inferMediaMimeType",
     "path": "src/shared/drive/inferMediaMimeType.ts",

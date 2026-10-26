@@ -9,12 +9,13 @@ import DialogTitle from '@mui/material/DialogTitle';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { useCallback, useEffect, useMemo, useRef, useState, Fragment, type ReactElement } from 'react';
-import { driveGetFileMetadata, driveUploadFileResumable } from '../drive/driveFetch';
+import { driveUploadFileResumable } from '../drive/driveFetch';
 import {
-  classifyDriveCopyFailure,
-  copyDriveFileToMyDrive,
-  type DriveCopyProgress,
-} from '../../shared/drive/copyDriveFileToMyDrive';
+  describeDriveFileImportRejection,
+  executeDriveFileImport,
+  planDriveFileImport,
+} from '../../shared/drive/importDriveFile';
+import { classifyDriveCopyFailure, type DriveCopyProgress } from '../../shared/drive/copyDriveFileToMyDrive';
 import { ensureDriveCopyAccessToken } from '../drive/driveReadonlyAccess';
 import { PerformanceSignInNotice } from './performance/PerformanceSignInNotice';
 import { upsertPerformanceVideoBySource } from '../performance/performanceVideoAttach';
@@ -130,16 +131,6 @@ type PerfDriveLinkFeedback =
   | { kind: 'error'; message: string }
   | { kind: 'needs_signin' };
 
-function isDriveFolderMetadata(meta: {
-  mimeType?: string;
-  shortcutDetails?: { targetMimeType?: string };
-}): boolean {
-  if (meta.mimeType === 'application/vnd.google-apps.folder') return true;
-  return (
-    meta.mimeType === 'application/vnd.google-apps.shortcut' &&
-    meta.shortcutDetails?.targetMimeType === 'application/vnd.google-apps.folder'
-  );
-}
 
 function normalizeDriveFileIdForCompare(raw: string | undefined | null): string {
   const t = raw?.trim();
@@ -485,13 +476,26 @@ export function PerformanceEditorDialog(props: {
         applyFeedback({ kind: 'loading' });
         try {
           const resolvedDriveFileId = fileIdForMeta;
-          const meta = await driveGetFileMetadata(googleAccessToken, fileIdForMeta);
+          // Ownership comes from the shortcut's target: a shortcut the user made to a friend's
+          // file reports itself as theirs, and trusting it stored a pointer at the friend's file.
+          const planned = await planDriveFileImport(googleAccessToken, fileIdForMeta);
           if (gen !== driveLookupGen.current) return;
-          if (isDriveFolderMetadata(meta)) {
-            applyFeedback({ kind: 'folder' });
+          if (!planned.ok) {
+            if (planned.reason === 'folder') {
+              applyFeedback({ kind: 'folder' });
+              return;
+            }
+            applyFeedback({
+              kind: 'error',
+              message:
+                planned.reason === 'google-native'
+                  ? describeDriveFileImportRejection('google-native', 'a video file')
+                  : 'Could not open this in Drive. Check the link and try again.',
+            });
             return;
           }
-          const displayName = meta.name?.trim() || 'Untitled';
+          const { plan } = planned;
+          const displayName = plan.name;
           /*
            * Readable, but someone else's. Linking to their file id looks like it works and then
            * rots: it depends on their sharing settings, their retention, and their account still
@@ -521,7 +525,7 @@ export function PerformanceEditorDialog(props: {
                 (v) => v.videoTargetDriveFileId === resolvedDriveFileId,
               )?.id;
 
-          if (meta.ownedByMe === false && sourceVideoId) {
+          if (plan.kind === 'copy' && sourceVideoId) {
             setForeignVideoSources((sources) =>
               upsertForeignVideoSource(sources, {
                 videoId: sourceVideoId,
@@ -542,11 +546,11 @@ export function PerformanceEditorDialog(props: {
             return;
           }
           if (linkApplyOpts?.appendNew && opts?.finishEditor !== false) clearAddPanelLink();
-          const day = isoDateFromDriveFileMeta(meta);
+          const day = isoDateFromDriveFileMeta(plan);
           if (day && shouldSetDateFromDriveMeta) {
             setDraft((d) => ({ ...d, date: day }));
           }
-          const guessedVenue = suggestPerformanceVenueFromFile(venueList, meta.name ?? '').trim();
+          const guessedVenue = suggestPerformanceVenueFromFile(venueList, plan.name).trim();
           if (guessedVenue && shouldSetDateFromDriveMeta) {
             setDraft((d) => ({
               ...d,
@@ -756,45 +760,34 @@ export function PerformanceEditorDialog(props: {
 
         const copied: { videoId: string; copiedFileId: string }[] = [];
         /*
-         * Encore's session token holds `drive.file` + `drive.metadata.readonly`. That reads the
-         * NAME of a file a friend shared — which is why pasting their link resolves — but
-         * `drive.file` is per-file access to files this app created, so downloading the bytes
-         * is refused. Drive answers 403/404 and the old code reported "you do not have access",
-         * when the truth was that the app had never asked for it.
-         *
-         * So: try the session token, and on a permission failure ask for `drive.readonly` once
-         * and retry. Broad read access is not in the sign-in scopes on purpose — requesting it
-         * up front, to serve an occasional case, is how consent screens get clicked past.
+         * A copy needs the source's bytes. The session BFF signs in with `drive.readonly`, so the
+         * session token usually reads them. Builds without the BFF hold only `drive.file`, which
+         * reads the NAME of a friend's file (so the link resolves) but not its bytes; Drive answers
+         * 403/404. `executeDriveFileImport` then asks for `drive.readonly` once and retries.
          */
         let copyToken = googleAccessToken;
-        let broadenedScope = false;
+        let broadened: Promise<string> | null = null;
+        // One consent prompt, then reuse the broadened token for the rest of the batch.
+        const requestReadAccess = () => {
+          if (!broadened) {
+            copyJob.updateLabel('Waiting for Google permission to read the shared video…');
+            copyJob.updateProgress(null);
+            broadened = ensureDriveCopyAccessToken().then((token) => (copyToken = token));
+          }
+          return broadened;
+        };
         for (let index = 0; index < copyTasks.length; index += 1) {
           const task = copyTasks[index]!;
           copyPosition.index = index;
-          let result;
-          try {
-            result = await copyDriveFileToMyDrive({
+          const result = await executeDriveFileImport(
+            { kind: 'copy', sourceFileId: task.sourceFileId, name: task.name, mimeType: null },
+            {
               accessToken: copyToken,
-              sourceFileId: task.sourceFileId,
               parentFolderId: parent.trim(),
+              requestReadAccess,
               onProgress: reportCopyProgress,
-            });
-          } catch (error) {
-            const reason = classifyDriveCopyFailure(error);
-            const permissionDenied = reason === 'no-access' || reason === 'not-found';
-            if (!permissionDenied || broadenedScope) throw error;
-            // One consent prompt, then reuse the broadened token for the rest of the batch.
-            broadenedScope = true;
-            copyJob.updateLabel('Waiting for Google permission to read the shared video…');
-            copyJob.updateProgress(null);
-            copyToken = await ensureDriveCopyAccessToken();
-            result = await copyDriveFileToMyDrive({
-              accessToken: copyToken,
-              sourceFileId: task.sourceFileId,
-              parentFolderId: parent.trim(),
-              onProgress: reportCopyProgress,
-            });
-          }
+            },
+          );
           copied.push({ videoId: task.videoId, copiedFileId: result.fileId });
         }
         videos = applyForeignVideoCopies(videos, copied);
