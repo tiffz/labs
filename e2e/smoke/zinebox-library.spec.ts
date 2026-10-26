@@ -24,4 +24,18 @@ test.describe('Zine Box library', () => {
     await expect(page.getByRole('button', { name: /Back to library/i })).toBeVisible({ timeout: 15000 });
     await expect(page).toHaveURL(/#\/read\//, { timeout: 15000 });
   });
+
+  test('one PDF opens the review before it is added (ADR 0030)', async ({ page }) => {
+    // A single PDF used to import on pick, while two or more opened "Review import".
+    await page.getByRole('button', { name: /Upload zines/i }).click();
+    const zone = page.locator('[data-testid="zinebox-upload-zone"]');
+    await expect(zone).toBeVisible({ timeout: 15000 });
+    await zone.locator('input[type="file"]').setInputFiles({
+      name: 'E2E single zine.pdf',
+      mimeType: 'application/pdf',
+      buffer: Buffer.from('%PDF-1.1\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj 2 0 obj<</Type/Pages/Kids[]/Count 0>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF'),
+    });
+    await expect(page.getByRole('dialog', { name: /Review import/i })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole('button', { name: /Import 1 PDF/ })).toBeVisible();
+  });
 });

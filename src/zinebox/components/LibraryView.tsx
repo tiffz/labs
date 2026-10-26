@@ -3,9 +3,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import { DndContext } from '@dnd-kit/core';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { useLabsBlockingJobs } from '../../shared/jobs/LabsBlockingJobContext';
 import { mockImportFromDrive, ZINEBOX_E2E_SCROLL_GRID_COMIC_COUNT } from '../db/mockDriveImport';
-import { importLocalPdfFiles } from '../drive/importLocalPdfs';
 import { useStackDnD } from '../hooks/useStackDnD';
 import { useZineboxCollections, useZineboxComics } from '../hooks/useZineboxComics';
 import { useZineboxLibraryDrop } from '../hooks/useZineboxLibraryDrop';
@@ -47,10 +45,8 @@ export default function LibraryView({
   onLibraryParamsChange,
   onOpenComic,
 }: LibraryViewProps): React.ReactElement {
-  const { startBlockingJob } = useLabsBlockingJobs();
   const { comics, comicsHydrated } = useZineboxComics();
   const { collections, collectionsHydrated } = useZineboxCollections();
-  const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
   const [importNotice, setImportNotice] = useState<string | null>(null);
   const [localBatchFiles, setLocalBatchFiles] = useState<File[] | null>(null);
@@ -58,6 +54,8 @@ export default function LibraryView({
   const { dndContextProps, dragOverlay } = useStackDnD(comics, collections);
 
   const hydrated = comicsHydrated && collectionsHydrated;
+  /** New drops wait while a review is open, rather than replacing the PDFs under review. */
+  const importing = localBatchFiles !== null;
   const hasLibrary = comics.length > 0;
 
   const handleImportFiles = useCallback(async (files: File[]) => {
@@ -67,30 +65,11 @@ export default function LibraryView({
       setImportError('No PDF files were found. Try again with .pdf files.');
       return;
     }
-    if (pdfs.length > 1) {
-      setImportError(null);
-      setImportNotice(null);
-      setLocalBatchFiles(pdfs);
-      return;
-    }
-    setImporting(true);
+    // Every import reviews first, one PDF or many (ADR 0030). One PDF used to import on drop.
     setImportError(null);
     setImportNotice(null);
-    const job = startBlockingJob('Importing PDF…');
-    try {
-      const result = await importLocalPdfFiles(pdfs);
-      if (result.imported === 0 && result.skipped > 0) {
-        setImportNotice('That PDF is already in your library.');
-      } else if (result.imported === 0) {
-        setImportError('No PDF files were found. Try again with .pdf files.');
-      }
-    } catch (e) {
-      setImportError(e instanceof Error ? e.message : 'Could not import those PDFs.');
-    } finally {
-      job.end();
-      setImporting(false);
-    }
-  }, [startBlockingJob]);
+    setLocalBatchFiles(pdfs);
+  }, []);
 
   const { dragActive, handlers: dropHandlers } = useZineboxLibraryDrop({
     disabled: importing,

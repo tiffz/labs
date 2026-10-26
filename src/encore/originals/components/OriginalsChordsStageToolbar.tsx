@@ -59,7 +59,8 @@ export function OriginalsChordsStageToolbar({
         alignItems: "center"
       }}>
         <OriginalsChartExportMenu song={song} layout={layout} onPersist={onPersist} />
-        <OriginalsOpenInWordsButton song={song} />
+        {/* Words in Rhythm sets lyrics to a rhythm; an instrumental has none to send. */}
+        {song.instrumental ? null : <OriginalsOpenInWordsButton song={song} />}
       </Stack>
       <Tooltip title={stageDone ? 'Stage completed' : 'Mark stage complete'}>
         <IconButton

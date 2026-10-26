@@ -6,7 +6,7 @@ import { type ReactElement } from 'react';
 import { inferredWorkflowStage, isOriginalDemoReady, isStageComplete } from '../originalsWorkflowCompletion';
 import type { EncoreOriginalSong } from '../types';
 import {
-  ORIGINALS_WORKFLOW_STAGES,
+  workflowStagesFor,
   type OriginalsWorkflowStage,
 } from '../originalsWorkflowStages';
 
@@ -181,7 +181,8 @@ export function OriginalsWorkflowStepper({
   highlightNextIncomplete = false,
 }: OriginalsWorkflowStepperProps): ReactElement {
   const theme = useTheme();
-  const stepCount = ORIGINALS_WORKFLOW_STAGES.length;
+  const stages = workflowStagesFor(song);
+  const stepCount = stages.length;
   const emphasisStage = highlightNextIncomplete
     ? isOriginalDemoReady(song)
       ? null
@@ -190,8 +191,8 @@ export function OriginalsWorkflowStepper({
 
   const emphasisIndex =
     emphasisStage != null
-      ? ORIGINALS_WORKFLOW_STAGES.findIndex((step) => step.id === emphasisStage)
-      : ORIGINALS_WORKFLOW_STAGES.reduce(
+      ? stages.findIndex((step) => step.id === emphasisStage)
+      : stages.reduce(
           (last, step, index) => (isStageComplete(song, step.id) ? index : last),
           0,
         );
@@ -242,7 +243,7 @@ export function OriginalsWorkflowStepper({
         />
       </Box>
 
-      {ORIGINALS_WORKFLOW_STAGES.map((step, index) => {
+      {stages.map((step, index) => {
         const completed = isStageComplete(song, step.id);
         const active = emphasisStage !== null && step.id === emphasisStage;
 
