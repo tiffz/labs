@@ -6,10 +6,13 @@
  * - Same-id sub-entities field-merge (content beats empty + newer `updatedAt`) — see
  *   `lyreflyPackageFieldMerge.ts`. Blobs are never overwritten (download path skips existing bytes).
  * - Project-only rich fields merge on every apply (not first-hydrate-only).
+ * - Archive rows (publish log, press, sales) union by id with per-row delete records; see
+ *   `mergeLyreflyArchive`.
  */
-import { lyreflyDb } from '../db/lyreflyDb';
+import { lyreflyDb, markLyreflyDirtyRow } from '../db/lyreflyDb';
 import type { ComicProject, PageNode, PageRevision, VisualDevAsset } from '../types';
 import {
+  mergeLyreflyArchive,
   mergeLyreflyPageNode,
   mergeLyreflyPageRevision,
   mergeLyreflyProjectFields,
@@ -166,7 +169,18 @@ export async function applyLyreflyProjectPackageToDb(pkg: LyreflyProjectPackage)
   }
 
   if (pkg.archive) {
-    const localArchive = await lyreflyDb.archives.get(pkg.archive.id);
-    if (!localArchive) await lyreflyDb.archives.put(pkg.archive);
+    // Look the local binder up by the project, not the remote id: two devices can each have
+    // created one before either synced.
+    const localArchiveId = nextProject.archiveId ?? pkg.archive.id;
+    const localArchive = await lyreflyDb.archives.get(localArchiveId);
+    if (!localArchive) {
+      await lyreflyDb.archives.put({ ...pkg.archive, id: localArchiveId });
+    } else {
+      const { archive, remoteLacksLocalRows } = mergeLyreflyArchive(localArchive, pkg.archive);
+      await lyreflyDb.archives.put(archive);
+      if (remoteLacksLocalRows) {
+        await markLyreflyDirtyRow('archive', archive.id, 'upsert', archive.projectId);
+      }
+    }
   }
 }
