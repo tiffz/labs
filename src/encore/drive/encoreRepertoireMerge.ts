@@ -83,6 +83,7 @@ export const SONG_MERGE_POLICY = {
   attachments: 'union-by-drive-file-id',
   miscResources: 'union-by-id',
   practicing: 'lww',
+  instrumental: 'lww',
   practiceRemovedAt: 'lww',
   milestoneProgress: 'lww',
   songOnlyMilestones: 'lww',

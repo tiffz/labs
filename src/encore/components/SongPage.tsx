@@ -886,6 +886,8 @@ export function SongPage(props: {
           songMenuAnchor={songMenuAnchor}
           onSongMenuAnchorChange={setSongMenuAnchor}
           onRequestDelete={() => void handleDelete()}
+          instrumental={Boolean(draft?.instrumental)}
+          onToggleInstrumental={() => setDraft((d) => (d ? { ...d, instrumental: !d.instrumental } : d))}
         />
 
         <Paper

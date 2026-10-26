@@ -43,6 +43,10 @@ const FORWARDS = new Map([
   ['stanza/components/stanzaWorkspace/StanzaLibraryFooterPanel.tsx', 'passes the picked file to onUploadFile'],
   ['stanza/components/stanzaWorkspace/StanzaPracticeMixSection.tsx', 'passes the picked stem to onAddStemFromFile'],
   ['stanza/hooks/useStanzaFileDrop.ts', 'passes dropped files to onAudioFiles'],
+  // Zine Box's LibraryView sends every pick and drop to its "Review import" dialog, which shows
+  // new vs duplicate PDFs before "Import N PDFs" (kept over the shared panel for the dedupe view).
+  ['zinebox/components/ZineboxLibraryAddPanel.tsx', 'passes picked PDFs to the Review import dialog'],
+  ['zinebox/hooks/useZineboxLibraryDrop.ts', 'passes dropped PDFs to the Review import dialog'],
 ]);
 
 const SAVES_NOTHING = new Map([
@@ -65,9 +69,6 @@ const PENDING = new Map([
   ['encore/components/performance/PerformanceEditorVideosDropZone.tsx', 'stages until Save in its own UI'],
   ['encore/components/BulkPerformanceImportDialog.tsx', 'reviews in its own dialog'],
   ['encore/components/BulkScoreImportDialog.tsx', 'reviews in its own dialog'],
-  // Zine Box: one PDF imports at once; two or more review in a dialog
-  ['zinebox/components/ZineboxLibraryAddPanel.tsx', 'single PDF imports on pick'],
-  ['zinebox/hooks/useZineboxLibraryDrop.ts', 'single PDF imports on drop'],
   // Gesture: photo uploads start on pick or drop
   ['gesture/components/AddCollectionActions.tsx', 'uploads photos on pick'],
   ['gesture/components/InterruptedUploadBanner.tsx', 'resumes an upload on re-pick'],

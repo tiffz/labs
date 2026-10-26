@@ -22605,6 +22605,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-music-chordpro-chordchartlayout-ts-layoutlyricstext",
+    "name": "layoutLyricsText",
+    "path": "src/shared/music/chordPro/chordChartLayout.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "The song's lyrics as plain text, or `''` when no line has words. keeps section headers so Write Mode has its scaffold, which made a chords-only chart (an instrumental) report \"lyrics\" of just `[Intro]` and `[Solo]`: \"Copy lyrics\" copied the headers. Headers are not lyrics.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-music-chordpro-chordchartlayout-ts-layouttowritedocument",
     "name": "layoutToWriteDocument",
     "path": "src/shared/music/chordPro/chordChartLayout.ts",
