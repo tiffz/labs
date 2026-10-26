@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { enterEncoreApp } from '../helpers/enterEncoreApp';
-import { gotoEncoreOriginalsQueue } from '../helpers/encoreOriginalsQueue';
+import { gotoEncoreOriginalsQueue, openSeededOriginalStage } from '../helpers/encoreOriginalsQueue';
 import { seedZineboxE2eGoogleSession } from '../helpers/zineboxDriveImport';
 import { stubEncoreSignedInDrive, type E2eDriveFiles } from '../helpers/encoreDriveStub';
 
@@ -26,8 +26,7 @@ for (const { label, fileId, name, copied, shortcutTargets } of [
     const drive = await stubEncoreSignedInDrive(page, FILES);
     await enterEncoreApp(page);
     await gotoEncoreOriginalsQueue(page);
-    await page.getByText('E2E Queue A', { exact: true }).click();
-    await page.getByRole('button', { name: 'Record takes' }).click();
+    await openSeededOriginalStage(page, 'E2E Queue A', 'Record takes');
 
     const takes = page.getByRole('region', { name: 'Demo takes' });
     await takes.getByRole('button', { name: 'Add take' }).click();
