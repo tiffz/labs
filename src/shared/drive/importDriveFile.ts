@@ -186,12 +186,12 @@ export function describeDriveFileImportRejection(
     case 'not-a-drive-link':
       return 'Paste a Google Drive file link.';
     case 'not-found':
-      return 'This Google account can’t open that file. Check the link, or ask the owner to share it.';
+      return "This Google account can't open that file. Check the link, or ask the owner to share it.";
     case 'folder':
       return `That link is a folder. Paste a link to ${what}.`;
     case 'google-native':
       return `That link is a Google Doc, Sheet or Slide, not ${what}.`;
     case 'not-accepted':
-      return `That file isn’t ${what}.`;
+      return `That file isn't ${what}.`;
   }
 }

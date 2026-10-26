@@ -1,12 +1,11 @@
-import AddIcon from '@mui/icons-material/Add';
 import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
 import LinearProgress from '@mui/material/LinearProgress';
 import Typography from '@mui/material/Typography';
 import { useCallback, useState, type DragEvent as ReactDragEvent, type ReactElement } from 'react';
 import { encoreHairline, encoreSoftPinkWash } from '../../theme/encoreUiTokens';
 import { isOriginalsTakeMediaFile, originalsFileDragRelevant } from '../originalsSongFileDrag';
 import { useOriginalsTakes } from '../hooks/useOriginalsTakes';
+import { OriginalsTakeAddMenu } from './OriginalsTakeAddMenu';
 import { OriginalsTakeRow } from './OriginalsTakeRow';
 import type { EncoreOriginalSong } from '../types';
 
@@ -152,18 +151,7 @@ export function OriginalsTakesWorkspace({
         </Box>
       )}
 
-      {!readOnly ? (
-        <Button
-          variant="outlined"
-          color="inherit"
-          disabled={takes.uploading}
-          startIcon={<AddIcon />}
-          onClick={takes.openFilePicker}
-          sx={{ alignSelf: 'flex-start', mt: 0.5 }}
-        >
-          Add take
-        </Button>
-      ) : null}
+      {!readOnly ? <OriginalsTakeAddMenu takes={takes} variant="button" /> : null}
 
       {takes.hiddenInputs}
     </Box>

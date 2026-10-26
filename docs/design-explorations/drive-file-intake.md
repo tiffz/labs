@@ -120,7 +120,9 @@ The guard derives its file set from the tree and asserts it is non-empty.
 
 ## Rollout (each phase is its own PR, presubmit green, shippable alone)
 
-1. **This change:** D1 + D2 + D3 + D4, ADR for D1, tests (below).
+1. **Done.** D1, D2 and D4 shipped in #251 (shared primitive, performance editor, guard, ADR 0029).
+   D3 shipped next: both take surfaces share `useOriginalsTakes`, and "Add take" offers a Drive
+   link through `originalTakeDriveImport.ts`, using the song page's add menu.
 2. Fix `blob:` references and brainstorm files (local-first via Dexie, like takes). This is live
    data loss, so it goes before the cleanups.
 3. Song page charts / tracks / takes / misc links and both bulk folder imports use

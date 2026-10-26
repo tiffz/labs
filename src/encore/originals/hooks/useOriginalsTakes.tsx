@@ -12,6 +12,8 @@ import { driveFileWebUrl } from '../../drive/driveWebUrls';
 import { inferMediaMimeType } from '../../../shared/drive/inferMediaMimeType';
 import { useEncoreOriginalsPlayback } from '../context/EncoreOriginalsPlaybackContext';
 import { buildLocalOriginalTake, uploadOriginalTakeToDrive } from '../originalTakeUpload';
+import { importOriginalTakeFromDrive } from '../originalTakeDriveImport';
+import { ensureDriveCopyAccessToken } from '../../drive/driveReadonlyAccess';
 import {
   deleteOriginalTakeBlob,
   hasOriginalTakeBlob,
@@ -67,6 +69,11 @@ export type OriginalsTakesController = {
   setNotes: (takeId: string, notes: string) => void;
   remove: (takeId: string) => void;
   addFiles: (files: File[]) => Promise<void>;
+  /**
+   * Add a take from a pasted Google Drive link: referenced if the user owns the file, copied
+   * otherwise (ADR 0029). Resolves with a message for the field when the link cannot become a take.
+   */
+  addFromDriveLink: (raw: string) => Promise<{ ok: true } | { ok: false; message: string }>;
   openFilePicker: () => void;
   /** Hidden `<input type="file">` elements; render once inside the consuming surface. */
   hiddenInputs: ReactElement;
@@ -207,6 +214,44 @@ export function useOriginalsTakes({
       recordBackupFailure,
       clearBackupFailure,
     ],
+  );
+
+  const addFromDriveLink = useCallback(
+    async (raw: string): Promise<{ ok: true } | { ok: false; message: string }> => {
+      if (readOnly) return { ok: false, message: 'This song is read-only.' };
+      if (!googleAccessToken) {
+        return { ok: false, message: 'Sign in with Google to add a take from Drive.' };
+      }
+      const songId = songRef.current.id;
+      setUploading(true);
+      try {
+        const result = await importOriginalTakeFromDrive(raw, {
+          accessToken: googleAccessToken,
+          existingTakes: songRef.current.takes,
+          requestReadAccess: ensureDriveCopyAccessToken,
+        });
+        if (!result.ok) return result;
+        // Re-read after the await: a copy can take a while, and the user may have added, removed or
+        // left the song meanwhile. Appending to a stale snapshot would drop their edits.
+        const cur = songRef.current;
+        if (cur.id !== songId) {
+          return { ok: false, message: 'The song changed before the take was added. Try again.' };
+        }
+        applySong(
+          patchSongTimestamp({
+            ...cur,
+            takes: [...cur.takes, result.take],
+            mainTakeId: cur.mainTakeId ?? result.take.id,
+          }),
+        );
+        return { ok: true };
+      } catch {
+        return { ok: false, message: "Couldn't reach Google Drive. Check your connection and try again." };
+      } finally {
+        setUploading(false);
+      }
+    },
+    [applySong, googleAccessToken, readOnly],
   );
 
   const replaceTakeFile = useCallback(
@@ -481,6 +526,7 @@ export function useOriginalsTakes({
     setNotes,
     remove,
     addFiles,
+    addFromDriveLink,
     openFilePicker,
     hiddenInputs,
   };
