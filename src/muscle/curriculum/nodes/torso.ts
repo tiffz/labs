@@ -2,8 +2,8 @@ import { muscle } from '../nodeHelpers';
 
 export const torsoNodes = [
   muscle('muscle_rectus_abdominis', 'Rectus abdominis', 'torso', 0, 'box', {
-    originBoneId: 'bone_sternum',
-    insertionBoneId: 'bone_pelvis',
+    originBoneId: 'bone_pelvis',
+    insertionBoneId: 'bone_sternum',
     layout: { position: [0, 0.75, 0.18], scale: [0.22, 0.55, 0.08] },
     cameraPresetKey: 'chest',
   }),
