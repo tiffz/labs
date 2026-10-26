@@ -269,6 +269,18 @@ export function layoutToWriteDocument(layout: ChartLayout): string {
   return last.trim() === '' ? doc.trimEnd() : doc.replace(/[ \t]+$/, '');
 }
 
+/**
+ * The song's lyrics as plain text, or `''` when no line has words.
+ *
+ * {@link layoutToWriteDocument} keeps section headers so Write Mode has its scaffold, which made a
+ * chords-only chart (an instrumental) report "lyrics" of just `[Intro]` and `[Solo]`: "Copy lyrics"
+ * copied the headers. Headers are not lyrics.
+ */
+export function layoutLyricsText(layout: ChartLayout): string {
+  const hasWords = layout.sections.some((section) => section.lines.some((line) => line.text.trim()));
+  return hasWords ? layoutToWriteDocument(layout).trim() : '';
+}
+
 function splitWriteDocumentSections(writeDoc: string): Array<{ header: string; bodyLines: string[] }> {
   const lines = writeDoc.split('\n');
   const out: Array<{ header: string; bodyLines: string[] }> = [];

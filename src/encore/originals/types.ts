@@ -54,6 +54,11 @@ export interface EncoreOriginalSong {
   songReferences?: EncoreMiscResource[];
   /** Inline ChordPro, e.g. `[Fm]I'm not like [Bb]you`. */
   lyricsAndChords: string;
+  /**
+   * A piece meant to have no lyrics (an instrumental solo, say). Drops the "Write lyrics" stage and
+   * lyric-only actions; the chart is chords only. Absent means a song with lyrics.
+   */
+  instrumental?: boolean;
   takes: OriginalAudioTake[];
   mainTakeId: string | null;
   /** Optional manual overrides for workflow stage completion. */
