@@ -413,11 +413,11 @@ describe('dragAndDrop', () => {
       });
 
       it('should handle moving from middle to end', () => {
-        const result = simulateMoveSelection('DKTKSR', 2, 4, 6);
-        // Select TK at 2-4, move to position 6
-        // After removal: DKSR (4 chars)
-        // finalPos = 6 - 2 = 4, at end
-        expect(result).toBe('DKSRTK');
+        // `D`, not the original `R`: R is not a stroke, so that string held 5 ticks, and position
+        // 6 only resolved because the mapper used to claim it reached any tick it was asked for.
+        const result = simulateMoveSelection('DKTKSD', 2, 4, 6);
+        // Select TK at 2-4, move to position 6 (the end)
+        expect(result).toBe('DKSDTK');
       });
 
       it('should not duplicate notes', () => {

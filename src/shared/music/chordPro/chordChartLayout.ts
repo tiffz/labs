@@ -342,6 +342,16 @@ export function parseWriteDocumentToLayout(writeDoc: string, previous: ChartLayo
   return { sections };
 }
 
+/**
+ * Add a chord to the end of a line with no lyric text (an intro, a solo, an instrumental).
+ *
+ * Every chord on such a line sits at column 0, so {@link upsertChordAtIndex} would replace the
+ * whole line with one chord. Appending keeps the line's order, which is the order it plays in.
+ */
+export function appendChordToChordOnlyLine(line: LyricLine, chordName: string): LyricLine {
+  return { ...line, chords: [...line.chords, { id: crypto.randomUUID(), chordName, charIndex: 0 }] };
+}
+
 /** Replace every chord at `charIndex` with a single new marker (does not append a sibling). */
 export function upsertChordAtIndex(line: LyricLine, charIndex: number, chordName: string): LyricLine {
   const idx = Math.max(0, Math.min(charIndex, line.text.length));

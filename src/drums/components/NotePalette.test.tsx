@@ -34,12 +34,12 @@ describe('NotePalette', () => {
 
   it('calls onInsertPattern when a pattern button is clicked', () => {
     const onInsertPattern = vi.fn();
-    render(<NotePalette {...defaultProps} onInsertPattern={onInsertPattern} />);
-    
-    // Find all buttons that are not disabled
-    const buttons = screen.getAllByRole('button').filter(btn => 
-      !btn.hasAttribute('disabled') && 
-      !btn.querySelector('input[type="checkbox"]') // Exclude sound preview checkbox
+    const { container } = render(<NotePalette {...defaultProps} onInsertPattern={onInsertPattern} />);
+
+    // A CSS query, not getAllByRole: the role query computes accessibility state for the whole
+    // palette and took over 10s under a parallel run, timing this test out.
+    const buttons = Array.from(container.querySelectorAll<HTMLButtonElement>('button:not([disabled])')).filter(
+      (btn) => !btn.querySelector('input[type="checkbox"]'), // Exclude sound preview checkbox
     );
     
     // Click the first enabled pattern button

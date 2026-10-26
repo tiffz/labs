@@ -65,6 +65,16 @@ export function expandSimileMeasure(notation: string, measureIndex: number, pars
   if (!mapping) return notation; // Target out of bounds (appealing) or invalid
   const sourceStringIndex = mapping.sourceStringIndex;
 
+  // A `%` is checked first. The parser records it as a measure repeat too, and the `|xN` branch
+  // below then went looking for an `xN` token: it either gave up (the edit landed before the `%`
+  // and added a measure) or found a SECTION's `:|x2` and rewrote the section.
+  if (notation[sourceStringIndex] === '%') {
+    // Padding is not written: the `%` occupied a whole measure, and the bar that follows pads it.
+    const notes = parsed.measures[measureIndex].notes.filter((n) => !n.isPadding);
+    const expandedString = notes.map(noteToNotation).join('');
+    return notation.substring(0, sourceStringIndex) + expandedString + notation.substring(sourceStringIndex + 1);
+  }
+
   // 1. Check for Repeat Group membership using parsed metadata
   let repeatGroup: RepeatMarker | null = null;
   if (parsed.repeats) {
@@ -99,51 +109,28 @@ export function expandSimileMeasure(notation: string, measureIndex: number, pars
     }
   }
 
-  // CASE A: Measure Repeat Group (e.g. |x6)
+  // CASE A: Measure Repeat Group (e.g. `M |x3`). Write the copies out as the source's own text.
   if (repeatGroup && repeatGroup.type === 'measure') {
-    const sourceIdx = repeatGroup.sourceMeasure;
-    const sourceMapping = parsed.measureMapping[sourceIdx];
-
-    if (sourceMapping) {
-      const startSearch = sourceMapping.sourceStringIndex;
-      const searchStr = notation.substring(startSearch);
-
-      const suffixMatch = searchStr.match(/(\|?:?\|?\s*x\s*(\d+))/);
-
-      if (suffixMatch && suffixMatch.index !== undefined && suffixMatch.index < 500) {
-        const token = suffixMatch[0];
-        const count = parseInt(suffixMatch[2], 10);
-        const tokenStartIndex = suffixMatch.index;
-        const tokenGlobalStart = startSearch + tokenStartIndex;
-        const tokenGlobalEnd = tokenGlobalStart + token.length;
-
-        const sourceNotes = parsed.measures[sourceIdx].notes;
-        const explicitNoteStr = sourceNotes.map(noteToNotation).join('');
-
-        let expansion = '';
-        // FIX Phase 36: Measure Repeat xN means N additional repeats (Total N+1 instances).
-        // e.g. M1 |x2 -> M1 | M1 | M1.
-        // Parser creates N repeats. We must expand N copies.
-        const copiesNeeded = count;
-        if (copiesNeeded < 1) return notation;
-
-        const startsWithBar = token.includes('|');
-
-        for (let i = 0; i < copiesNeeded; i++) {
-          if (i > 0) expansion += '|';
-          else if (startsWithBar) expansion += '|';
-          else expansion += ' | ';
-
-          expansion += explicitNoteStr;
-        }
-
-        return notation.substring(0, tokenGlobalStart) + expansion + notation.substring(tokenGlobalEnd);
-
-      } else {
-        console.warn('[expandSimileMeasure] Failed to find xN token for ghost unroll. Aborting.');
-        return notation;
-      }
+    const sourceMapping = parsed.measureMapping[repeatGroup.sourceMeasure];
+    if (!sourceMapping) return notation;
+    const start = sourceMapping.sourceStringIndex;
+    // `|xN`, not a section's `:|xN`.
+    const token = /(?<!:)\|\s*x\s*(\d+)/.exec(notation.slice(start));
+    if (!token) {
+      console.warn('[expandSimileMeasure] Failed to find xN token for ghost unroll. Aborting.');
+      return notation;
     }
+    const tokenStart = start + token.index;
+    // The source's own characters, so ties and typed rests survive and padding is not written in.
+    // (Rebuilding it from parsed notes wrote padding as `____` and split ties into re-strikes.)
+    const blockText = notation.slice(start, tokenStart).trim();
+    // `xN` is N plays in total and the source is one of them. Expanding N copies, as this once
+    // did, added a measure.
+    const copies = parseInt(token[1], 10) - 1;
+    if (copies < 1 || !blockText) return notation;
+    const expansion = Array.from({ length: copies }, () => ` | ${blockText}`).join('');
+    const rest = notation.slice(tokenStart + token[0].length);
+    return notation.slice(0, tokenStart).trimEnd() + expansion + (rest && !/^\s/.test(rest) ? ' ' : '') + rest;
   }
 
   // CASE C: Section Repeat Group (e.g. |: A :|x3)
@@ -190,14 +177,6 @@ export function expandSimileMeasure(notation: string, measureIndex: number, pars
         return notation;
       }
     }
-  }
-
-  // CASE B: Explicit Simile (%) (Single)
-  const char = notation[sourceStringIndex];
-  if (char === '%') {
-    const notes = parsed.measures[measureIndex].notes;
-    const expandedString = notes.map(noteToNotation).join('');
-    return notation.substring(0, sourceStringIndex) + expandedString + notation.substring(sourceStringIndex + 1);
   }
 
   return notation;

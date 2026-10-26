@@ -1,6 +1,7 @@
 import React, { useEffect, useLayoutEffect, useRef, useState, useCallback } from 'react';
 import { hiddenMeasureIndices as hiddenMeasureIndicesOf } from '../../shared/rhythm/measureLayout';
 import { measureLayoutOf } from '../../shared/rhythm/rhythmParser';
+import { copyRange } from '../utils/notationEdits';
 import { Renderer, Stave, StaveNote, Voice, Formatter, Beam, Dot, BarlineType } from 'vexflow';
 import type { ParsedRhythm, Note, DrumSound, TimeSignature, RepeatMarker, SectionRepeat } from '../types';
 import { drawDrumSymbol } from '../assets/drumSymbols';
@@ -2196,12 +2197,17 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
       if (selection && selection.startCharPosition !== null && selection.endCharPosition !== null && rhythm) {
         e.preventDefault();
         try {
-          const selectedText = buildNotationFromSelection(
+          const withRepeat = buildNotationFromSelection(
             notePositionsRef.current,
             rhythm,
             selection.startCharPosition,
             selection.endCharPosition
           );
+          // A whole repeat copies with its sign; anything else copies the string's own text, so
+          // ties stay whole and parser padding is not pasted back as typed rests.
+          const selectedText = /\|x\d|\|:/.test(withRepeat) || !notation || !timeSignature
+            ? withRepeat
+            : copyRange(notation, timeSignature, { start: selection.startCharPosition, end: selection.endCharPosition });
           if (selectedText) {
             navigator.clipboard.writeText(selectedText);
             announce('Copied notation to clipboard');
@@ -2226,7 +2232,7 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
         });
       return;
     }
-  }, [selection, onSelectionChange, onDeleteSelection, onPastePattern, onRequestPaletteFocus, findAdjacentNote, announce, rhythm]);
+  }, [selection, onSelectionChange, onDeleteSelection, onPastePattern, onRequestPaletteFocus, findAdjacentNote, announce, rhythm, notation, timeSignature]);
 
   if (rhythm.measures.length === 0) {
     return null;
