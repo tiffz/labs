@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { hasOriginalTakeBlob } from '../originalTakeLocalAudio';
+import { findLocalAudioTakeIds, originalTakeBlobKey } from '../originalTakeLocalAudio';
 import {
   originalPlaybackTake,
   originalTakeHasPlayableSource,
@@ -14,39 +14,57 @@ export type UseOriginalTakePlayableResult = {
   canPlayPlaybackTake: boolean;
 };
 
+/** Is this song's take playable here: Drive id, local-audio flag, or a saved blob. */
+export type OriginalsTakeIsPlayable = (song: EncoreOriginalSong, take: OriginalAudioTake) => boolean;
+
+/**
+ * Drive/local/blob playability for every take of `songs`.
+ *
+ * The list needs this, not just the per-row cells: it builds the play target itself, and a
+ * flag-only check there played a different take from the one the row's tooltip promised.
+ */
+export function useOriginalsTakeIsPlayable(
+  songs: readonly EncoreOriginalSong[],
+  enabled = true,
+): OriginalsTakeIsPlayable {
+  const [localAudioKeys, setLocalAudioKeys] = useState<Set<string>>(() => new Set());
+
+  useEffect(() => {
+    if (!enabled || songs.every((s) => s.takes.length === 0)) {
+      setLocalAudioKeys(new Set());
+      return;
+    }
+    let cancelled = false;
+    void Promise.all(
+      songs.map(async (song) =>
+        [...(await findLocalAudioTakeIds(song))].map((takeId) => originalTakeBlobKey(song.id, takeId)),
+      ),
+    ).then((keys) => {
+      if (!cancelled) setLocalAudioKeys(new Set(keys.flat()));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [enabled, songs]);
+
+  return useCallback(
+    (song: EncoreOriginalSong, take: OriginalAudioTake) =>
+      originalTakeHasPlayableSource(take) || localAudioKeys.has(originalTakeBlobKey(song.id, take.id)),
+    [localAudioKeys],
+  );
+}
+
 /** Resolves Drive/local/blob playability for demo takes (library + view mode). */
 export function useOriginalTakePlayable(
   song: EncoreOriginalSong,
   enabled = true,
 ): UseOriginalTakePlayableResult {
-  const [localAudioIds, setLocalAudioIds] = useState<Set<string>>(() => new Set());
-
-  useEffect(() => {
-    if (!enabled || song.takes.length === 0) {
-      setLocalAudioIds(new Set());
-      return;
-    }
-    let cancelled = false;
-    void (async () => {
-      const found = new Set<string>();
-      await Promise.all(
-        song.takes.map(async (t) => {
-          if (t.hasLocalAudio || (await hasOriginalTakeBlob(song.id, t.id))) {
-            found.add(t.id);
-          }
-        }),
-      );
-      if (!cancelled) setLocalAudioIds(found);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [enabled, song.id, song.takes]);
+  const songs = useMemo(() => [song], [song]);
+  const songTakeIsPlayable = useOriginalsTakeIsPlayable(songs, enabled);
 
   const takeIsPlayable = useCallback(
-    (take: OriginalAudioTake) =>
-      originalTakeHasPlayableSource(take) || localAudioIds.has(take.id),
-    [localAudioIds],
+    (take: OriginalAudioTake) => songTakeIsPlayable(song, take),
+    [song, songTakeIsPlayable],
   );
 
   const playbackTake = useMemo(() => originalPlaybackTake(song, takeIsPlayable), [song, takeIsPlayable]);

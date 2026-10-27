@@ -15,13 +15,18 @@ import { useEncoreOriginalsPlayback } from '../context/EncoreOriginalsPlaybackCo
 import { buildLocalOriginalTake, uploadOriginalTakeToDrive } from '../originalTakeUpload';
 import {
   deleteOriginalTakeBlob,
-  hasOriginalTakeBlob,
+  findLocalAudioTakeIds,
   loadOriginalTakeBlob,
   originalTakeBlobKey,
   saveOriginalTakeBlob,
 } from '../originalTakeLocalAudio';
 import { ORIGINALS_DEMO_TAKE_ACCEPT } from '../originalsSongFileSlots';
-import { preferredOriginalTake, type EncoreOriginalSong, type OriginalAudioTake } from '../types';
+import {
+  originalTakeHasPlayableSource,
+  preferredOriginalTake,
+  type EncoreOriginalSong,
+  type OriginalAudioTake,
+} from '../types';
 
 /**
  * Where a take's audio currently lives. Drives the one-line status under each take.
@@ -130,15 +135,9 @@ export function useOriginalsTakes({
 
   useEffect(() => {
     let cancelled = false;
-    void (async () => {
-      const found = new Set<string>();
-      await Promise.all(
-        song.takes.map(async (t) => {
-          if (t.hasLocalAudio || (await hasOriginalTakeBlob(song.id, t.id))) found.add(t.id);
-        }),
-      );
+    void findLocalAudioTakeIds({ id: song.id, takes: song.takes }).then((found) => {
       if (!cancelled) setLocalAudioIds(found);
-    })();
+    });
     return () => {
       cancelled = true;
     };
@@ -275,7 +274,7 @@ export function useOriginalsTakes({
 
   const isPlayable = useCallback(
     (take: OriginalAudioTake) =>
-      Boolean(take.driveFileId?.trim()) || take.hasLocalAudio === true || localAudioIds.has(take.id),
+      originalTakeHasPlayableSource(take) || localAudioIds.has(take.id),
     [localAudioIds],
   );
 

@@ -44,6 +44,25 @@ export async function hasOriginalTakeBlob(songId: string, takeId: string): Promi
   return row != null;
 }
 
+/**
+ * Ids of the song's takes with audio on this device: flagged `hasLocalAudio`, or a saved blob.
+ *
+ * Probe the blob too, never the flag alone. A row can lose the flag (a Drive merge from another
+ * device) while its blob stays put, and a flag-only check then calls a playable take silent.
+ */
+export async function findLocalAudioTakeIds(song: {
+  id: string;
+  takes: readonly { id: string; hasLocalAudio?: boolean }[];
+}): Promise<Set<string>> {
+  const found = new Set<string>();
+  await Promise.all(
+    song.takes.map(async (t) => {
+      if (t.hasLocalAudio || (await hasOriginalTakeBlob(song.id, t.id))) found.add(t.id);
+    }),
+  );
+  return found;
+}
+
 export async function deleteOriginalTakeBlob(songId: string, takeId: string): Promise<void> {
   await encoreDb.originalTakeBlobs.delete(originalTakeBlobKey(songId, takeId));
 }
