@@ -13,6 +13,7 @@ import App from './App';
 import '../shared/components/music/appSharedThemes.css';
 import '../shared/styles/labsChrome.css';
 import './stanza.css';
+import { LABS_E2E_HOOKS_COMPILED_IN } from '../shared/test/labsE2eHooks';
 
 installServerLogger('STANZA');
 installLabsCrashHandlers('stanza');
@@ -22,7 +23,7 @@ initMaterialIconRuntime();
  * Playwright sets `localStorage.STANZA_E2E_HOOKS = '1'` via `addInitScript` before navigation so
  * this works even when reusing an existing Vite dev server (no special env on the server process).
  */
-if (import.meta.env.DEV) {
+if (LABS_E2E_HOOKS_COMPILED_IN) {
   try {
     if (typeof window !== 'undefined' && window.localStorage.getItem('STANZA_E2E_HOOKS') === '1') {
       void import('./e2e/stanzaE2eBootstrap').then((m) => m.installStanzaE2eHooks());

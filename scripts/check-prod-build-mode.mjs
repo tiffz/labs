@@ -24,12 +24,17 @@
  *   1. static — the workflows that build the deployed artifact pin NODE_ENV=production
  *   2. artifact — a built `dist/` carries no React dev-build markers
  *
- * Usage: node scripts/check-prod-build-mode.mjs
+ * Also checks that no e2e seed hook reached `dist/` (see E2E_HOOK_MARKERS below).
+ *
+ * Usage:
+ *   node scripts/check-prod-build-mode.mjs                    # deploy build: hooks must be absent
+ *   node scripts/check-prod-build-mode.mjs --expect-e2e-hooks # VITE_LABS_E2E_HOOKS=1 build: present
  */
 import fs from 'node:fs';
 import path from 'node:path';
 
 const failures = [];
+const EXPECT_E2E_HOOKS = process.argv.includes('--expect-e2e-hooks');
 
 // --- 1. static: workflow env -------------------------------------------------
 
@@ -61,6 +66,12 @@ for (const { file, job } of BUILDERS) {
     continue;
   }
   if (!/npm run build/.test(block)) continue;
+  if (/VITE_LABS_E2E_HOOKS/.test(block)) {
+    failures.push(
+      `${file}: the job that builds the deployed artifact sets VITE_LABS_E2E_HOOKS, which compiles ` +
+        'the e2e seed hooks into it. Only the e2e-prod-build job may set it.',
+    );
+  }
   const envs = [...block.matchAll(/NODE_ENV:\s*(\S+)/g)].map((m) => m[1].replace(/['"]/g, ''));
   if (envs.length === 0) {
     failures.push(
@@ -86,9 +97,39 @@ const MARKERS = [
   { needle: 'react_stack_bottom_frame', max: 0 },
   { needle: 'captureOwnerStack', max: 2 },
   { needle: 'jsxDEV', max: 20 },
-  // Not a React marker — see the perf-fixture check below.
-  { needle: '__labsSeedEncorePerfFixture', max: Infinity },
 ];
+
+/**
+ * Playwright seed hooks, compiled in only by `VITE_LABS_E2E_HOOKS=1` (see
+ * `src/shared/test/labsE2eHooks.ts`). Several write fake rows into the live Dexie database, and the
+ * owner's devices sync that database to Drive, so none may reach a deployed bundle.
+ *
+ * Window property names survive minification; the Muscle seed has no such name, so it is caught by
+ * its lazy chunk's file name instead. CI's e2e-prod-build lane runs this with
+ * `--expect-e2e-hooks` against its own build, which proves every marker is still the right spelling:
+ * a renamed hook would otherwise leave this check silently blind.
+ */
+const E2E_HOOK_MARKERS = [
+  '__labsSeedEncorePerfFixture',
+  '__labsSeedOriginalsQueueE2e',
+  '__gestureE2eSeedPreviewFixtures',
+  '__stanzaE2e',
+];
+const E2E_HOOK_CHUNKS = [/^muscleE2eSeed-/, /^stanzaE2eBootstrap-/];
+
+/** `dist/js` chunks named by an HTML page or by another chunk. */
+function reachableChunks(dir) {
+  const names = fs.readdirSync(dir).filter((name) => name.endsWith('.js'));
+  const referrers = names.map((name) => [name, fs.readFileSync(path.join(dir, name), 'utf8')]);
+  const walk = (d) =>
+    fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => {
+      const p = path.join(d, e.name);
+      if (e.isDirectory()) return walk(p);
+      return e.name.endsWith('.html') ? [[p, fs.readFileSync(p, 'utf8')]] : [];
+    });
+  referrers.push(...walk('dist'));
+  return names.filter((name) => referrers.some(([other, text]) => other !== name && text.includes(name)));
+}
 
 const distJs = path.join('dist', 'js');
 if (fs.existsSync(distJs)) {
@@ -110,14 +151,36 @@ if (fs.existsSync(distJs)) {
     }
   }
 
-  // The Encore perf fixture seeds 60 songs into the live Dexie database. It is gated at
-  // runtime on a loopback hostname and on no Google identity, but it must not reach a
-  // deployed bundle at all. `VITE_LABS_PERF_FIXTURE=1` exists only for local measurement
-  // against `vite preview`; a build carrying it must never be what gets deployed.
-  if (counts.get('__labsSeedEncorePerfFixture') > 0) {
+  // Only chunks something loads. Rolldown still emits a lazy chunk whose `import()` it
+  // dead-code-eliminated (stanzaE2eBootstrap, muscleE2eSeed in a deploy build), and an orphan
+  // chunk no page or script names is unreachable.
+  const files = reachableChunks(distJs);
+  const hookCounts = new Map(E2E_HOOK_MARKERS.map((m) => [m, 0]));
+  for (const name of files) {
+    const source = fs.readFileSync(path.join(distJs, name), 'utf8');
+    for (const needle of E2E_HOOK_MARKERS) {
+      hookCounts.set(needle, hookCounts.get(needle) + source.split(needle).length - 1);
+    }
+  }
+  const found = [
+    ...E2E_HOOK_MARKERS.filter((needle) => hookCounts.get(needle) > 0),
+    ...E2E_HOOK_CHUNKS.filter((re) => files.some((name) => re.test(name))).map(String),
+  ];
+  const all = [...E2E_HOOK_MARKERS, ...E2E_HOOK_CHUNKS.map(String)];
+
+  if (EXPECT_E2E_HOOKS) {
+    const missing = all.filter((m) => !found.includes(m));
+    if (missing.length > 0) {
+      failures.push(
+        `dist/js: a VITE_LABS_E2E_HOOKS=1 build is missing ${missing.join(', ')}. Either the hook ` +
+          'was renamed (update E2E_HOOK_MARKERS, or the deploy check cannot see it) or the build ' +
+          'did not set the flag.',
+      );
+    }
+  } else if (found.length > 0) {
     failures.push(
-      `dist/js: contains \`__labsSeedEncorePerfFixture\` — this build was made with ` +
-        `VITE_LABS_PERF_FIXTURE=1 and must not be deployed.`,
+      `dist/js: contains e2e seed hooks (${found.join(', ')}) — this build was made with ` +
+        'VITE_LABS_E2E_HOOKS=1 and must not be deployed.',
     );
   }
 } else {

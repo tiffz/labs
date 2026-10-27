@@ -33810,16 +33810,18 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
-    "id": "src-shared-test-labse2eharness-ts-islabse2eharness",
-    "name": "isLabsE2eHarness",
-    "path": "src/shared/test/labsE2eHarness.ts",
+    "id": "src-shared-test-labse2ehooks-ts-labs-e2e-hooks-compiled-in",
+    "name": "LABS_E2E_HOOKS_COMPILED_IN",
+    "path": "src/shared/test/labsE2eHooks.ts",
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "True when Playwright / Vite dev server runs e2e hooks. Never true on production Pages deploy.",
-    "tags": [],
+    "description": "True when this bundle carries the Playwright seed hooks: the dev server, or a production build made with `VITE_LABS_E2E_HOOKS=1`. The flag exists so CI can run the e2e smokes against a real production bundle (`npm run test:e2e:prod`). Dev hides bugs that only a production build shows: StrictMode runs every layout effect twice, which masked an MRT table that drew 0 rows after the card view. Vite replaces both operands statically, so with the flag unset this is the literal `false` and every hook behind it is dead-code-eliminated. No deploy sets the flag, and `scripts/check-prod-build-mode.mjs` fails any `dist/` that still contains a hook. Gate on this constant directly (`if (!LABS_E2E_HOOKS_COMPILED_IN) return`), not through a wrapper function: a call cannot be folded across modules, a constant can.",
+    "tags": [
+      "api"
+    ],
     "appsUsing": [],
-    "exportType": "function",
+    "exportType": "const",
     "demoId": null
   },
   {

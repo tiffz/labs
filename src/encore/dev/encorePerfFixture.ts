@@ -1,5 +1,6 @@
 import { encoreDb } from '../db/encoreDb';
 import type { EncoreOriginalSong } from '../originals/types';
+import { LABS_E2E_HOOKS_COMPILED_IN } from '../../shared/test/labsE2eHooks';
 
 /**
  * A local Encore library shaped like a real one, for performance work.
@@ -17,12 +18,11 @@ import type { EncoreOriginalSong } from '../originals/types';
  * of which is sufficient:
  *
  *  1. Registration is compiled out of production builds, so the function does not exist in the
- *     deployed bundle — `import.meta.env.DEV`, or an explicit `VITE_LABS_PERF_FIXTURE=1` build
- *     flag that only a local measurement run sets. Vite replaces both statically, so with the
- *     flag unset the whole registration is dead-code-eliminated, and
+ *     deployed bundle — {@link LABS_E2E_HOOKS_COMPILED_IN} is the dev server or an explicit
+ *     `VITE_LABS_E2E_HOOKS=1` build that only CI's e2e-prod-build lane sets. Vite replaces it
+ *     statically, so with the flag unset the whole registration is dead-code-eliminated, and
  *     `scripts/check-prod-build-mode.mjs` fails any `dist/` that still contains it.
- *  2. Hostname must be loopback. Deliberately NOT `isLabsE2eHarness()`, whose comment claims it is
- *     "never true on production Pages deploy" while its own `?labsE2e` branch makes it true there.
+ *  2. Hostname must be loopback.
  *  3. Refuses when a Google identity is present. A signed-in device can push, and no fixture
  *     should ever be a push candidate.
  *
@@ -211,13 +211,12 @@ declare global {
 /**
  * Registration, compiled out of production builds.
  *
- * The opt-in flag exists so the typing-latency spec can run against a real production bundle
- * (`LABS_E2E_PREVIEW=1`). Without it the spec can only ever measure the dev server, which is the
- * wrong build to ask performance questions of — React behaves differently there. No deploy sets
- * the flag; gates 2 and 3 still apply when it is set.
+ * The opt-in build flag lets the smokes run against a real production bundle (`npm run
+ * test:e2e:prod`) — the right build to ask performance questions of, and the only one that shows
+ * StrictMode-masked bugs. No deploy sets it; gates 2 and 3 still apply when it is set.
  */
 export function exposeEncorePerfFixture(): void {
-  if (!import.meta.env.DEV && import.meta.env.VITE_LABS_PERF_FIXTURE !== '1') return;
+  if (!LABS_E2E_HOOKS_COMPILED_IN) return;
   if (typeof window === 'undefined') return;
   window.__labsSeedEncorePerfFixture = seedEncorePerfFixture;
   window.__labsClearEncorePerfFixture = clearEncorePerfFixture;

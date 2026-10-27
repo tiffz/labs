@@ -9,6 +9,8 @@ interface ImportMetaEnv {
   readonly VITE_APP_ENV?: string;
   /** Cloudflare session BFF base URL (ADR 0014). When unset, legacy GIS-only sign-in applies. */
   readonly VITE_LABS_SESSION_BFF_URL?: string;
+  /** `1` compiles the e2e seed hooks into a production build. CI e2e-prod-build only; never deployed. */
+  readonly VITE_LABS_E2E_HOOKS?: string;
 }
 
 // CSS module declarations

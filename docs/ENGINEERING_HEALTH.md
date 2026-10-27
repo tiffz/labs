@@ -55,6 +55,20 @@ Mitigations shipped this pass:
 - All micro-apps: `React.StrictMode` on `main.tsx`
 - Playwright CI retries: 0 (fix root cause; see [`FLAKY_TESTS.md`](FLAKY_TESTS.md))
 
+## Checks on probation
+
+Advisory lanes with a written promotion rule. Each files a GitHub issue on a red `main` push and
+closes it on green ([`CI_CHECK_VALUE.md`](CI_CHECK_VALUE.md) § The solo rule).
+
+- **`e2e-prod-build`** (added 2026-10-27, `ci.yml`). The e2e smokes against `vite preview` of a
+  `VITE_LABS_E2E_HOOKS=1` production build. **Class:** bugs dev StrictMode or the unminified dev
+  bundle hides; nothing else covers it, because the `e2e` job runs the dev server. **Falsified:**
+  reverting the `useLayoutEffect` in `LabsMaterialReactTable.tsx` fails
+  `encore-repertoire-view-toggle.spec.ts` here and passes it on the dev server. **Promote** to a
+  required check (add it to `deploy.needs`, `scripts/check-ci-gating.mjs` and branch protection)
+  once 20 consecutive runs show no failure that was not a real defect. **Demote or delete** under
+  the three-strike rule if it goes red three `main` pushes running without a real defect.
+
 ## What we stopped doing
 
 _(Record pruned tests, removed duplicate patterns, retired flaky quarantines each quarter.)_

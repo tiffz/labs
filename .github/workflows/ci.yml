@@ -486,6 +486,106 @@ jobs:
         path: dist/
         retention-days: 1
 
+  # ADVISORY: the e2e smokes against a production build (`vite preview`), not the dev server.
+  #
+  # Dev StrictMode re-runs every layout effect, which hid an MRT table that drew 0 rows after the
+  # card view (#290) — the dev-server `e2e` job passed with the bug in. Minifier-only bugs hide the
+  # same way. Reverting that fix turns this job red and leaves `e2e` green.
+  #
+  # Builds its own dist/ with VITE_LABS_E2E_HOOKS=1, because the smokes need the seed hooks and
+  # the deploy artifact must never carry them (scripts/check-prod-build-mode.mjs). Runs beside
+  # `e2e`, so it costs runner minutes, not wall clock.
+  #
+  # Not in deploy.needs or the required checks yet: its accuracy has no record. On a `main` push it
+  # files an `e2e-prod-build` issue when red and closes it when green (docs/CI_CHECK_VALUE.md § The
+  # solo rule). Promotion criterion: docs/ENGINEERING_HEALTH.md.
+  e2e-prod-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    permissions:
+      contents: read
+      issues: write
+    env:
+      # NODE_ENV is pinned on the build step only, as in `build`: `npm ci` skips devDependencies
+      # when it is `production`.
+      HUSKY: 0
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v7
+
+    - name: Setup project (Node + cached deps)
+      uses: ./.github/actions/setup-project
+
+    - name: Resolve Playwright version
+      id: playwright-version
+      run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+
+    - name: Cache Playwright browsers
+      uses: actions/cache@v6
+      with:
+        path: ~/.cache/ms-playwright
+        key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
+
+    - name: Install Playwright browsers
+      run: npx playwright install --with-deps chromium
+
+    - name: Production build with e2e hooks (never deployed)
+      env:
+        NODE_ENV: production
+        VITE_APP_ENV: production
+        VITE_LABS_E2E_HOOKS: '1'
+      run: npx vite build
+
+    # Proves the deploy check's hook markers still match the code: a renamed hook would otherwise
+    # leave the `build` job's no-hooks check silently blind.
+    - name: Hooks present in this build
+      run: node scripts/check-prod-build-mode.mjs --expect-e2e-hooks
+
+    - name: Run e2e smokes against vite preview
+      id: smoke
+      env:
+        LABS_E2E_PREVIEW: '1'
+      run: npm run test:e2e:smoke
+
+    - name: File an issue when red on main
+      if: failure() && steps.smoke.outcome == 'failure' && github.ref == 'refs/heads/main' && github.event_name == 'push'
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        # `--label` fails when the label does not exist; create it first (see weekly-engineering-health.yml).
+        gh label create e2e-prod-build --force \
+          --color D93F0B \
+          --description "e2e smokes fail against a production build (advisory CI lane)"
+        run_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+        existing=$(gh issue list --label e2e-prod-build --state open --json number --jq '.[0].number // empty')
+        if [ -z "$existing" ]; then
+          gh issue create \
+            --title "e2e smokes fail against the production build" \
+            --label e2e-prod-build \
+            --body "$(printf 'The e2e-prod-build lane is red on main at %s.\n\nThe dev-server e2e job can pass while this fails: StrictMode-masked and minifier-only bugs show only here.\n\nRepro: `npm run test:e2e:prod` (or `LABS_E2E_PREVIEW=1 npx playwright test <spec>` after a `VITE_LABS_E2E_HOOKS=1` build).\n\nRun: %s' "$GITHUB_SHA" "$run_url")"
+        else
+          gh issue comment "$existing" --body "Still red at $GITHUB_SHA: $run_url"
+        fi
+
+    - name: Close the issue when green on main
+      if: success() && github.ref == 'refs/heads/main' && github.event_name == 'push'
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        for n in $(gh issue list --label e2e-prod-build --state open --json number --jq '.[].number'); do
+          gh issue close "$n" --comment "Green again at $GITHUB_SHA."
+        done
+
+    - name: Upload e2e-prod-build artifacts
+      if: failure()
+      uses: actions/upload-artifact@v7
+      with:
+        name: e2e-prod-build-artifacts
+        if-no-files-found: ignore
+        path: |
+          playwright-report/**
+          test-results/**
+
   deploy:
     # MUST equal the branch-protection required status checks (checks, vitest, e2e, build).
     # The deploy ships exactly what the merge gate approved — if a job gates the deploy but

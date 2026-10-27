@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { LABS_E2E_HOOKS_COMPILED_IN } from '../../shared/test/labsE2eHooks';
 import { getAnatomyTermById, getTermsGateIds, ANATOMY_TERM_LESSONS } from '../curriculum/anatomyTerms';
 import { getNodeById, getNodesForRegion } from '../curriculum';
 import { collectStudyGroupIdsForNode } from '../curriculum/resolveStudyGroupForNode';
@@ -264,7 +265,7 @@ export const useMuscleStore = create<MuscleStoreState>((set, get) => ({
   quiz: emptyQuiz(),
 
   init: async () => {
-    if (import.meta.env.DEV && typeof window !== 'undefined') {
+    if (LABS_E2E_HOOKS_COMPILED_IN && typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       if (params.has('e2eSeed')) {
         const { seedMuscleE2eGateUnlocked } = await import('../e2e/muscleE2eSeed');
