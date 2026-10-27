@@ -11,16 +11,15 @@ import type { EncoreMediaPlaybackPhase } from '../../media/encorePlayableMedia';
 import type { OriginalsPlaybackTarget } from '../../context/encoreMediaPlaybackContextStore';
 import { useEncoreOriginalsPlayback } from '../context/EncoreOriginalsPlaybackContext';
 import { originalTakeBlobKey } from '../originalTakeLocalAudio';
-import { originalTakeHasPlayableSource, preferredOriginalTake, type EncoreOriginalSong } from '../types';
+import { originalPlaybackTake, type EncoreOriginalSong } from '../types';
 import { OriginalsSongDashboardView } from './OriginalsSongDashboardView';
 import { OriginalsLibraryMrtTable } from './OriginalsLibraryMrtTable';
 
 export type OriginalsGridTakePlaybackState = 'idle' | 'loading' | 'playing' | 'error';
 
 function buildTakeTarget(song: EncoreOriginalSong): OriginalsPlaybackTarget | null {
-  const preferred = preferredOriginalTake(song);
-  if (!preferred) return null;
-  const take = song.takes.find((t) => originalTakeHasPlayableSource(t)) ?? preferred;
+  const take = originalPlaybackTake(song);
+  if (!take) return null;
   return {
     songId: song.id,
     songTitle: song.title,
@@ -100,10 +99,7 @@ export function OriginalsLibraryList({
     const map = new Map<string, OriginalsGridTakePlaybackState>();
     if (!listActive) return map;
     for (const song of rows) {
-      const preferred = preferredOriginalTake(song);
-      const take = preferred
-        ? song.takes.find((t) => originalTakeHasPlayableSource(t)) ?? preferred
-        : undefined;
+      const take = originalPlaybackTake(song);
       map.set(song.id, takePlaybackState(song.id, take?.id, activePlaybackId, phase));
     }
     return map;
