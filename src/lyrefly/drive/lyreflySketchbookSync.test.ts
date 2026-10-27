@@ -187,10 +187,27 @@ describe('sketchbook images', () => {
     expect(driveUploadFileResumable).toHaveBeenCalledTimes(1);
   });
 
-  it('a failed download is left missing to retry, not stored as an empty image', async () => {
+  it('a file deleted on Drive is skipped and named, and the ideas after it still download', async () => {
+    await lyreflyDb.sketchbookSeeds.bulkPut([
+      seed({ id: 'gone', title: 'Gone sketch', kind: 'image', blobDriveFileIds: { gone: 'drive-gone' } }),
+      seed({ id: 'kept', title: 'Kept sketch', kind: 'image', mimeType: 'image/png', blobDriveFileIds: { kept: 'drive-kept' } }),
+    ]);
+    (driveGetMediaArrayBuffer as ReturnType<typeof vi.fn>).mockImplementation(async (_t: string, id: string) => {
+      if (id === 'drive-gone') throw Object.assign(new Error('File not found'), { status: 404 });
+      return new Uint8Array([1]).buffer;
+    });
+    const put = vi.spyOn(lyreflyDb.sketchbookBlobs, 'put');
+    const labels: string[] = [];
+    await downloadMissingLyreflySketchbookBlobs('token', (l) => labels.push(l));
+
+    expect(put.mock.calls.map((c) => (c[0] as { seedId: string }).seedId)).toEqual(['kept']);
+    expect(labels.at(-1)).toMatch(/1 file could not be downloaded from Drive \(Gone sketch\)/);
+  });
+
+  it('an unknown failure stops the sync and stores nothing, so the next sync retries', async () => {
     await lyreflyDb.sketchbookSeeds.put(seed({ kind: 'image', blobDriveFileIds: { s1: 'drive-file-1' } }));
     (driveGetMediaArrayBuffer as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('offline'));
-    await downloadMissingLyreflySketchbookBlobs('token', vi.fn());
+    await expect(downloadMissingLyreflySketchbookBlobs('token', vi.fn())).rejects.toThrow('offline');
     expect(await lyreflyDb.sketchbookBlobs.get('s1')).toBeUndefined();
   });
 });
