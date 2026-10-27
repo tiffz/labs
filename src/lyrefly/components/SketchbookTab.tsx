@@ -421,12 +421,13 @@ export function SketchbookTab({ onOpenProject }: SketchbookTabProps): ReactEleme
     confirmLabel: (n) => (n === 1 ? 'Import file' : `Import ${n} files`),
     title: 'Idea files ready to import',
   });
-  const { stageFiles: stageAttachFiles } = attachUploads;
+  const { stageFiles: stageAttachFiles, saveFiles: saveAttachFiles } = attachUploads;
   const { stageFiles: stageImportFiles } = importUploads;
 
   const { dragActive, handlers } = useDragDropHighlight({
     disabled: busy,
-    onDrop: (event) => stageAttachFiles(collectFilesFromDataTransfer(event.dataTransfer)),
+    // A drop saves at once (ADR 0030).
+    onDrop: (event) => saveAttachFiles(collectFilesFromDataTransfer(event.dataTransfer)),
   });
 
   useEffect(() => {

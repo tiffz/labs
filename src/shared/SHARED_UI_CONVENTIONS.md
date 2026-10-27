@@ -451,17 +451,21 @@ Some primitives live under `src/<app>/ui/` because their data shapes are app-spe
 
 ## Staged uploads (`useLabsStagedUploads` / `LabsStagedUploadPanel`)
 
-Every way a file enters an app (file picker, drag and drop, pasted link) **stages** it; nothing is
-saved until the user confirms ([ADR 0030](../../docs/adr/0030-every-upload-stages-before-it-saves.md)).
+A picked file or pasted link **stages**: nothing is saved until the user confirms. A **dropped**
+file saves at once through the same checks ([ADR 0030](../../docs/adr/0030-every-upload-stages-before-it-saves.md),
+amended).
 
 - `useLabsStagedUploads({ inspect })`: `inspect(source)` decides what each item becomes and must not
   write. Return `{ ok: true, name, mimeType, sizeBytes, outcome, plan }` or `{ ok: false, name, message }`.
-- Wire every intake to `stageFiles` / `stageLink`, never to a write.
+- Wire pickers and pastes to `stageFiles` / `stageLink`, and drops to `saveFiles(files, commit)` /
+  `saveBatch`, never to a write of your own. `useLabsStagedFileUploads` returns both (`stageFiles`,
+  `saveFiles`); a drop zone takes them as `onFiles` + `onDropFiles`.
 - Render `<LabsStagedUploadPanel staged onConfirm confirmLabel />` where the items will land. On
   confirm, call `staged.confirm(commit)`; return `{ failed: [{ id, message }] }` for partial failures.
 - `outcome` is one short line about where the item goes ("Copies into your Drive"). Unknown size is
   `null`, never `0`.
-- Hide the surface's own "Add …" trigger while items are staged, so the confirm is the only one.
+- Hide the surface's own "Add …" trigger while `awaitingConfirm` (`hasStaged`), so the confirm is the
+  only one. Always render the panel: it also lists dropped files while they save or when refused.
 - Class hook: `.labs-staged-upload-panel`. Colours come from the MUI theme.
 - Demo: `/ui/` → `staged-upload-panel`. Guard: `src/shared/upload/stagedUploadGuardrails.test.ts`.
 

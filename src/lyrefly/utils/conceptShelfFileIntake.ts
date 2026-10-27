@@ -7,7 +7,11 @@ import {
 import { createVisualDevAsset } from '../db/lyreflyProjectMutations';
 import { buildConceptShelfCreateInput } from './conceptShelfUtils';
 import { extractConceptShelfImageUrl, extractImageUrlFromHtml, fetchRemoteImageAsFile } from './conceptShelfRemoteImage';
-import type { LabsStagedUploadInspection, LabsStagedUploadSource } from '../../shared/upload/stagedUploads';
+import type {
+  LabsReadyStagedUpload,
+  LabsStagedUploadInspection,
+  LabsStagedUploadSource,
+} from '../../shared/upload/stagedUploads';
 import { useLabsStagedUploads, type LabsStagedUploadsController } from '../../shared/upload/useLabsStagedUploads';
 
 export function collectFilesFromDataTransfer(dataTransfer: DataTransfer): File[] {
@@ -215,7 +219,7 @@ export function useConceptShelfFileIntake({
     [],
   );
   const staged = useLabsStagedUploads<ConceptShelfIntake>({ inspect });
-  const { stageFiles, stageLink } = staged;
+  const { stageFiles, stageLink, saveFiles } = staged;
 
   const uploadFiles = useCallback(
     (files: File[]) => {
@@ -233,19 +237,34 @@ export function useConceptShelfFileIntake({
     [enabled, stageFiles, stageLink],
   );
 
+  const commit = useCallback(
+    async (ready: LabsReadyStagedUpload<ConceptShelfIntake>[]) => {
+      for (const item of ready) await processConceptShelfIntake(projectId, item.plan);
+    },
+    [projectId],
+  );
+
+  /** A drop: files save at once (ADR 0030); a dragged image link still stages for review. */
+  const dropIntake = useCallback(
+    (intake: ConceptShelfIntake) => {
+      if (!enabled) return;
+      if (intake.files.length > 0) void saveFiles(intake.files, commit);
+      else if (intake.imageUrl) stageLink(intake.imageUrl);
+    },
+    [commit, enabled, saveFiles, stageLink],
+  );
+
   const confirmStaged = useCallback(() => {
     if (busyRef.current) return;
     busyRef.current = true;
     setBusy(true);
     void staged
-      .confirm(async (ready) => {
-        for (const item of ready) await processConceptShelfIntake(projectId, item.plan);
-      })
+      .confirm(commit)
       .finally(() => {
         busyRef.current = false;
         setBusy(false);
       });
-  }, [projectId, staged]);
+  }, [commit, staged]);
 
   const endFileDrag = useCallback(() => {
     dragDepthRef.current = 0;
@@ -303,10 +322,10 @@ export function useConceptShelfFileIntake({
       void (async () => {
         const drop = await readDataTransferDropFromSnapshot(snapshot);
         const files = drop.files.length > 0 ? drop.files : collectFilesFromDataTransfer(e.dataTransfer);
-        uploadIntake({ files, imageUrl: files.length === 0 ? imageUrl : null });
+        dropIntake({ files, imageUrl: files.length === 0 ? imageUrl : null });
       })();
     },
-    [enabled, endFileDrag, uploadIntake],
+    [enabled, endFileDrag, dropIntake],
   );
 
   const tryHandlePaste = useCallback(

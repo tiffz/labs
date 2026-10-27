@@ -39,7 +39,12 @@ export type LabsStagedUploadInspection<TPlan> =
     }
   | { ok: false; name: string; message: string };
 
-export type LabsStagedUpload<TPlan> = { id: string; source: LabsStagedUploadSource } & (
+/**
+ * `autoSave` marks a dropped item (ADR 0030, amended): the drop itself is the confirmation, so it is
+ * checked and saved without waiting for the button. It is listed only while it saves, or when it
+ * was refused, so the user can see why.
+ */
+export type LabsStagedUpload<TPlan> = { id: string; source: LabsStagedUploadSource; autoSave?: true } & (
   | { status: 'checking'; name: string }
   | {
       status: 'ready';
@@ -65,11 +70,13 @@ export function stageSources<TPlan>(
   items: readonly LabsStagedUpload<TPlan>[],
   sources: readonly LabsStagedUploadSource[],
   newId: () => string,
+  { autoSave = false }: { autoSave?: boolean } = {},
 ): { items: LabsStagedUpload<TPlan>[]; added: LabsStagedUpload<TPlan>[] } {
   const added = sources.map(
     (source): LabsStagedUpload<TPlan> => ({
       id: newId(),
       source,
+      ...(autoSave ? { autoSave: true as const } : {}),
       status: 'checking',
       name: stagedSourceName(source),
     }),
@@ -88,12 +95,12 @@ export function resolveStagedUpload<TPlan>(
 ): LabsStagedUpload<TPlan>[] {
   return items.map((item) => {
     if (item.id !== id) return item;
+    const base = { id, source: item.source, ...(item.autoSave ? { autoSave: true as const } : {}) };
     if (!inspection.ok) {
-      return { id, source: item.source, status: 'rejected', name: inspection.name, message: inspection.message };
+      return { ...base, status: 'rejected', name: inspection.name, message: inspection.message };
     }
     return {
-      id,
-      source: item.source,
+      ...base,
       status: 'ready',
       name: inspection.name,
       mimeType: inspection.mimeType,
@@ -122,7 +129,16 @@ export function readyStagedUploads<TPlan>(
  * for the checks means the button never commits a list the user has not finished seeing.
  */
 export function canConfirmStagedUploads<TPlan>(items: readonly LabsStagedUpload<TPlan>[]): boolean {
-  return items.some((item) => item.status === 'ready') && !items.some((item) => item.status === 'checking');
+  const waiting = items.filter((item) => !item.autoSave);
+  return waiting.some((item) => item.status === 'ready') && !waiting.some((item) => item.status === 'checking');
+}
+
+/**
+ * True while something picked or pasted waits for the confirm button. Dropped items never wait, so
+ * they do not count: a surface hides its own "Add …" trigger only while this is true.
+ */
+export function stagedUploadsAwaitConfirm<TPlan>(items: readonly LabsStagedUpload<TPlan>[]): boolean {
+  return items.some((item) => !item.autoSave);
 }
 
 /** "1.2 MB". `null` (unknown) yields `null` so the caller omits it rather than printing "0 B". */

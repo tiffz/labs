@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useRef, useState, type ReactElement } from 'react';
 import { LabsStagedUploadPanel } from '../../../shared/upload/LabsStagedUploadPanel';
-import { stagedSourceName, type LabsStagedUploadInspection, type LabsStagedUploadSource } from '../../../shared/upload/stagedUploads';
+import {
+  stagedSourceName,
+  type LabsReadyStagedUpload,
+  type LabsStagedUploadInspection,
+  type LabsStagedUploadSource,
+} from '../../../shared/upload/stagedUploads';
 import {
   useLabsStagedUploads,
   type LabsStagedUploadCommitResult,
@@ -16,8 +21,8 @@ import {
 type SongMediaStagePlan = { slot: SongMediaUploadSlot; file: File };
 
 /**
- * The review step for song-page files (ADR 0030). Every picker and drop on the song page stages
- * here with the slot it is for; nothing uploads until the user confirms.
+ * The review step for song-page files (ADR 0030). A picker stages here with the slot it is for and
+ * uploads on confirm; a drop (`saveToSlot`) uploads at once.
  *
  * `upload` is the hub's existing writer. It returns an error message, or `null` on success, so a
  * failed batch stays in the list with the reason instead of vanishing.
@@ -30,6 +35,7 @@ export function useSongMediaStaging({
   upload: (slot: SongMediaUploadSlot, files: File[]) => Promise<string | null>;
 }): {
   stageToSlot: (slot: SongMediaUploadSlot, files: readonly File[]) => void;
+  saveToSlot: (slot: SongMediaUploadSlot, files: readonly File[]) => void;
   panel: ReactElement;
 } {
   const signedInRef = useRef(signedIn);
@@ -71,10 +77,8 @@ export function useSongMediaStaging({
     [staged],
   );
 
-  const onConfirm = useCallback(() => {
-    setError(null);
-    void staged
-      .confirm(async (ready): Promise<LabsStagedUploadCommitResult> => {
+  const commit = useCallback(
+    async (ready: LabsReadyStagedUpload<SongMediaStagePlan>[]): Promise<LabsStagedUploadCommitResult> => {
         const failed: LabsStagedUploadCommitResult['failed'] = [];
         // One upload per slot, in the hub's slot order, so each gets its own Drive folder and label.
         for (const slot of SONG_MEDIA_UPLOAD_SLOTS) {
@@ -84,9 +88,23 @@ export function useSongMediaStaging({
           if (message) for (const item of items) failed.push({ id: item.id, message });
         }
         return { failed };
-      })
-      .catch(() => setError("Couldn't upload these. Check your connection and try again."));
-  }, [staged, upload]);
+    },
+    [upload],
+  );
+
+  const onConfirm = useCallback(() => {
+    setError(null);
+    void staged.confirm(commit).catch(() => setError("Couldn't upload these. Check your connection and try again."));
+  }, [staged, commit]);
+
+  const { saveFiles } = staged;
+  const saveToSlot = useCallback(
+    (slot: SongMediaUploadSlot, files: readonly File[]) => {
+      for (const file of files) slotsRef.current.set(file, slot);
+      void saveFiles(files, commit);
+    },
+    [commit, saveFiles],
+  );
 
   const panel = (
     <LabsStagedUploadPanel
@@ -98,5 +116,5 @@ export function useSongMediaStaging({
     />
   );
 
-  return { stageToSlot, panel };
+  return { stageToSlot, saveToSlot, panel };
 }

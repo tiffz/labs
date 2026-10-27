@@ -25,7 +25,7 @@ export const shoulderNeckNodes = [
     layout: { position: [0.35, 1.45, -0.1], scale: [0.16, 0.18, 0.12] },
     cameraPresetKey: 'back',
   }),
-  muscle('muscle_trapezius_upper', 'Upper trapezius', 'shoulder_neck', 0, 'box', {
+  muscle('muscle_trapezius_upper', 'Trapezius', 'shoulder_neck', 0, 'box', {
     layout: { position: [0.05, 1.75, -0.05], scale: [0.35, 0.15, 0.1] },
     cameraPresetKey: 'shoulder',
   }),

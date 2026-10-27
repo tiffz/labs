@@ -9,6 +9,8 @@ type ZineboxUploadSlotProps = {
   disabled?: boolean;
   tagSuggestions: readonly string[];
   onLocalFiles: (files: File[]) => void;
+  /** Dropped PDFs import at once, skipping the review (ADR 0030). Defaults to `onLocalFiles`. */
+  onDroppedFiles?: (files: File[]) => void;
   onDriveImportComplete?: (summary: string) => void;
   onError: (message: string | null) => void;
 };

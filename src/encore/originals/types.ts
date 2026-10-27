@@ -186,3 +186,22 @@ export function preferredOriginalTake(song: EncoreOriginalSong): OriginalAudioTa
 export function originalTakeHasPlayableSource(take: OriginalAudioTake): boolean {
   return Boolean(take.driveFileId?.trim()) || take.hasLocalAudio === true;
 }
+
+/**
+ * The take a play control should play: the preferred take when it is playable, else the first
+ * playable take, else the preferred take (so the control can render, disabled). `null` only when
+ * the song has no takes.
+ *
+ * Every "play this song's demo" surface goes through here — the library table, the song
+ * dashboard, bulk Play selected, the song page. A second copy of this rule once picked the first
+ * playable take and ignored the star.
+ */
+export function originalPlaybackTake(
+  song: EncoreOriginalSong,
+  isPlayable: (take: OriginalAudioTake) => boolean = originalTakeHasPlayableSource,
+): OriginalAudioTake | null {
+  const preferred = preferredOriginalTake(song);
+  if (!preferred) return null;
+  if (isPlayable(preferred)) return preferred;
+  return song.takes.find((t) => isPlayable(t)) ?? preferred;
+}

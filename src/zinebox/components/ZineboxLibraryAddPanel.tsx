@@ -15,6 +15,8 @@ import { useZineboxGoogleAccessToken } from '../hooks/useZineboxGoogleAccessToke
 type ZineboxLibraryAddPanelProps = {
   disabled?: boolean;
   onLocalFiles: (files: File[]) => void;
+  /** Dropped PDFs import at once, skipping the review (ADR 0030). Defaults to `onLocalFiles`. */
+  onDroppedFiles?: (files: File[]) => void;
   onError: (message: string | null) => void;
   /** Parent opens Drive review (and typically closes the upload dialog). */
   onOpenDriveReview: (opts: { folderInput: string; accessToken: string }) => void;
@@ -25,6 +27,7 @@ const PDF_ACCEPT = 'application/pdf,.pdf';
 export default function ZineboxLibraryAddPanel({
   disabled = false,
   onLocalFiles,
+  onDroppedFiles,
   onError,
   onOpenDriveReview,
 }: ZineboxLibraryAddPanelProps): React.ReactElement {
@@ -69,6 +72,7 @@ export default function ZineboxLibraryAddPanel({
         helperText="Drop PDFs here or click to browse. Files stay on this device after import."
         ariaLabel="Add PDF zines from your device"
         onFiles={onLocalFiles}
+        onDropFiles={onDroppedFiles}
         sx={{
           minHeight: 160,
           borderRadius: '8px',

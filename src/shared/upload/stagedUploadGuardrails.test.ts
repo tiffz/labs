@@ -4,31 +4,35 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 /**
- * Every way a file enters a Labs app stages it for review first (ADR 0030).
+ * Every way a file enters a Labs app goes through the shared upload code (ADR 0030): picked files
+ * and pasted links stage for review, dropped files save at once through the same checks.
  *
  * The guard finds intake modules by what they DO — a file input, a drop handler reading
  * `dataTransfer.files`, a native file picker, a `DragDropFileUpload` consumer — so a new upload path
  * is enrolled by existing. Each must then be one of:
  *
- *  - **staged**: imports the shared staging (`src/shared/upload/`) or calls a `stage*()` function
- *    that feeds it;
+ *  - **staged**: imports the shared staging (`src/shared/upload/`) or calls a `stage*()` or
+ *    `save*Files*()` function that feeds it;
  *  - **forwards**: a primitive that hands files to its caller and writes nothing itself;
  *  - **saves nothing**: reads a file into memory only (a palette from an image, say);
  *  - **pending**: a known path not yet moved onto staging. This list is the migration plan. It may
  *    only shrink: delete the row in the PR that migrates the module.
  *
- * What this cannot see: a module that is "staged" for one intake and immediate for another (the
- * Originals song-files panel stages takes but not references yet). Such a module stays in
- * `PENDING` until every intake in it stages. A behavioural check would need every surface driven in
- * a browser; the e2e smokes cover the migrated ones.
+ * What this cannot see: whether a module sends a PICKED file to `save*()`, which would skip the
+ * review, or saves through something other than the shared hook under a `save*` name. A source scan
+ * cannot tell a picker from a drop. The shared hook's tests and the staged-upload e2e smokes cover
+ * that split behaviourally.
  */
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SRC = path.resolve(__dirname, '..', '..');
 
 const INTAKE =
   /type="file"|\bonFiles=|dataTransfer\??\.files|showOpenFilePicker|showDirectoryPicker|\.getAsFile\(\)|webkitGetAsEntry/;
-/** Imports the shared staging, or calls a `stage*()` function (directly or through a ref). */
-const STAGED = /shared\/upload\/|\bstage[A-Z]\w*(?:Ref\.current)?\(/;
+/**
+ * Imports the shared staging, or calls a `stage*()` or `save*Files*()` function (directly or through a
+ * ref). The save names are narrow on purpose: a bare `save*` would excuse `saveSong(` and the like.
+ */
+const STAGED = /shared\/upload\/|\b(?:stage[A-Z]\w*|save\w*Files\w*)(?:Ref\.current)?\(/;
 
 const FORWARDS = new Map([
   ['shared/components/DragDropFileUpload.tsx', 'drop zone primitive; passes files to onFiles'],

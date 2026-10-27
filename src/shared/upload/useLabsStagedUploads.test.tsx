@@ -248,3 +248,86 @@ describe('LabsStagedUploadPanel with many items', () => {
     expect(screen.getByText('IMG_0.jpg')).toBeTruthy();
   });
 });
+
+describe('dropped files save without a confirm (ADR 0030, amended)', () => {
+  const inspect = async (source: LabsStagedUploadSource): Promise<LabsStagedUploadInspection<Plan>> =>
+    stagedSourceName(source).endsWith('.txt')
+      ? { ok: false, name: stagedSourceName(source), message: "That file isn't an audio file." }
+      : ok(stagedSourceName(source));
+
+  it('saves the usable files at once and keeps a refused one listed with its reason', async () => {
+    const commit = vi.fn(async () => {});
+    const { result } = renderHook(() => useLabsStagedUploads<Plan>({ inspect }));
+    await act(() => result.current.saveFiles([file('take.mp3'), file('notes.txt')], commit));
+    expect(commit).toHaveBeenCalledTimes(1);
+    expect((commit.mock.calls[0] as unknown[])[0]).toEqual([expect.objectContaining({ name: 'take.mp3' })]);
+    expect(result.current.items).toEqual([
+      expect.objectContaining({ name: 'notes.txt', status: 'rejected', message: "That file isn't an audio file." }),
+    ]);
+    // Nothing waits for a button, so the surface keeps its own "Add …" trigger.
+    expect(result.current.awaitingConfirm).toBe(false);
+    expect(result.current.canConfirm).toBe(false);
+  });
+
+  it('does not save a dropped file the user removed while it was being checked', async () => {
+    const check = deferred<LabsStagedUploadInspection<Plan>>();
+    const commit = vi.fn(async () => {});
+    const { result } = renderHook(() => useLabsStagedUploads<Plan>({ inspect: () => check.promise }));
+    let saving!: Promise<void>;
+    act(() => {
+      saving = result.current.saveFiles([file('take.mp3')], commit);
+    });
+    act(() => result.current.remove(result.current.items[0]!.id));
+    await act(async () => {
+      check.resolve(ok('take.mp3'));
+      await saving;
+    });
+    expect(commit).not.toHaveBeenCalled();
+    expect(result.current.items).toEqual([]);
+  });
+
+  it('marks dropped files failed when the save throws, instead of showing them saving forever', async () => {
+    const { result } = renderHook(() => useLabsStagedUploads<Plan>({ inspect }));
+    await act(() =>
+      result.current.saveFiles([file('take.mp3')], async () => {
+        throw new Error('offline');
+      }),
+    );
+    expect(result.current.items).toEqual([expect.objectContaining({ status: 'rejected', name: 'take.mp3' })]);
+  });
+
+  it('leaves picked files waiting: a drop neither sends them nor hides their confirm', async () => {
+    const commit = vi.fn(async () => {});
+    const { result } = renderHook(() => useLabsStagedUploads<Plan>({ inspect }));
+    await act(async () => {
+      result.current.stageFiles([file('picked.mp3')]);
+      await Promise.resolve();
+    });
+    await act(() => result.current.saveFiles([file('dropped.mp3')], commit));
+    expect((commit.mock.calls[0] as unknown[])[0]).toEqual([expect.objectContaining({ name: 'dropped.mp3' })]);
+    expect(result.current.items).toEqual([expect.objectContaining({ name: 'picked.mp3', status: 'ready' })]);
+    expect(result.current.awaitingConfirm).toBe(true);
+    expect(result.current.canConfirm).toBe(true);
+  });
+
+  it('shows no confirm button for a dropped file, only its progress', async () => {
+    const check = deferred<LabsStagedUploadInspection<Plan>>();
+    const save = deferred<void>();
+    function Harness() {
+      const staged = useLabsStagedUploads<Plan>({ inspect: () => check.promise });
+      return (
+        <>
+          <button onClick={() => void staged.saveFiles([file('take.mp3')], () => save.promise)}>drop</button>
+          <LabsStagedUploadPanel staged={staged} onConfirm={() => {}} confirmLabel={() => 'Add take'} />
+        </>
+      );
+    }
+    render(<Harness />);
+    fireEvent.click(screen.getByText('drop'));
+    await act(async () => check.resolve(ok('take.mp3')));
+    expect(screen.getByText('Saving…')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Add take' })).toBeNull();
+    await act(async () => save.resolve());
+    expect(screen.queryByText('take.mp3')).toBeNull();
+  });
+});

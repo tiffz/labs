@@ -32,10 +32,19 @@ describe('useGestureUploadStaging', () => {
     expect(enqueueJobs).not.toHaveBeenCalled();
   });
 
-  it('names the collection photos are added to', async () => {
-    const { hook } = setup();
-    await act(async () => hook.result.current.stageAddToCollection('pack-1', 'Hands', [photo('c.jpg')]));
+  it('uploads photos dropped onto a collection at once, with no confirm', async () => {
+    const { hook, addToCollectionNow } = setup();
+    const files = [photo('c.jpg')];
+    await act(async () => hook.result.current.saveAddToCollection('pack-1', 'Hands', files));
+    expect(addToCollectionNow).toHaveBeenCalledWith('pack-1', files);
     const { container } = render(hook.result.current.panel);
-    expect(container.textContent).toContain('Adds 1 photo to "Hands"');
+    expect(container.textContent).toBe('');
+  });
+
+  it('uploads a dropped folder as a new collection at once', async () => {
+    const { hook, enqueueJobs } = setup();
+    const job = { files: [photo('a.jpg')], suggestedFolderName: 'Paris trip' };
+    await act(async () => hook.result.current.saveNewCollections([job]));
+    expect(enqueueJobs).toHaveBeenCalledWith([job]);
   });
 });

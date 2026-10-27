@@ -149,8 +149,8 @@ export const STRUCTURE_DETAILS_BY_ID: Record<string, StructureDetails> = {
     wikipediaUrl: 'https://en.wikipedia.org/wiki/Deltoid_muscle',
   },
   muscle_trapezius_upper: {
-    definition: 'Upper trap from neck to clavicle and scapula; bunches in a shoulder shrug.',
-    colloquialNames: ['traps', 'upper trap'],
+    definition: 'Diamond-shaped back sheet from skull and spine to clavicle and scapula; the upper part bunches in a shrug and forms the neck-to-shoulder slope.',
+    colloquialNames: ['traps'],
     latinName: 'Musculus trapezius',
     wikipediaUrl: 'https://en.wikipedia.org/wiki/Trapezius',
   },
@@ -207,11 +207,24 @@ export const STRUCTURE_DETAILS_BY_ID: Record<string, StructureDetails> = {
     wikipediaUrl: 'https://en.wikipedia.org/wiki/Biceps',
   },
   muscle_triceps_long_head: {
-    definition: 'Long head of back arm horseshoe; tightens on elbow extension.',
+    definition: 'Inner head of the back-arm horseshoe, from the scapula below the shoulder joint; the only head that also pulls the arm back.',
     colloquialNames: ['triceps'],
-    latinName: 'Musculus triceps brachii',
+    latinName: 'Caput longum musculi tricipitis brachii',
     wikipediaUrl: 'https://en.wikipedia.org/wiki/Triceps',
   },
+  muscle_triceps_lateral_head: {
+    definition: 'Outer head of the back-arm horseshoe, from the humerus above the radial groove; the bulge seen from the side when the elbow straightens.',
+    colloquialNames: ['triceps'],
+    latinName: 'Caput laterale musculi tricipitis brachii',
+    wikipediaUrl: 'https://en.wikipedia.org/wiki/Triceps',
+  },
+  muscle_triceps_medial_head: {
+    definition: 'Deep head under the other two, from the humerus below the radial groove; shows just above the elbow on the inner side.',
+    colloquialNames: ['triceps'],
+    latinName: 'Caput mediale musculi tricipitis brachii',
+    wikipediaUrl: 'https://en.wikipedia.org/wiki/Triceps',
+  },
+
   muscle_brachialis: {
     definition: 'Deep front arm bulk under biceps; pushes biceps outward on flexion.',
     latinName: 'Musculus brachialis',
@@ -302,6 +315,29 @@ export const STRUCTURE_DETAILS_BY_ID: Record<string, StructureDetails> = {
     colloquialNames: ['outer quad'],
     latinName: 'Musculus vastus lateralis',
     wikipediaUrl: 'https://en.wikipedia.org/wiki/Vastus_lateralis_muscle',
+  },
+  muscle_vastus_medialis: {
+    definition: 'Inner quad teardrop just above the knee; swells on the inner side when the knee locks straight.',
+    colloquialNames: ['teardrop muscle', 'inner quad'],
+    latinName: 'Musculus vastus medialis',
+    wikipediaUrl: 'https://en.wikipedia.org/wiki/Vastus_medialis',
+  },
+  muscle_vastus_intermedius: {
+    definition: 'Deep quad on the front of the femur under the rectus femoris; adds thigh depth without a visible edge.',
+    latinName: 'Musculus vastus intermedius',
+    wikipediaUrl: 'https://en.wikipedia.org/wiki/Vastus_intermedius_muscle',
+  },
+  muscle_semitendinosus: {
+    definition: 'Inner hamstring at the surface, from the sit bone to the inner tibia; its long cord-like tendon edges the inner knee pit.',
+    colloquialNames: ['medial hamstring'],
+    latinName: 'Musculus semitendinosus',
+    wikipediaUrl: 'https://en.wikipedia.org/wiki/Semitendinosus_muscle',
+  },
+  muscle_semimembranosus: {
+    definition: 'Innermost hamstring, deep to the semitendinosus, from the sit bone to the back of the inner tibia; bulges either side of its partner tendon.',
+    colloquialNames: ['medial hamstring'],
+    latinName: 'Musculus semimembranosus',
+    wikipediaUrl: 'https://en.wikipedia.org/wiki/Semimembranosus_muscle',
   },
   muscle_hamstrings_biceps_femoris: {
     definition: 'Lateral hamstring on back thigh; bunches into the knee pit on flexion.',

@@ -18,6 +18,8 @@ type ZineboxUploadMenuProps = {
   disabled?: boolean;
   tagSuggestions: readonly string[];
   onLocalFiles: (files: File[]) => void;
+  /** Dropped PDFs import at once, skipping the review (ADR 0030). Defaults to `onLocalFiles`. */
+  onDroppedFiles?: (files: File[]) => void;
   onDriveImportComplete?: (summary: string) => void;
   onError: (message: string | null) => void;
 };
@@ -26,6 +28,7 @@ export default function ZineboxUploadMenu({
   disabled = false,
   tagSuggestions,
   onLocalFiles,
+  onDroppedFiles,
   onDriveImportComplete,
   onError,
 }: ZineboxUploadMenuProps): React.ReactElement {
@@ -40,6 +43,13 @@ export default function ZineboxUploadMenu({
       setOpen(false);
     },
     [onLocalFiles],
+  );
+  const handleDroppedFiles = useCallback(
+    (files: File[]) => {
+      (onDroppedFiles ?? onLocalFiles)(files);
+      setOpen(false);
+    },
+    [onDroppedFiles, onLocalFiles],
   );
 
   const handleDriveImportComplete = useCallback(
@@ -97,6 +107,7 @@ export default function ZineboxUploadMenu({
           <ZineboxLibraryAddPanel
             disabled={disabled}
             onLocalFiles={handleLocalFiles}
+            onDroppedFiles={handleDroppedFiles}
             onOpenDriveReview={handleOpenDriveReview}
             onError={onError}
           />
