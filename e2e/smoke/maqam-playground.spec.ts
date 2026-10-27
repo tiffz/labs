@@ -410,35 +410,51 @@ test.describe('Maqam Playground', () => {
     for (const maqam of maqamat) {
       await selectMaqam(page, maqam);
       {
+        /*
+         * Find the <svg> and measure it in ONE page-side call, from the host
+         * that outlives every redraw.
+         *
+         * `locator('… svg').evaluate` resolves the node and runs the function
+         * in two round trips, and a redraw between them replaces the <svg>.
+         * The function then measures a detached node: its paths still count,
+         * but every `getBBox()` is 0. That was the intermittent "Maqam Kirdan
+         * drew nothing" on CI — choosing Kirdan leaves the pointer on a jins
+         * chip, and the hover redraws the staff with that cell's bracket.
+         *
+         * A draw is synchronous once the font gate resolves, so a single call
+         * always sees a whole drawing, before or after any redraw.
+         */
+        const measure = () =>
+          page.locator('.maqam-staff__canvas').evaluate((host) => {
+            const svg = host.querySelector('svg');
+            if (!svg) return { above: Infinity, below: Infinity, measured: 0 };
+            const view = svg.viewBox.baseVal;
+            let above = Infinity;
+            let below = Infinity;
+            let measured = 0;
+            svg.querySelectorAll('path, rect, line, polygon').forEach((el) => {
+              const box = (el as SVGGraphicsElement).getBBox();
+              if (box.height <= 0 && box.width <= 0) return;
+              measured += 1;
+              above = Math.min(above, box.y - view.y);
+              below = Math.min(below, view.y + view.height - (box.y + box.height));
+            });
+            // An empty viewBox would satisfy every margin assertion.
+            return { above, below, measured: view.height > 0 ? measured : 0 };
+          });
+
         // The redraw is async (it awaits the font gate), but the font resolved
         // on the first draw, so this settles within a frame.
+        let fit = { above: Infinity, below: Infinity, measured: 0 };
         await expect
-          .poll(async () =>
-            page.locator('.maqam-staff svg').evaluate((node) => {
-              const view = (node as SVGSVGElement).viewBox.baseVal;
-              return view.height > 0 && node.querySelectorAll('path, rect').length > 5;
-            }),
+          .poll(
+            async () => {
+              fit = await measure();
+              return fit.measured;
+            },
+            { message: `${maqam} drew nothing` },
           )
-          .toBe(true);
-
-        const fit = await page.locator('.maqam-staff svg').evaluate((node) => {
-          const svg = node as SVGSVGElement;
-          const view = svg.viewBox.baseVal;
-          let above = Infinity;
-          let below = Infinity;
-          let measured = 0;
-          svg.querySelectorAll('path, rect, line, polygon').forEach((el) => {
-            const box = (el as SVGGraphicsElement).getBBox();
-            if (box.height <= 0 && box.width <= 0) return;
-            measured += 1;
-            above = Math.min(above, box.y - view.y);
-            below = Math.min(below, view.y + view.height - (box.y + box.height));
-          });
-          return { above, below, measured };
-        });
-
-        // An empty viewBox would satisfy every margin assertion.
-        expect(fit.measured, `${maqam} drew nothing`).toBeGreaterThan(5);
+          .toBeGreaterThan(5);
         if (fit.above < 0 || fit.below < 0) {
           clipped.push(`${maqam} above=${fit.above.toFixed(1)} below=${fit.below.toFixed(1)}`);
         }

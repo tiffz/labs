@@ -49,6 +49,8 @@ Track known flaky tests so they get fixed or quarantined — not masked with ret
 
 | `e2e/smoke/zinebox-library.spec.ts` › random unread opens reader | `toHaveURL(/#/read/)` timeout while reader UI visible — debounced search `onChange(null)` queued `throttledReplaceState(#/library)` that overwrote hash after `openReader` | agent | resolved | Skip no-op search debounce; no-op guard in `setLibraryParams`; cancel pending history in `openReader` (2026-06-30) |
 
+| `e2e/smoke/maqam-playground.spec.ts` › staff draws nothing outside its viewport | `Maqam Kirdan drew nothing` (`measured` 0) on main CI, intermittent | agent | resolved | Choosing Kirdan (or Sazkar) leaves the pointer on a jins chip; the hover redraws the staff between `locator.evaluate`'s resolve and call, so it measured a detached `<svg>` (CI trace: resolve-to-result 35ms vs ~10ms; local repro: detached svg has 24 paths, 0 non-zero boxes). Measure inside the stable `.maqam-staff__canvas` host in one call. Chip-hover stress harness: old 5/5 fail, new 5/5 pass (2026-10-26) |
+
 ### Resolved (archive)
 
 | File / spec                        | Symptom                                              | Fixed in                                |
