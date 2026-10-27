@@ -5,11 +5,11 @@ import { isLocalMediaFileForStanza } from '../db/stanzaLocalAudioImport';
 const NOT_A_RECORDING = "That file isn't a recording Stanza can play.";
 
 /**
- * Stanza's review step (ADR 0030). Picking or dropping a recording stages it; nothing is added to
- * the library or the open song until the user confirms.
+ * Stanza's review step (ADR 0030). Picking a recording stages it until the user confirms; dropping
+ * one adds it at once.
  *
  * Dropping several files used to add only the first as a song and ignore the rest without a word.
- * Staging lists every file, and confirming adds each one.
+ * Now each one is added, and a file that is not a recording stays listed with the reason.
  */
 export function useStanzaUploadStaging({
   addLocalSong,
@@ -22,6 +22,8 @@ export function useStanzaUploadStaging({
   openSongTitle: string | null;
 }): {
   stageSongFiles: (files: readonly File[]) => void;
+  /** Dropped recordings: add at once, no confirm (ADR 0030). */
+  saveSongFiles: (files: readonly File[]) => void;
   stageStemFiles: (files: readonly File[]) => void;
   panels: ReactElement;
 } {
@@ -44,6 +46,7 @@ export function useStanzaUploadStaging({
   });
   return {
     stageSongFiles: songs.stageFiles,
+    saveSongFiles: songs.saveFiles,
     stageStemFiles: stems.stageFiles,
     panels: (
       <>

@@ -650,7 +650,7 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
   // Every pick and drop stages for review first (ADR 0030); confirming queues the upload.
   // `addPhotosToPackNow` is defined below; the ref lets the staging call it without reordering.
   const addPhotosToPackNowRef = useRef<(packId: string, files: File[]) => Promise<void>>(async () => {});
-  const { stageNewCollections, stageAddToCollection, panel: stagedUploadPanel } =
+  const { stageNewCollections, saveNewCollections, saveAddToCollection, panel: stagedUploadPanel } =
     useGestureUploadStaging<NewCollectionJob>({
       jobName: (job) => resolveUploadCollectionName(job.files, job.suggestedFolderName) ?? 'Untitled collection',
       enqueueJobs: enqueueNewCollectionJobs,
@@ -749,9 +749,9 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
           return;
         }
 
-        // Staged for review; the upload runs on confirm (ADR 0030).
+        // A drop uploads at once (ADR 0030).
         const pack = await gestureDb.packs.get(packId);
-        stageAddToCollection(packId, pack?.name ?? 'collection', drop.files);
+        saveAddToCollection(packId, pack?.name ?? 'collection', drop.files);
       } catch (e) {
         onError(e instanceof Error ? e.message : 'Could not read the dropped photos.');
       } finally {
@@ -759,7 +759,7 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
         setActivity(null);
       }
     },
-    [onError, setUploadActivity, stageAddToCollection],
+    [onError, setUploadActivity, saveAddToCollection],
   );
 
   /** Upload photos into an existing collection. Only the staged review calls this, on confirm. */
@@ -881,14 +881,14 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
 
         setBusy(false);
         setActivity(null);
-        stageNewCollections(jobs);
+        saveNewCollections(jobs);
       } catch (e) {
         onError(e instanceof Error ? e.message : 'Could not read dropped folder.');
         setBusy(false);
         setActivity(null);
       }
     },
-    [buildSessionActivity, onError, setUploadActivity, stageNewCollections],
+    [buildSessionActivity, onError, setUploadActivity, saveNewCollections],
   );
 
   const uploadFiles = useCallback(

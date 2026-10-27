@@ -3,7 +3,9 @@ import CircularProgress from '@mui/material/CircularProgress';
 import { DndContext } from '@dnd-kit/core';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { useLabsBlockingJobs } from '../../shared/jobs/LabsBlockingJobContext';
 import { mockImportFromDrive, ZINEBOX_E2E_SCROLL_GRID_COMIC_COUNT } from '../db/mockDriveImport';
+import { importLocalPdfFiles } from '../drive/importLocalPdfs';
 import { useStackDnD } from '../hooks/useStackDnD';
 import { useZineboxCollections, useZineboxComics } from '../hooks/useZineboxComics';
 import { useZineboxLibraryDrop } from '../hooks/useZineboxLibraryDrop';
@@ -58,22 +60,56 @@ export default function LibraryView({
   const importing = localBatchFiles !== null;
   const hasLibrary = comics.length > 0;
 
-  const handleImportFiles = useCallback(async (files: File[]) => {
-    if (files.length === 0) return;
+  const pdfsOrError = useCallback((files: File[]): File[] | null => {
+    if (files.length === 0) return null;
     const pdfs = files.filter((f) => f.name.toLowerCase().endsWith('.pdf'));
     if (pdfs.length === 0) {
       setImportError('No PDF files were found. Try again with .pdf files.');
-      return;
+      return null;
     }
-    // Every import reviews first, one PDF or many (ADR 0030). One PDF used to import on drop.
     setImportError(null);
     setImportNotice(null);
-    setLocalBatchFiles(pdfs);
+    return pdfs;
   }, []);
 
+  /** Picked PDFs open "Review import" (ADR 0030). */
+  const handleImportFiles = useCallback(
+    (files: File[]) => {
+      const pdfs = pdfsOrError(files);
+      if (pdfs) setLocalBatchFiles(pdfs);
+    },
+    [pdfsOrError],
+  );
+
+  /** Dropped PDFs import at once: the drop is the confirmation (ADR 0030). Duplicates are skipped. */
+  const { startBlockingJob } = useLabsBlockingJobs();
+  const [dropImporting, setDropImporting] = useState(false);
+  const handleDroppedFiles = useCallback(
+    async (files: File[]) => {
+      const pdfs = pdfsOrError(files);
+      if (!pdfs) return;
+      setDropImporting(true);
+      const job = startBlockingJob(pdfs.length === 1 ? 'Importing PDF…' : `Importing ${pdfs.length} PDFs…`);
+      try {
+        const result = await importLocalPdfFiles(pdfs);
+        if (result.imported === 0 && result.skipped > 0) {
+          setImportNotice(pdfs.length === 1 ? 'That PDF is already in your library.' : 'Those PDFs are already in your library.');
+        } else if (result.skipped > 0) {
+          setImportNotice(`Skipped ${result.skipped} already in your library.`);
+        }
+      } catch (e) {
+        setImportError(e instanceof Error ? e.message : 'Could not import those PDFs.');
+      } finally {
+        job.end();
+        setDropImporting(false);
+      }
+    },
+    [pdfsOrError, startBlockingJob],
+  );
+
   const { dragActive, handlers: dropHandlers } = useZineboxLibraryDrop({
-    disabled: importing,
-    onFiles: (files) => void handleImportFiles(files),
+    disabled: importing || dropImporting,
+    onFiles: (files) => void handleDroppedFiles(files),
   });
 
   useEffect(() => {
@@ -142,10 +178,11 @@ export default function LibraryView({
       disabled: importing,
       tagSuggestions: tags,
       onLocalFiles: (files: File[]) => void handleImportFiles(files),
+      onDroppedFiles: (files: File[]) => void handleDroppedFiles(files),
       onDriveImportComplete: setImportNotice,
       onError: setImportError,
     }),
-    [handleImportFiles, importing, tags],
+    [handleDroppedFiles, handleImportFiles, importing, tags],
   );
 
   const shellClassName = [

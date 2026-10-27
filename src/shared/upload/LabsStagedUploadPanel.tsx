@@ -41,7 +41,9 @@ export type LabsStagedUploadPanelProps<TPlan> = {
 
 function RowIcon<TPlan>({ item }: { item: LabsStagedUpload<TPlan> }): ReactElement {
   const sx = { fontSize: 20, color: 'text.secondary' } as const;
-  if (item.status === 'checking') return <CircularProgress size={16} aria-hidden />;
+  if (item.status === 'checking' || (item.status === 'ready' && item.autoSave)) {
+    return <CircularProgress size={16} aria-hidden />;
+  }
   const mime = item.status === 'ready' ? (item.mimeType ?? '') : '';
   if (mime.startsWith('audio/')) return <AudioFileOutlinedIcon sx={sx} aria-hidden />;
   if (mime.startsWith('video/')) return <MovieOutlinedIcon sx={sx} aria-hidden />;
@@ -60,12 +62,14 @@ function commonOutcome<TPlan>(items: readonly LabsStagedUpload<TPlan>[]): string
 function rowCaption<TPlan>(item: LabsStagedUpload<TPlan>): string {
   if (item.status === 'checking') return 'Checking…';
   if (item.status === 'rejected') return item.message;
+  if (item.autoSave) return 'Saving…';
   return [item.outcome, formatStagedUploadSize(item.sizeBytes)].filter(Boolean).join(' · ');
 }
 
 /**
- * The review step every upload goes through (ADR 0030): what was picked, dropped or pasted, what
- * will happen to each item, and one button that does it. Render it where the items will land, and
+ * The review step for picked files and pasted links (ADR 0030): what will happen to each item, and
+ * one button that does it. Dropped files save at once and appear here only while saving or when
+ * refused. Render it where the items will land, and
  * only while something is staged.
  *
  * Class hook: `.labs-staged-upload-panel`. Colours come from the MUI theme, so each app's palette
@@ -82,7 +86,7 @@ export function LabsStagedUploadPanel<TPlan>({
 }: LabsStagedUploadPanelProps<TPlan>): ReactElement | null {
   const [showAll, setShowAll] = useState(false);
   if (staged.items.length === 0) return null;
-  const readyCount = readyStagedUploads(staged.items).length;
+  const readyCount = readyStagedUploads(staged.items).filter((item) => !item.autoSave).length;
   const summarise = staged.items.length > STAGED_UPLOAD_SUMMARY_THRESHOLD && !showAll;
 
   return (
@@ -144,6 +148,8 @@ export function LabsStagedUploadPanel<TPlan>({
           {error}
         </Typography>
       ) : null}
+      {/* Dropped files save without a button; the list then only reports progress and refusals. */}
+      {staged.awaitingConfirm ? (
       <Stack direction="row" useFlexGap sx={{ justifyContent: 'flex-end', flexWrap: 'wrap', gap: 1, mt: 1.5 }}>
         <Button size="small" color="inherit" disabled={staged.committing} onClick={staged.clear}>
           Cancel
@@ -158,6 +164,7 @@ export function LabsStagedUploadPanel<TPlan>({
           {staged.committing ? 'Adding…' : confirmLabel(Math.max(readyCount, 1))}
         </Button>
       </Stack>
+      ) : null}
     </Box>
   );
 }

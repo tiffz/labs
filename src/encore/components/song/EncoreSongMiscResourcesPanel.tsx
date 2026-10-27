@@ -10,6 +10,8 @@ export type EncoreSongMiscResourcesPanelProps = {
   onChange: (resources: EncoreMiscResource[]) => void;
   onAddLink: (url: string, label: string) => void;
   onUploadFiles: (files: File[]) => void | Promise<void>;
+  /** Dropped files save without a confirm (ADR 0030). */
+  onDropFiles?: (files: File[]) => void | Promise<void>;
   driveUploading?: boolean;
   canUploadToDrive?: boolean;
   wrapResourceChip?: (resource: EncoreMiscResource, chip: ReactElement) => ReactElement;
@@ -20,6 +22,7 @@ export function EncoreSongMiscResourcesPanel({
   onChange,
   onAddLink,
   onUploadFiles,
+  onDropFiles,
   driveUploading = false,
   canUploadToDrive = true,
   wrapResourceChip,
@@ -32,6 +35,7 @@ export function EncoreSongMiscResourcesPanel({
       onChange={onChange}
       onAddLink={onAddLink}
       onUploadFiles={onUploadFiles}
+      onDropFiles={onDropFiles}
       emptyHint="None yet."
       addButtonLabel="Add resource"
       fileAccept={MISC_FILE_ACCEPT}

@@ -68,17 +68,19 @@ export type OriginalsTakesController = {
   setNotes: (takeId: string, notes: string) => void;
   remove: (takeId: string) => void;
   /**
-   * Stage files or a Google Drive link for review (ADR 0030). Nothing is saved until the user
-   * confirms in {@link stagedPanel}; there is deliberately no way to add a take without that step.
+   * Stage picked files or a Google Drive link for review (ADR 0030). Nothing is saved until the
+   * user confirms in {@link stagedPanel}.
    */
   stageFiles: (files: readonly File[]) => void;
+  /** Dropped files save at once: the drop is the confirmation. */
+  saveFiles: (files: readonly File[]) => void;
   stageLink: (url: string) => void;
   openFilePicker: () => void;
   /** The review list and its confirm button; render once, where the takes are. Empty when idle. */
   stagedPanel: ReactElement;
   /**
-   * True while something is staged. Surfaces hide their "Add take" trigger then, so the panel's
-   * confirm is the only "Add take" on screen; dropping still stages more.
+   * True while something waits for confirm. Surfaces hide their "Add take" trigger then, so the
+   * panel's confirm is the only "Add take" on screen.
    */
   hasStaged: boolean;
   /** Hidden `<input type="file">` elements; render once inside the consuming surface. */
@@ -441,8 +443,8 @@ export function useOriginalsTakes({
     [isPlayingTake],
   );
 
-  // Every way in only stages (ADR 0030); see useOriginalsTakeStaging.
-  const { stageFiles, stageLink, stagedPanel, hasStaged, markReplacement } = useOriginalsTakeStaging({
+  // Picks and links stage, drops save (ADR 0030); see useOriginalsTakeStaging.
+  const { stageFiles, saveFiles, stageLink, stagedPanel, hasStaged, markReplacement } = useOriginalsTakeStaging({
     songRef,
     applySong,
     readOnly,
@@ -506,6 +508,7 @@ export function useOriginalsTakes({
     setNotes,
     remove,
     stageFiles,
+    saveFiles,
     stageLink,
     openFilePicker,
     stagedPanel,

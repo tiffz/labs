@@ -177,6 +177,8 @@ export type SongPageMediaHubBundle = {
   resolveSpotifyDataSourcePaste: (rawOverride?: string) => Promise<void>;
   /** Stage local files for Listen / Play / Charts / Takes / Misc; they upload on confirm (ADR 0030). */
   stageFilesToMediaSlot: (slot: SongMediaUploadSlot, files: File[]) => void;
+  /** Dropped files: upload at once, no confirm (ADR 0030). */
+  saveFilesToMediaSlot: (slot: SongMediaUploadSlot, files: File[]) => void;
   /** The review for staged files. Render under the practice resources. Empty when idle. */
   stagedUploadPanel: ReactNode;
   /** Chip reorder + cross-section drag when draft is editable. */
@@ -882,7 +884,11 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
     ],
   );
 
-  const { stageToSlot: stageFilesToMediaSlot, panel: stagedUploadPanel } = useSongMediaStaging({
+  const {
+    stageToSlot: stageFilesToMediaSlot,
+    saveToSlot: saveFilesToMediaSlot,
+    panel: stagedUploadPanel,
+  } = useSongMediaStaging({
     signedIn: Boolean(googleAccessToken),
     upload: uploadToMediaSlotNow,
   });
@@ -918,6 +924,10 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
     (files: File[]) => stageFilesToMediaSlot('misc', files),
     [stageFilesToMediaSlot],
   );
+  const handleMiscDropFiles = useCallback(
+    (files: File[]) => saveFilesToMediaSlot('misc', files),
+    [saveFilesToMediaSlot],
+  );
 
   if (!draft) {
     return {
@@ -930,6 +940,7 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
       applySpotifyDataSourceFromTrack,
       resolveSpotifyDataSourcePaste,
       stageFilesToMediaSlot,
+      saveFilesToMediaSlot,
       stagedUploadPanel,
       practiceResourceDnD: null,
     };
@@ -946,6 +957,7 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
       applySpotifyDataSourceFromTrack,
       resolveSpotifyDataSourcePaste,
       stageFilesToMediaSlot,
+      saveFilesToMediaSlot,
       stagedUploadPanel,
       practiceResourceDnD: {
         song: draft,
@@ -2064,6 +2076,7 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
       onChange={handleMiscResourcesChange}
       onAddLink={handleMiscAddLink}
       onUploadFiles={handleMiscUploadFiles}
+      onDropFiles={handleMiscDropFiles}
       driveUploading={driveUploading}
       canUploadToDrive={Boolean(googleAccessToken && miscUploadFolderId)}
       wrapResourceChip={(resource, chip) => (
@@ -2132,6 +2145,7 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
     applySpotifyDataSourceFromTrack,
     resolveSpotifyDataSourcePaste,
     stageFilesToMediaSlot,
+    saveFilesToMediaSlot,
     stagedUploadPanel,
     practiceResourceDnD: {
       song: draft,

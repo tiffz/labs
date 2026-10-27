@@ -24,6 +24,11 @@ import { useDragDropHighlight } from '../hooks/useDragDropHighlight';
  */
 export interface DragDropFileUploadProps {
   onFiles: (files: File[]) => void;
+  /**
+   * Dropped files, when they should skip the review that picked files get (ADR 0030: a drop saves
+   * at once). Defaults to `onFiles`.
+   */
+  onDropFiles?: (files: File[]) => void;
   /** OS picker filter — same string as `<input accept>` (e.g. `"application/pdf,.pdf"`). */
   accept?: string;
   /** Allow multiple file selection. Defaults to true. */
@@ -53,6 +58,7 @@ export interface DragDropFileUploadProps {
 export function DragDropFileUpload(props: DragDropFileUploadProps): React.ReactElement {
   const {
     onFiles,
+    onDropFiles,
     accept,
     multiple = true,
     disabled,
@@ -71,13 +77,13 @@ export function DragDropFileUpload(props: DragDropFileUploadProps): React.ReactE
   const inputId = useId();
 
   const handleSelected = useCallback(
-    (files: FileList | null) => {
+    (files: FileList | null, deliver: (files: File[]) => void = onFiles) => {
       if (!files || files.length === 0) return;
       const accepted: File[] = [];
       for (const f of Array.from(files)) {
         if (fileMatchesAccept(f, accept)) accepted.push(f);
       }
-      if (accepted.length > 0) onFiles(accepted);
+      if (accepted.length > 0) deliver(accepted);
     },
     [accept, onFiles],
   );
@@ -85,7 +91,7 @@ export function DragDropFileUpload(props: DragDropFileUploadProps): React.ReactE
   const { dragActive, handlers } = useDragDropHighlight({
     disabled,
     stopPropagation: true,
-    onDrop: (e) => handleSelected(e.dataTransfer.files),
+    onDrop: (e) => handleSelected(e.dataTransfer.files, onDropFiles),
   });
 
   const defaultMinHeight = inline ? 44 : compact ? 56 : 160;

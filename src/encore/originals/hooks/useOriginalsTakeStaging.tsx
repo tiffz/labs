@@ -2,7 +2,11 @@ import { useCallback, useRef, useState, type MutableRefObject, type ReactElement
 import type { DriveFileImportPlan } from '../../../shared/drive/importDriveFile';
 import { inferMediaMimeType } from '../../../shared/drive/inferMediaMimeType';
 import { LabsStagedUploadPanel } from '../../../shared/upload/LabsStagedUploadPanel';
-import type { LabsStagedUploadInspection, LabsStagedUploadSource } from '../../../shared/upload/stagedUploads';
+import type {
+  LabsReadyStagedUpload,
+  LabsStagedUploadInspection,
+  LabsStagedUploadSource,
+} from '../../../shared/upload/stagedUploads';
 import {
   useLabsStagedUploads,
   type LabsStagedUploadCommitResult,
@@ -47,6 +51,8 @@ export function useOriginalsTakeStaging({
   setUploading: (uploading: boolean) => void;
 }): {
   stageFiles: (files: readonly File[]) => void;
+  /** Dropped files: save at once, no confirm. */
+  saveFiles: (files: readonly File[]) => void;
   stageLink: (url: string) => void;
   stagedPanel: ReactElement;
   hasStaged: boolean;
@@ -84,8 +90,8 @@ export function useOriginalsTakeStaging({
   );
 
   /*
-   * Every way in (file picker, drop, pasted link, re-picking a missing take's audio) only stages.
-   * The replace picker tags its file here so `inspect` knows which take it is for.
+   * The file picker, a pasted link and re-picking a missing take's audio stage; a drop saves at once
+   * (ADR 0030). The replace picker tags its file here so `inspect` knows which take it is for.
    */
   const replaceTargetsRef = useRef(new WeakMap<File, string>());
 
@@ -134,10 +140,8 @@ export function useOriginalsTakeStaging({
   const staged = useLabsStagedUploads<TakeStagePlan>({ inspect });
   const [stagedError, setStagedError] = useState<string | null>(null);
 
-  const confirmStaged = useCallback(() => {
-    setStagedError(null);
-    void staged
-      .confirm(async (ready): Promise<LabsStagedUploadCommitResult> => {
+  const commitTakes = useCallback(
+    async (ready: LabsReadyStagedUpload<TakeStagePlan>[]): Promise<LabsStagedUploadCommitResult> => {
         const failed: LabsStagedUploadCommitResult['failed'] = [];
         setUploading(true);
         try {
@@ -155,11 +159,19 @@ export function useOriginalsTakeStaging({
           setUploading(false);
         }
         return { failed };
-      })
-      .catch(() => {
-        setStagedError("Couldn't add these. Check your connection and try again.");
-      });
-  }, [addDriveTake, addFiles, replaceTakeFile, setUploading, staged]);
+    },
+    [addDriveTake, addFiles, replaceTakeFile, setUploading],
+  );
+
+  const confirmStaged = useCallback(() => {
+    setStagedError(null);
+    void staged.confirm(commitTakes).catch(() => {
+      setStagedError("Couldn't add these. Check your connection and try again.");
+    });
+  }, [commitTakes, staged]);
+
+  const { saveFiles: saveStaged } = staged;
+  const saveFiles = useCallback((files: readonly File[]) => void saveStaged(files, commitTakes), [commitTakes, saveStaged]);
 
 
   const stagedPanel = (
@@ -178,9 +190,10 @@ export function useOriginalsTakeStaging({
 
   return {
     stageFiles: staged.stageFiles,
+    saveFiles,
     stageLink: staged.stageLink,
     stagedPanel,
-    hasStaged: staged.items.length > 0,
+    hasStaged: staged.awaitingConfirm,
     markReplacement,
   };
 }

@@ -77,7 +77,7 @@ export function ArtStage({
     confirmLabel: (n) => (n === 1 ? 'Add page' : `Add ${n} pages`),
     title: 'Pages ready to add',
   });
-  const { stageFiles: stagePageFiles } = pageUploads;
+  const { stageFiles: stagePageFiles, saveFiles: savePageFiles } = pageUploads;
 
   const busy = adding || importing;
 
@@ -105,7 +105,7 @@ export function ArtStage({
           <p className="lyrefly-art-empty__lede">
             Add your first pages from a folder, or start with one blank tile and build the grid by hand.
           </p>
-          <LyreflyArtEmptyUpload disabled={busy} onFiles={stagePageFiles} />
+          <LyreflyArtEmptyUpload disabled={busy} onFiles={stagePageFiles} onDropFiles={savePageFiles} />
           <button
             type="button"
             className="lyrefly-art-empty__secondary-action"

@@ -34589,7 +34589,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "The review step every upload goes through (ADR 0030): what was picked, dropped or pasted, what will happen to each item, and one button that does it. Render it where the items will land, and only while something is staged. Class hook: `.labs-staged-upload-panel`. Colours come from the MUI theme, so each app's palette applies without an `appearance` prop.",
+    "description": "The review step for picked files and pasted links (ADR 0030): what will happen to each item, and one button that does it. Dropped files save at once and appear here only while saving or when refused. Render it where the items will land, and only while something is staged. Class hook: `.labs-staged-upload-panel`. Colours come from the MUI theme, so each app's palette applies without an `appearance` prop.",
     "tags": [
       "api",
       "react"
@@ -34672,7 +34672,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "model",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "What the user brought in. A `batch` is a named group reviewed as one row: a folder that becomes a Gesture collection, say, where listing hundreds of photos would bury the decision.",
+    "description": "`autoSave` marks a dropped item (ADR 0030, amended): the drop itself is the confirmation, so it is checked and saved without waiting for the button. It is listed only while it saves, or when it was refused, so the user can see why.",
     "tags": [
       "api"
     ],
@@ -34794,6 +34794,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-upload-stageduploads-ts-stageduploadsawaitconfirm",
+    "name": "stagedUploadsAwaitConfirm",
+    "path": "src/shared/upload/stagedUploads.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "True while something picked or pasted waits for the confirm button. Dropped items never wait, so they do not count: a surface hides its own \"Add …\" trigger only while this is true.",
+    "tags": [],
+    "appsUsing": [
+      "ui"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-upload-stageduploads-ts-stageduploadsummary",
     "name": "stagedUploadSummary",
     "path": "src/shared/upload/stagedUploads.ts",
@@ -34846,12 +34861,29 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "The common case of ADR 0030: files in, one function saves each. Pass `stageFiles` wherever the surface used to pass its upload function, and render `panel` where the files will land.",
+    "description": "The common case of ADR 0030: files in, one function saves each. Pass `stageFiles` to the file picker, `saveFiles` to the drop zone, and render `panel` where the files will land.",
     "tags": [
       "react"
     ],
     "appsUsing": [],
     "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-upload-uselabsstageduploads-ts-labsstageduploadcommit",
+    "name": "LabsStagedUploadCommit",
+    "path": "src/shared/upload/useLabsStagedUploads.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Items the app could not write. They stay in the list, marked with `message`, for the user to see.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [
+      "ui"
+    ],
+    "exportType": "type",
     "demoId": null
   },
   {
