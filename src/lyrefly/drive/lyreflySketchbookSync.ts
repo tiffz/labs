@@ -10,6 +10,7 @@ import {
   driveGetMediaArrayBuffer,
   driveUploadFileResumable,
 } from '../../shared/drive/driveFetch';
+import { formatMissingSidecarsMessage, runSidecarBatch } from '../../shared/drive/sidecarBatchTolerance';
 import { lyreflyDb } from '../db/lyreflyDb';
 import { sketchbookBlobIdsForSeed } from '../db/sketchbookMutations';
 import type { SketchbookAttachment, SketchbookSeed } from '../types';
@@ -138,25 +139,36 @@ export async function uploadLyreflySketchbookBlobs(
   }
 }
 
-/** Download seed blobs this device is missing. A failure is retried next sync, never recorded as data. */
+/**
+ * Download seed blobs this device is missing. Runs through the shared tolerant batch (#220): one
+ * file trashed on Drive is reported and skipped, never a stall for every idea after it. A missed
+ * blob stays missing and is retried next sync, never stored as an empty image.
+ */
 export async function downloadMissingLyreflySketchbookBlobs(
   accessToken: string,
   onLabel: (label: string) => void,
 ): Promise<void> {
   const seeds = (await lyreflyDb.sketchbookSeeds.toArray()).filter((s) => !s.deletedAt);
+  const wanted: { seed: SketchbookSeed; blobId: string; driveFileId: string }[] = [];
   for (const seed of seeds) {
     for (const [blobId, driveFileId] of Object.entries(seed.blobDriveFileIds ?? {})) {
       const existing = await lyreflyDb.sketchbookBlobs.get(blobId);
-      if (existing?.blob && existing.blob.size > 0) continue;
-      onLabel(`Downloading sketchbook: ${seed.title ?? 'idea'}`);
-      try {
-        const bytes = await driveGetMediaArrayBuffer(accessToken, driveFileId);
-        const attachment = seed.attachments?.find((a) => a.id === blobId);
-        const type = (blobId === seed.id ? seed.mimeType : attachment?.mimeType) ?? 'application/octet-stream';
-        await lyreflyDb.sketchbookBlobs.put({ seedId: blobId, blob: new Blob([bytes], { type }) });
-      } catch (error) {
-        console.warn(`[lyrefly-drive] sketchbook blob ${blobId} not downloaded; will retry`, error);
-      }
+      if (!existing?.blob || existing.blob.size === 0) wanted.push({ seed, blobId, driveFileId });
     }
   }
+  if (wanted.length === 0) return;
+
+  const outcome = await runSidecarBatch(
+    wanted,
+    async ({ seed, blobId, driveFileId }) => {
+      onLabel(`Downloading sketchbook: ${seed.title ?? 'idea'}`);
+      const bytes = await driveGetMediaArrayBuffer(accessToken, driveFileId);
+      const attachment = seed.attachments?.find((a) => a.id === blobId);
+      const type = (blobId === seed.id ? seed.mimeType : attachment?.mimeType) ?? 'application/octet-stream';
+      await lyreflyDb.sketchbookBlobs.put({ seedId: blobId, blob: new Blob([bytes], { type }) });
+    },
+    { labelOf: ({ seed }) => seed.title ?? 'sketchbook idea' },
+  );
+  const missing = formatMissingSidecarsMessage(outcome);
+  if (missing) onLabel(missing);
 }
