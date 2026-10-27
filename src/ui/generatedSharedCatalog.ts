@@ -32557,9 +32557,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "rhythm"
     ],
-    "appsUsing": [
-      "drums"
-    ],
+    "appsUsing": [],
     "exportType": "function",
     "demoId": null
   },
@@ -32574,9 +32572,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "rhythm"
     ],
-    "appsUsing": [
-      "drums"
-    ],
+    "appsUsing": [],
     "exportType": "function",
     "demoId": null
   },
@@ -32591,9 +32587,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "rhythm"
     ],
-    "appsUsing": [
-      "drums"
-    ],
+    "appsUsing": [],
     "exportType": "function",
     "demoId": null
   },
@@ -32608,9 +32602,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "rhythm"
     ],
-    "appsUsing": [
-      "drums"
-    ],
+    "appsUsing": [],
     "exportType": "function",
     "demoId": null
   },
@@ -32625,9 +32617,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "rhythm"
     ],
-    "appsUsing": [
-      "drums"
-    ],
+    "appsUsing": [],
     "exportType": "function",
     "demoId": null
   },
@@ -32643,6 +32633,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "rhythm"
     ],
     "appsUsing": [
+      "drums",
       "words"
     ],
     "exportType": "function",
@@ -32660,6 +32651,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "rhythm"
     ],
     "appsUsing": [
+      "drums",
       "words"
     ],
     "exportType": "function",
@@ -32677,6 +32669,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "rhythm"
     ],
     "appsUsing": [
+      "drums",
       "words"
     ],
     "exportType": "function",
@@ -32694,6 +32687,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "rhythm"
     ],
     "appsUsing": [
+      "drums",
       "words"
     ],
     "exportType": "function",
@@ -32711,6 +32705,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "rhythm"
     ],
     "appsUsing": [
+      "drums",
       "words"
     ],
     "exportType": "function",
@@ -32728,6 +32723,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "rhythm"
     ],
     "appsUsing": [
+      "drums",
       "words"
     ],
     "exportType": "function",
@@ -32745,6 +32741,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "rhythm"
     ],
     "appsUsing": [
+      "drums",
       "words"
     ],
     "exportType": "function",
@@ -32762,6 +32759,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "rhythm"
     ],
     "appsUsing": [
+      "drums",
       "words"
     ],
     "exportType": "function",
@@ -32779,6 +32777,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "rhythm"
     ],
     "appsUsing": [
+      "drums",
       "words"
     ],
     "exportType": "function",

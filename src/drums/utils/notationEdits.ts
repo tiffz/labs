@@ -235,3 +235,88 @@ export function copyRange(notation: string, ts: TimeSignature, range: VisualRang
   // A range starting mid-note (the far side of a tie) copies that part as its own note.
   return text.startsWith('-') ? findNoteHead(notation, start) + text.slice(1) : text;
 }
+
+const STROKE_CHAR: Record<string, string> = { dum: 'D', tak: 'T', ka: 'K', slap: 'S', rest: '_' };
+
+/**
+ * The sequencer's edit: make `sound` start at played tick `tick`, or with `null` remove the stroke
+ * that starts there. A grid row is one sixteenth of the PLAYED timeline, copies and hidden passes
+ * included, so `tick` is a played tick, not a drawn one.
+ *
+ * Edits the notation in place, like the score does. (The grid used to rebuild the whole notation
+ * from its own model: it lost spaces and repeat signs, linked cells by its own arithmetic, and
+ * left dashes with no note head.) Copies of a written measure follow it because they are repeats
+ * of it; a click in a copy writes that copy out first and edits it alone.
+ *
+ * Grid semantics: a stroke holds until the next onset, so a stroke placed inside a held note
+ * takes over the rest of it, and removing a stroke lets the note before it hold on — or leaves a
+ * rest when nothing before it in the measure can hold.
+ */
+export function setStrokeAt(
+  notation: string,
+  ts: TimeSignature,
+  tick: number,
+  sound: 'dum' | 'tak' | 'ka' | 'slap' | 'rest' | null,
+): string | null {
+  const original = parseRhythm(notation, ts);
+  const layout = measureLayoutOf(original);
+  const played = layout.reduce((t, s) => t + s.durationTicks, 0);
+
+  // Past the end: a single sixteenth after rests, in a measure of its own.
+  if (tick >= played) {
+    if (sound === null || sound === 'rest') return null;
+    const sep = notation.trim() ? ' | ' : '';
+    return notation.trimEnd() + sep + '_'.repeat(tick - played) + STROKE_CHAR[sound];
+  }
+
+  // Write out the copy being edited, as the score does.
+  const measure = findMeasureIndexAtTick(original, tick).index;
+  let current = expandSimileMeasure(notation, measure, original);
+  let parsed = current === notation ? original : parseRhythm(current, ts);
+  if (current !== notation) {
+    const following = parsed.measureMapping[measure + 1];
+    if (following && current[following.sourceStringIndex] === '%') {
+      const withFollowing = expandSimileMeasure(current, measure + 1, parsed);
+      if (withFollowing !== current) {
+        current = withFollowing;
+        parsed = parseRhythm(current, ts);
+      }
+    }
+  }
+
+  const at = mapLogicalToStringIndex(current, tick, parsed, ts);
+  let i = at.index;
+  while (i < current.length && /\s/.test(current[i])) i++;
+  const gap = tick - at.logicalReached;
+  const char = current[i] ?? '';
+
+  // Inside padding the parser added: the string holds nothing here.
+  if (gap > 0 || !/[DTKSdtks_-]/.test(char)) {
+    if (sound === null) return null;
+    const next = current.slice(0, at.index) + '_'.repeat(gap) + STROKE_CHAR[sound] + current.slice(at.index);
+    return next === notation ? null : next;
+  }
+
+  const isHead = /[DTKSdtks]/.test(char) || (char === '_' && (i === 0 || current[i - 1] !== '_'));
+  // The run of extension characters belonging to the note at `i`.
+  let end = i + 1;
+  const extension = char === '_' ? '_' : '-';
+  while (end < current.length && current[end] === extension) end++;
+
+  if (sound === null) {
+    if (!isHead) return null; // nothing starts here
+    const before = current.slice(0, i).replace(/\s+$/, '');
+    const holdsFromBefore = /[DTKSdtks-]$/.test(before);
+    // Clearing a rest with no stroke before it to hold over it leaves the rest.
+    if (char === '_' && !holdsFromBefore) return null;
+    const filler = holdsFromBefore ? '-' : '_';
+    const next = current.slice(0, i) + filler.repeat(end - i) + current.slice(end);
+    return next === notation ? null : next;
+  }
+
+  const head = STROKE_CHAR[sound];
+  const fill = sound === 'rest' ? '_' : '-';
+  // From `i` to the end of the note: the new stroke, holding for the rest of it.
+  const next = current.slice(0, i) + head + fill.repeat(end - i - 1) + current.slice(end);
+  return next === notation ? null : next;
+}

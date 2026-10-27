@@ -4,7 +4,7 @@ import {
   measureSourceMappingFromLayout,
   type MeasureSlot,
 } from './measureLayout';
-import { sectionRepeatMeasureSpan } from './sectionRepeatSpan';
+import { isMeasureInSectionRepeat, sectionRepeatMeasureSpan } from './sectionRepeatSpan';
 import type {
   Note,
   Measure,
@@ -731,10 +731,18 @@ export function expandSelectionToRepeats(
   let unrolledEnd: number | null = null;
   // Hidden copies extend the range only until the next visible measure past the selection.
   let extensionDone = false;
+  const layout = measureLayoutOf(parsed);
+  const sections = parsed.repeats.filter((r): r is Extract<typeof r, { type: 'section' }> => r.type === 'section');
 
-  for (const slot of measureLayoutOf(parsed)) {
+  for (const slot of layout) {
     if (slot.visualStartTick === null) {
-      if (!extensionDone && unrolledEnd !== null) unrolledEnd = slot.logicalStartTick + slot.durationTicks;
+      // Only a selection holding the WHOLE section takes its hidden passes. Part of a section —
+      // its last measure, one note — loops as selected; running on through the passes played
+      // the next pass of measures the user did not select.
+      const section = sections.find((r) => slot.index > r.endMeasure && isMeasureInSectionRepeat(slot.index, r));
+      const wholeSection = section !== undefined && unrolledStart !== null
+        && unrolledStart <= layout[section.startMeasure].logicalStartTick;
+      if (!extensionDone && unrolledEnd !== null && wholeSection) unrolledEnd = slot.logicalStartTick + slot.durationTicks;
       continue;
     }
     const visualEnd = slot.visualStartTick + slot.durationTicks;

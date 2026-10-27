@@ -1,10 +1,9 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useEffect, useCallback, useMemo, useRef } from 'react';
 import type { TimeSignature, ParsedRhythm, RepeatMarker } from '../types';
-import {
-  isSectionRepeatGhostMeasure,
-  sectionRepeatGhostMeasureCount,
-} from '../../shared/rhythm/sectionRepeatSpan';
-import { notationToGrid, gridToNotation, getLinkedPositions, type SequencerCell } from '../utils/sequencerUtils';
+import { hiddenMeasureIndices as hiddenMeasureIndicesOf } from '../../shared/rhythm/measureLayout';
+import { measureLayoutOf } from '../../shared/rhythm/rhythmParser';
+import { notationToGrid, type SequencerCell } from '../utils/sequencerUtils';
+import { setStrokeAt } from '../utils/notationEdits';
 import { getSixteenthsPerMeasure, getDefaultBeatGrouping, getBeatGroupingInSixteenths } from '../utils/timeSignatureUtils';
 import DrumSymbolIcon from './DrumSymbolIcon';
 
@@ -93,207 +92,21 @@ const RhythmSequencer: React.FC<RhythmSequencerProps> = ({
     };
   }, [notation, timeSignature, sixteenthsPerMeasure]);
 
-  const [localGrid, setLocalGrid] = useState(grid);
-  // Calculate actual measures + one ghost measure
-  const calculateNumMeasures = useCallback((gridLength: number) => {
-    const actualMeasures = Math.max(1, Math.ceil((gridLength || 0) / sixteenthsPerMeasure));
-    return actualMeasures + 1; // Always show one ghost measure
-  }, [sixteenthsPerMeasure]);
-
-  const [numMeasures, setNumMeasures] = useState(() => calculateNumMeasures(grid.actualLength || 0));
-  const isExternalUpdateRef = useRef(false);
+  // The grid is derived from the notation; every edit goes through `setStrokeAt`, which edits the
+  // notation in place, and the grid follows. (It used to keep its own copy, link copies by its own
+  // arithmetic, and rebuild the whole notation from it on every click — losing spaces and repeat
+  // signs, and editing the wrong measure after a repeat. notationEdits/sequencer.fuzz cover this.)
+  const localGrid = grid;
+  const numMeasures = Math.max(1, Math.ceil((grid.actualLength || 0) / sixteenthsPerMeasure)) + 1;
   const dragStateRef = useRef({ isDragging: false, dragStart: null as { position: number; sound: SequencerCell } | null });
-
-  // Sync grid when notation changes externally (but debounce to avoid loops)
-  useEffect(() => {
-    if (isExternalUpdateRef.current) {
-      isExternalUpdateRef.current = false;
-      return;
-    }
-
-    const calculatedGrid = notationToGrid(notation, timeSignature);
-    const actualMeasures = Math.max(1, Math.ceil((calculatedGrid.actualLength || 0) / sixteenthsPerMeasure));
-    // Show exactly one extra ghost measure
-    const displayMeasures = actualMeasures + 1;
-    const requiredCells = displayMeasures * sixteenthsPerMeasure;
-
-    // Ensure grid has exactly the right number of cells (no more, no less)
-    let cells = calculatedGrid.cells;
-    if (cells.length < requiredCells) {
-      const extendedCells = [...cells];
-      while (extendedCells.length < requiredCells) {
-        extendedCells.push(null);
-      }
-      cells = extendedCells;
-    } else if (cells.length > requiredCells) {
-      cells = cells.slice(0, requiredCells);
-    }
-
-    setLocalGrid({
-      ...calculatedGrid,
-      cells,
-    });
-    setNumMeasures(displayMeasures);
-  }, [notation, timeSignature, sixteenthsPerMeasure]);
-
-  // Update notation when grid changes, removing empty trailing measures
-  const updateNotation = useCallback((newGrid: typeof localGrid) => {
-    // Remember the original content boundary (before ghost measure padding)
-    // This is crucial: we should NOT extend notes into ghost measure padding
-    const originalActualLength = newGrid.actualLength || 0;
-
-    // First, ensure we have enough cells for display (one ghost measure)
-    const currentActualMeasures = Math.max(1, Math.ceil(originalActualLength / sixteenthsPerMeasure));
-    const displayMeasures = currentActualMeasures + 1;
-    const requiredCells = displayMeasures * sixteenthsPerMeasure;
-
-    // Extend cells if needed BEFORE calculating actualLength
-    let cells = newGrid.cells;
-    if (cells.length < requiredCells) {
-      const extendedCells = [...cells];
-      while (extendedCells.length < requiredCells) {
-        extendedCells.push(null);
-      }
-      cells = extendedCells;
-    } else if (cells.length > requiredCells) {
-      cells = cells.slice(0, requiredCells);
-    }
-
-    // Now find the last position with a sound in the extended cells
-    let lastSoundIndex = -1;
-    for (let idx = cells.length - 1; idx >= 0; idx--) {
-      if (cells[idx] !== null) {
-        lastSoundIndex = idx;
-        break;
-      }
-    }
-
-    // Calculate actual length (up to last sound + its duration)
-    // Count consecutive nulls after the last sound to determine note duration
-    // IMPORTANT: Don't count ghost measure padding as note extensions!
-    let actualLength = 0;
-    if (lastSoundIndex >= 0) {
-      // Find where the last note ends by counting consecutive nulls
-      let endPos = lastSoundIndex;
-
-      // Determine the boundary for counting nulls:
-      // - If the last sound is within the original content, only count nulls up to the original boundary
-      // - If the last sound is beyond the original content (user clicked in ghost measure), 
-      //   only count that single note (don't extend into further padding)
-      let countBoundary: number;
-      if (lastSoundIndex < originalActualLength) {
-        // Sound is within original content - don't extend into ghost measure
-        countBoundary = originalActualLength;
-      } else {
-        // Sound is in ghost measure region - single sixteenth note, no automatic extension
-        // The user can drag to extend if they want longer notes
-        countBoundary = lastSoundIndex + 1;
-      }
-
-      // Count nulls until we hit another sound or reach the boundary
-      while (endPos < countBoundary - 1 && endPos < cells.length - 1 && cells[endPos + 1] === null) {
-        endPos++;
-      }
-      actualLength = endPos + 1;
-    }
-
-    // Create grid with calculated actualLength
-    const gridWithLength = {
-      ...newGrid,
-      cells,
-      actualLength: actualLength || undefined,
-    };
-
-    // Update numMeasures based on actualLength
-    const newActualMeasures = Math.max(1, Math.ceil((actualLength || 0) / sixteenthsPerMeasure));
-    const newDisplayMeasures = newActualMeasures + 1; // Exactly one ghost measure
-    setNumMeasures(newDisplayMeasures);
-
-    // Preserve existing repeats but don't auto-detect new ones during edits
-    const newNotation = gridToNotation(gridWithLength, parsedRhythm.repeats, false);
-    const cleanedNotation = notation.replace(/[\s\n]/g, '');
-    const cleanedNewNotation = newNotation.replace(/[\s\n]/g, '');
-
-    // Note: We compare cleaned notation to avoid loops if only formatting changed
-    // BUT we must allow formatting changes if they add repeats. 
-    // If we only compare cleaned, we might miss the repeat addition?
-    // Wait. `newNotation` HAS repeats. `notation` HAS repeats.
-    // `cleanedNotation` removes whitespace. `|: | |` -> `|:||`?
-    // If we strip whitespace, do we strip `|:`?
-    // `replace(/[\s\n]/g, '')` only strips whitespace.
-    // So `|:` remains.
-    // So if repeats match, cleaned matches.
-
-    if (cleanedNewNotation !== cleanedNotation) {
-      isExternalUpdateRef.current = true;
-      onNotationChange(newNotation);
-    }
-  }, [notation, onNotationChange, sixteenthsPerMeasure, parsedRhythm.repeats]);
 
   const handleCellClick = useCallback((position: number, soundIndex: number) => {
     const sound = SOUNDS[soundIndex]?.sound || null;
     if (!sound) return;
-
-    setLocalGrid(prevGrid => {
-      // Determine if the clicked position is a Ghost or Source
-      // We do this by checking if it links TO something else as a Source.
-
-      // Calculate measure index of the click
-      const measureIdx = Math.floor(position / sixteenthsPerMeasure);
-
-      // Check if this measure is a GHOST in any repeat structure
-      let isGhost = false;
-      if (parsedRhythm.repeats) {
-        for (const r of parsedRhythm.repeats) {
-          if (r.type === 'measure') {
-            if (r.repeatMeasures.includes(measureIdx)) isGhost = true;
-          } else if (r.type === 'section') {
-            // `repeatCount` is total plays, so the span is length * repeatCount. Computing
-            // length * (repeatCount + 1) here swallowed the measures of the NEXT section.
-            if (isSectionRepeatGhostMeasure(measureIdx, r)) isGhost = true;
-          }
-        }
-      }
-
-      // Find all linked positions (Source + Ghosts)
-      // FIX Phase 28c: Divergence on Edit
-      // If we click a Ghost, we do NOT want to update the Source (Link).
-      // We want to update ONLY the Ghost (Diverge).
-      // If we click a Source, we generally want to update Ghosts (Keep Link).
-
-      let linkedPositions: number[] = [position];
-      if (!isGhost) {
-        linkedPositions = getLinkedPositions(position, parsedRhythm.repeats || [], sixteenthsPerMeasure);
-      }
-
-      const maxPos = Math.max(position, ...linkedPositions);
-
-      // Ensure we have enough cells
-      const newCells = [...prevGrid.cells];
-      while (newCells.length <= maxPos) {
-        newCells.push(null);
-      }
-
-      // Determine new state based on the CLICKED cell
-      const currentSound = newCells[position];
-      const newState = (currentSound === sound) ? null : sound;
-
-      // Apply to all linked positions
-      linkedPositions.forEach(pos => {
-        newCells[pos] = newState;
-      });
-
-      const newGrid = { ...prevGrid, cells: newCells };
-
-      // Update notation asynchronously to avoid state conflicts
-      isExternalUpdateRef.current = true;
-      setTimeout(() => {
-        updateNotation(newGrid);
-      }, 0);
-
-      return newGrid;
-    });
-  }, [updateNotation, parsedRhythm.repeats, sixteenthsPerMeasure]);
+    // Clicking the stroke already in a cell clears it.
+    const next = setStrokeAt(notation, timeSignature, position, grid.cells[position] === sound ? null : sound);
+    if (next !== null) onNotationChange(next);
+  }, [notation, timeSignature, grid.cells, onNotationChange]);
 
   const handleCellMouseDown = useCallback((position: number, soundIndex: number, e: React.MouseEvent) => {
     e.preventDefault();
@@ -319,68 +132,18 @@ const RhythmSequencer: React.FC<RhythmSequencerProps> = ({
         const startPos = Math.min(dragStart.position, position);
         const endPos = Math.max(dragStart.position, position);
 
-        // Update all positions in the range
-        setLocalGrid(prevGrid => {
-          const newCells = [...prevGrid.cells];
-
-          // Determine max reach required for Linked Editing in this range
-          let maxReach = endPos;
-
-          // First pass: Calculate linked targets for the range
-          const updates: number[] = [];
-          for (let pos = startPos; pos <= endPos; pos++) {
-            // Calculate measure index of the position
-            const measureIdx = Math.floor(pos / sixteenthsPerMeasure);
-
-            // Check if GHOST
-            let isGhost = false;
-            if (parsedRhythm.repeats) {
-              for (const r of parsedRhythm.repeats) {
-                if (r.type === 'measure') {
-                  if (r.repeatMeasures.includes(measureIdx)) isGhost = true;
-                } else if (r.type === 'section') {
-                  if (isSectionRepeatGhostMeasure(measureIdx, r)) isGhost = true;
-                }
-              }
-            }
-
-            let linked: number[] = [pos];
-            if (!isGhost) {
-              linked = getLinkedPositions(pos, parsedRhythm.repeats || [], sixteenthsPerMeasure);
-            }
-
-            linked.forEach(t => {
-              updates.push(t);
-              if (t > maxReach) maxReach = t;
-            });
-          }
-
-          // Ensure we have enough cells
-          while (newCells.length <= maxReach) {
-            newCells.push(null);
-          }
-
-          // Apply sound to all linked positions
-          updates.forEach(pos => {
-            newCells[pos] = dragStart.sound;
-          });
-
-          const newGrid = { ...prevGrid, cells: newCells };
-
-          // Update notation asynchronously
-          isExternalUpdateRef.current = true;
-          setTimeout(() => {
-            updateNotation(newGrid);
-          }, 0);
-
-          return newGrid;
-        });
+        // Paint every cell in the range with the dragged stroke.
+        let next = notation;
+        for (let pos = startPos; pos <= endPos; pos++) {
+          next = setStrokeAt(next, timeSignature, pos, dragStart.sound as 'dum' | 'tak' | 'ka' | 'slap' | 'rest') ?? next;
+        }
+        if (next !== notation) onNotationChange(next);
 
         // Update drag start to current position for next mouse enter
         dragStateRef.current.dragStart = { position, sound: dragStart.sound };
       }
     }
-  }, [updateNotation, parsedRhythm, sixteenthsPerMeasure]);
+  }, [notation, timeSignature, onNotationChange]);
 
   const handleMouseUp = useCallback(() => {
     dragStateRef.current.isDragging = false;
@@ -397,25 +160,8 @@ const RhythmSequencer: React.FC<RhythmSequencerProps> = ({
   }, [handleMouseUp]);
 
   const handleAddMeasure = () => {
-    // numMeasures includes the trailing ghost measure, so actual = numMeasures - 1
-    const currentActual = numMeasures - 1;
-    const newActual = currentActual + 1;
-
-    // Trim cells to actual content (drop ghost padding) then add new measure
-    const newCells = localGrid.cells.slice(0, currentActual * sixteenthsPerMeasure);
-
-    for (let i = 0; i < sixteenthsPerMeasure; i++) {
-      newCells.push(i === 0 ? 'rest' as SequencerCell : null);
-    }
-
-    const newGrid = {
-      ...localGrid,
-      cells: newCells,
-      actualLength: newActual * sixteenthsPerMeasure,
-    };
-    setLocalGrid(newGrid);
-    setNumMeasures(newActual + 1); // +1 for the new ghost measure
-    updateNotation(newGrid);
+    // A measure of rest after a bar; the bar also pads a short last measure.
+    onNotationChange(notation.trimEnd() + (notation.trim() ? ' | ' : '') + '_'.repeat(sixteenthsPerMeasure));
   };
 
   // Calculate which position is currently playing for highlighting
@@ -442,26 +188,8 @@ const RhythmSequencer: React.FC<RhythmSequencerProps> = ({
     return position;
   }, [currentNote, currentMetronomeBeat, parsedRhythm, sixteenthsPerMeasure]);
 
-  // Calculate hidden measures (ghosts of section repeats)
-  const hiddenMeasureIndices = useMemo(() => {
-    const hidden = new Set<number>();
-    if (!parsedRhythm.repeats) return hidden;
-
-    parsedRhythm.repeats.forEach(repeat => {
-      // Hide the generated copies only. `repeatCount` is total plays, so a block played n times
-      // generates n-1 copies; `blockLength * repeatCount` counted the written block as a ghost and
-      // hid that many measures of the following section.
-      if (repeat.type === 'section' && repeat.repeatCount > 0) {
-        const measuresToHide = sectionRepeatGhostMeasureCount(repeat);
-        const startHiddenIndex = repeat.endMeasure + 1;
-
-        for (let i = 0; i < measuresToHide; i++) {
-          hidden.add(startHiddenIndex + i);
-        }
-      }
-    });
-    return hidden;
-  }, [parsedRhythm.repeats]);
+  // Hidden section passes come from the shared measure layout, like the score's.
+  const hiddenMeasureIndices = useMemo(() => hiddenMeasureIndicesOf(measureLayoutOf(parsedRhythm)), [parsedRhythm]);
 
   const currentPosition = getCurrentPosition();
 

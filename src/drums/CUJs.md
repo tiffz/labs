@@ -26,3 +26,5 @@ rhythm has. All edits are pure functions in [`utils/notationEdits.ts`](utils/not
 | 4    | Drag a pattern onto the last measure, or onto a `%` | `drums-interaction.spec.ts`; preview and drop both call `dropPattern`      |
 | 5    | Any edit, any rhythm                                | `notationEdits.fuzz.test.ts` (random rhythms × edit chains, exact oracle)  |
 | 6    | A case the fuzz once found                          | `notationEdits.test.ts` — one named case per bug, expected strings by hand |
+| 7    | Click a cell in the sequencer grid                  | `drums-interaction.spec.ts` — Darbuka sequencer; `sequencer.fuzz.test.ts`  |
+| 8    | Loop a selection inside a repeated section          | `measureLayout.test.ts` — looping a selection with repeats                 |
