@@ -221,7 +221,8 @@ function CollectionsIndex(): ReactElement {
   );
 }
 
-function AddFromDriveForm({ collection, onDone }: { collection: LyreflyCollection; onDone: () => void }): ReactElement {
+/** `onDone` absent: the form cannot be closed (an empty collection has nothing else to show). */
+function AddFromDriveForm({ collection, onDone }: { collection: LyreflyCollection; onDone?: () => void }): ReactElement {
   const [link, setLink] = useState('');
   const [progress, setProgress] = useState<string | null>(null);
   const [message, setMessage] = useState<{ text: string; error: boolean } | null>(null);
@@ -270,9 +271,11 @@ function AddFromDriveForm({ collection, onDone }: { collection: LyreflyCollectio
         <Button type="submit" variant="outlined" size="small" disabled={!link.trim() || Boolean(progress)}>
           Add pieces
         </Button>
-        <Button size="small" onClick={onDone} disabled={Boolean(progress)}>
-          Close
-        </Button>
+        {onDone ? (
+          <Button size="small" onClick={onDone} disabled={Boolean(progress)}>
+            Close
+          </Button>
+        ) : null}
       </form>
       {progress ? (
         <div className="lyrefly-import__progress" role="status">
@@ -302,16 +305,10 @@ function MakeComicDialog({
   onClose: () => void;
   onMade: (projectId: string) => void;
 }): ReactElement {
-  const [title, setTitle] = useState('');
+  // Remounted on each open (see the key where it is rendered), so these start fresh every time.
+  const [title, setTitle] = useState(() => `${collection.title} comic`);
   const [progress, setProgress] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (open) {
-      setTitle(`${collection.title} comic`);
-      setError(null);
-    }
-  }, [open, collection.title]);
 
   const make = async (): Promise<void> => {
     setError(null);
@@ -380,15 +377,6 @@ function CollectionDetail({
   const [adding, setAdding] = useState(false);
   const [making, setMaking] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [title, setTitle] = useState('');
-
-  useEffect(() => {
-    if (collection) setTitle(collection.title);
-  }, [collection]);
-
-  useEffect(() => {
-    if (hydrated && collection && pieces.length === 0) setAdding(true);
-  }, [hydrated, collection, pieces.length]);
 
   if (!hydrated) return <section className="lyrefly-studio" aria-busy="true" />;
   if (!collection) {
@@ -406,6 +394,8 @@ function CollectionDetail({
     .map((id) => pieces.find((p) => p.id === id))
     .filter((p): p is LyreflyCollectionPiece => Boolean(p));
   const archived = collection.status === 'archived';
+  // An empty collection has nothing to show yet, so it opens straight onto adding pieces.
+  const showAdd = adding || pieces.length === 0;
 
   return (
     <section className="lyrefly-studio lyrefly-collection" data-testid="lyrefly-collection">
@@ -414,14 +404,19 @@ function CollectionDetail({
       </Button>
       <header className="lyrefly-collection__head">
         <TextField
+          // Re-keyed when the title changes elsewhere (another device), so the field shows it.
+          key={collection.title}
           variant="standard"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          onBlur={() => (title.trim() ? void updateLyreflyCollection(collection, { title }) : setTitle(collection.title))}
+          defaultValue={collection.title}
+          onBlur={(e) => {
+            const next = e.target.value.trim();
+            if (!next) e.target.value = collection.title;
+            else if (next !== collection.title) void updateLyreflyCollection(collection, { title: next });
+          }}
           slotProps={{ input: { disableUnderline: true }, htmlInput: { 'aria-label': 'Collection title', className: 'lyrefly-collection__title' } }}
         />
         <div className="lyrefly-collection__actions">
-          {!adding ? (
+          {!showAdd ? (
             <Button size="small" onClick={() => setAdding(true)}>
               Add from Drive
             </Button>
@@ -446,7 +441,9 @@ function CollectionDetail({
         ) : null}
       </p>
 
-      {adding ? <AddFromDriveForm collection={collection} onDone={() => setAdding(false)} /> : null}
+      {showAdd ? (
+        <AddFromDriveForm collection={collection} onDone={pieces.length > 0 ? () => setAdding(false) : undefined} />
+      ) : null}
 
       <ul className="lyrefly-pieces" aria-label="Pieces. Select some to make a comic.">
         {pieces.map((piece, index) => {
@@ -488,6 +485,7 @@ function CollectionDetail({
       ) : null}
 
       <MakeComicDialog
+        key={making ? 'open' : 'closed'}
         open={making}
         collection={collection}
         pieces={picked}
