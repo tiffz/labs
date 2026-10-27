@@ -1,0 +1,324 @@
+{
+  "componentChunkName": "component---src-pages-comics-comics-yaml-slug-tsx",
+  "path": "/comics/perfect-wedding/",
+  "result": {
+    "data": {
+      "comicsYaml": {
+        "name": "The Perfect Wedding",
+        "slug": "perfect-wedding",
+        "year": 2024,
+        "id": "156c22ef-6c51-5004-b93b-9dcb0346b51c",
+        "description": "Lana has always dreamed of a wedding where every detail was perfect. But when the day comes, it's nothing like she expected! The Perfect Wedding is a cute sapphic romance about expectations and living freely.\n",
+        "links": {
+          "store": "https://mixam.com/print-on-demand/67749e32894b152626d83839",
+          "webtoons": "https://www.webtoons.com/en/canvas/the-perfect-wedding/list?title_no=1021257",
+          "tapas": "https://tapas.io/series/The-Perfect-Wedding",
+          "tumblr": "https://tiffatiel.tumblr.com/post/773612817505976320/the-perfect-wedding",
+          "bluesky": "https://bsky.app/profile/tiffatiel.bsky.social/post/3lgks2akhac2k",
+          "x": "https://x.com/tiffatiel/status/1882986433369215040",
+          "instagram": null,
+          "facebook": null
+        },
+        "cover": {
+          "outerFront": {
+            "childImageSharp": {
+              "gatsbyImageData": {
+                "layout": "constrained",
+                "images": {
+                  "fallback": {
+                    "src": "/static/b5070e158fa964a659f83c2ef4cabda6/b0805/outer-front.png",
+                    "sizes": "(min-width: 700px) 700px, 100vw"
+                  }
+                },
+                "width": 700,
+                "height": 1065
+              }
+            }
+          },
+          "outerBack": {
+            "childImageSharp": {
+              "gatsbyImageData": {
+                "layout": "constrained",
+                "images": {
+                  "fallback": {
+                    "src": "/static/4d50f58696184ac376a7b5177ca533b5/b0805/outer-back.png",
+                    "sizes": "(min-width: 700px) 700px, 100vw"
+                  }
+                },
+                "width": 700,
+                "height": 1065
+              }
+            }
+          }
+        },
+        "pages": [
+          {
+            "name": "1",
+            "childImageSharp": {
+              "gatsbyImageData": {
+                "layout": "constrained",
+                "images": {
+                  "fallback": {
+                    "src": "/static/8d031964c2cecada07e9eae800c99780/b0805/1.png",
+                    "sizes": "(min-width: 700px) 700px, 100vw"
+                  }
+                },
+                "width": 700,
+                "height": 1065
+              }
+            }
+          },
+          {
+            "name": "2",
+            "childImageSharp": {
+              "gatsbyImageData": {
+                "layout": "constrained",
+                "images": {
+                  "fallback": {
+                    "src": "/static/aa2b454783cee95389e78e9f4280f6f5/b0805/2.png",
+                    "sizes": "(min-width: 700px) 700px, 100vw"
+                  }
+                },
+                "width": 700,
+                "height": 1065
+              }
+            }
+          },
+          {
+            "name": "3",
+            "childImageSharp": {
+              "gatsbyImageData": {
+                "layout": "constrained",
+                "images": {
+                  "fallback": {
+                    "src": "/static/8be4613b09511f9f9c833b3950f3d32e/b0805/3.png",
+                    "sizes": "(min-width: 700px) 700px, 100vw"
+                  }
+                },
+                "width": 700,
+                "height": 1065
+              }
+            }
+          },
+          {
+            "name": "4",
+            "childImageSharp": {
+              "gatsbyImageData": {
+                "layout": "constrained",
+                "images": {
+                  "fallback": {
+                    "src": "/static/f88d3caa4bbdc0abf9e19e463cbac1eb/b0805/4.png",
+                    "sizes": "(min-width: 700px) 700px, 100vw"
+                  }
+                },
+                "width": 700,
+                "height": 1065
+              }
+            }
+          },
+          {
+            "name": "5",
+            "childImageSharp": {
+              "gatsbyImageData": {
+                "layout": "constrained",
+                "images": {
+                  "fallback": {
+                    "src": "/static/66d75c209328e277ef7a39306f596233/b0805/5.png",
+                    "sizes": "(min-width: 700px) 700px, 100vw"
+                  }
+                },
+                "width": 700,
+                "height": 1065
+              }
+            }
+          },
+          {
+            "name": "6",
+            "childImageSharp": {
+              "gatsbyImageData": {
+                "layout": "constrained",
+                "images": {
+                  "fallback": {
+                    "src": "/static/dda4e75c34671caa793994b791f09f5d/b0805/6.png",
+                    "sizes": "(min-width: 700px) 700px, 100vw"
+                  }
+                },
+                "width": 700,
+                "height": 1065
+              }
+            }
+          },
+          {
+            "name": "7",
+            "childImageSharp": {
+              "gatsbyImageData": {
+                "layout": "constrained",
+                "images": {
+                  "fallback": {
+                    "src": "/static/ab50c5ec58dee61efd89f2a41589859c/b0805/7.png",
+                    "sizes": "(min-width: 700px) 700px, 100vw"
+                  }
+                },
+                "width": 700,
+                "height": 1065
+              }
+            }
+          },
+          {
+            "name": "8",
+            "childImageSharp": {
+              "gatsbyImageData": {
+                "layout": "constrained",
+                "images": {
+                  "fallback": {
+                    "src": "/static/3ec03fb8108b4f91a99048c29bd11133/b0805/8.png",
+                    "sizes": "(min-width: 700px) 700px, 100vw"
+                  }
+                },
+                "width": 700,
+                "height": 1065
+              }
+            }
+          },
+          {
+            "name": "9",
+            "childImageSharp": {
+              "gatsbyImageData": {
+                "layout": "constrained",
+                "images": {
+                  "fallback": {
+                    "src": "/static/7e6297bc21622980494e0959dc0b8eb2/b0805/9.png",
+                    "sizes": "(min-width: 700px) 700px, 100vw"
+                  }
+                },
+                "width": 700,
+                "height": 1065
+              }
+            }
+          },
+          {
+            "name": "10",
+            "childImageSharp": {
+              "gatsbyImageData": {
+                "layout": "constrained",
+                "images": {
+                  "fallback": {
+                    "src": "/static/a0dd43e2db403680c478d536bf615ca6/b0805/10.png",
+                    "sizes": "(min-width: 700px) 700px, 100vw"
+                  }
+                },
+                "width": 700,
+                "height": 1065
+              }
+            }
+          },
+          {
+            "name": "11",
+            "childImageSharp": {
+              "gatsbyImageData": {
+                "layout": "constrained",
+                "images": {
+                  "fallback": {
+                    "src": "/static/c89beb89e2415974ddf8c66fed711e95/b0805/11.png",
+                    "sizes": "(min-width: 700px) 700px, 100vw"
+                  }
+                },
+                "width": 700,
+                "height": 1065
+              }
+            }
+          },
+          {
+            "name": "12",
+            "childImageSharp": {
+              "gatsbyImageData": {
+                "layout": "constrained",
+                "images": {
+                  "fallback": {
+                    "src": "/static/f913e6006c84532f6da78a99b5b3e948/b0805/12.png",
+                    "sizes": "(min-width: 700px) 700px, 100vw"
+                  }
+                },
+                "width": 700,
+                "height": 1065
+              }
+            }
+          },
+          {
+            "name": "13",
+            "childImageSharp": {
+              "gatsbyImageData": {
+                "layout": "constrained",
+                "images": {
+                  "fallback": {
+                    "src": "/static/4331810b87daa56fd6746e3b12c74dd0/b0805/13.png",
+                    "sizes": "(min-width: 700px) 700px, 100vw"
+                  }
+                },
+                "width": 700,
+                "height": 1065
+              }
+            }
+          },
+          {
+            "name": "14",
+            "childImageSharp": {
+              "gatsbyImageData": {
+                "layout": "constrained",
+                "images": {
+                  "fallback": {
+                    "src": "/static/6bbfe0f1841f44cd713f5939c55f7068/b0805/14.png",
+                    "sizes": "(min-width: 700px) 700px, 100vw"
+                  }
+                },
+                "width": 700,
+                "height": 1065
+              }
+            }
+          },
+          {
+            "name": "15",
+            "childImageSharp": {
+              "gatsbyImageData": {
+                "layout": "constrained",
+                "images": {
+                  "fallback": {
+                    "src": "/static/0b17dc5a08b6fca0721c67b696763a0a/b0805/15.png",
+                    "sizes": "(min-width: 700px) 700px, 100vw"
+                  }
+                },
+                "width": 700,
+                "height": 1065
+              }
+            }
+          },
+          {
+            "name": "16",
+            "childImageSharp": {
+              "gatsbyImageData": {
+                "layout": "constrained",
+                "images": {
+                  "fallback": {
+                    "src": "/static/26578ba4b95ecaaee7e5b7432d032670/b0805/16.png",
+                    "sizes": "(min-width: 700px) 700px, 100vw"
+                  }
+                },
+                "width": 700,
+                "height": 1065
+              }
+            }
+          }
+        ]
+      }
+    },
+    "pageContext": {
+      "id": "156c22ef-6c51-5004-b93b-9dcb0346b51c",
+      "slug": "perfect-wedding",
+      "__params": {
+        "slug": "perfect-wedding"
+      }
+    }
+  },
+  "staticQueryHashes": ["1946181227", "3649515864"],
+  "slicesMap": {}
+}

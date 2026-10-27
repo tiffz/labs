@@ -18,4 +18,11 @@ describe('publishDateUtils', () => {
     ).toBe('2024-03-15T12:00:00.000Z');
     expect(earliestPublishDateIso([])).toBeNull();
   });
+
+  it('skips entries whose date is unknown instead of calling them earliest', () => {
+    expect(
+      earliestPublishDateIso([{ publishedAt: '' }, { publishedAt: '2024-06-01T12:00:00.000Z' }]),
+    ).toBe('2024-06-01T12:00:00.000Z');
+    expect(earliestPublishDateIso([{ publishedAt: '' }])).toBeNull();
+  });
 });

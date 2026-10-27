@@ -19,6 +19,9 @@ const ProjectWorkbench = lazy(() =>
 const SketchbookTab = lazy(() =>
   import('./components/SketchbookTab').then((m) => ({ default: m.SketchbookTab }))
 );
+const LyreflyAccountsPage = lazy(() =>
+  import('./components/LyreflyAccountsPage').then((m) => ({ default: m.LyreflyAccountsPage }))
+);
 const LyreflyVersionShareView = lazy(() =>
   import('./components/LyreflyVersionShareView').then((m) => ({
     default: m.LyreflyVersionShareView,
@@ -130,6 +133,8 @@ export default function App(): ReactElement {
         onBack={openGallery}
       />
     );
+  } else if (route.kind === 'accounts') {
+    mainContent = <LyreflyAccountsPage />;
   } else if (route.kind === 'sketchbook') {
     mainContent = <SketchbookTab onOpenProject={openProject} />;
   } else {

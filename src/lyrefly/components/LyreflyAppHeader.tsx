@@ -2,7 +2,12 @@ import type { ReactElement } from 'react';
 
 import LyreflyAccountMenu from './LyreflyAccountMenu';
 import { LyreflyLogomark } from './LyreflyLogomark';
-import { lyreflyGalleryHref, lyreflySketchbookHref, navigateLyreflyHash } from '../routes/lyreflyHash';
+import {
+  lyreflyAccountsHref,
+  lyreflyGalleryHref,
+  lyreflySketchbookHref,
+  navigateLyreflyHash,
+} from '../routes/lyreflyHash';
 import type { LyreflyRoute } from '../routes/lyreflyHash';
 
 export type LyreflyAppHeaderProps = {
@@ -12,6 +17,7 @@ export type LyreflyAppHeaderProps = {
 export function LyreflyAppHeader({ route }: LyreflyAppHeaderProps): ReactElement {
   const onGallery = route.kind === 'gallery';
   const onSketchbook = route.kind === 'sketchbook';
+  const onAccounts = route.kind === 'accounts';
 
   return (
     <header className="lyrefly-header lyrefly-shell-bar">
@@ -51,6 +57,19 @@ export function LyreflyAppHeader({ route }: LyreflyAppHeaderProps): ReactElement
             data-testid="lyrefly-sketchbook-tab"
           >
             Sketchbook
+          </button>
+          <button
+            type="button"
+            className={[
+              'lyrefly-header__nav-item',
+              'lyrefly-header__nav-button',
+              onAccounts ? 'lyrefly-header__nav-item--current' : '',
+            ].join(' ')}
+            aria-current={onAccounts ? 'page' : undefined}
+            onClick={() => navigateLyreflyHash(lyreflyAccountsHref())}
+            data-testid="lyrefly-accounts-tab"
+          >
+            Accounts
           </button>
         </nav>
 

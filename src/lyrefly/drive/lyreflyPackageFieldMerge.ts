@@ -179,6 +179,11 @@ export function mergeLyreflyProjectFields(local: ComicProject, remote: ComicProj
     distributionPdfDriveFileId: local.distributionPdfDriveFileId ?? remote.distributionPdfDriveFileId,
     projectFolderId: local.projectFolderId ?? remote.projectFolderId,
     finalArtVersionId: local.finalArtVersionId ?? remote.finalArtVersionId,
+    // Credit and series: the newer side's choice, including a deliberate "none" ([] / null). Only a
+    // side that never set one (undefined) defers to the other.
+    personaIds: base.personaIds !== undefined ? base.personaIds : (preferLocal ? remote : local).personaIds,
+    seriesId: base.seriesId !== undefined ? base.seriesId : (preferLocal ? remote : local).seriesId,
+    importKey: local.importKey ?? remote.importKey,
     updatedAt: local.updatedAt >= remote.updatedAt ? local.updatedAt : remote.updatedAt,
   };
 }

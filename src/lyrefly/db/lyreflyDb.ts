@@ -6,7 +6,10 @@ import type {
   ComicCharacter,
   ComicMacroSnapshot,
   ComicProject,
+  LyreflyAccount,
   LyreflyDirtySyncRow,
+  LyreflyPersona,
+  LyreflySeries,
   PageMockup,
   PageNode,
   PageReference,
@@ -49,6 +52,9 @@ export class LyreflyDb extends Dexie {
   pageReferences!: EntityTable<PageReference, 'id'>;
   pageMockups!: EntityTable<PageMockup, 'id'>;
   sketchbookBlobs!: EntityTable<LyreflySketchbookBlob, 'seedId'>;
+  personas!: EntityTable<LyreflyPersona, 'id'>;
+  series!: EntityTable<LyreflySeries, 'id'>;
+  accounts!: EntityTable<LyreflyAccount, 'id'>;
 
   constructor() {
     super('lyrefly');
@@ -111,6 +117,11 @@ export class LyreflyDb extends Dexie {
       comicCharacters: 'id, projectId, name',
       pageReferences: 'id, projectId, scriptPageKey',
       pageMockups: 'id, projectId, scriptPageKey',
+    });
+    this.version(5).stores({
+      personas: 'id',
+      series: 'id',
+      accounts: 'id',
     });
   }
 }

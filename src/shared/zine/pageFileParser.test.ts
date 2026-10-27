@@ -127,6 +127,17 @@ describe('detectSpread', () => {
       expect(result.isSpread).toBe(false);
     });
 
+    it.each(['12.png', 'page12.png', '23.png', '910.png'])(
+      'reads "%s" as one page, not a spread',
+      (name) => {
+        expect(detectSpread(name).isSpread).toBe(false);
+      },
+    );
+
+    it('still reads "spread12.png" as pages 1–2', () => {
+      expect(detectSpread('spread12.png')).toEqual({ isSpread: true, pages: [1, 2] });
+    });
+
     it('does not detect single page numbers as spreads', () => {
       const result = detectSpread('page1.png');
       expect(result.isSpread).toBe(false);

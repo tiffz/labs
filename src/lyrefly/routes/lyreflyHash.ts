@@ -3,6 +3,7 @@ import type { LyreflyWorkflowStage } from '../workflow/lyreflyWorkflowStages';
 export type LyreflyRoute =
   | { kind: 'gallery' }
   | { kind: 'sketchbook' }
+  | { kind: 'accounts' }
   | { kind: 'project'; projectId: string; stage?: LyreflyWorkflowStage }
   | { kind: 'profile'; projectId: string }
   | { kind: 'script'; projectId: string }
@@ -18,6 +19,9 @@ export function parseLyreflyHash(hash: string): LyreflyRoute {
   }
   if (segments[0] === 'sketchbook') {
     return { kind: 'sketchbook' };
+  }
+  if (segments[0] === 'accounts') {
+    return { kind: 'accounts' };
   }
   if (segments[0] === 'project' && segments[1]) {
     if (segments[2] === 'profile') {
@@ -44,6 +48,10 @@ export function lyreflyGalleryHref(): string {
 
 export function lyreflySketchbookHref(): string {
   return '#/sketchbook';
+}
+
+export function lyreflyAccountsHref(): string {
+  return '#/accounts';
 }
 
 export function lyreflyProjectHref(projectId: string): string {

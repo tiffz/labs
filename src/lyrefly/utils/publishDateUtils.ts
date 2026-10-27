@@ -41,15 +41,18 @@ export function formatPublishDateDisplay(iso: string): string {
   return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-/** Earliest `publishedAt` across publish-log entries, or null when empty. */
+/**
+ * Earliest `publishedAt` across publish-log entries, or null when none has a date. An empty
+ * `publishedAt` means the day is unknown (an import that only knew the year); it is skipped, not
+ * read as the earliest date of all.
+ */
 export function earliestPublishDateIso(
   entries: readonly { publishedAt: string }[],
 ): string | null {
-  if (entries.length === 0) return null;
-  let earliest = entries[0]!.publishedAt;
-  for (let i = 1; i < entries.length; i += 1) {
-    const candidate = entries[i]!.publishedAt;
-    if (candidate < earliest) earliest = candidate;
+  let earliest: string | null = null;
+  for (const { publishedAt } of entries) {
+    if (!publishedAt) continue;
+    if (earliest === null || publishedAt < earliest) earliest = publishedAt;
   }
   return earliest;
 }

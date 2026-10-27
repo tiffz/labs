@@ -184,17 +184,8 @@ export function detectSpread(filename: string): { isSpread: boolean; pages?: [nu
         return { isSpread: true, pages: [numbers[i], numbers[i + 1]] };
       }
     }
-
-    if (numbers.length === 1) {
-      const numStr = numbers[0].toString();
-      for (let splitPos = 1; splitPos < numStr.length; splitPos++) {
-        const first = parseInt(numStr.substring(0, splitPos), 10);
-        const second = parseInt(numStr.substring(splitPos), 10);
-        if (second === first + 1 && second > 0 && first > 0) {
-          return { isSpread: true, pages: [first, second] };
-        }
-      }
-    }
+    // No digit-splitting here: without a "spread" keyword, "12.png" is page twelve, not pages
+    // 1–2. Splitting turned pages 12, 23, 34 … of any plainly numbered upload into spreads.
   }
 
   return { isSpread: false };

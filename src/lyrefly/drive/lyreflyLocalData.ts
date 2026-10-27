@@ -4,11 +4,35 @@ import type { LyreflySyncPayload } from './lyreflyDriveEnvelope';
 import { markLyreflyPackagePullPending } from './lyreflyPendingPackagePulls';
 
 export async function readLyreflyLocalPayload(): Promise<LyreflySyncPayload> {
-  const projects = await lyreflyDb.projects.toArray();
-  return { projects: projects.map(projectToSummary) };
+  const [projects, personas, series, accounts] = await Promise.all([
+    lyreflyDb.projects.toArray(),
+    lyreflyDb.personas.toArray(),
+    lyreflyDb.series.toArray(),
+    lyreflyDb.accounts.toArray(),
+  ]);
+  return { projects: projects.map(projectToSummary), identities: { personas, series, accounts } };
 }
 
 export async function writeLyreflyLocalPayload(payload: LyreflySyncPayload): Promise<void> {
+  // Identities never delete. Write a merged row only when it is newer than what is here now: the
+  // payload was read before the Drive fetch, so an edit made while the sync ran is newer than it
+  // and must not be put back to the copy from the start of the sync.
+  if (payload.identities) {
+    const { personas, series, accounts } = payload.identities;
+    await lyreflyDb.transaction('rw', [lyreflyDb.personas, lyreflyDb.series, lyreflyDb.accounts], async () => {
+      const isNewer = (row: { updatedAt: string }, current: { updatedAt: string } | undefined) =>
+        !current || row.updatedAt > current.updatedAt;
+      for (const row of personas) {
+        if (isNewer(row, await lyreflyDb.personas.get(row.id))) await lyreflyDb.personas.put(row);
+      }
+      for (const row of series) {
+        if (isNewer(row, await lyreflyDb.series.get(row.id))) await lyreflyDb.series.put(row);
+      }
+      for (const row of accounts) {
+        if (isNewer(row, await lyreflyDb.accounts.get(row.id))) await lyreflyDb.accounts.put(row);
+      }
+    });
+  }
   await lyreflyDb.transaction('rw', lyreflyDb.projects, async () => {
     const incomingIds = new Set(payload.projects.map((p) => p.id));
     const existing = await lyreflyDb.projects.toArray();
