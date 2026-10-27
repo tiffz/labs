@@ -103,12 +103,7 @@ const body = `/**
  * Regenerate: npm run muscle:sync-atlas-registry
  */
 import type { MuscleMemoryNode } from '../types/node';
-
-const ATLAS_CTX = {
-  whyItMatters: 'Anatomy atlas fill — visible in Full body for context.',
-  commonMistake: 'Switch to a module tab to study curated structures with reps.',
-  movementEffect: 'Full body atlas only.',
-};
+import { ATLAS_REFERENCE_DETAILS } from './structureDetailsCatalog';
 
 export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
 ${atlasMeshes
@@ -126,7 +121,7 @@ ${atlasMeshes
     isSurfaceForm: false,
     primitiveShape: ${JSON.stringify(shape)},
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   }`;
   })
   .join(',\n')}

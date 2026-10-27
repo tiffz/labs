@@ -21,17 +21,18 @@ Full body atlas is reference-only (not in the linear path).
 
 - **Multi-member study groups:** standard anatomical muscle groups only (deltoid, quadriceps femoris, hamstrings, gluteal muscles, rotator cuff, thenar muscles, intrinsic muscles of the hand). No regional buckets like “front torso” or “forearm”.
 - **Default study deck:** Proko lesson mass or AFS silhouette block (see `artistStudyManifest.ts`).
-- **Drill-down:** Individual vertebrae, vastus heads, etc. stay atlas-only until user toggles detail structures.
+- **Drill-down:** Individual vertebrae stay atlas-only until the user toggles detail structures.
 - **Quiz eligible:** `quizEligible: true` in manifest; atlas fills default to `false`.
 
-## Gap / promote list (Phase 5)
+## Study vs atlas-only
 
-Promoted from atlas supplement into study decks:
+A node is in a module's study deck unless it sets `atlasOnly: true`
+(`curriculum/index.ts` → `getNodesForRegion`). That flag is the only switch.
 
-- Leg: gluteus maximus/medius/minimus, tensor fasciae latae, adductor longus
-- Shoulder: rhomboid major, infraspinatus, teres major, supraspinatus
-
-Deferred (atlas-only): deep hip rotators, individual vastus heads, facial expression module.
+Atlas-only today: deep hip rotators (piriformis, gemelli, obturator internus,
+quadratus femoris), soleus, gracilis, sartorius, splenius capitis, omohyoid,
+the head and face nodes, and every generated `atlas_*` fill. All four quadriceps heads and all three
+hamstrings are study nodes.
 
 ## Retire / merge
 

@@ -13,6 +13,18 @@ export const armNodes = [
     layout: { position: [0.52, 1.1, -0.08], scale: [0.13, 0.3, 0.11] },
     cameraPresetKey: 'arm',
   }),
+  muscle('muscle_triceps_lateral_head', 'Triceps (lateral head)', 'arm', 0, 'egg', {
+    originBoneId: 'bone_humerus',
+    insertionBoneId: 'bone_ulna',
+    layout: { position: [0.56, 1.12, -0.07], scale: [0.11, 0.24, 0.1] },
+    cameraPresetKey: 'arm',
+  }),
+  muscle('muscle_triceps_medial_head', 'Triceps (medial head)', 'arm', 1, 'egg', {
+    originBoneId: 'bone_humerus',
+    insertionBoneId: 'bone_ulna',
+    layout: { position: [0.53, 1.02, -0.06], scale: [0.1, 0.18, 0.09] },
+    cameraPresetKey: 'elbow',
+  }),
   muscle('muscle_brachialis', 'Brachialis', 'arm', 1, 'egg', {
     layout: { position: [0.54, 1.0, 0.02], scale: [0.11, 0.18, 0.1] },
     cameraPresetKey: 'elbow',

@@ -54,6 +54,15 @@ describe('muscle curriculum node integrity', () => {
     }
   });
 
+  // The fallback card ("Reference structure: …") passes the length check above, so
+  // a study node without a catalog entry shipped an unchecked placeholder.
+  it('gives every study node a written card, not the fallback', () => {
+    const studyNodes = ALL_NODES.filter((node) => !node.atlasOnly);
+    expect(studyNodes.length).toBeGreaterThan(0);
+    const missing = studyNodes.map((node) => node.id).filter((id) => !STRUCTURE_DETAILS_BY_ID[id]);
+    expect(missing).toEqual([]);
+  });
+
   it('covers fundamentals gate nodes for muscle module unlock', () => {
     const gate = getFundamentalsGateNodes();
     expect(gate.length).toBeGreaterThanOrEqual(8);
