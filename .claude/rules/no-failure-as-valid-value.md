@@ -20,6 +20,16 @@ Found in one session, in five unrelated subsystems:
 | `repeatCount` span off by one copy | how many measures the repeat occupies | the following section was classified as a ghost and hidden           |
 | selection cleared during playback  | nothing — the loop still used it      | the UI stopped describing what the audio was doing                   |
 
+Two more, in the darbuka editor a month later:
+
+| Encoded as                               | Actually meant                  | What broke                                                             |
+| ---------------------------------------- | ------------------------------- | ---------------------------------------------------------------------- |
+| a rest the parser added to pad a measure | a rest the user typed           | copy wrote padding back as typed `____`; deleting "it" changed nothing |
+| `logicalReached` ← the tick asked for    | how far the string actually got | an insert into padding landed early with no rests before it            |
+
+Both are now explicit: the parser flags its padding (`Note.isPadding`), and the mapper reports
+the tick it reached, so a caller can see the gap and fill it.
+
 ## The rule
 
 When a function cannot answer, it must say so in a way the type system or the caller is forced to
