@@ -1,5 +1,6 @@
 import type { ComicProjectSummary, LyreflyProjectStatus } from '../types';
 import type { LyreflySyncPayload } from './lyreflyDriveEnvelope';
+import { mergeLyreflyIdentities } from './lyreflyIdentitiesMerge';
 
 export type LyreflyDriveMergeReport = {
   projectsMerged: number;
@@ -87,6 +88,7 @@ export function applyLyreflyConflictChoices(
   options?: { tombstoneProjectIds?: ReadonlySet<string> },
 ): { payload: LyreflySyncPayload; report: LyreflyDriveMergeReport } {
   const remoteFiltered: LyreflySyncPayload = {
+    ...remote,
     projects: remote.projects.filter((p) => choices.get(p.id) !== 'local'),
   };
   const { payload, report } = mergeLyreflySyncPayload(local, remoteFiltered, options);
@@ -95,7 +97,7 @@ export function applyLyreflyConflictChoices(
     if (choices.get(project.id) !== 'remote') return project;
     return remoteById.get(project.id) ?? project;
   });
-  return { payload: { projects }, report };
+  return { payload: { ...payload, projects }, report };
 }
 
 export function mergeLyreflySyncPayload(
@@ -138,7 +140,10 @@ export function mergeLyreflySyncPayload(
   mergedProjects.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 
   return {
-    payload: { projects: mergedProjects },
+    payload: {
+      projects: mergedProjects,
+      identities: mergeLyreflyIdentities(local.identities, remote.identities),
+    },
     report: {
       projectsMerged,
       projectsFromLocalOnly,

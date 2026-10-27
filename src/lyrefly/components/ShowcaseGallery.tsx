@@ -29,6 +29,7 @@ import {
   type LyreflyShelfViewMode,
 } from '../utils/lyreflyShelfFilters';
 import { LyreflySearchHighlight } from './LyreflySearchHighlight';
+import { LyreflySiteImportDialog } from './LyreflySiteImportDialog';
 import { LyreflyShelfCover } from './LyreflyShelfCover';
 import { GalleryPipelineQueue } from './SketchbookTab';
 import { ShowcaseComicsTable } from './ShowcaseComicsTable';
@@ -106,6 +107,7 @@ export function ShowcaseGallery({ onOpenProject, onOpenProfile }: ShowcaseGaller
     ...EMPTY_LYREFLY_SHELF_FILTERS,
   }));
   const [viewMode, setViewMode] = useState<LyreflyShelfViewMode>(() => readLyreflyShelfViewMode());
+  const [importOpen, setImportOpen] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -182,9 +184,20 @@ export function ShowcaseGallery({ onOpenProject, onOpenProfile }: ShowcaseGaller
       {empty ? (
         <div className="lyrefly-studio__empty">
           <p>Your shelf is waiting for its first comic. Start blank and move at your own pace.</p>
-          <button type="button" className="lyrefly-studio__cta" onClick={() => void handleNewProject()}>
-            New comic
-          </button>
+          <div className="lyrefly-studio__empty-actions">
+            <button type="button" className="lyrefly-studio__cta" onClick={() => void handleNewProject()}>
+              New comic
+            </button>
+            <button
+              type="button"
+              className="lyrefly-studio__secondary"
+              onClick={() => setImportOpen(true)}
+              data-testid="lyrefly-empty-import"
+            >
+              Import from a website
+            </button>
+          </div>
+          <LyreflySiteImportDialog open={importOpen} onClose={() => setImportOpen(false)} />
         </div>
       ) : (
         <>

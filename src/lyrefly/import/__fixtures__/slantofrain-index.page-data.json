@@ -1,0 +1,581 @@
+{
+  "componentChunkName": "component---src-pages-index-tsx",
+  "path": "/",
+  "result": {
+    "data": {
+      "allFile": {
+        "group": [
+          {
+            "fieldValue": "1-fighting",
+            "nodes": [
+              {
+                "id": "3b9d9abe-791f-5963-8972-39e032648a6d",
+                "name": "Inner_Front",
+                "childImageSharp": {
+                  "gatsbyImageData": {
+                    "layout": "constrained",
+                    "images": {
+                      "fallback": {
+                        "src": "/static/f61be6385a3d6290d7317918a673f4d4/7cf9f/Inner_Front.png",
+                        "sizes": "(min-width: 900px) 900px, 100vw"
+                      }
+                    },
+                    "width": 900,
+                    "height": 1350
+                  }
+                }
+              },
+              {
+                "id": "3a6d2e60-f246-54e4-b918-414b58c8dce0",
+                "name": "Page_8",
+                "childImageSharp": {
+                  "gatsbyImageData": {
+                    "layout": "constrained",
+                    "images": {
+                      "fallback": {
+                        "src": "/static/f7e96d294f7f99958b319ad8844b6f51/7cf9f/Page_8.png",
+                        "sizes": "(min-width: 900px) 900px, 100vw"
+                      }
+                    },
+                    "width": 900,
+                    "height": 1350
+                  }
+                }
+              },
+              {
+                "id": "40256089-89fe-5092-9c6c-b4f67d0d3a42",
+                "name": "Page_12-Inner_Back",
+                "childImageSharp": {
+                  "gatsbyImageData": {
+                    "layout": "constrained",
+                    "images": {
+                      "fallback": {
+                        "src": "/static/a6b3c0b6d767d187891fdd3e27ab3f6e/7cf9f/Page_12-Inner_Back.png",
+                        "sizes": "(min-width: 900px) 900px, 100vw"
+                      }
+                    },
+                    "width": 900,
+                    "height": 1350
+                  }
+                }
+              },
+              {
+                "id": "38face1c-6b2c-5a24-b367-7fb18b293a23",
+                "name": "Page_5",
+                "childImageSharp": {
+                  "gatsbyImageData": {
+                    "layout": "constrained",
+                    "images": {
+                      "fallback": {
+                        "src": "/static/a9e4512aa8a1207e0966c6a7db26c74b/7cf9f/Page_5.png",
+                        "sizes": "(min-width: 900px) 900px, 100vw"
+                      }
+                    },
+                    "width": 900,
+                    "height": 1350
+                  }
+                }
+              },
+              {
+                "id": "7e689953-4e5b-530a-bbd6-753422fd8899",
+                "name": "Page_1",
+                "childImageSharp": {
+                  "gatsbyImageData": {
+                    "layout": "constrained",
+                    "images": {
+                      "fallback": {
+                        "src": "/static/1c9e8121640c52f319ea4ce7f2f59a60/7cf9f/Page_1.png",
+                        "sizes": "(min-width: 900px) 900px, 100vw"
+                      }
+                    },
+                    "width": 900,
+                    "height": 1350
+                  }
+                }
+              },
+              {
+                "id": "f17b4a93-a0c6-58ab-9730-593a257fbf07",
+                "name": "Page_2",
+                "childImageSharp": {
+                  "gatsbyImageData": {
+                    "layout": "constrained",
+                    "images": {
+                      "fallback": {
+                        "src": "/static/597db4e9620422fd4a3dfa2b2757aba1/7cf9f/Page_2.png",
+                        "sizes": "(min-width: 900px) 900px, 100vw"
+                      }
+                    },
+                    "width": 900,
+                    "height": 1350
+                  }
+                }
+              },
+              {
+                "id": "d006c623-ec7b-584d-913e-30c0dfb9a6e8",
+                "name": "Page_3",
+                "childImageSharp": {
+                  "gatsbyImageData": {
+                    "layout": "constrained",
+                    "images": {
+                      "fallback": {
+                        "src": "/static/f14be2504725d49f7fa6d25cab2bae63/7cf9f/Page_3.png",
+                        "sizes": "(min-width: 900px) 900px, 100vw"
+                      }
+                    },
+                    "width": 900,
+                    "height": 1350
+                  }
+                }
+              },
+              {
+                "id": "c29f6641-3b05-5985-aa7a-af545c47659b",
+                "name": "Page_7",
+                "childImageSharp": {
+                  "gatsbyImageData": {
+                    "layout": "constrained",
+                    "images": {
+                      "fallback": {
+                        "src": "/static/d2acd4a6203fd629b41abcb0d1b32461/7cf9f/Page_7.png",
+                        "sizes": "(min-width: 900px) 900px, 100vw"
+                      }
+                    },
+                    "width": 900,
+                    "height": 1350
+                  }
+                }
+              },
+              {
+                "id": "7b08f83c-f883-50bc-912d-3b25418318d6",
+                "name": "Page_4",
+                "childImageSharp": {
+                  "gatsbyImageData": {
+                    "layout": "constrained",
+                    "images": {
+                      "fallback": {
+                        "src": "/static/736913a714111a1d5c967750e1e56843/7cf9f/Page_4.png",
+                        "sizes": "(min-width: 900px) 900px, 100vw"
+                      }
+                    },
+                    "width": 900,
+                    "height": 1350
+                  }
+                }
+              },
+              {
+                "id": "2fd29f10-381d-5e01-8bcf-c5f60e7ef335",
+                "name": "Outer_Front",
+                "childImageSharp": {
+                  "gatsbyImageData": {
+                    "layout": "constrained",
+                    "images": {
+                      "fallback": {
+                        "src": "/static/81c601196fce75a4f2028bf315bae2cb/7cf9f/Outer_Front.png",
+                        "sizes": "(min-width: 900px) 900px, 100vw"
+                      }
+                    },
+                    "width": 900,
+                    "height": 1350
+                  }
+                }
+              },
+              {
+                "id": "58b19d03-a259-5185-98de-67bec3d7ab18",
+                "name": "Page_9",
+                "childImageSharp": {
+                  "gatsbyImageData": {
+                    "layout": "constrained",
+                    "images": {
+                      "fallback": {
+                        "src": "/static/f8831d262380c1e37ea9e3327037f8c5/7cf9f/Page_9.png",
+                        "sizes": "(min-width: 900px) 900px, 100vw"
+                      }
+                    },
+                    "width": 900,
+                    "height": 1350
+                  }
+                }
+              },
+              {
+                "id": "11e51807-ea3b-5efa-881d-4c82ceae03b4",
+                "name": "Page_6",
+                "childImageSharp": {
+                  "gatsbyImageData": {
+                    "layout": "constrained",
+                    "images": {
+                      "fallback": {
+                        "src": "/static/03860a0c9ebf02270ad5b96e854adac6/7cf9f/Page_6.png",
+                        "sizes": "(min-width: 900px) 900px, 100vw"
+                      }
+                    },
+                    "width": 900,
+                    "height": 1350
+                  }
+                }
+              },
+              {
+                "id": "fa7bcbbb-5434-59c3-a6a3-12fdef2eb1a5",
+                "name": "Outer_Back",
+                "childImageSharp": {
+                  "gatsbyImageData": {
+                    "layout": "constrained",
+                    "images": {
+                      "fallback": {
+                        "src": "/static/e59dc9b0de31026e82ce448e435c0026/7cf9f/Outer_Back.png",
+                        "sizes": "(min-width: 900px) 900px, 100vw"
+                      }
+                    },
+                    "width": 900,
+                    "height": 1350
+                  }
+                }
+              },
+              {
+                "id": "f00bfe84-692e-5c79-b844-bd871f6b9fa7",
+                "name": "Page_10-11",
+                "childImageSharp": {
+                  "gatsbyImageData": {
+                    "layout": "constrained",
+                    "images": {
+                      "fallback": {
+                        "src": "/static/44dadc1ee20dc6dd0dcd3251f4feb752/7cf9f/Page_10-11.png",
+                        "sizes": "(min-width: 900px) 900px, 100vw"
+                      }
+                    },
+                    "width": 900,
+                    "height": 1350
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "fieldValue": "2-600-million-steps",
+            "nodes": [
+              {
+                "id": "c3e8731b-bbba-58c8-aadf-039e33175745",
+                "name": "Outer_Back",
+                "childImageSharp": {
+                  "gatsbyImageData": {
+                    "layout": "constrained",
+                    "images": {
+                      "fallback": {
+                        "src": "/static/3d882f227e77cff149fdb86deced091e/7cf9f/Outer_Back.png",
+                        "sizes": "(min-width: 900px) 900px, 100vw"
+                      }
+                    },
+                    "width": 900,
+                    "height": 1350
+                  }
+                }
+              },
+              {
+                "id": "9db67ca9-8e3c-5d84-b5cb-5c187d6ca067",
+                "name": "Page_3",
+                "childImageSharp": {
+                  "gatsbyImageData": {
+                    "layout": "constrained",
+                    "images": {
+                      "fallback": {
+                        "src": "/static/81619321c6c01efb9bd3993cfc56cc82/7cf9f/Page_3.png",
+                        "sizes": "(min-width: 900px) 900px, 100vw"
+                      }
+                    },
+                    "width": 900,
+                    "height": 1350
+                  }
+                }
+              },
+              {
+                "id": "551b44b0-1b19-516b-99d2-4e60e682f825",
+                "name": "Outer_Front",
+                "childImageSharp": {
+                  "gatsbyImageData": {
+                    "layout": "constrained",
+                    "images": {
+                      "fallback": {
+                        "src": "/static/6ce99221efca9493eb4c6853742f81e2/7cf9f/Outer_Front.png",
+                        "sizes": "(min-width: 900px) 900px, 100vw"
+                      }
+                    },
+                    "width": 900,
+                    "height": 1350
+                  }
+                }
+              },
+              {
+                "id": "08a3b470-8ca7-56bf-bb59-c14520e3b631",
+                "name": "Page_1",
+                "childImageSharp": {
+                  "gatsbyImageData": {
+                    "layout": "constrained",
+                    "images": {
+                      "fallback": {
+                        "src": "/static/92cf4d9616b9a1a155df25382c9c4645/7cf9f/Page_1.png",
+                        "sizes": "(min-width: 900px) 900px, 100vw"
+                      }
+                    },
+                    "width": 900,
+                    "height": 1350
+                  }
+                }
+              },
+              {
+                "id": "c5a27aa2-7099-5cd4-8e59-9b6772afef83",
+                "name": "Page_6",
+                "childImageSharp": {
+                  "gatsbyImageData": {
+                    "layout": "constrained",
+                    "images": {
+                      "fallback": {
+                        "src": "/static/44d26f6deda5b90c2f24e905854a8d9e/7cf9f/Page_6.png",
+                        "sizes": "(min-width: 900px) 900px, 100vw"
+                      }
+                    },
+                    "width": 900,
+                    "height": 1350
+                  }
+                }
+              },
+              {
+                "id": "f3a3de46-792f-5e7d-a6d9-5f9f75f522ce",
+                "name": "Page_2",
+                "childImageSharp": {
+                  "gatsbyImageData": {
+                    "layout": "constrained",
+                    "images": {
+                      "fallback": {
+                        "src": "/static/64c6fd134b1524d365f655beb3faeb03/7cf9f/Page_2.png",
+                        "sizes": "(min-width: 900px) 900px, 100vw"
+                      }
+                    },
+                    "width": 900,
+                    "height": 1350
+                  }
+                }
+              },
+              {
+                "id": "7c2c2723-1685-5070-8022-18269b72141e",
+                "name": "Page_4",
+                "childImageSharp": {
+                  "gatsbyImageData": {
+                    "layout": "constrained",
+                    "images": {
+                      "fallback": {
+                        "src": "/static/648893d9eb34e50668171ebc53ae596d/7cf9f/Page_4.png",
+                        "sizes": "(min-width: 900px) 900px, 100vw"
+                      }
+                    },
+                    "width": 900,
+                    "height": 1350
+                  }
+                }
+              },
+              {
+                "id": "d27ad463-2e59-5268-bbdb-fb05db6b1c72",
+                "name": "Page_5",
+                "childImageSharp": {
+                  "gatsbyImageData": {
+                    "layout": "constrained",
+                    "images": {
+                      "fallback": {
+                        "src": "/static/37d0ddb7949ec90a3d9ed9b4ec9d6151/7cf9f/Page_5.png",
+                        "sizes": "(min-width: 900px) 900px, 100vw"
+                      }
+                    },
+                    "width": 900,
+                    "height": 1350
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "allMetadataYaml": {
+        "nodes": [
+          {
+            "title": "Fighting",
+            "description": null,
+            "contentWarnings": ["Domestic violence"],
+            "publishDate": "2025-12-31",
+            "altText": null,
+            "parent": {
+              "relativeDirectory": "1-fighting"
+            }
+          },
+          {
+            "title": "600 Million Steps",
+            "description": null,
+            "contentWarnings": null,
+            "publishDate": "2026-07-13",
+            "altText": null,
+            "parent": {
+              "relativeDirectory": "2-600-million-steps"
+            }
+          }
+        ]
+      },
+      "allAltTextYaml": {
+        "nodes": [
+          {
+            "filename": "Outer_Front",
+            "alt": "Comic cover. Muscular woman walks into dark woods from behind. Title: Fighting: A comic by Petrichor Lin",
+            "parent": {
+              "relativeDirectory": "1-fighting"
+            }
+          },
+          {
+            "filename": "Inner_Front",
+            "alt": "Content Warning: Domestic Violence",
+            "parent": {
+              "relativeDirectory": "1-fighting"
+            }
+          },
+          {
+            "filename": "Page_1",
+            "alt": "Narration: When I was a kid, I wanted to learn how to fight.\n1. Opening shot of a suburban house at night.\n2. Shot of an empty dining room.\n3. A little girl with blonde hair hides in an enclosed space, looking worried.\n",
+            "parent": {
+              "relativeDirectory": "1-fighting"
+            }
+          },
+          {
+            "filename": "Page_2",
+            "alt": "1. Little girl peaks out of cabinet door.\n2. Mom and Dad are fighting by holding up chairs. Mom looks angry, and dad looks worried.\n3. Dad holds his chair as a shield to defend against a hit from another chair.\n4. Another chair hit towards Dad, but this time, the chair Dad is holding is knocked out of his hands.\n",
+            "parent": {
+              "relativeDirectory": "1-fighting"
+            }
+          },
+          {
+            "filename": "Page_3",
+            "alt": "1. Closeup. Mom's eyes are angry.\n2. Closeup. Dad's eyes are angry.\n3. Mom holds a chair over head, aiming at Dad who is on the ground. Mom: \"I'm gonna kill you!\"\n",
+            "parent": {
+              "relativeDirectory": "1-fighting"
+            }
+          },
+          {
+            "filename": "Page_4",
+            "alt": "1. Dad is in the hospital with a bruised face.\n2. Black panel. Narration: \"Dad was a kind man.\"\n3. Wide panel. Dad and the little girl look over a peaceful landscape.\n4. Dad picks out a flower for his daughter.\n5. Flashback to Mom kicking Dad in the face. Dad: \"Please just stop.\"\n",
+            "parent": {
+              "relativeDirectory": "1-fighting"
+            }
+          },
+          {
+            "filename": "Page_5",
+            "alt": "Narration: \"She never stopped.\"\n1. Wide panel. Mom and daughter are at a funeral.\n",
+            "parent": {
+              "relativeDirectory": "1-fighting"
+            }
+          },
+          {
+            "filename": "Page_6",
+            "alt": "Narration: \"I have never been in a fight.\"\nA full bleed page showing a montage of the little girl growing up and landing stronger and stronger punches at a punching bag. By the end of the page, she is an adult boxer.\n",
+            "parent": {
+              "relativeDirectory": "1-fighting"
+            }
+          },
+          {
+            "filename": "Page_7",
+            "alt": "1. Our narrator is in a boxing ring, getting punched in the face by another woman. Narration: \"At least not a real one.\"\n2. She punches her opponent in the face back.\n3. She wins the match, with a referee holding her hand up. Bright spotlights shine in the background.\n",
+            "parent": {
+              "relativeDirectory": "1-fighting"
+            }
+          },
+          {
+            "filename": "Page_8",
+            "alt": "Full bleed page with black and white art. Our narrator is shown walking through a park with a sad face. Narration: \"Somehow it feels wrong...\"",
+            "parent": {
+              "relativeDirectory": "1-fighting"
+            }
+          },
+          {
+            "filename": "Page_9",
+            "alt": "1. Narrator is sitting on a grassy hill, looking at a calm sky. Narration: \"...That the world is gentle.\"\n2. Closeup of the narrator picking a flower.\n3. Narrator stares at a daisy. Narration: \"Even knowing that's no need...\"\n",
+            "parent": {
+              "relativeDirectory": "1-fighting"
+            }
+          },
+          {
+            "filename": "Page_10-11",
+            "alt": "2-page spread of the narrator throwing a hard punch at a punching bag with a stoic face. Narration: \"I can't stop fighting.\"",
+            "parent": {
+              "relativeDirectory": "1-fighting"
+            }
+          },
+          {
+            "filename": "Page_12-Inner_Back",
+            "alt": "2-page black and white spread. Narrator looks over a calm ocean as birds fly into the distance.",
+            "parent": {
+              "relativeDirectory": "1-fighting"
+            }
+          },
+          {
+            "filename": "Outer_Back",
+            "alt": "Back cover. A single daisy in an empty ink bottle is shown. Text: @ImFineComics",
+            "parent": {
+              "relativeDirectory": "1-fighting"
+            }
+          },
+          {
+            "filename": "Outer_Front",
+            "alt": "Comic cover. A girl with short hair reaches toward a glowing full moon. Another girl with long wavy hair sits on the moon's edge. Title on the moon: 600 million steps. Credit: by petrichor lin",
+            "parent": {
+              "relativeDirectory": "2-600-million-steps"
+            }
+          },
+          {
+            "filename": "Page_1",
+            "alt": "A girl with long wavy hair (Moon girl) stands barefoot on the surface of the moon, looking out at Earth.\nEarth girl (off-panel): \"I know you prefer the moon.\"\n",
+            "parent": {
+              "relativeDirectory": "2-600-million-steps"
+            }
+          },
+          {
+            "filename": "Page_2",
+            "alt": "The same girl sits alone inside a crater, knees drawn up, looking down.\nEarth girl (off-panel): \"But it's lonely there, isn't it?\"\n",
+            "parent": {
+              "relativeDirectory": "2-600-million-steps"
+            }
+          },
+          {
+            "filename": "Page_3",
+            "alt": "The girl with short hair (Earth girl) stares at the moon from Earth.",
+            "parent": {
+              "relativeDirectory": "2-600-million-steps"
+            }
+          },
+          {
+            "filename": "Page_4",
+            "alt": "Earth girl goes through underwater astronaut training.",
+            "parent": {
+              "relativeDirectory": "2-600-million-steps"
+            }
+          },
+          {
+            "filename": "Page_5",
+            "alt": "She's in the crowded cockpit of a spaceship, looking out a small window to see the moon.\nEarth girl: \"I may never understand your world.\"\n",
+            "parent": {
+              "relativeDirectory": "2-600-million-steps"
+            }
+          },
+          {
+            "filename": "Page_6",
+            "alt": "The Earth girl approaches the Moon girl and offers a hand. The Moon girl looks up at her and smiles.\nEarth girl: \"But I want to try.\"\n",
+            "parent": {
+              "relativeDirectory": "2-600-million-steps"
+            }
+          },
+          {
+            "filename": "Outer_Back",
+            "alt": "Back cover. The two girls sit together atop a small moon against a starry sky. Text: SlantOfRain.com",
+            "parent": {
+              "relativeDirectory": "2-600-million-steps"
+            }
+          }
+        ]
+      }
+    },
+    "pageContext": {}
+  },
+  "staticQueryHashes": [],
+  "slicesMap": {}
+}

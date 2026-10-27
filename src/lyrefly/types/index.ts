@@ -109,8 +109,55 @@ export interface ComicProject {
   /** Lower sorts earlier in priority queue. */
   priorityRank?: number;
   pageCount?: number;
+  /**
+   * Pen names this comic is credited to. A list so co-credit needs no migration; the UI picks one.
+   * Absent = never set; `[]` = deliberately uncredited.
+   */
+  personaIds?: string[];
+  /** Series this comic belongs to. Absent = never set; `null` = deliberately in no series. */
+  seriesId?: string | null;
+  /**
+   * Stable key for a comic brought in by the site importer (`tiffatiel.com:perfect-wedding`).
+   * Derived ids hang off it, so re-running an import finds the comic instead of duplicating it.
+   */
+  importKey?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+/** A pen name. Retired, never deleted, so old credits keep pointing at it. */
+export interface LyreflyPersona {
+  id: string;
+  name: string;
+  retiredAt?: string;
+  updatedAt: string;
+}
+
+/** Comics that belong together (Between Walks, Slant of Rain). Not an author: a series has no credit of its own. */
+export interface LyreflySeries {
+  id: string;
+  title: string;
+  retiredAt?: string;
+  updatedAt: string;
+}
+
+/** Somewhere comics go out: a social account or a website. Owned by exactly one pen name or series. */
+export interface LyreflyAccount {
+  id: string;
+  /** Same vocabulary as `inferPublishPlatform` (`Bluesky`, `X`, …); `Website` for a site. */
+  platform: string;
+  handle: string;
+  url: string;
+  owner: { kind: 'persona' | 'series'; id: string };
+  retiredAt?: string;
+  updatedAt: string;
+}
+
+/** Portfolio-level identity rows, synced in the gallery envelope. */
+export interface LyreflyIdentities {
+  personas: LyreflyPersona[];
+  series: LyreflySeries[];
+  accounts: LyreflyAccount[];
 }
 
 export interface ComicProjectSummary {

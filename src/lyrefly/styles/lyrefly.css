@@ -192,6 +192,33 @@
   margin-left: auto;
 }
 
+/* Phones: three tabs plus the account menu only fit with the wordmark dropped (the feather stays,
+   and the brand button keeps its accessible name). Without this the account menu sat off-screen. */
+@media (max-width: 479px) {
+  .lyrefly-header__inner {
+    gap: 0 1rem;
+  }
+
+  .lyrefly-header__title {
+    display: none;
+  }
+
+  .lyrefly-header__nav {
+    gap: 0.875rem;
+  }
+
+  .lyrefly-header__nav-item {
+    font-size: 0.875rem;
+    white-space: nowrap;
+  }
+
+  /* The smaller text would leave the tabs 23px tall, under the 24px touch floor. */
+  .lyrefly-header__nav-button {
+    min-height: 24px;
+    align-items: center;
+  }
+}
+
 .lyrefly-app #lyrefly-account-menu-button[aria-expanded='true'] {
   border-color: color-mix(
     in srgb,
@@ -4757,5 +4784,196 @@
   margin: 0;
   font-size: 0.75rem;
   line-height: 1.5;
+  color: var(--lyrefly-muted);
+}
+
+/* —— Accounts (pen names, series, where each posts) —— */
+
+.lyrefly-accounts__masthead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  max-width: 48rem;
+}
+
+.lyrefly-accounts__section {
+  max-width: 48rem;
+  margin-bottom: clamp(24px, 3.5vw, 36px);
+}
+
+.lyrefly-accounts__section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid var(--lyrefly-border);
+  padding-bottom: 0.4rem;
+  margin-bottom: 0.25rem;
+}
+
+.lyrefly-accounts__heading {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--lyrefly-muted);
+}
+
+.lyrefly-accounts__empty {
+  margin: 0.75rem 0 0;
+  color: var(--lyrefly-muted);
+  font-size: 0.875rem;
+}
+
+.lyrefly-accounts__owners,
+.lyrefly-accounts__account-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.lyrefly-accounts__owner {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--lyrefly-border);
+}
+
+.lyrefly-accounts__owner--retired,
+.lyrefly-accounts__account--retired {
+  opacity: 0.55;
+}
+
+.lyrefly-accounts__owner-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.lyrefly-accounts__owner-name {
+  font-family: var(--lyrefly-title-font);
+  font-size: 1.0625rem;
+  font-weight: var(--lyrefly-title-weight);
+  padding: 0;
+}
+
+.lyrefly-accounts__account {
+  display: grid;
+  grid-template-columns: 1.25rem 6rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.25rem;
+  font-size: 0.875rem;
+}
+
+.lyrefly-accounts__platform-icon {
+  display: inline-flex;
+  color: var(--lyrefly-muted);
+}
+
+.lyrefly-accounts__platform {
+  color: var(--lyrefly-muted);
+}
+
+.lyrefly-accounts__handle {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--lyrefly-ink);
+}
+
+.lyrefly-accounts__add-account {
+  margin-top: 0.25rem;
+}
+
+.lyrefly-accounts__add-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.lyrefly-accounts__add-form .MuiTextField-root {
+  flex: 1 1 14rem;
+  min-width: 0;
+}
+
+/* Keep the platform name on phones: the icon set cannot tell Threads from Instagram. */
+@media (max-width: 479px) {
+  .lyrefly-accounts__account {
+    grid-template-columns: 1.25rem 4.75rem minmax(0, 1fr) auto;
+  }
+}
+
+/* —— Import dialog —— */
+
+.lyrefly-import__summary {
+  margin: 0;
+  padding-left: 1.1rem;
+  line-height: 1.6;
+  font-size: 0.875rem;
+}
+
+.lyrefly-import__progress {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.8125rem;
+  color: var(--lyrefly-muted);
+}
+
+.lyrefly-import__done {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.lyrefly-import__error {
+  margin-top: 0.75rem;
+}
+
+/* —— Empty shelf: second action —— */
+
+.lyrefly-studio__empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.lyrefly-studio__secondary {
+  padding: 10px 6px;
+  border: 0;
+  background: none;
+  color: var(--lyrefly-accent);
+  font-family: var(--lyrefly-body-font);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.lyrefly-studio__secondary:focus-visible {
+  outline: 2px solid var(--lyrefly-accent-cool);
+  outline-offset: 3px;
+}
+
+/* —— Comic credit pickers (profile) —— */
+
+.lyrefly-credit-pickers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  margin-top: 0.75rem;
+}
+
+.lyrefly-publish-card__handle {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.75rem;
   color: var(--lyrefly-muted);
 }

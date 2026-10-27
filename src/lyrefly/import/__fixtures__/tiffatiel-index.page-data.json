@@ -1,0 +1,185 @@
+{
+  "componentChunkName": "component---src-pages-index-tsx",
+  "path": "/",
+  "result": {
+    "data": {
+      "allComicsYaml": {
+        "nodes": [
+          {
+            "name": "The Perfect Wedding",
+            "slug": "perfect-wedding",
+            "year": 2024,
+            "id": "156c22ef-6c51-5004-b93b-9dcb0346b51c",
+            "description": "Lana has always dreamed of a wedding where every detail was perfect. But when the day comes, it's nothing like she expected! The Perfect Wedding is a cute sapphic romance about expectations and living freely.\n",
+            "links": {
+              "store": "https://mixam.com/print-on-demand/67749e32894b152626d83839",
+              "webtoons": "https://www.webtoons.com/en/canvas/the-perfect-wedding/list?title_no=1021257",
+              "tapas": "https://tapas.io/series/The-Perfect-Wedding",
+              "tumblr": "https://tiffatiel.tumblr.com/post/773612817505976320/the-perfect-wedding",
+              "bluesky": "https://bsky.app/profile/tiffatiel.bsky.social/post/3lgks2akhac2k",
+              "x": "https://x.com/tiffatiel/status/1882986433369215040",
+              "instagram": null,
+              "facebook": null
+            },
+            "cover": {
+              "outerFront": {
+                "childImageSharp": {
+                  "gatsbyImageData": {
+                    "layout": "constrained",
+                    "images": {
+                      "fallback": {
+                        "src": "/static/b5070e158fa964a659f83c2ef4cabda6/e35c6/outer-front.png",
+                        "sizes": "(min-width: 200px) 200px, 100vw"
+                      }
+                    },
+                    "width": 200,
+                    "height": 304
+                  }
+                }
+              }
+            }
+          },
+          {
+            "name": "Between Walks",
+            "slug": "between-walks",
+            "year": 2024,
+            "id": "0f50ba00-65a0-5bd5-ac14-e2558510a1d5",
+            "description": "A webcomic about the private life of dogs! Originally conceived as \"absurdist dog comics\", Between Walks evolved over time to include a mix of goofy and emotional strips.\n",
+            "links": {
+              "store": "https://mixam.com/print-on-demand/677b33dda63b03778215a5de",
+              "webtoons": null,
+              "tapas": null,
+              "tumblr": "https://betweenwalks.art/",
+              "bluesky": null,
+              "x": "https://x.com/betweenwalks",
+              "instagram": "https://www.instagram.com/betweenwalks",
+              "facebook": "https://www.facebook.com/betweenwalks"
+            },
+            "cover": {
+              "outerFront": {
+                "childImageSharp": {
+                  "gatsbyImageData": {
+                    "layout": "constrained",
+                    "images": {
+                      "fallback": {
+                        "src": "/static/d60ad9f033cc6587ac0e915f8f383d0e/5aead/outer-front.png",
+                        "sizes": "(min-width: 200px) 200px, 100vw"
+                      }
+                    },
+                    "width": 200,
+                    "height": 200
+                  }
+                }
+              }
+            }
+          },
+          {
+            "name": "\"i like you\"",
+            "slug": "i-like-you",
+            "year": 2023,
+            "id": "89a12f3d-e0fb-5ad3-b03c-038a3b82b50e",
+            "description": "Rose admires Sylvia and wants to confess to her. But does Sylvia like her back? \"i like you\" is a cute sapphic romance about falling in love, even when you're not perfect.\n",
+            "links": {
+              "store": "https://mixam.com/print-on-demand/663db544b808356d2f6e1bc6",
+              "webtoons": "https://www.webtoons.com/en/canvas/i-like-you/list?title_no=1016411",
+              "tapas": "https://tapas.io/series/ily",
+              "tumblr": "https://tiffatiel.tumblr.com/post/733213712207560704/i-like-you",
+              "bluesky": "https://bsky.app/profile/tiffatiel.bsky.social/post/3lc4m253gp22h",
+              "x": "https://x.com/tiffatiel/status/1721403938849820809",
+              "instagram": null,
+              "facebook": null
+            },
+            "cover": {
+              "outerFront": {
+                "childImageSharp": {
+                  "gatsbyImageData": {
+                    "layout": "constrained",
+                    "images": {
+                      "fallback": {
+                        "src": "/static/b7e43ad7e77b9b6efd6d3ec1e653a437/7c0b5/outer-front.png",
+                        "sizes": "(min-width: 200px) 200px, 100vw"
+                      }
+                    },
+                    "width": 200,
+                    "height": 300
+                  }
+                }
+              }
+            }
+          },
+          {
+            "name": "Maya's Best Friend",
+            "slug": "mayas-best-friend",
+            "year": 2023,
+            "id": "e3cb7c34-7d6a-5434-8e4d-8f81da7080fb",
+            "description": "Maya has one wish: to make a friend. When her dream starts to come true, she has no idea where life will take her next! Maya's Best Friend is a story about the changes we experience as we grow up.\n",
+            "links": {
+              "store": "https://mixam.com/print-on-demand/663db5462df823492f750197",
+              "webtoons": "https://www.webtoons.com/en/canvas/mayas-best-friend/list?title_no=909784",
+              "tapas": "https://tapas.io/series/Mayas-Best-Friend",
+              "tumblr": "https://tiffatiel.tumblr.com/post/721691798471311360/maya",
+              "bluesky": "https://bsky.app/profile/tiffatiel.bsky.social/post/3lbs3an3rd22t",
+              "x": "https://x.com/tiffatiel/status/1708501916022612188",
+              "instagram": null,
+              "facebook": null
+            },
+            "cover": {
+              "outerFront": {
+                "childImageSharp": {
+                  "gatsbyImageData": {
+                    "layout": "constrained",
+                    "images": {
+                      "fallback": {
+                        "src": "/static/0c2146c8f4af38f09e2f7988433c9e0f/7c0b5/outer-front.png",
+                        "sizes": "(min-width: 200px) 200px, 100vw"
+                      }
+                    },
+                    "width": 200,
+                    "height": 300
+                  }
+                }
+              }
+            }
+          },
+          {
+            "name": "Eliza's Wish",
+            "slug": "elizas-wish",
+            "year": 2023,
+            "id": "015e030d-2ec6-5f31-9e16-876eb6e24267",
+            "description": "Eliza is a lonely girl who has always loved the stars. One night, Eliza finds herself unexpectedly invited on a magical adventure.\n",
+            "links": {
+              "store": "https://mixam.com/print-on-demand/663db5472df823492f750198",
+              "webtoons": "https://www.webtoons.com/en/canvas/elizas-wish/list?title_no=843968",
+              "tapas": "https://tapas.io/series/eliza",
+              "tumblr": "https://tiffatiel.tumblr.com/post/721688407887265792/eliza",
+              "bluesky": "https://bsky.app/profile/tiffatiel.bsky.social/post/3latxbndm7c2u",
+              "x": "https://x.com/tiffatiel/status/1708205035166019932",
+              "instagram": null,
+              "facebook": null
+            },
+            "cover": {
+              "outerFront": {
+                "childImageSharp": {
+                  "gatsbyImageData": {
+                    "layout": "constrained",
+                    "images": {
+                      "fallback": {
+                        "src": "/static/0839cd445e3f523dc5c67cf548070530/7c0b5/outer-front.png",
+                        "sizes": "(min-width: 200px) 200px, 100vw"
+                      }
+                    },
+                    "width": 200,
+                    "height": 300
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "pageContext": {}
+  },
+  "staticQueryHashes": ["1946181227", "3649515864"],
+  "slicesMap": {}
+}

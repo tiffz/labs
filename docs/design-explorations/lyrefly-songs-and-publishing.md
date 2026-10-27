@@ -339,6 +339,7 @@ Slices 0–2 and 3–5 do not touch the same files and can run in parallel.
 
 ## Open questions
 
-- Is Slant of Rain a series (as modelled above) or something you think of differently?
+- Is Slant of Rain a series (as modelled above) or something you think of differently? (Built as a
+  series; changing it is an edit on the Accounts page.)
 - Do you want Encore's "Make a comic" button on every original, or only once a song has
   lyrics?

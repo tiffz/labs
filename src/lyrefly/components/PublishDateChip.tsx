@@ -25,7 +25,7 @@ export function PublishDateChip({
   const anchorRef = useRef<HTMLDivElement | null>(null);
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(() => isoToDateInputValue(isoValue));
-  const display = formatPublishDateDisplay(isoValue);
+  const display = isoValue ? formatPublishDateDisplay(isoValue) : 'Add date';
 
   useEffect(() => {
     setDraft(isoToDateInputValue(isoValue));

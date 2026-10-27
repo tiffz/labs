@@ -17,6 +17,7 @@ import {
 import { inferPublishPlatformFromUrl } from '../utils/inferPublishPlatform';
 import { dateInputValueToIso, earliestPublishDateIso, formatPublishDateDisplay, isoToDateInputValue, todayDateInputValue } from '../utils/publishDateUtils';
 import { PublishDateChip } from './PublishDateChip';
+import { classifyLyreflyLink } from '../utils/lyreflyAccountUrl';
 import { PublishPlatformIcon } from './PublishPlatformIcon';
 
 export type LyreflyPublishLogGridProps = {
@@ -32,6 +33,9 @@ type PublishLogCardProps = {
 };
 
 function PublishLogCard({ entry, onDateChange }: PublishLogCardProps): ReactElement {
+  // Read from the link, not stored, so it can never disagree with where the post actually is.
+  const link = entry.url ? classifyLyreflyLink(entry.url) : null;
+  const handle = link?.kind === 'post' ? link.handle : undefined;
   return (
     <article className="lyrefly-publish-card" data-testid={`lyrefly-publish-entry-${entry.id}`}>
       {entry.url ? (
@@ -46,6 +50,7 @@ function PublishLogCard({ entry, onDateChange }: PublishLogCardProps): ReactElem
             <PublishPlatformIcon platform={entry.platform} />
           </span>
           <span className="lyrefly-publish-card__platform">{entry.platform}</span>
+          {handle ? <span className="lyrefly-publish-card__handle">{handle}</span> : null}
           <OpenInNewIcon className="lyrefly-publish-card__external" fontSize="inherit" aria-hidden />
         </a>
       ) : (

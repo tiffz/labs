@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState, type ReactElement } from 'react';
 import type { ComicArchiveBinder, ComicArtVersion, ComicProject, PageNode, PageRevision, ScriptDocument, VisualDevAsset } from '../types';
 import { workflowStageShelfLabel } from '../hooks/useLyreflyShelfPreviews';
 import { inferredWorkflowStage } from '../workflow/lyreflyWorkflowCompletion';
+import { LyreflyComicCreditPickers } from './LyreflyComicCreditPickers';
 import { LyreflyExportPanel } from './LyreflyExportPanel';
 import { LyreflyMemoriesPanel } from './LyreflyMemoriesPanel';
 import { LyreflyProfileStudioTabs } from './LyreflyProfileStudioTabs';
@@ -92,6 +93,7 @@ export function ComicProfileView({
                   {(localArchive?.publishLog.length ?? 0) === 1 ? '' : 's'}
                 </li>
               </ul>
+              <LyreflyComicCreditPickers project={project} />
             </header>
 
             <div className="lyrefly-profile-summary__panels">

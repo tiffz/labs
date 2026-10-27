@@ -1,9 +1,12 @@
-import type { ComicProjectSummary } from '../types';
+import type { ComicProjectSummary, LyreflyIdentities } from '../types';
+import { lyreflyIdentitiesAreEmpty } from './lyreflyIdentitiesMerge';
 import type { LyreflyProjectTombstone } from './lyreflyDriveTombstones';
 import { LYREFLY_DRIVE_APP_ID } from './constants';
 
 export type LyreflySyncPayload = {
   projects: ComicProjectSummary[];
+  /** Pen names, series and accounts. Absent in backups written before they existed. */
+  identities?: LyreflyIdentities;
 };
 
 export interface LyreflyDriveEnvelopeV1 {
@@ -14,6 +17,7 @@ export interface LyreflyDriveEnvelopeV1 {
   projects: ComicProjectSummary[];
   /** Projects removed on any device — prevents union merge from resurrecting deletes. */
   deletedProjectIds?: LyreflyProjectTombstone[];
+  identities?: LyreflyIdentities;
 }
 
 export function buildLyreflyDriveEnvelope(
@@ -26,6 +30,7 @@ export function buildLyreflyDriveEnvelope(
     app: LYREFLY_DRIVE_APP_ID,
     projects: payload.projects,
     deletedProjectIds: deletedProjectIds.length > 0 ? [...deletedProjectIds] : undefined,
+    identities: lyreflyIdentitiesAreEmpty(payload.identities) ? undefined : payload.identities,
   };
 }
 
@@ -43,5 +48,5 @@ export function parseLyreflyDriveEnvelope(json: string): LyreflyDriveEnvelopeV1 
 }
 
 export function envelopeToPayload(envelope: LyreflyDriveEnvelopeV1): LyreflySyncPayload {
-  return { projects: envelope.projects };
+  return { projects: envelope.projects, identities: envelope.identities };
 }
