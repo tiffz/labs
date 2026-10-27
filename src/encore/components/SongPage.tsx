@@ -388,7 +388,7 @@ export function SongPage(props: {
     persistAfterMetadataRefresh: persistSongNow,
     applySongDraftChange,
   });
-  const { stageFilesToMediaSlot } = mediaHub;
+  const { saveFilesToMediaSlot } = mediaHub;
 
   useEffect(() => {
     if (!draft || loadState !== 'ok') {
@@ -490,7 +490,7 @@ export function SongPage(props: {
         if (files.length === 0) return;
         e.preventDefault();
         e.stopPropagation();
-        stageFilesToMediaSlot(slot, files);
+        saveFilesToMediaSlot(slot, files);
         return;
       }
       if (hasPotentialUrlPayload(e.dataTransfer)) {
@@ -507,7 +507,7 @@ export function SongPage(props: {
         });
       }
     },
-    [mediaDragEligibleSlots, stageFilesToMediaSlot, persistSongNow],
+    [mediaDragEligibleSlots, saveFilesToMediaSlot, persistSongNow],
   );
 
   const mediaHubFileDrop = useMemo(
@@ -1052,7 +1052,7 @@ export function SongPage(props: {
         onChoose={(slot) => {
           const files = intentUploadFiles;
           setIntentUploadFiles(null);
-          if (files && files.length > 0) stageFilesToMediaSlot(slot, files);
+          if (files && files.length > 0) saveFilesToMediaSlot(slot, files);
         }}
       />
       {confirmDeleteSongDialog}

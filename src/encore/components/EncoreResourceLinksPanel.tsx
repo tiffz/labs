@@ -62,6 +62,8 @@ export type EncoreResourceLinksPanelProps = {
   onChange: (resources: EncoreMiscResource[]) => void;
   onAddLink: (url: string, label: string) => void;
   onUploadFiles: (files: File[]) => void | Promise<void>;
+  /** Dropped files, which save without a confirm (ADR 0030). Defaults to `onUploadFiles`. */
+  onDropFiles?: (files: File[]) => void | Promise<void>;
   /**
    * `media-hub-card` — Listen / Play / Misc hub cells (row shells, + Add menu; drop handled by hub card).
    * `sidebar` — Originals brainstorm references column (title, panel drop target).
@@ -82,7 +84,7 @@ export type EncoreResourceLinksPanelProps = {
   readOnly?: boolean;
   /**
    * Hide the "Add …" button while the caller's staged-upload review is open, so its confirm is the
-   * only "Add …" on screen (ADR 0030). Drops still reach `onUploadFiles`.
+   * only "Add …" on screen (ADR 0030). Drops still reach `onDropFiles`.
    */
   hideAddButton?: boolean;
   /** Renders before resource chips (practice-list / hub layouts). */
@@ -96,6 +98,7 @@ export function EncoreResourceLinksPanel({
   onChange,
   onAddLink,
   onUploadFiles,
+  onDropFiles,
   layout = 'stack',
   title,
   emptyHint = 'None yet.',
@@ -180,7 +183,7 @@ export function EncoreResourceLinksPanel({
     endFileDrag();
     if (driveUploading) return;
     const files = filesFromDataTransfer(e.dataTransfer);
-    if (files.length > 0) void onUploadFiles(files);
+    if (files.length > 0) void (onDropFiles ?? onUploadFiles)(files);
   };
 
   const dropZoneSx =

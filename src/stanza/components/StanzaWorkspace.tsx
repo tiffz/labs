@@ -1530,7 +1530,7 @@ export default function StanzaWorkspace() {
   }, [isReplayingRef, pushUndo]);
 
   // Picks and drops stage for review; they are added on confirm (ADR 0030).
-  const { stageSongFiles, stageStemFiles, panels: stagedUploadPanels } = useStanzaUploadStaging({
+  const { stageSongFiles, saveSongFiles, stageStemFiles, panels: stagedUploadPanels } = useStanzaUploadStaging({
     addLocalSong,
     addStemFromFile,
     openSongTitle: selected?.title ?? null,
@@ -1552,7 +1552,7 @@ export default function StanzaWorkspace() {
         const canTryStemHeuristic = Boolean(row && refDur > 0.25);
 
         if (!canTryStemHeuristic) {
-          stageSongFiles(files);
+          saveSongFiles(files);
           return;
         }
 
@@ -1566,7 +1566,7 @@ export default function StanzaWorkspace() {
         const matching = probed.filter((p) => p.dur != null && Math.abs(p.dur - refDur) <= eps);
 
         if (matching.length === 0) {
-          stageSongFiles(files);
+          saveSongFiles(files);
           return;
         }
 
@@ -1581,7 +1581,7 @@ export default function StanzaWorkspace() {
         setLocalUploadError(e instanceof Error ? e.message : String(e));
       }
     },
-    [stageSongFiles],
+    [saveSongFiles],
   );
 
   const fileDropDisabled = Boolean(stemDropConfirm);

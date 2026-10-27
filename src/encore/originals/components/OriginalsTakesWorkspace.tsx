@@ -29,7 +29,7 @@ export function OriginalsTakesWorkspace({
   readOnly = false,
 }: OriginalsTakesWorkspaceProps): ReactElement {
   const takes = useOriginalsTakes({ song, onChange, readOnly });
-  const { stageFiles } = takes;
+  const { saveFiles } = takes;
   const [dragOver, setDragOver] = useState(false);
 
   const handleDrop = useCallback(
@@ -37,12 +37,12 @@ export function OriginalsTakesWorkspace({
       e.preventDefault();
       setDragOver(false);
       if (readOnly) return;
-      // Stage everything dropped: a file that can't be a take shows up with the reason, rather than
-      // vanishing without a word.
+      // A drop saves at once (ADR 0030). A file that can't be a take stays listed with the reason,
+      // rather than vanishing without a word.
       const files = Array.from(e.dataTransfer?.files ?? []);
-      if (files.length > 0) stageFiles(files);
+      if (files.length > 0) saveFiles(files);
     },
-    [readOnly, stageFiles],
+    [readOnly, saveFiles],
   );
 
   const handleDragOver = useCallback(

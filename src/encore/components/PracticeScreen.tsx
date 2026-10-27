@@ -400,11 +400,11 @@ const PracticeScreenBody = memo(function PracticeScreenBody({
     [saveSong, mergeJournalForPracticeSave],
   );
 
-  // Drops stage files for review in the media hub; they upload on confirm (ADR 0030).
-  const stageFilesToMediaSlotRef = useRef<(slot: SongMediaUploadSlot, files: File[]) => void>(() => {});
+  // Drops upload at once through the media hub (ADR 0030).
+  const saveFilesToMediaSlotRef = useRef<(slot: SongMediaUploadSlot, files: File[]) => void>(() => {});
   const handlePracticeUploadReady = useCallback(
-    (stage: (slot: SongMediaUploadSlot, files: File[]) => void) => {
-      stageFilesToMediaSlotRef.current = stage;
+    (save: (slot: SongMediaUploadSlot, files: File[]) => void) => {
+      saveFilesToMediaSlotRef.current = save;
     },
     [],
   );
@@ -528,7 +528,7 @@ const PracticeScreenBody = memo(function PracticeScreenBody({
         if (files.length === 0) return;
         e.preventDefault();
         e.stopPropagation();
-        stageFilesToMediaSlotRef.current(slot, files);
+        saveFilesToMediaSlotRef.current(slot, files);
         return;
       }
       if (hasPotentialUrlPayload(e.dataTransfer)) {

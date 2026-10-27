@@ -1,6 +1,10 @@
 import { useCallback, useState, type ReactElement } from 'react';
 import { LabsStagedUploadPanel } from '../../shared/upload/LabsStagedUploadPanel';
-import type { LabsStagedUploadInspection, LabsStagedUploadSource } from '../../shared/upload/stagedUploads';
+import type {
+  LabsReadyStagedUpload,
+  LabsStagedUploadInspection,
+  LabsStagedUploadSource,
+} from '../../shared/upload/stagedUploads';
 import { useLabsStagedUploads } from '../../shared/upload/useLabsStagedUploads';
 
 /** What one staged row becomes: a new collection, or photos added to an existing one. */
@@ -26,7 +30,8 @@ export function useGestureUploadStaging<TJob extends { files: File[] }>({
   addToCollectionNow: (packId: string, files: File[]) => Promise<void>;
 }): {
   stageNewCollections: (jobs: TJob[]) => void;
-  stageAddToCollection: (packId: string, packName: string, files: File[]) => void;
+  saveNewCollections: (jobs: TJob[]) => void;
+  saveAddToCollection: (packId: string, packName: string, files: File[]) => void;
   panel: ReactElement;
 } {
   // Plans are keyed by the batch's first file: staging copies the file array, but not the files,
@@ -52,39 +57,49 @@ export function useGestureUploadStaging<TJob extends { files: File[] }>({
   );
 
   const staged = useLabsStagedUploads<GestureStagePlan<TJob>>({ inspect });
-  const { stageBatch } = staged;
+  const { stageBatch, saveBatch } = staged;
 
-  const stageNewCollections = useCallback(
-    (jobs: TJob[]) => {
-      for (const job of jobs) {
-        const first = job.files[0];
-        if (!first) continue;
-        plans.set(first, { kind: 'new-collection', job });
-        stageBatch(jobName(job), job.files);
-      }
-    },
-    [jobName, plans, stageBatch],
-  );
-
-  const stageAddToCollection = useCallback(
-    (packId: string, packName: string, files: File[]) => {
-      const first = files[0];
-      if (!first) return;
-      plans.set(first, { kind: 'add-to-collection', packId, packName, files });
-      stageBatch(packName, files);
-    },
-    [plans, stageBatch],
-  );
-
-  const onConfirm = useCallback(() => {
-    void staged.confirm(async (ready) => {
+  const commit = useCallback(
+    async (ready: LabsReadyStagedUpload<GestureStagePlan<TJob>>[]) => {
       const jobs = ready.flatMap((item) => (item.plan.kind === 'new-collection' ? [item.plan.job] : []));
       if (jobs.length > 0) await enqueueJobs(jobs);
       for (const item of ready) {
         if (item.plan.kind === 'add-to-collection') await addToCollectionNow(item.plan.packId, item.plan.files);
       }
-    });
-  }, [addToCollectionNow, enqueueJobs, staged]);
+    },
+    [addToCollectionNow, enqueueJobs],
+  );
+
+  /** `save` true for a drop: it uploads at once (ADR 0030). A picker stages for confirm. */
+  const newCollections = useCallback(
+    (jobs: TJob[], save: boolean) => {
+      for (const job of jobs) {
+        const first = job.files[0];
+        if (!first) continue;
+        plans.set(first, { kind: 'new-collection', job });
+        if (save) void saveBatch(jobName(job), job.files, commit);
+        else stageBatch(jobName(job), job.files);
+      }
+    },
+    [commit, jobName, plans, saveBatch, stageBatch],
+  );
+  const stageNewCollections = useCallback((jobs: TJob[]) => newCollections(jobs, false), [newCollections]);
+  const saveNewCollections = useCallback((jobs: TJob[]) => newCollections(jobs, true), [newCollections]);
+
+  /** Photos dropped onto a collection upload at once. */
+  const saveAddToCollection = useCallback(
+    (packId: string, packName: string, files: File[]) => {
+      const first = files[0];
+      if (!first) return;
+      plans.set(first, { kind: 'add-to-collection', packId, packName, files });
+      void saveBatch(packName, files, commit);
+    },
+    [commit, plans, saveBatch],
+  );
+
+  const onConfirm = useCallback(() => {
+    void staged.confirm(commit);
+  }, [commit, staged]);
 
   const total = staged.items.reduce((sum, item) => sum + (item.source.kind === 'batch' ? item.source.files.length : 0), 0);
   const panel = (
@@ -98,5 +113,5 @@ export function useGestureUploadStaging<TJob extends { files: File[] }>({
     />
   );
 
-  return { stageNewCollections, stageAddToCollection, panel };
+  return { stageNewCollections, saveNewCollections, saveAddToCollection, panel };
 }

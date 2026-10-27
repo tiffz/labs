@@ -2,7 +2,8 @@
 
 ## Status
 
-**Accepted** (October 2026). Shared code: `src/shared/upload/` (`useLabsStagedUploads`,
+**Accepted** (October 2026), **amended** the same month: dropped files save at once (see
+[Amendment](#amendment-a-drop-saves-at-once)). Shared code: `src/shared/upload/` (`useLabsStagedUploads`,
 `LabsStagedUploadPanel`). Guard: `src/shared/upload/stagedUploadGuardrails.test.ts`. First surface:
 Encore Originals takes.
 
@@ -45,9 +46,29 @@ page). They are named in the guard with that reason.
   review where the items will land, works at 390px, and does not block the page. Existing dialogs
   that already review move to the shared panel as they are touched.
 
+## Amendment: a drop saves at once
+
+The owner found the review step awkward after dragging a file onto "Add take": the drop already
+says which file and where it goes, so asking again reads as the app doubting them. Decision 1 now
+splits by gesture:
+
+- **Dropped files save at once.** They still pass through the same `inspect` and commit code
+  (`saveFiles` / `saveBatch` in `useLabsStagedUploads`), so they get the same checks and the same
+  writers. A dropped file that cannot be used stays listed with its reason (decision 3), and a save
+  that fails stays listed too (decision 5). Neither shows a confirm button, and neither hides the
+  surface's own "Add …" trigger.
+- **Picked files and pasted links still stage** for review, as above. A pasted Drive link is where
+  the outcome is least obvious (point at your file, or copy it into your Drive), which is what
+  started this ADR.
+- Where a drop already leads to a choice (Encore's "where should this file go?" dialog, Stanza's
+  "song or layer?" prompt), making the choice is the confirmation.
+
+Rejected alternative at amendment time: let picked files skip the review too, keeping it only for
+Drive links and bulk imports. The owner chose the narrower change.
+
 ## Consequences
 
-- One extra click for every upload.
+- One extra click for every picked file and pasted link. None for a drop.
 - A file picked but not confirmed is lost on reload. Accepted: nothing was saved, so nothing is lost
   that the user had confirmed.
 - Migrating every intake path is phased. The guard lists each one not yet moved (`PENDING`) with

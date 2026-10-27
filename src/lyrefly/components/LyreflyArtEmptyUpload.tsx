@@ -9,15 +9,21 @@ import { PAGE_IMAGE_ACCEPT } from './ArtPageGrid';
 export type LyreflyArtEmptyUploadProps = {
   disabled?: boolean;
   onFiles: (files: File[]) => void;
+  /** Dropped images save without a confirm (ADR 0030). Defaults to `onFiles`. */
+  onDropFiles?: (files: File[]) => void;
 };
 
-export function LyreflyArtEmptyUpload({ disabled = false, onFiles }: LyreflyArtEmptyUploadProps): ReactElement {
+export function LyreflyArtEmptyUpload({
+  disabled = false,
+  onFiles,
+  onDropFiles,
+}: LyreflyArtEmptyUploadProps): ReactElement {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const deliverFiles = useCallback(
-    (files: File[]) => {
+    (files: File[], deliver: (images: File[]) => void = onFiles) => {
       const images = filterImageFilesForPageUpload(files);
-      if (images.length > 0) onFiles(images);
+      if (images.length > 0) deliver(images);
     },
     [onFiles],
   );
@@ -25,7 +31,7 @@ export function LyreflyArtEmptyUpload({ disabled = false, onFiles }: LyreflyArtE
   const { dragActive, handlers } = useDragDropHighlight({
     disabled,
     stopPropagation: true,
-    onDrop: (event) => deliverFiles([...event.dataTransfer.files]),
+    onDrop: (event) => deliverFiles([...event.dataTransfer.files], onDropFiles),
   });
 
   useEffect(() => {

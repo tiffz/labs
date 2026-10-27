@@ -4,6 +4,7 @@ import {
   readyStagedUploads,
   removeStagedUpload,
   resolveStagedUpload,
+  stagedUploadsAwaitConfirm,
   stageSources,
   type LabsReadyStagedUpload,
   type LabsStagedUpload,
@@ -14,14 +15,28 @@ import {
 /** Items the app could not write. They stay in the list, marked with `message`, for the user to see. */
 export type LabsStagedUploadCommitResult = { failed: { id: string; message: string }[] };
 
+export type LabsStagedUploadCommit<TPlan> = (
+  ready: LabsReadyStagedUpload<TPlan>[],
+) => Promise<void | LabsStagedUploadCommitResult>;
+
 export type LabsStagedUploadsController<TPlan> = {
   items: LabsStagedUpload<TPlan>[];
   stageFiles: (files: readonly File[]) => void;
   stageLink: (url: string) => void;
   /** Stage a named group of files as one row (a folder, a collection). */
   stageBatch: (name: string, files: readonly File[]) => void;
+  /**
+   * Dropped files: check them and save the usable ones at once, with no confirm (the drop is the
+   * confirmation). Refused or failed files stay listed with the reason. Picked files and pasted
+   * links still go through `stageFiles` / `stageLink` and wait for `confirm`.
+   */
+  saveFiles: (files: readonly File[], commit: LabsStagedUploadCommit<TPlan>) => Promise<void>;
+  /** A dropped folder, saved at once as one row. */
+  saveBatch: (name: string, files: readonly File[], commit: LabsStagedUploadCommit<TPlan>) => Promise<void>;
   remove: (id: string) => void;
   clear: () => void;
+  /** True while a picked or pasted item waits for the confirm button. */
+  awaitingConfirm: boolean;
   /** True once every item is checked and at least one can be added. */
   canConfirm: boolean;
   /** True while `confirm` is running. */
@@ -31,12 +46,11 @@ export type LabsStagedUploadsController<TPlan> = {
    * Items `commit` reports as failed stay, marked with the reason, and are not re-sent unless the
    * user confirms again. If `commit` throws, every item stays and the error propagates.
    */
-  confirm: (
-    commit: (ready: LabsReadyStagedUpload<TPlan>[]) => Promise<void | LabsStagedUploadCommitResult>,
-  ) => Promise<void>;
+  confirm: (commit: LabsStagedUploadCommit<TPlan>) => Promise<void>;
 };
 
 const CHECK_FAILED = "Couldn't check this file. Remove it and try again.";
+const SAVE_FAILED = "Couldn't save this file. Check your connection and try again.";
 
 /**
  * React state for {@link ./stagedUploads}. `inspect` decides what each source will become; it must
@@ -58,71 +72,146 @@ export function useLabsStagedUploads<TPlan>({
     inspectRef.current = inspect;
   });
 
-  const stage = useCallback((sources: LabsStagedUploadSource[]) => {
-    if (sources.length === 0) return;
+  // Ids the user removed. A drop being saved checks this before writing, because `items` in a
+  // closure would still hold the row.
+  const removedRef = useRef(new Set<string>());
+
+  /** Adds rows and checks each; resolves with the rows as checked. */
+  const stage = useCallback((sources: LabsStagedUploadSource[], autoSave = false) => {
     // Build the new rows here, not inside the state updater: React may run an updater later, and
     // the checks below need the ids now.
-    const { added } = stageSources<TPlan>([], sources, () => crypto.randomUUID());
+    const { added } = stageSources<TPlan>([], sources, () => crypto.randomUUID(), { autoSave });
+    if (added.length === 0) return Promise.resolve([]);
     setItems((current) => [...current, ...added]);
-    for (const item of added) {
-      void inspectRef
-        .current(item.source)
-        .catch((): LabsStagedUploadInspection<TPlan> => ({ ok: false, name: item.name, message: CHECK_FAILED }))
-        .then((inspection) => setItems((current) => resolveStagedUpload(current, item.id, inspection)));
-    }
+    return Promise.all(
+      added.map((item) =>
+        inspectRef
+          .current(item.source)
+          .catch((): LabsStagedUploadInspection<TPlan> => ({ ok: false, name: item.name, message: CHECK_FAILED }))
+          .then((inspection) => {
+            setItems((current) => resolveStagedUpload(current, item.id, inspection));
+            return resolveStagedUpload([item], item.id, inspection)[0]!;
+          }),
+      ),
+    );
   }, []);
 
+  /**
+   * Write `ready` and settle the list: written rows leave, failed rows stay with the reason. With
+   * `clearRejected`, earlier refusals go too.
+   */
+  const settle = useCallback(
+    async (ready: LabsReadyStagedUpload<TPlan>[], commit: LabsStagedUploadCommit<TPlan>, clearRejected: boolean) => {
+      const result = await commit(ready);
+      const failed = new Map((result?.failed ?? []).map((f) => [f.id, f.message] as const));
+      const sent = new Set(ready.map((item) => item.id));
+      setItems((current) =>
+        current.flatMap((item): LabsStagedUpload<TPlan>[] => {
+          const message = failed.get(item.id);
+          if (message !== undefined) {
+            return [{ id: item.id, source: item.source, autoSave: item.autoSave, status: 'rejected', name: item.name, message }];
+          }
+          if (sent.has(item.id) || (clearRejected && item.status === 'rejected')) return [];
+          return [item];
+        }),
+      );
+    },
+    [],
+  );
+
   const stageFiles = useCallback(
-    (files: readonly File[]) => stage(files.map((file) => ({ kind: 'file', file }) as const)),
+    (files: readonly File[]) => void stage(files.map((file) => ({ kind: 'file', file }) as const)),
     [stage],
   );
   const stageLink = useCallback(
     (url: string) => {
       const trimmed = url.trim();
-      if (trimmed) stage([{ kind: 'link', url: trimmed }]);
+      if (trimmed) void stage([{ kind: 'link', url: trimmed }]);
     },
     [stage],
   );
   const stageBatch = useCallback(
     (name: string, files: readonly File[]) => {
-      if (files.length > 0) stage([{ kind: 'batch', name, files: [...files] }]);
+      if (files.length > 0) void stage([{ kind: 'batch', name, files: [...files] }]);
     },
     [stage],
   );
-  const remove = useCallback((id: string) => setItems((current) => removeStagedUpload(current, id)), []);
-  const clear = useCallback(() => setItems([]), []);
+
+  const save = useCallback(
+    async (sources: LabsStagedUploadSource[], commit: LabsStagedUploadCommit<TPlan>) => {
+      const checked = await stage(sources, true);
+      const ready = readyStagedUploads(checked).filter((item) => !removedRef.current.has(item.id));
+      if (ready.length === 0) return;
+      try {
+        // Refusals from this drop stay: the user never saw a list, so the row is the only place
+        // that says why a file did not arrive.
+        await settle(ready, commit, false);
+      } catch {
+        const ids = new Set(ready.map((item) => item.id));
+        setItems((current) =>
+          current.map((item) =>
+            ids.has(item.id)
+              ? { id: item.id, source: item.source, autoSave: true, status: 'rejected', name: item.name, message: SAVE_FAILED }
+              : item,
+          ),
+        );
+      }
+    },
+    [stage, settle],
+  );
+  const saveFiles = useCallback(
+    (files: readonly File[], commit: LabsStagedUploadCommit<TPlan>) =>
+      save(files.map((file) => ({ kind: 'file', file }) as const), commit),
+    [save],
+  );
+  const saveBatch = useCallback(
+    async (name: string, files: readonly File[], commit: LabsStagedUploadCommit<TPlan>) => {
+      if (files.length > 0) await save([{ kind: 'batch', name, files: [...files] }], commit);
+    },
+    [save],
+  );
+
+  const remove = useCallback((id: string) => {
+    removedRef.current.add(id);
+    setItems((current) => removeStagedUpload(current, id));
+  }, []);
+  const clear = useCallback(() => {
+    for (const item of itemsRef.current) removedRef.current.add(item.id);
+    setItems([]);
+  }, []);
 
   const confirm = useCallback(
-    async (
-      commit: (ready: LabsReadyStagedUpload<TPlan>[]) => Promise<void | LabsStagedUploadCommitResult>,
-    ) => {
-      const ready = readyStagedUploads(itemsRef.current);
+    async (commit: LabsStagedUploadCommit<TPlan>) => {
+      // Dropped rows are already being saved by `save`; confirm only sends what waited for it.
+      const ready = readyStagedUploads(itemsRef.current).filter((item) => !item.autoSave);
       if (ready.length === 0) return;
       setCommitting(true);
       try {
-        const result = await commit(ready);
-        const failed = new Map((result?.failed ?? []).map((f) => [f.id, f.message] as const));
-        const sent = new Set(ready.map((item) => item.id));
-        setItems((current) =>
-          current.flatMap((item): LabsStagedUpload<TPlan>[] => {
-            const message = failed.get(item.id);
-            if (message !== undefined) {
-              return [{ id: item.id, source: item.source, status: 'rejected', name: item.name, message }];
-            }
-            // Earlier refusals go too: confirming means "add what can be added", and a list of
-            // refusals left behind would read as unfinished work.
-            if (sent.has(item.id) || item.status === 'rejected') return [];
-            return [item];
-          }),
-        );
+        // Earlier refusals go too: confirming means "add what can be added", and a list of
+        // refusals left behind would read as unfinished work.
+        await settle(ready, commit, true);
       } finally {
         setCommitting(false);
       }
     },
-    [],
+    [settle],
   );
 
   const canConfirm = useMemo(() => canConfirmStagedUploads(items), [items]);
+  const awaitingConfirm = useMemo(() => stagedUploadsAwaitConfirm(items), [items]);
 
-  return { items, stageFiles, stageLink, stageBatch, remove, clear, canConfirm, committing, confirm };
+  return {
+    items,
+    stageFiles,
+    stageLink,
+    stageBatch,
+    saveFiles,
+    saveBatch,
+    remove,
+    clear,
+    awaitingConfirm,
+    canConfirm,
+    committing,
+    confirm,
+  };
 }

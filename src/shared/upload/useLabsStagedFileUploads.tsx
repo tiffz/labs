@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useRef, useState, type ReactElement } from 'react';
 import { LabsStagedUploadPanel } from './LabsStagedUploadPanel';
 import { stagedSourceName, type LabsStagedUploadInspection, type LabsStagedUploadSource } from './stagedUploads';
-import { useLabsStagedUploads, type LabsStagedUploadCommitResult } from './useLabsStagedUploads';
+import {
+  useLabsStagedUploads,
+  type LabsStagedUploadCommit,
+  type LabsStagedUploadCommitResult,
+} from './useLabsStagedUploads';
 
 export type LabsStagedFileUploadsOptions = {
   /** Which files this surface takes. Others are listed with `rejectMessage` and never saved. */
@@ -31,12 +35,15 @@ const DEFAULT_REJECT = "That file type isn't supported here.";
 const DEFAULT_ERROR = "Couldn't save this file. Check your connection and try again.";
 
 /**
- * The common case of ADR 0030: files in, one function saves each. Pass `stageFiles` wherever the
- * surface used to pass its upload function, and render `panel` where the files will land.
+ * The common case of ADR 0030: files in, one function saves each. Pass `stageFiles` to the file
+ * picker, `saveFiles` to the drop zone, and render `panel` where the files will land.
  */
 export function useLabsStagedFileUploads(options: LabsStagedFileUploadsOptions): {
   stageFiles: (files: readonly File[]) => void;
+  /** For drops: saves the usable files at once, no confirm. */
+  saveFiles: (files: readonly File[]) => void;
   panel: ReactElement;
+  /** True while picked files wait for confirm; hide the surface's own "Add …" trigger then. */
   hasStaged: boolean;
 } {
   const optionsRef = useRef(options);
@@ -63,10 +70,8 @@ export function useLabsStagedFileUploads(options: LabsStagedFileUploadsOptions):
   const staged = useLabsStagedUploads<File>({ inspect });
   const [error, setError] = useState<string | null>(null);
 
-  const onConfirm = useCallback(() => {
-    setError(null);
-    void staged
-      .confirm(async (ready): Promise<LabsStagedUploadCommitResult> => {
+  const commit = useCallback<LabsStagedUploadCommit<File>>(
+    async (ready): Promise<LabsStagedUploadCommitResult> => {
         const { onCommit, onCommitAll, describeError } = optionsRef.current;
         const failed: LabsStagedUploadCommitResult['failed'] = [];
         if (onCommitAll) {
@@ -87,9 +92,17 @@ export function useLabsStagedFileUploads(options: LabsStagedFileUploadsOptions):
           }
         }
         return { failed };
-      })
-      .catch(() => setError(DEFAULT_ERROR));
-  }, [staged]);
+    },
+    [],
+  );
+
+  const onConfirm = useCallback(() => {
+    setError(null);
+    void staged.confirm(commit).catch(() => setError(DEFAULT_ERROR));
+  }, [staged, commit]);
+
+  const { saveFiles: saveStaged } = staged;
+  const saveFiles = useCallback((files: readonly File[]) => void saveStaged(files, commit), [saveStaged, commit]);
 
   const panel = (
     <LabsStagedUploadPanel
@@ -101,5 +114,5 @@ export function useLabsStagedFileUploads(options: LabsStagedFileUploadsOptions):
     />
   );
 
-  return { stageFiles: staged.stageFiles, panel, hasStaged: staged.items.length > 0 };
+  return { stageFiles: staged.stageFiles, saveFiles, panel, hasStaged: staged.awaitingConfirm };
 }

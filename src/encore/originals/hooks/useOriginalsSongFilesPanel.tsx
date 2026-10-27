@@ -70,7 +70,7 @@ export function useOriginalsSongFilesPanel({
   // Takes go through the same controller as the Record-takes workspace, so both surfaces share
   // one add / replace / backup path instead of two copies that drift.
   const takes = useOriginalsTakes({ song, onChange, readOnly });
-  const { stageFiles: stageTakeFiles } = takes;
+  const { saveFiles: saveTakeFiles } = takes;
 
   const [fileDragActive, setFileDragActive] = useState(false);
   const [hoveredSlot, setHoveredSlot] = useState<OriginalsSongFileSlot | null>(null);
@@ -185,26 +185,27 @@ export function useOriginalsSongFilesPanel({
     confirmLabel: (n) => (n === 1 ? 'Add file' : `Add ${n} files`),
     title: 'Brainstorm files ready to add',
   });
-  const { stageFiles: stageReferenceFiles } = referenceUploads;
-  const { stageFiles: stageBrainstormFiles } = brainstormUploads;
+  const { stageFiles: stageReferenceFiles, saveFiles: saveReferenceFiles } = referenceUploads;
+  const { stageFiles: stageBrainstormFiles, saveFiles: saveBrainstormFiles } = brainstormUploads;
 
-  const uploadFilesToSlot = useCallback(
+  /** A drop onto a slot saves at once (ADR 0030); the slot's own picker stages. */
+  const saveDroppedFilesToSlot = useCallback(
     async (slot: OriginalsSongFileSlot, files: File[]) => {
       const list = files.filter(Boolean);
       if (list.length === 0 || readOnly) return;
       switch (slot) {
         case 'demoTakes':
-          stageTakeFiles(list);
+          saveTakeFiles(list);
           break;
         case 'references':
-          stageReferenceFiles(list);
+          saveReferenceFiles(list);
           break;
         case 'brainstormRefs':
-          stageBrainstormFiles(list);
+          saveBrainstormFiles(list);
           break;
       }
     },
-    [stageTakeFiles, readOnly, stageBrainstormFiles, stageReferenceFiles],
+    [saveTakeFiles, readOnly, saveBrainstormFiles, saveReferenceFiles],
   );
 
   const addReferenceLink = useCallback(
@@ -287,7 +288,7 @@ export function useOriginalsSongFilesPanel({
         if (files.length === 0) return;
         e.preventDefault();
         e.stopPropagation();
-        void uploadFilesToSlot(slot, files);
+        void saveDroppedFilesToSlot(slot, files);
         return;
       }
       const url = extractFirstUrlFromDataTransfer(e.dataTransfer);
@@ -296,7 +297,7 @@ export function useOriginalsSongFilesPanel({
       e.stopPropagation();
       applyUrlToSlot(slot, url);
     },
-    [applyUrlToSlot, eligibleSlots, uploadFilesToSlot],
+    [applyUrlToSlot, eligibleSlots, saveDroppedFilesToSlot],
   );
 
   const fileDrop = useMemo(
@@ -383,6 +384,7 @@ export function useOriginalsSongFilesPanel({
       onChange={(next) => applySong(patchSongTimestamp({ ...songRef.current, songReferences: next }))}
       onAddLink={addReferenceLink}
       onUploadFiles={stageReferenceFiles}
+      onDropFiles={saveReferenceFiles}
       emptyHint="Charts, PDFs, and other files you reference while writing or recording."
       addButtonLabel="Add reference"
       fileAccept={ORIGINALS_REFERENCE_FILE_ACCEPT}
@@ -404,6 +406,7 @@ export function useOriginalsSongFilesPanel({
       onChange={(next) => applySong(patchSongTimestamp({ ...songRef.current, brainstormResources: next }))}
       onAddLink={addBrainstormLink}
       onUploadFiles={stageBrainstormFiles}
+      onDropFiles={saveBrainstormFiles}
       emptyHint="Links and files you use while writing."
       addButtonLabel="Add to brainstorm"
       fileAccept={ORIGINALS_BRAINSTORM_FILE_ACCEPT}
@@ -452,14 +455,16 @@ export function useOriginalsSongFilesPanel({
         fileDrop={fileDrop}
         ariaLabel="Song files"
       />
-      {/* Reviews span the whole panel: inside a group they squeeze into the narrow body column. */}
-      {takes.hasStaged || referenceUploads.hasStaged || brainstormUploads.hasStaged ? (
-        <Stack spacing={1} sx={{ mt: 1 }}>
-          {takes.stagedPanel}
-          {referenceUploads.panel}
-          {brainstormUploads.panel}
-        </Stack>
-      ) : null}
+      {/*
+        Reviews span the whole panel: inside a group they squeeze into the narrow body column. Each
+        panel renders nothing when idle; it also lists dropped files while they save or when refused,
+        which `hasStaged` (waiting for confirm) does not cover.
+      */}
+      <Stack spacing={1} sx={{ mt: 1, '&:empty': { display: 'none' } }}>
+        {takes.stagedPanel}
+        {referenceUploads.panel}
+        {brainstormUploads.panel}
+      </Stack>
     </>
   );
 
