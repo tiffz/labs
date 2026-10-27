@@ -115,6 +115,8 @@ Tensor fasciae latae.r,muscle_tensor_fasciae_latae,atlas_supplement
 Teres major muscle.r,muscle_teres_major,atlas_supplement
 Infraspinatus muscle.r,muscle_infraspinatus,atlas_supplement
 Supraspinatus muscle.r,muscle_supraspinatus,atlas_supplement
+Teres minor muscle.r,muscle_teres_minor,atlas_supplement
+Subscapular muscle.r,muscle_subscapularis,atlas_supplement
 Rhomboid major muscle.r,muscle_rhomboid_major,atlas_supplement
 Splenius capitis muscle.r,muscle_splenius_capitis,atlas_supplement
 Omohyoid muscle.r,muscle_omohyoid,atlas_supplement

@@ -389,7 +389,7 @@
         {
           "nodeId": "muscle_obturator_internus",
           "meshName": "muscle_obturator_internus",
-          "triangleCount": 6168
+          "triangleCount": 5056
         },
         {
           "nodeId": "muscle_quadratus_femoris",
@@ -414,7 +414,7 @@
         {
           "nodeId": "muscle_soleus",
           "meshName": "muscle_soleus",
-          "triangleCount": 6122
+          "triangleCount": 5020
         },
         {
           "nodeId": "muscle_vastus_medialis",
@@ -424,12 +424,12 @@
         {
           "nodeId": "muscle_gracilis",
           "meshName": "muscle_gracilis",
-          "triangleCount": 6468
+          "triangleCount": 5302
         },
         {
           "nodeId": "muscle_adductor_longus",
           "meshName": "muscle_adductor_longus",
-          "triangleCount": 6114
+          "triangleCount": 5012
         },
         {
           "nodeId": "muscle_semitendinosus",
@@ -444,7 +444,7 @@
         {
           "nodeId": "muscle_sartorius",
           "meshName": "muscle_sartorius",
-          "triangleCount": 6676
+          "triangleCount": 5474
         },
         {
           "nodeId": "muscle_tensor_fasciae_latae",
@@ -459,7 +459,7 @@
         {
           "nodeId": "muscle_infraspinatus",
           "meshName": "muscle_infraspinatus",
-          "triangleCount": 6334
+          "triangleCount": 5192
         },
         {
           "nodeId": "muscle_supraspinatus",
@@ -467,9 +467,19 @@
           "triangleCount": 2860
         },
         {
+          "nodeId": "muscle_teres_minor",
+          "meshName": "muscle_teres_minor",
+          "triangleCount": 3044
+        },
+        {
+          "nodeId": "muscle_subscapularis",
+          "meshName": "muscle_subscapularis",
+          "triangleCount": 4846
+        },
+        {
           "nodeId": "muscle_rhomboid_major",
           "meshName": "muscle_rhomboid_major",
-          "triangleCount": 6452
+          "triangleCount": 5290
         },
         {
           "nodeId": "muscle_splenius_capitis",
@@ -992,6 +1002,18 @@
           "nodeId": "muscle_supraspinatus",
           "meshName": "muscle_supraspinatus",
           "triangleCount": 1180,
+          "atlasKind": "muscle"
+        },
+        {
+          "nodeId": "muscle_teres_minor",
+          "meshName": "muscle_teres_minor",
+          "triangleCount": 1256,
+          "atlasKind": "muscle"
+        },
+        {
+          "nodeId": "muscle_subscapularis",
+          "meshName": "muscle_subscapularis",
+          "triangleCount": 2438,
           "atlasKind": "muscle"
         },
         {
@@ -3159,13 +3181,6 @@
           "displayName": "Subclavius muscle.r"
         },
         {
-          "nodeId": "atlas_subscapular_muscle_r_eabf4bc1",
-          "meshName": "atlas_subscapular_muscle_r_eabf4bc1",
-          "triangleCount": 2438,
-          "atlasKind": "muscle",
-          "displayName": "Subscapular muscle.r"
-        },
-        {
           "nodeId": "atlas_subscapularis_muscle_humeral_inserti_0f7f187f",
           "meshName": "atlas_subscapularis_muscle_humeral_inserti_0f7f187f",
           "triangleCount": 28,
@@ -3383,13 +3398,6 @@
           "displayName": "Teres minor muscle-Scapular insertion.r"
         },
         {
-          "nodeId": "atlas_teres_minor_muscle_r_e2109437",
-          "meshName": "atlas_teres_minor_muscle_r_e2109437",
-          "triangleCount": 1256,
-          "atlasKind": "muscle",
-          "displayName": "Teres minor muscle.r"
-        },
-        {
           "nodeId": "atlas_thyrohyoid_muscle_r_690d7ebf",
           "meshName": "atlas_thyrohyoid_muscle_r_690d7ebf",
           "triangleCount": 572,
@@ -3527,5 +3535,5 @@
       "source": "z-anatomy"
     }
   },
-  "assetRevision": "033990c22d77"
+  "assetRevision": "e8a2e891dc10"
 }

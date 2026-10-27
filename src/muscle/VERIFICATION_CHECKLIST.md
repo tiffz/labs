@@ -112,13 +112,15 @@ Proko: _Upper Back Muscles_, _Lower Back Muscles_ · OpenStax 11.3, 11.5 · App:
 
 Proko: _Shoulder Muscles_ · OpenStax 11.5 · App: **Shoulder & neck**
 
-| Item          | Text | Visual | Notes                                                                                                   |
-| ------------- | ---- | ------ | ------------------------------------------------------------------------------------------------------- |
-| Supraspinatus | ✅   | ☐      |                                                                                                         |
-| Infraspinatus | ✅   | ☐      | Marked deep (layer 2), but part of it shows at the surface on the back of the shoulder. Check the peel. |
-| Teres major   | ✅   | ☐      | Correctly **not** in the rotator cuff group.                                                            |
+| Item          | Text | Visual | Notes                                                                                                                      |
+| ------------- | ---- | ------ | -------------------------------------------------------------------------------------------------------------------------- |
+| Supraspinatus | ✅   | ☐      |                                                                                                                            |
+| Infraspinatus | ✅   | ☐      | Marked deep (layer 2), but part of it shows at the surface on the back of the shoulder. Check the peel.                    |
+| Teres minor   | ✅   | ☐      | New study item, in the rotator cuff group.                                                                                 |
+| Subscapularis | ✅   | ☐      | New study item, in the rotator cuff group. Z-Anatomy names it "Subscapular muscle"; its mesh sits in front of the scapula. |
+| Teres major   | ✅   | ☐      | Correctly **not** in the rotator cuff group.                                                                               |
 
-The app's rotator cuff group lists two of the four muscles. Teres minor and subscapularis aren't study items.
+The rotator cuff group now lists all four muscles.
 
 ## Unit 9: Neck
 
@@ -265,6 +267,5 @@ Proko: _Foot Bones_, _Feet_ · OpenStax 8.4, 11.6 · App: **Foot**
 These differ from Proko but aren't errors, so the text pass didn't change them:
 
 - **Modules:** flexor digitorum superficialis and extensor digitorum sit in the Hand module, and peroneus longus in Foot. Moving them would also mean moving their meshes into another module's 3D model.
-- **Missing study items:** teres minor and subscapularis (the rest of the rotator cuff).
 - **Joints with no mesh:** hip, knee, ankle, subtalar, acromioclavicular, proximal radioulnar, thumb CMC and intercarpal. Z-Anatomy has no capsule objects for them.
 - **Simplified origins:** latissimus dorsi and pectoralis major each show one origin bone where they have several.

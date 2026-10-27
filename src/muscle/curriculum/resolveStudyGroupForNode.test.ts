@@ -26,12 +26,14 @@ describe('resolveStudyGroupForNode', () => {
     expect(findMultiMemberStudyGroupForNode('muscle_tensor_fasciae_latae')).toBeUndefined();
   });
 
-  it('finds rotator cuff for supraspinatus and infraspinatus only', () => {
+  it('finds the rotator cuff with all four muscles, not teres major', () => {
     const group = findMultiMemberStudyGroupForNode('muscle_supraspinatus');
     expect(group?.id).toBe('sn_rotator_cuff');
     expect(collectStudyGroupIdsForNode('muscle_infraspinatus')).toEqual([
       'muscle_supraspinatus',
       'muscle_infraspinatus',
+      'muscle_teres_minor',
+      'muscle_subscapularis',
     ]);
     expect(findMultiMemberStudyGroupForNode('muscle_teres_major')).toBeUndefined();
   });

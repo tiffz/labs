@@ -18,6 +18,8 @@ const PROMOTED_SHOULDER = [
   ['muscle_infraspinatus', 'Infraspinatus', 2, 'back'] as const,
   ['muscle_teres_major', 'Teres major', 1, 'back'] as const,
   ['muscle_supraspinatus', 'Supraspinatus', 2, 'shoulder'] as const,
+  ['muscle_teres_minor', 'Teres minor', 2, 'back'] as const,
+  ['muscle_subscapularis', 'Subscapularis', 2, 'shoulder'] as const,
 ] as const;
 
 /** Deep / clinical muscles — atlas reference only. */

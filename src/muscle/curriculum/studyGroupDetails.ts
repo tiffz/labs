@@ -28,7 +28,7 @@ export const STUDY_GROUP_DETAILS: Record<string, StructureDetails> = {
   },
   sn_rotator_cuff: {
     definition:
-      'The rotator cuff stabilizes the glenohumeral joint — supraspinatus initiates abduction; infraspinatus externally rotates the arm.',
+      'The rotator cuff stabilizes the glenohumeral joint — supraspinatus initiates abduction, infraspinatus and teres minor externally rotate the arm, and subscapularis internally rotates it.',
     colloquialNames: ['rotator cuff'],
     wikipediaUrl: 'https://en.wikipedia.org/wiki/Rotator_cuff',
   },
