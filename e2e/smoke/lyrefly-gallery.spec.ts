@@ -110,6 +110,26 @@ test.describe('Lyrefly gallery', () => {
     await expect(page.getByRole('button', { name: /Open 600 Million Steps/i })).toBeVisible();
   });
 
+  test('makes, renames and archives a collection from the Sketchbook', async ({ page }) => {
+    await page.getByTestId('lyrefly-sketchbook-tab').click();
+    await page.getByTestId('lyrefly-sketchbook-mode-switch').getByRole('button', { name: 'Collections' }).click();
+    await expect(page.getByTestId('lyrefly-collections')).toBeVisible();
+    await page.getByRole('button', { name: 'New collection' }).click();
+
+    await expect(page.getByTestId('lyrefly-collection')).toBeVisible();
+    // An empty collection opens straight onto adding pieces.
+    await expect(page.getByTestId('lyrefly-collection-add')).toBeVisible();
+    const title = page.getByRole('textbox', { name: 'Collection title' });
+    await title.fill('Daily comics');
+    await title.blur();
+    await page.getByRole('button', { name: 'Archive' }).click();
+    await page.getByRole('button', { name: 'All collections' }).click();
+
+    await expect(page.getByText('No collections yet.', { exact: false })).toBeVisible();
+    await page.getByRole('button', { name: 'Archived (1)' }).click();
+    await expect(page.getByRole('button', { name: /Daily comics/ })).toBeVisible();
+  });
+
   test('uses riso cube theme on app root', async ({ page }) => {
     await expect(page.getByTestId('lyrefly-app')).toHaveAttribute('data-lyrefly-theme', 'risocube');
     await expect(page.getByTestId('lyrefly-design-picker')).toHaveCount(0);

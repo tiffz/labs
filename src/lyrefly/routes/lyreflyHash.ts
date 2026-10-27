@@ -4,6 +4,7 @@ export type LyreflyRoute =
   | { kind: 'gallery' }
   | { kind: 'sketchbook' }
   | { kind: 'accounts' }
+  | { kind: 'collections'; collectionId?: string }
   | { kind: 'project'; projectId: string; stage?: LyreflyWorkflowStage }
   | { kind: 'profile'; projectId: string }
   | { kind: 'script'; projectId: string }
@@ -22,6 +23,9 @@ export function parseLyreflyHash(hash: string): LyreflyRoute {
   }
   if (segments[0] === 'accounts') {
     return { kind: 'accounts' };
+  }
+  if (segments[0] === 'collections') {
+    return segments[1] ? { kind: 'collections', collectionId: decodeURIComponent(segments[1]) } : { kind: 'collections' };
   }
   if (segments[0] === 'project' && segments[1]) {
     if (segments[2] === 'profile') {
@@ -48,6 +52,10 @@ export function lyreflyGalleryHref(): string {
 
 export function lyreflySketchbookHref(): string {
   return '#/sketchbook';
+}
+
+export function lyreflyCollectionsHref(collectionId?: string): string {
+  return collectionId ? `#/collections/${encodeURIComponent(collectionId)}` : '#/collections';
 }
 
 export function lyreflyAccountsHref(): string {

@@ -41,6 +41,7 @@ import {
   type LyreflyBundlePlan,
 } from '../import/lyreflyBundleImport';
 import { LyreflyBundleImportDialog } from './LyreflyBundleImportDialog';
+import { LyreflySketchbookModeSwitch } from './LyreflySketchbookModeSwitch';
 import { LyreflyDateChip } from './LyreflyDateChip';
 import { SketchbookSeedEditor } from './SketchbookSeedEditor';
 import { useLabsStagedFileUploads } from '../../shared/upload/useLabsStagedFileUploads';
@@ -533,6 +534,7 @@ export function SketchbookTab({ onOpenProject }: SketchbookTabProps): ReactEleme
             Catch scraps as they come. Click a card to expand it on the board and keep adding.
           </p>
         </div>
+        <LyreflySketchbookModeSwitch mode="ideas" />
         <Button
           size="small"
           variant="text"

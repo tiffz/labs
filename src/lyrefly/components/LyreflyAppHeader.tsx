@@ -16,7 +16,8 @@ export type LyreflyAppHeaderProps = {
 
 export function LyreflyAppHeader({ route }: LyreflyAppHeaderProps): ReactElement {
   const onGallery = route.kind === 'gallery';
-  const onSketchbook = route.kind === 'sketchbook';
+  // Collections live under the Sketchbook: raw material, like ideas.
+  const onSketchbook = route.kind === 'sketchbook' || route.kind === 'collections';
   const onAccounts = route.kind === 'accounts';
 
   return (

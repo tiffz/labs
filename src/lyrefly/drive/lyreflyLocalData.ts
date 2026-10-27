@@ -3,19 +3,22 @@ import { projectToSummary, type ComicProject } from '../types';
 import type { LyreflySyncPayload } from './lyreflyDriveEnvelope';
 import { markLyreflyPackagePullPending } from './lyreflyPendingPackagePulls';
 import { writeLyreflySketchbookLocal } from './lyreflySketchbookSync';
+import { readLyreflyCollectionsLocal, writeLyreflyCollectionsLocal } from './lyreflyCollectionsSync';
 
 export async function readLyreflyLocalPayload(): Promise<LyreflySyncPayload> {
-  const [projects, personas, series, accounts, sketchbook] = await Promise.all([
+  const [projects, personas, series, accounts, sketchbook, collections] = await Promise.all([
     lyreflyDb.projects.toArray(),
     lyreflyDb.personas.toArray(),
     lyreflyDb.series.toArray(),
     lyreflyDb.accounts.toArray(),
     lyreflyDb.sketchbookSeeds.toArray(),
+    readLyreflyCollectionsLocal(),
   ]);
   return {
     projects: projects.map(projectToSummary),
     identities: { personas, series, accounts },
     sketchbook,
+    collections,
   };
 }
 
@@ -40,6 +43,7 @@ export async function writeLyreflyLocalPayload(payload: LyreflySyncPayload): Pro
     });
   }
   if (payload.sketchbook) await writeLyreflySketchbookLocal(payload.sketchbook);
+  if (payload.collections) await writeLyreflyCollectionsLocal(payload.collections);
   await lyreflyDb.transaction('rw', lyreflyDb.projects, async () => {
     const incomingIds = new Set(payload.projects.map((p) => p.id));
     const existing = await lyreflyDb.projects.toArray();
