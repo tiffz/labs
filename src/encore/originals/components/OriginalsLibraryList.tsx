@@ -12,13 +12,17 @@ import type { OriginalsPlaybackTarget } from '../../context/encoreMediaPlaybackC
 import { useEncoreOriginalsPlayback } from '../context/EncoreOriginalsPlaybackContext';
 import { originalTakeBlobKey } from '../originalTakeLocalAudio';
 import { originalPlaybackTake, type EncoreOriginalSong } from '../types';
+import { useOriginalsTakeIsPlayable, type OriginalsTakeIsPlayable } from '../hooks/useOriginalTakePlayable';
 import { OriginalsSongDashboardView } from './OriginalsSongDashboardView';
 import { OriginalsLibraryMrtTable } from './OriginalsLibraryMrtTable';
 
 export type OriginalsGridTakePlaybackState = 'idle' | 'loading' | 'playing' | 'error';
 
-function buildTakeTarget(song: EncoreOriginalSong): OriginalsPlaybackTarget | null {
-  const take = originalPlaybackTake(song);
+function buildTakeTarget(
+  song: EncoreOriginalSong,
+  takeIsPlayable: OriginalsTakeIsPlayable,
+): OriginalsPlaybackTarget | null {
+  const take = originalPlaybackTake(song, (t) => takeIsPlayable(song, t));
   if (!take) return null;
   return {
     songId: song.id,
@@ -71,6 +75,7 @@ export function OriginalsLibraryList({
   const [rowSelection, setRowSelection] = useState<MRT_RowSelectionState>({});
   const { playTake, playTakeQueue, phase, target, stopPlayback } = useEncoreOriginalsPlayback();
   const activePlaybackId = target?.playbackId;
+  const takeIsPlayable = useOriginalsTakeIsPlayable(rows, listActive);
 
   const selectedIds = useMemo(
     () => new Set(Object.keys(rowSelection).filter((id) => rowSelection[id])),
@@ -80,30 +85,30 @@ export function OriginalsLibraryList({
   const onPlaySelected = useCallback(() => {
     const targets = rows
       .filter((s) => selectedIds.has(s.id))
-      .map(buildTakeTarget)
+      .map((s) => buildTakeTarget(s, takeIsPlayable))
       .filter((t): t is OriginalsPlaybackTarget => t != null);
     if (targets.length === 0) return;
     if (targets.length === 1) playTake(targets[0]!);
     else playTakeQueue(targets);
-  }, [playTake, playTakeQueue, rows, selectedIds]);
+  }, [playTake, playTakeQueue, rows, selectedIds, takeIsPlayable]);
 
   const onPlayTake = useCallback(
     (song: EncoreOriginalSong) => {
-      const takeTarget = buildTakeTarget(song);
+      const takeTarget = buildTakeTarget(song, takeIsPlayable);
       if (takeTarget) playTake(takeTarget);
     },
-    [playTake],
+    [playTake, takeIsPlayable],
   );
 
   const playbackBySongId = useMemo(() => {
     const map = new Map<string, OriginalsGridTakePlaybackState>();
     if (!listActive) return map;
     for (const song of rows) {
-      const take = originalPlaybackTake(song);
+      const take = originalPlaybackTake(song, (t) => takeIsPlayable(song, t));
       map.set(song.id, takePlaybackState(song.id, take?.id, activePlaybackId, phase));
     }
     return map;
-  }, [activePlaybackId, listActive, phase, rows]);
+  }, [activePlaybackId, listActive, phase, rows, takeIsPlayable]);
 
   const bulkActions =
     selectedIds.size > 0 ? (

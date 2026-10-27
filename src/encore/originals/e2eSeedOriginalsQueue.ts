@@ -53,13 +53,18 @@ function seedSong(
   /** Playable takes listed BEFORE the preferred one. */
   earlierTakes: EncoreOriginalSong['takes'] = [],
 ): EncoreOriginalSong {
+  const preferred = seedTake(takeId, `${title} take`);
+  // With earlier takes, the preferred take's audio is saved on this device but the row lacks the
+  // `hasLocalAudio` flag (e.g. the row came back from a Drive merge). Only a blob probe finds it,
+  // so a list that trusts the flag alone falls through to the earlier take.
+  if (earlierTakes.length > 0) delete preferred.hasLocalAudio;
   return {
     id,
     title,
     key: 'C',
     tempo: 80,
     lyricsAndChords: '[Verse 1]\nSeed line',
-    takes: [...earlierTakes, seedTake(takeId, `${title} take`)],
+    takes: [...earlierTakes, preferred],
     mainTakeId: takeId,
     history: [],
     createdAt: now,
@@ -102,7 +107,7 @@ export async function seedOriginalsQueueE2e(): Promise<void> {
     ]),
   ];
   await encoreDb.originals.bulkPut(songs);
-  // `hasLocalAudio: true` promises a blob; back it, so playback resolves instead of erroring.
+  // Back every take with a blob, flagged or not, so playback resolves instead of erroring.
   await Promise.all(
     songs.flatMap((song) => song.takes.map((take) => saveOriginalTakeBlob(song.id, take.id, silentWavBlob()))),
   );
