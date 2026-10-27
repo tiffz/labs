@@ -25,7 +25,8 @@ import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { alpha, useTheme, type SxProps, type Theme } from '@mui/material/styles';
-import { MaterialReactTable, useMaterialReactTable, type MRT_ColumnDef } from 'material-react-table';
+import { useMaterialReactTable, type MRT_ColumnDef } from 'material-react-table';
+import { LabsMaterialReactTable } from '../../shared/components/LabsMaterialReactTable';
 import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { useLabsUndo } from '../../shared/undo/LabsUndoContext';
 import { useEncoreBlockingJobs } from '../context/EncoreBlockingJobContext';
@@ -1154,7 +1155,7 @@ export function BulkScoreImportDialog(props: BulkScoreImportDialogProps): ReactE
               ) : null}
               {msg ? <Alert severity="warning" sx={{ whiteSpace: 'pre-line' }}>{msg}</Alert> : null}
               <Box sx={{ flex: '1 1 auto', minHeight: 0, minWidth: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-                <MaterialReactTable table={table} />
+                <LabsMaterialReactTable table={table} />
               </Box>
             </Stack>
           )}

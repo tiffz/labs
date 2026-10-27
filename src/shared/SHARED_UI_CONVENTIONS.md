@@ -34,6 +34,10 @@ Multi-panel apps (header + scrollable main + optional footer) should use [`layou
 
 While data is still loading (IndexedDB live query not emitted, fetch in flight, etc.), **do not** show empty-state copy (`Nothing here yet`, `None yet`). Use [`components/LabsListLoadingState.tsx`](./components/LabsListLoadingState.tsx) (spinner + “Loading …” or skeleton rows) until the source exposes a hydrated/ready signal. Empty states belong only after loading completes with zero rows.
 
+## Material React Table (`LabsMaterialReactTable`)
+
+Render every MRT table through [`components/LabsMaterialReactTable.tsx`](./components/LabsMaterialReactTable.tsx), never a raw `<MaterialReactTable>` (`mrtRemountGuardrails.test.ts` enforces this). MRT 3.2.1 never clears its scroll-container ref, so a virtualized table that unmounts and mounts again with the same `table` (a table/cards toggle, a dialog step) binds to the old, detached container and draws no rows. Dev StrictMode hides it; only production builds show the empty table. The wrapper has no visual of its own, so it has no `/ui` demo.
+
 ## In-app navigation links (SPA)
 
 Hash- and query-routed apps must behave like normal browser links: modifier+click and middle-click open a new tab, right-click can copy the URL, and keyboard users get native link affordances.

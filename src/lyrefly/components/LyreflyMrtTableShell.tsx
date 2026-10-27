@@ -1,6 +1,7 @@
 import Box from '@mui/material/Box';
 import type { SxProps, Theme } from '@mui/material/styles';
-import { MaterialReactTable, type MRT_RowData, type MRT_TableInstance } from 'material-react-table';
+import { type MRT_RowData, type MRT_TableInstance } from 'material-react-table';
+import { LabsMaterialReactTable } from '../../shared/components/LabsMaterialReactTable';
 import type { ReactElement } from 'react';
 
 export type LyreflyMrtTableShellProps<TData extends MRT_RowData> = {
@@ -28,7 +29,7 @@ export function LyreflyMrtTableShell<TData extends MRT_RowData>({
         ...sx,
       }}
     >
-      <MaterialReactTable table={table} />
+      <LabsMaterialReactTable table={table} />
     </Box>
   );
 }

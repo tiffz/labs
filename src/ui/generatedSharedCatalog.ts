@@ -13482,6 +13482,23 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-components-labsmaterialreacttable-tsx-labsmaterialreacttable",
+    "name": "LabsMaterialReactTable",
+    "path": "src/shared/components/LabsMaterialReactTable.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "`<MaterialReactTable>` that survives being unmounted and mounted again with the same `table`. Render every MRT table through this; `mrtRemountGuardrails.test.ts` enforces it. The bug it fixes (material-react-table 3.2.1): MRT keeps its scroll container in `table.refs.tableContainerRef` and only ever SETS it, never clears it. When the table unmounts (Encore's library flips to cards) and mounts again, the row virtualizer's layout effect runs before React attaches the new container, so it binds to the old, detached one, measures a height of 0, and draws no rows. Nothing re-renders to correct it. The table looked empty until reload. Dev hides it: StrictMode runs every layout effect a second time, after the ref is attached. Only a production build shows the empty table, so a dev-server e2e cannot see this bug. The fix: drop the stale node on unmount, and re-render once after mount, when the new container is attached, so the virtualizers bind to it before the browser paints.",
+    "tags": [
+      "components",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-components-labsstatuspill-tsx-labsstatuspill",
     "name": "LabsStatusPill",
     "path": "src/shared/components/LabsStatusPill.tsx",

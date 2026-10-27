@@ -1,14 +1,9 @@
 import Box from '@mui/material/Box';
 import type { SxProps, Theme } from '@mui/material/styles';
-import { MaterialReactTable, type MRT_RowData, type MRT_TableInstance } from 'material-react-table';
+import { type MRT_RowData, type MRT_TableInstance } from 'material-react-table';
+import { LabsMaterialReactTable } from '../../shared/components/LabsMaterialReactTable';
 import type { ReactElement } from 'react';
 import { EncoreMrtSearchHighlightContext } from './encoreMrtSearchHighlightContext';
-
-/** Stable row sx for clickable Encore list tables (repertoire, performances, originals). */
-export const ENCORE_MRT_CLICKABLE_ROW_SX = {
-  cursor: 'pointer',
-  '&:hover': { bgcolor: 'action.hover' },
-} as const;
 
 export type EncoreMrtTableShellProps<TData extends MRT_RowData> = {
   table: MRT_TableInstance<TData>;
@@ -58,7 +53,7 @@ export function EncoreMrtTableShell<TData extends MRT_RowData>({
           ...sx,
         }}
       >
-        <MaterialReactTable table={table} />
+        <LabsMaterialReactTable table={table} />
       </Box>
     </EncoreMrtSearchHighlightContext.Provider>
   );

@@ -27,7 +27,8 @@ import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { alpha, useTheme } from '@mui/material/styles';
-import { MaterialReactTable, useMaterialReactTable, type MRT_ColumnDef } from 'material-react-table';
+import { useMaterialReactTable, type MRT_ColumnDef } from 'material-react-table';
+import { LabsMaterialReactTable } from '../../shared/components/LabsMaterialReactTable';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import { useLabsUndo } from '../../shared/undo/LabsUndoContext';
 import { useEncoreBlockingJobs } from '../context/EncoreBlockingJobContext';
@@ -1439,7 +1440,7 @@ export function BulkPerformanceImportDialog(props: {
                 ref={tableFocusRootRef}
                 sx={{ flex: 1, minHeight: 0, minWidth: 0, maxWidth: '100%', display: 'flex', flexDirection: 'column' }}
               >
-                <MaterialReactTable table={table} />
+                <LabsMaterialReactTable table={table} />
               </Box>
             </Box>
           )}

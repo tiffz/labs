@@ -391,3 +391,9 @@ const ORIGINALS_LIBRARY_TABLE = Object.freeze({
 export function encoreMrtOriginalsLibraryTableOptions<TData extends MRT_RowData>(): Partial<MRT_TableOptions<TData>> {
   return ORIGINALS_LIBRARY_TABLE as Partial<MRT_TableOptions<TData>>;
 }
+
+/** Stable row sx for clickable Encore list tables (repertoire, performances, originals). */
+export const ENCORE_MRT_CLICKABLE_ROW_SX = {
+  cursor: 'pointer',
+  '&:hover': { bgcolor: 'action.hover' },
+} as const;

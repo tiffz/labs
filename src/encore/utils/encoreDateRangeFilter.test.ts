@@ -15,6 +15,14 @@ describe('encoreDateRangeFilter', () => {
     expect(encoreDateInRange('2026-03-10', { after: '2026-01-01', before: '2026-12-31' })).toBe(true);
   });
 
+  it('encoreDateInRange keeps undated rows when no range is set', () => {
+    // "Any time" must not hide a row whose date is missing or unreadable. Originals called this
+    // with no guard, so an original with no readable start date vanished from an unfiltered list.
+    expect(encoreDateInRange('', {})).toBe(true);
+    expect(encoreDateInRange('not a date', {})).toBe(true);
+    expect(encoreDateInRange('', { after: '2026-01-01' })).toBe(false);
+  });
+
   it('round-trips filter record keys', () => {
     const range = { after: '2025-06-01', before: '2025-12-31' };
     const stored = encoreDateRangeToFilterRecord('perfDate', range);
