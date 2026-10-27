@@ -1,4 +1,5 @@
 import { encoreDb } from '../db/encoreDb';
+import { saveOriginalTakeBlob } from './originalTakeLocalAudio';
 import type { EncoreOriginalSong } from './types';
 
 const E2E_SONG_A = 'e2e-originals-queue-a';
@@ -29,23 +30,36 @@ export function exposeOriginalsQueueE2eSeed(): void {
   window.__labsSeedOriginalsQueueE2e = seedOriginalsQueueE2e;
 }
 
-function seedSong(id: string, title: string, takeId: string, now: string): EncoreOriginalSong {
+/** Label of the take song B stars as preferred — listed second, so "first take" picks wrong. */
+export const E2E_ORIGINALS_QUEUE_B_PREFERRED_TAKE_LABEL = 'E2E Queue B take';
+export const E2E_ORIGINALS_QUEUE_B_OTHER_TAKE_LABEL = 'E2E Queue B early take';
+
+function seedTake(id: string, label: string): EncoreOriginalSong['takes'][number] {
+  return {
+    id,
+    label,
+    timestamp: Date.now(),
+    source: 'imported',
+    hasLocalAudio: true,
+    mimeType: 'audio/mpeg',
+  };
+}
+
+function seedSong(
+  id: string,
+  title: string,
+  takeId: string,
+  now: string,
+  /** Playable takes listed BEFORE the preferred one. */
+  earlierTakes: EncoreOriginalSong['takes'] = [],
+): EncoreOriginalSong {
   return {
     id,
     title,
     key: 'C',
     tempo: 80,
     lyricsAndChords: '[Verse 1]\nSeed line',
-    takes: [
-      {
-        id: takeId,
-        label: `${title} take`,
-        timestamp: Date.now(),
-        source: 'imported',
-        hasLocalAudio: true,
-        mimeType: 'audio/mpeg',
-      },
-    ],
+    takes: [...earlierTakes, seedTake(takeId, `${title} take`)],
     mainTakeId: takeId,
     history: [],
     createdAt: now,
@@ -53,13 +67,45 @@ function seedSong(id: string, title: string, takeId: string, now: string): Encor
   };
 }
 
+/** Ten seconds of 8 kHz mono silence, so the playback bar stays up while a smoke reads it. */
+function silentWavBlob(): Blob {
+  const sampleRate = 8000;
+  const samples = sampleRate * 10;
+  const buffer = new ArrayBuffer(44 + samples * 2);
+  const view = new DataView(buffer);
+  const ascii = (offset: number, text: string) => {
+    for (let i = 0; i < text.length; i += 1) view.setUint8(offset + i, text.charCodeAt(i));
+  };
+  ascii(0, 'RIFF');
+  view.setUint32(4, 36 + samples * 2, true);
+  ascii(8, 'WAVE');
+  ascii(12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * 2, true);
+  view.setUint16(32, 2, true);
+  view.setUint16(34, 16, true);
+  ascii(36, 'data');
+  view.setUint32(40, samples * 2, true);
+  return new Blob([buffer], { type: 'audio/wav' });
+}
+
 /** Dev-only Dexie seed for Playwright bulk-play queue smokes (`?e2eOriginalsQueue=1`). */
 export async function seedOriginalsQueueE2e(): Promise<void> {
   const now = new Date().toISOString();
-  await encoreDb.originals.bulkPut([
+  const songs = [
     seedSong(E2E_SONG_A, 'E2E Queue A', 'take-a', now),
-    seedSong(E2E_SONG_B, 'E2E Queue B', 'take-b', now),
-  ]);
+    seedSong(E2E_SONG_B, 'E2E Queue B', 'take-b', now, [
+      seedTake('take-b-early', E2E_ORIGINALS_QUEUE_B_OTHER_TAKE_LABEL),
+    ]),
+  ];
+  await encoreDb.originals.bulkPut(songs);
+  // `hasLocalAudio: true` promises a blob; back it, so playback resolves instead of erroring.
+  await Promise.all(
+    songs.flatMap((song) => song.takes.map((take) => saveOriginalTakeBlob(song.id, take.id, silentWavBlob()))),
+  );
 }
 
 export const E2E_ORIGINALS_QUEUE_SONG_TITLES = ['E2E Queue A', 'E2E Queue B'] as const;

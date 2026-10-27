@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { createBlankOriginalSong, normalizeEncoreOriginalSong, originalSongStartedDate, originalTakeHasPlayableSource, preferredOriginalTake } from './types';
+import {
+  createBlankOriginalSong,
+  normalizeEncoreOriginalSong,
+  originalPlaybackTake,
+  originalSongStartedDate,
+  originalTakeHasPlayableSource,
+  preferredOriginalTake,
+  type OriginalAudioTake,
+} from './types';
 
 describe('originalSongStartedDate', () => {
   it('uses explicit startedAt when set', () => {
@@ -44,6 +52,51 @@ describe('preferredOriginalTake', () => {
     expect(originalTakeHasPlayableSource({ id: 'a', label: 'A', driveFileId: 'x', mimeType: 'audio/mpeg', timestamp: 1, source: 'imported' })).toBe(true);
     expect(originalTakeHasPlayableSource({ id: 'b', label: 'B', mimeType: 'audio/mpeg', hasLocalAudio: true, timestamp: 2, source: 'recorded' })).toBe(true);
     expect(originalTakeHasPlayableSource({ id: 'c', label: 'C', mimeType: 'audio/mpeg', timestamp: 3, source: 'imported' })).toBe(false);
+  });
+});
+
+describe('originalPlaybackTake', () => {
+  const take = (id: string, playable: boolean): OriginalAudioTake => ({
+    id,
+    label: id.toUpperCase(),
+    mimeType: 'audio/mpeg',
+    timestamp: 1,
+    source: 'imported',
+    ...(playable ? { driveFileId: `drive-${id}` } : {}),
+  });
+  const songWith = (takes: OriginalAudioTake[], mainTakeId?: string | null) => ({
+    ...createBlankOriginalSong(),
+    takes,
+    mainTakeId: mainTakeId ?? null,
+  });
+
+  it('plays the starred take even when an earlier take is playable', () => {
+    expect(originalPlaybackTake(songWith([take('a', true), take('b', true)], 'b'))?.id).toBe('b');
+  });
+
+  it('falls back to the first take when nothing is starred', () => {
+    expect(originalPlaybackTake(songWith([take('a', true), take('b', true)]))?.id).toBe('a');
+  });
+
+  it('falls back when the starred take was deleted', () => {
+    expect(originalPlaybackTake(songWith([take('a', true), take('b', true)], 'gone'))?.id).toBe('a');
+  });
+
+  it('skips an unplayable starred take for the first playable one', () => {
+    expect(originalPlaybackTake(songWith([take('a', true), take('b', false)], 'b'))?.id).toBe('a');
+  });
+
+  it('returns the starred take, unplayable, when no take can play', () => {
+    expect(originalPlaybackTake(songWith([take('a', false), take('b', false)], 'b'))?.id).toBe('b');
+  });
+
+  it('returns null for a song with no takes', () => {
+    expect(originalPlaybackTake(songWith([]))).toBeNull();
+  });
+
+  it('honours a caller-supplied playability check', () => {
+    const song = songWith([take('a', true), take('b', false)], 'b');
+    expect(originalPlaybackTake(song, (t) => t.id === 'b')?.id).toBe('b');
   });
 });
 

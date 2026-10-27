@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { hasOriginalTakeBlob } from '../originalTakeLocalAudio';
-import { originalTakeHasPlayableSource, preferredOriginalTake, type EncoreOriginalSong, type OriginalAudioTake } from '../types';
+import {
+  originalPlaybackTake,
+  originalTakeHasPlayableSource,
+  type EncoreOriginalSong,
+  type OriginalAudioTake,
+} from '../types';
 
 export type UseOriginalTakePlayableResult = {
   /** Best take for library playback — preferred when playable, else first playable take. */
@@ -44,12 +49,7 @@ export function useOriginalTakePlayable(
     [localAudioIds],
   );
 
-  const playbackTake = useMemo(() => {
-    const preferred = preferredOriginalTake(song);
-    if (!preferred) return null;
-    if (takeIsPlayable(preferred)) return preferred;
-    return song.takes.find((t) => takeIsPlayable(t)) ?? preferred;
-  }, [song, takeIsPlayable]);
+  const playbackTake = useMemo(() => originalPlaybackTake(song, takeIsPlayable), [song, takeIsPlayable]);
 
   return {
     playbackTake,
