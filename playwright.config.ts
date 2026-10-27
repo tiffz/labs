@@ -1,7 +1,10 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from '@playwright/test';
-import { DEFAULT_DEV_PORT, resolveDevServerPort } from './scripts/labs-dev-port.mjs';
+import {
+  DEFAULT_DEV_PORT,
+  resolveDevServerPort,
+} from './scripts/labs-dev-port.mjs';
 
 const configDir = path.dirname(fileURLToPath(import.meta.url));
 
@@ -28,10 +31,12 @@ const DEV_SERVER_URL = `http://127.0.0.1:${DEV_SERVER_PORT}`;
  * (knip's export ratchet is one), and a stray `console.info` there is not a log
  * line, it is a parse error in an unrelated check.
  */
-const RUNNING_PLAYWRIGHT = process.argv.some((arg) => arg.includes('playwright'));
+const RUNNING_PLAYWRIGHT = process.argv.some((arg) =>
+  arg.includes('playwright')
+);
 if (DEV_SERVER_PORT !== DEFAULT_DEV_PORT && RUNNING_PLAYWRIGHT) {
   process.stderr.write(
-    `[playwright] linked worktree — using ${DEV_SERVER_URL} (override with LABS_E2E_PORT)\n`,
+    `[playwright] linked worktree — using ${DEV_SERVER_URL} (override with LABS_E2E_PORT)\n`
   );
 }
 
@@ -50,8 +55,26 @@ if (DEV_SERVER_PORT !== DEFAULT_DEV_PORT && RUNNING_PLAYWRIGHT) {
  *    silently fail to match and let the nested worktrees back in.
  */
 const NESTED_AGENT_WORKTREES = new RegExp(
-  `^${escapeRegExp(configDir + path.sep + '.claude' + path.sep)}`,
+  `^${escapeRegExp(configDir + path.sep + '.claude' + path.sep)}`
 );
+
+/**
+ * Local macOS e2e renders WebGL on the real GPU. Default headless Chromium uses SwiftShader, a CPU
+ * renderer: Muscle Memory's full-body atlas took 167s to become ready on SwiftShader and 10s on Metal,
+ * measured back to back on the same M1 under load. A shared dev machine with parallel agent
+ * sessions starved SwiftShader past every budget, so the muscle smokes failed pre-push whatever the
+ * change. CI (Linux, no GPU) and the visual project keep software rendering, so baselines are
+ * unaffected. Opt out with LABS_E2E_SOFTWARE_GL=1.
+ */
+const LOCAL_HARDWARE_GL =
+  !process.env.CI &&
+  process.platform === 'darwin' &&
+  process.env.LABS_E2E_SOFTWARE_GL !== '1';
+const HARDWARE_GL_ARGS = [
+  '--use-angle=metal',
+  '--enable-gpu',
+  '--ignore-gpu-blocklist',
+];
 
 export default defineConfig({
   reporter: [
@@ -61,10 +84,7 @@ export default defineConfig({
   ],
   // Discover tests in app folders (e.g., src/cats/e2e, src/zines/e2e, src/corp/e2e) and legacy root e2e/
   testDir: '.',
-  testMatch: [
-    'src/**/e2e/**/*.spec.ts',
-    'e2e/**/*.spec.ts',
-  ],
+  testMatch: ['src/**/e2e/**/*.spec.ts', 'e2e/**/*.spec.ts'],
   testIgnore: [NESTED_AGENT_WORKTREES],
   timeout: 30_000,
   retries: 0,
@@ -106,7 +126,15 @@ export default defineConfig({
       // aloud and the playback specs (whose clocks follow the device) failed
       // whenever another app held or switched it. The fake stream still advances
       // AudioContext.currentTime in real time.
-      use: { launchOptions: { args: ['--disable-audio-output'] } },
+      use: {
+        ...(LOCAL_HARDWARE_GL ? { channel: 'chromium' } : {}),
+        launchOptions: {
+          args: [
+            '--disable-audio-output',
+            ...(LOCAL_HARDWARE_GL ? HARDWARE_GL_ARGS : []),
+          ],
+        },
+      },
     },
     {
       name: 'visual',
@@ -124,31 +152,31 @@ export default defineConfig({
     },
     ...(process.env.VISUAL_MULTI_BROWSER === 'true'
       ? [
-        {
-          name: 'visual-firefox',
-          testMatch: ['**/*.visual.spec.ts'],
-          timeout: 60_000,
-          use: {
-            browserName: 'firefox' as const,
-            viewport: { width: 1440, height: 900 },
-            deviceScaleFactor: 1,
-            timezoneId: 'UTC',
-            reducedMotion: 'reduce' as const,
+          {
+            name: 'visual-firefox',
+            testMatch: ['**/*.visual.spec.ts'],
+            timeout: 60_000,
+            use: {
+              browserName: 'firefox' as const,
+              viewport: { width: 1440, height: 900 },
+              deviceScaleFactor: 1,
+              timezoneId: 'UTC',
+              reducedMotion: 'reduce' as const,
+            },
           },
-        },
-        {
-          name: 'visual-webkit',
-          testMatch: ['**/*.visual.spec.ts'],
-          timeout: 60_000,
-          use: {
-            browserName: 'webkit' as const,
-            viewport: { width: 1440, height: 900 },
-            deviceScaleFactor: 1,
-            timezoneId: 'UTC',
-            reducedMotion: 'reduce' as const,
+          {
+            name: 'visual-webkit',
+            testMatch: ['**/*.visual.spec.ts'],
+            timeout: 60_000,
+            use: {
+              browserName: 'webkit' as const,
+              viewport: { width: 1440, height: 900 },
+              deviceScaleFactor: 1,
+              timezoneId: 'UTC',
+              reducedMotion: 'reduce' as const,
+            },
           },
-        },
-      ]
+        ]
       : []),
   ],
   snapshotPathTemplate: '{testDir}/{testFilePath}-snapshots/{arg}{ext}',
@@ -165,5 +193,3 @@ export default defineConfig({
     timeout: 60_000,
   },
 });
-
-

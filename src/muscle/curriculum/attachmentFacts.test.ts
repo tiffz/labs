@@ -40,6 +40,16 @@ const VERIFIED_ATTACHMENTS: Record<string, { origin: string; insertion: string; 
     insertion: 'bone_ulna',
     source: 'Infraglenoid tubercle → olecranon',
   },
+  muscle_triceps_lateral_head: {
+    origin: 'bone_humerus',
+    insertion: 'bone_ulna',
+    source: 'Humerus above the radial groove → olecranon',
+  },
+  muscle_triceps_medial_head: {
+    origin: 'bone_humerus',
+    insertion: 'bone_ulna',
+    source: 'Humerus below the radial groove → olecranon',
+  },
   muscle_quadriceps_rectus_femoris: {
     origin: 'bone_pelvis',
     insertion: 'bone_patella',

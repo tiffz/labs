@@ -185,8 +185,6 @@ function printReport(report, blenderReport) {
     console.log('\n⚠ No glute meshes found in atlas_complete manifest — re-export may be needed.');
   }
 
-  console.log(`\nSkin overlay meshes (${report.skinMeshes.length}): ${report.skinMeshes.join(', ') || '(none)'}`);
-
   if (report.missingCurriculum.length > 0) {
     console.log(`\nCurriculum nodes not in any atlas manifest region (${report.missingCurriculum.length}):`);
     for (const id of report.missingCurriculum.slice(0, 40)) {
@@ -267,7 +265,6 @@ function main() {
   const failOnGaps = process.argv.includes('--strict');
   const hasCriticalGaps =
     report.missingCsvByNode.length > 0 ||
-    (report.skinMeshes.length === 0) ||
     (report.gluteMeshes.length === 0);
 
   if (failOnGaps && hasCriticalGaps) {

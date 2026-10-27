@@ -24,30 +24,6 @@ export const GUIDED_MODULE_SEQUENCE: MuscleRegion[] = [
   'foot',
 ];
 
-/** Promote from atlas supplement into default study decks. */
-export const PROMOTE_TO_STUDY: string[] = [
-  'muscle_gluteus_maximus',
-  'muscle_gluteus_medius',
-  'muscle_gluteus_minimus',
-  'muscle_tensor_fasciae_latae',
-  'muscle_adductor_longus',
-  'muscle_rhomboid_major',
-  'muscle_infraspinatus',
-  'muscle_teres_major',
-  'muscle_supraspinatus',
-];
-
-/** Stay atlas-only — clinical subdivisions without distinct artist silhouette. */
-export const RETIRE_OR_ATLAS_ONLY: string[] = [
-  'muscle_vastus_medialis',
-  'muscle_vastus_intermedius',
-  'muscle_piriformis',
-  'muscle_gemellus_superior',
-  'muscle_gemellus_inferior',
-  'muscle_quadratus_femoris',
-  'muscle_obturator_internus',
-];
-
 export const ARTIST_STUDY_MANIFEST: ArtistStudyEntry[] = [
   // Fundamentals — grouped by region (study group path)
   { id: 'bone_skull', displayName: 'Skull', moduleId: 'fundamentals', studyGroupPath: ['Head & neck', 'Bones'], defaultVisible: true, quizEligible: true, prokoLessonRef: 'Shoulder Bones / Portrait structure', afsChapterTag: 'Form of the Head & Neck' },
@@ -77,7 +53,7 @@ export const ARTIST_STUDY_MANIFEST: ArtistStudyEntry[] = [
   { id: 'muscle_deltoid_anterior', displayName: 'Anterior deltoid', moduleId: 'shoulder_neck', studyGroupPath: ['Deltoid'], defaultVisible: true, quizEligible: true, prokoLessonRef: 'Shoulder Muscles' },
   { id: 'muscle_deltoid_lateral', displayName: 'Lateral deltoid', moduleId: 'shoulder_neck', studyGroupPath: ['Deltoid'], defaultVisible: true, quizEligible: true, prokoLessonRef: 'Shoulder Muscles' },
   { id: 'muscle_deltoid_posterior', displayName: 'Posterior deltoid', moduleId: 'shoulder_neck', studyGroupPath: ['Deltoid'], defaultVisible: true, quizEligible: true, prokoLessonRef: 'Shoulder Muscles' },
-  { id: 'muscle_trapezius_upper', displayName: 'Upper trapezius', moduleId: 'shoulder_neck', studyGroupPath: [], defaultVisible: true, quizEligible: true, prokoLessonRef: 'Neck Muscles', colloquialNames: ['traps'] },
+  { id: 'muscle_trapezius_upper', displayName: 'Trapezius', moduleId: 'shoulder_neck', studyGroupPath: [], defaultVisible: true, quizEligible: true, prokoLessonRef: 'Neck Muscles', colloquialNames: ['traps'] },
   { id: 'muscle_sternocleidomastoid', displayName: 'Sternocleidomastoid', moduleId: 'shoulder_neck', studyGroupPath: [], defaultVisible: true, quizEligible: true, prokoLessonRef: 'Neck Muscles', colloquialNames: ['SCM'] },
   { id: 'joint_sternoclavicular', displayName: 'Sternoclavicular joint', moduleId: 'shoulder_neck', studyGroupPath: ['Shoulder girdle', 'Joints'], defaultVisible: true, quizEligible: false, prokoLessonRef: 'Shoulder Bones' },
   { id: 'muscle_rhomboid_major', displayName: 'Rhomboid major', moduleId: 'shoulder_neck', studyGroupPath: [], defaultVisible: true, quizEligible: true, prokoLessonRef: 'Upper Back Muscles' },
@@ -86,7 +62,9 @@ export const ARTIST_STUDY_MANIFEST: ArtistStudyEntry[] = [
   { id: 'muscle_supraspinatus', displayName: 'Supraspinatus', moduleId: 'shoulder_neck', studyGroupPath: ['Rotator cuff'], defaultVisible: true, quizEligible: true, prokoLessonRef: 'Shoulder Muscles' },
   // Arm — individual muscles (forearm is a region, not a muscle group)
   { id: 'muscle_biceps_brachii', displayName: 'Biceps brachii', moduleId: 'arm', studyGroupPath: [], defaultVisible: true, quizEligible: true, prokoLessonRef: 'Arms', afsChapterTag: 'Arm and Hand in Motion' },
-  { id: 'muscle_triceps_long_head', displayName: 'Triceps (long head)', moduleId: 'arm', studyGroupPath: [], defaultVisible: true, quizEligible: true, prokoLessonRef: 'Arms' },
+  { id: 'muscle_triceps_long_head', displayName: 'Triceps (long head)', moduleId: 'arm', studyGroupPath: ['Triceps brachii'], defaultVisible: true, quizEligible: true, prokoLessonRef: 'Triceps' },
+  { id: 'muscle_triceps_lateral_head', displayName: 'Triceps (lateral head)', moduleId: 'arm', studyGroupPath: ['Triceps brachii'], defaultVisible: true, quizEligible: true, prokoLessonRef: 'Triceps' },
+  { id: 'muscle_triceps_medial_head', displayName: 'Triceps (medial head)', moduleId: 'arm', studyGroupPath: ['Triceps brachii'], defaultVisible: true, quizEligible: true, prokoLessonRef: 'Triceps' },
   { id: 'muscle_brachialis', displayName: 'Brachialis', moduleId: 'arm', studyGroupPath: [], defaultVisible: true, quizEligible: true, prokoLessonRef: 'Arms' },
   { id: 'muscle_brachioradialis', displayName: 'Brachioradialis', moduleId: 'arm', studyGroupPath: [], defaultVisible: true, quizEligible: true, prokoLessonRef: 'Arms' },
   { id: 'muscle_extensor_carpi_radialis', displayName: 'Extensor carpi radialis longus', moduleId: 'arm', studyGroupPath: [], defaultVisible: true, quizEligible: true, prokoLessonRef: 'Arms' },

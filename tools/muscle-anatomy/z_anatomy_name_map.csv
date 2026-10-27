@@ -48,10 +48,7 @@ Descending part of trapezius muscle.r,muscle_trapezius_upper,shoulder_neck
 Transverse part of trapezius muscle.r,muscle_trapezius_upper,shoulder_neck
 Sternocleidomastoid muscle.r,muscle_sternocleidomastoid,shoulder_neck
 Articular capsule of sternoclavicular joint*.r,joint_sternoclavicular,shoulder_neck
-Long head of biceps brachii muscle.r,muscle_biceps_brachii,arm
 Short head of biceps brachii.r,muscle_biceps_brachii,arm
-Medial head of biceps brachii muscle.r,muscle_biceps_brachii,arm
-Lateral head of triceps brachii muscle.r,muscle_triceps_long_head,arm
 Brachialis muscle.r,muscle_brachialis,arm
 Brachioradialis muscle.r,muscle_brachioradialis,arm
 Extensor carpi radialis longus.r,muscle_extensor_carpi_radialis,arm
@@ -149,3 +146,64 @@ Depressor septi nasi.r,muscle_depressor_septi_nasi,atlas_head_face
 Levator anguli oris.r,muscle_levator_anguli_oris,atlas_head_face
 Levator nasolabialis.r,muscle_levator_nasolabialis,atlas_head_face
 Procerus.r,muscle_procerus,atlas_head_face
+Long head of biceps brachii.r,muscle_biceps_brachii,arm
+Long head of biceps brachii muscle.r,muscle_triceps_long_head,arm
+Lateral head of triceps brachii muscle.r,muscle_triceps_lateral_head,arm
+Medial head of biceps brachii muscle.r,muscle_triceps_medial_head,arm
+Articular capsule of wrist.r,joint_wrist,arm
+Iliocostalis lumborum muscle.r,muscle_erector_spinae,torso
+Iliocostalis thoracis muscle.r,muscle_erector_spinae,torso
+Spinalis thoracis muscle.r,muscle_erector_spinae,torso
+Manubrium,bone_sternum,fundamentals
+Xiphoid process,bone_sternum,fundamentals
+Scaphoid bone.r,bone_carpals,hand
+Lunate bone.r,bone_carpals,hand
+Triquetrum bone.r,bone_carpals,hand
+Pisiform bone.r,bone_carpals,hand
+Trapezium bone.r,bone_carpals,hand
+Trapezoid bone.r,bone_carpals,hand
+Capitate bone.r,bone_carpals,hand
+Hamate bone.r,bone_carpals,hand
+Proximal phalanx of 1st finger.r,bone_phalanges_hand,hand
+Proximal phalanx of 2d finger.r,bone_phalanges_hand,hand
+Middle phalanx of 2d finger.r,bone_phalanges_hand,hand
+Proximal phalanx of 3rd finger.r,bone_phalanges_hand,hand
+Middle phalanx of 3rd finger.r,bone_phalanges_hand,hand
+Proximal phalanx of 4th finger.r,bone_phalanges_hand,hand
+Middle phalanx of 4th finger.r,bone_phalanges_hand,hand
+Proximal phalanx of 5th finger.r,bone_phalanges_hand,hand
+Middle phalanx of 5th finger.r,bone_phalanges_hand,hand
+Distal phalanx of 1st finger.r,bone_phalanges_hand,hand
+Distal phalanx of 2d finger.r,bone_phalanges_hand,hand
+Distal phalanx of 3d finger.r,bone_phalanges_hand,hand
+Distal phalanx of 4th finger.r,bone_phalanges_hand,hand
+Distal phalanx of 5th finger.r,bone_phalanges_hand,hand
+Superficial head of flexor pollicis brevis.r,muscle_flexor_pollicis_brevis,hand
+Deep head of flexor pollicis brevis.r,muscle_flexor_pollicis_brevis,hand
+Lumbricals muscles of hand.r,muscle_lumbricals_hand,hand
+Dorsal interosseus muscles of 1st metacarpal bone.r,muscle_dorsal_interossei_hand,hand
+Dorsal interosseus muscles of 2d metacarpal bone.r,muscle_dorsal_interossei_hand,hand
+Dorsal interosseus muscles d 3d metacarpal bone.r,muscle_dorsal_interossei_hand,hand
+Dorsal interosseus muscles of 4th metacarpal bone.r,muscle_dorsal_interossei_hand,hand
+Dorsal interosseus musclesof 5th metacarpal bone.r,muscle_dorsal_interossei_hand,hand
+Navicular bone.r,bone_tarsals,foot
+Cuboid bone.r,bone_tarsals,foot
+Medial cuneiform bone.r,bone_tarsals,foot
+Intermediate cuneiform bone.r,bone_tarsals,foot
+Lateral cuneiform bone.r,bone_tarsals,foot
+Proximal phalanx of 1st finger of foot.r,bone_phalanges_foot,foot
+Proximal phalanx of 2d finger of foot.r,bone_phalanges_foot,foot
+Middle phalanx of 2d finger of foot.r,bone_phalanges_foot,foot
+Proximal phalanx of 3rd finger of foot.r,bone_phalanges_foot,foot
+Middle phalanx of 3rd finger of foot.r,bone_phalanges_foot,foot
+Proximal phalanx of 4th finger of foot.r,bone_phalanges_foot,foot
+Middle phalanx of 4th finger of foot.r,bone_phalanges_foot,foot
+Proximal phalanx of 5th finger of foot.r,bone_phalanges_foot,foot
+Middle phalanx of 5th finger of foot.r,bone_phalanges_foot,foot
+Distal phalanx of 1st finger of foot.r,bone_phalanges_foot,foot
+Distal phalanx of 2d finger of foot.r,bone_phalanges_foot,foot
+Distal phalanx of 3rd finger of foot.r,bone_phalanges_foot,foot
+Distal phalanx of 4th finger of foot.r,bone_phalanges_foot,foot
+Distal phalanx of 5th finger of foot.r,bone_phalanges_foot,foot
+Flexor digitorum brevis.r,muscle_flexor_digitorum_brevis,foot
+Lumbrical muscles of foot.r,muscle_lumbricals_foot,foot
