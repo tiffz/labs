@@ -14,6 +14,7 @@ import { getAppTheme } from '../shared/ui/theme/appTheme';
 import { initMaterialIconRuntime } from '../shared/ui/icons/materialIconsBootstrap';
 import App from './App';
 import { installGestureE2eSeedHook } from './e2e/gestureE2eSeed';
+import { LABS_E2E_HOOKS_COMPILED_IN } from '../shared/test/labsE2eHooks';
 import '../shared/components/music/appSharedThemes.css';
 import '../shared/styles/labsChrome.css';
 import './gesture.css';
@@ -21,7 +22,7 @@ import './gesture.css';
 installServerLogger('GESTURE');
 installLabsCrashHandlers('gesture');
 initMaterialIconRuntime();
-installGestureE2eSeedHook();
+if (LABS_E2E_HOOKS_COMPILED_IN) installGestureE2eSeedHook();
 
 const theme = getAppTheme('gesture');
 

@@ -19,6 +19,7 @@ import { useGestureAutoReindex } from './hooks/useGestureAutoReindex';
 const DebriefPhase = lazy(() => import('./phases/DebriefPhase'));
 const ZenSessionPhase = lazy(() => import('./phases/ZenSessionPhase'));
 import type { AppPhase, SessionConfig, SessionDebrief } from './types';
+import { LABS_E2E_HOOKS_COMPILED_IN } from '../shared/test/labsE2eHooks';
 
 function GestureMaintenanceEffects(): null {
   useGestureAutoReindex(gestureGoogleClientConfigured());
@@ -31,7 +32,7 @@ function GestureAppContent(): React.ReactElement {
   const [sessionConfig, setSessionConfig] = useState<SessionConfig | null>(null);
   const [debrief, setDebrief] = useState<SessionDebrief | null>(null);
   const [e2eSeedReady, setE2eSeedReady] = useState(() => {
-    if (!import.meta.env.DEV) return true;
+    if (!LABS_E2E_HOOKS_COMPILED_IN) return true;
     const params = new URLSearchParams(window.location.search);
     return !params.has('e2eSeed') && !params.has('e2eInterruptedUpload') && !params.has('e2eInterruptedUploadEmpty');
   });
@@ -41,7 +42,7 @@ function GestureAppContent(): React.ReactElement {
   }, []);
 
   useEffect(() => {
-    if (!import.meta.env.DEV) return;
+    if (!LABS_E2E_HOOKS_COMPILED_IN) return;
     const params = new URLSearchParams(window.location.search);
     if (params.has('e2eInterruptedUploadEmpty')) {
       void import('./e2e/gestureE2eSeed')

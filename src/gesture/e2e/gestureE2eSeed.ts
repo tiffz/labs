@@ -141,7 +141,10 @@ declare global {
   }
 }
 
+/**
+ * Call only behind `LABS_E2E_HOOKS_COMPILED_IN` (see `main.tsx`). The gate lives at the call site
+ * because Playwright helpers import this module's ids under Node, where `import.meta.env` is unset.
+ */
 export function installGestureE2eSeedHook(): void {
-  if (!import.meta.env.DEV) return;
   window.__gestureE2eSeedPreviewFixtures = seedGestureE2ePreviewFixtures;
 }

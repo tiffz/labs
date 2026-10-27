@@ -220,7 +220,7 @@ declare global {
 
 /**
  * Installs `window.__stanzaE2e` for Playwright. Loaded from [`main.tsx`](../main.tsx) when
- * `localStorage.STANZA_E2E_HOOKS === '1'` (set by the e2e spec via `addInitScript`) in dev builds.
+ * `localStorage.STANZA_E2E_HOOKS === '1'` (set by the e2e spec via `addInitScript`) in a bundle built with the e2e hooks (`LABS_E2E_HOOKS_COMPILED_IN`).
  */
 export function installStanzaE2eHooks(): void {
   window.__stanzaE2e = {
