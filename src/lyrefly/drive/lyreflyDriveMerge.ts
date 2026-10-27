@@ -2,6 +2,7 @@ import type { ComicProjectSummary, LyreflyProjectStatus } from '../types';
 import type { LyreflySyncPayload } from './lyreflyDriveEnvelope';
 import { mergeLyreflyIdentities } from './lyreflyIdentitiesMerge';
 import { mergeLyreflySketchbook } from './lyreflySketchbookSync';
+import { mergeLyreflyCollections } from './lyreflyCollectionsSync';
 
 export type LyreflyDriveMergeReport = {
   projectsMerged: number;
@@ -145,6 +146,7 @@ export function mergeLyreflySyncPayload(
       projects: mergedProjects,
       identities: mergeLyreflyIdentities(local.identities, remote.identities),
       sketchbook: mergeLyreflySketchbook(local.sketchbook, remote.sketchbook),
+      collections: mergeLyreflyCollections(local.collections, remote.collections),
     },
     report: {
       projectsMerged,
