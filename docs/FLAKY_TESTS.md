@@ -97,6 +97,13 @@ Two rules follow:
 - **An exhaustive matrix declares its own budget.** `it(..., 30_000)` with a comment saying why.
   A long test sitting just under the global default is a nightly failure waiting for any slowdown —
   and you will diagnose it as flakiness rather than as the arithmetic it is.
+- **Profile the matrix before you budget it.** A bigger timeout only moved
+  `scoreGenerator.contentIntegrity` from nightly failures to pre-commit failures: 30s held alone
+  (5.9s) but not under the full `test:fast` load (35s). Generating every exercise × stage took
+  ~85ms; the other ~2.8s was `expect()` called once per note, thousands of times. Collecting
+  mismatches into an array and asserting once took it to ~150ms, so it stays in the fast path with
+  the default budget. Per-element `expect()` in a hot loop is the shape to look for — and if the
+  work itself is slow, move the file to `*.audit.test.ts` instead of raising its budget.
 
 When a test fails **only** in the coverage run, check its duration against its budget before
 looking for a race. If it is above ~50%, the margin is the bug.
