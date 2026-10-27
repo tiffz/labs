@@ -1,4 +1,4 @@
-import type { ComicProjectSummary, LyreflyIdentities } from '../types';
+import type { ComicProjectSummary, LyreflyIdentities, SketchbookSeed } from '../types';
 import { lyreflyIdentitiesAreEmpty } from './lyreflyIdentitiesMerge';
 import type { LyreflyProjectTombstone } from './lyreflyDriveTombstones';
 import { LYREFLY_DRIVE_APP_ID } from './constants';
@@ -7,6 +7,8 @@ export type LyreflySyncPayload = {
   projects: ComicProjectSummary[];
   /** Pen names, series and accounts. Absent in backups written before they existed. */
   identities?: LyreflyIdentities;
+  /** Sketchbook seeds, deletion markers included. Absent in backups written before they synced. */
+  sketchbook?: SketchbookSeed[];
 };
 
 export interface LyreflyDriveEnvelopeV1 {
@@ -18,6 +20,7 @@ export interface LyreflyDriveEnvelopeV1 {
   /** Projects removed on any device — prevents union merge from resurrecting deletes. */
   deletedProjectIds?: LyreflyProjectTombstone[];
   identities?: LyreflyIdentities;
+  sketchbook?: SketchbookSeed[];
 }
 
 export function buildLyreflyDriveEnvelope(
@@ -31,6 +34,7 @@ export function buildLyreflyDriveEnvelope(
     projects: payload.projects,
     deletedProjectIds: deletedProjectIds.length > 0 ? [...deletedProjectIds] : undefined,
     identities: lyreflyIdentitiesAreEmpty(payload.identities) ? undefined : payload.identities,
+    sketchbook: payload.sketchbook?.length ? payload.sketchbook : undefined,
   };
 }
 
@@ -48,5 +52,5 @@ export function parseLyreflyDriveEnvelope(json: string): LyreflyDriveEnvelopeV1 
 }
 
 export function envelopeToPayload(envelope: LyreflyDriveEnvelopeV1): LyreflySyncPayload {
-  return { projects: envelope.projects, identities: envelope.identities };
+  return { projects: envelope.projects, identities: envelope.identities, sketchbook: envelope.sketchbook };
 }

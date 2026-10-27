@@ -26,6 +26,11 @@ matches Draw via `resolveLyreflyPrintSpec`; mockups persist per page in `pageMoc
 Inline idea capture (notes, flashes, links, art, files) that promotes into a comic project.
 Bulk import past flashes from Markdown or JSONL — see [`SKETCHBOOK_IMPORT.md`](SKETCHBOOK_IMPORT.md).
 
+Seeds sync in the gallery envelope (`progress.json` → `sketchbook`); their images and files upload
+to `Lyrefly/sketchbook/` before the envelope is written (`drive/lyreflySketchbookSync.ts`). A delete
+leaves a small marker row (`deletedAt`, status archived, content cleared) that syncs like an edit, so
+the newer of a delete and an edit wins. Before this, seeds never left the browser they were made in.
+
 ## Pen names, series and accounts
 
 Four kinds of thing, flat and linked rather than nested (rationale:

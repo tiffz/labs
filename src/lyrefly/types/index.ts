@@ -394,6 +394,15 @@ export interface SketchbookSeed {
   status: SketchbookSeedStatus;
   promotedProjectId?: string;
   sortOrder: number;
+  /**
+   * Set when deleted. The row stays as a small marker (status archived, content cleared) so the
+   * delete syncs like any other edit: the newer of a delete and an edit wins on merge.
+   */
+  deletedAt?: string;
+  /** Blob id (the seed's own file, or an attachment's) → Drive file id once uploaded. */
+  blobDriveFileIds?: Record<string, string>;
+  /** Attachments removed on any device, so a merge with an older copy does not bring them back. */
+  removedAttachmentIds?: string[];
   createdAt: string;
   updatedAt: string;
 }

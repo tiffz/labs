@@ -40,10 +40,24 @@ export async function updateSketchbookSeed(seed: SketchbookSeed): Promise<Sketch
   return updated;
 }
 
+/** The marker a deleted seed leaves behind: enough to sync the delete, nothing of the idea. */
+export function sketchbookDeletionMarker(seed: SketchbookSeed, at = new Date().toISOString()): SketchbookSeed {
+  return {
+    id: seed.id,
+    kind: seed.kind,
+    tags: [],
+    status: 'archived',
+    sortOrder: seed.sortOrder,
+    createdAt: seed.createdAt,
+    deletedAt: at,
+    updatedAt: at,
+  };
+}
+
 export async function deleteSketchbookSeed(seed: SketchbookSeed): Promise<void> {
   const blobIds = sketchbookBlobIdsForSeed(seed);
   await lyreflyDb.transaction('rw', [lyreflyDb.sketchbookSeeds, lyreflyDb.sketchbookBlobs], async () => {
-    await lyreflyDb.sketchbookSeeds.delete(seed.id);
+    await lyreflyDb.sketchbookSeeds.put(sketchbookDeletionMarker(seed));
     await Promise.all(blobIds.map((id) => lyreflyDb.sketchbookBlobs.delete(id)));
   });
   await markLyreflyDirtyRow('sketchbook_seed', seed.id, 'delete');
@@ -80,6 +94,7 @@ export async function removeSketchbookAttachment(
   const updated: SketchbookSeed = {
     ...seed,
     attachments: (seed.attachments ?? []).filter((item) => item.id !== attachmentId),
+    removedAttachmentIds: [...new Set([...(seed.removedAttachmentIds ?? []), attachmentId])],
     updatedAt: new Date().toISOString(),
   };
   await lyreflyDb.transaction('rw', [lyreflyDb.sketchbookSeeds, lyreflyDb.sketchbookBlobs], async () => {
