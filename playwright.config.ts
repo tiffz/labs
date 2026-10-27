@@ -100,6 +100,13 @@ export default defineConfig({
     {
       name: 'e2e',
       testIgnore: ['**/*.visual.spec.ts', NESTED_AGENT_WORKTREES],
+      // Play into a fake output stream, never the real sound card. CI's Linux
+      // runners have no audio device and already fall back to one; on a Mac the
+      // default opens the built-in speaker, so every local run played test audio
+      // aloud and the playback specs (whose clocks follow the device) failed
+      // whenever another app held or switched it. The fake stream still advances
+      // AudioContext.currentTime in real time.
+      use: { launchOptions: { args: ['--disable-audio-output'] } },
     },
     {
       name: 'visual',
