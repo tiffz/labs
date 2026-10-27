@@ -48,6 +48,8 @@ test.describe('Lyrefly gallery', () => {
   // to resize their grid column and slide the stepper up to 33px sideways on every click.
   for (const viewport of [
     { width: 1440, height: 900 },
+    // Between md and lg the title column used to collapse to 0px and the comic's name vanished.
+    { width: 1024, height: 768 },
     { width: 390, height: 844 },
   ]) {
     test(`workbench header holds still across stages at ${viewport.width}px`, async ({ page }) => {
@@ -62,6 +64,9 @@ test.describe('Lyrefly gallery', () => {
         const a = await actions.boundingBox();
         return [s?.x, s?.y, s?.width, a?.x, a?.width].map((n) => Math.round(n ?? NaN));
       };
+
+      const title = page.getByRole('textbox', { name: 'Comic title' });
+      expect((await title.boundingBox())?.width ?? 0, 'comic title width').toBeGreaterThan(100);
 
       const stages = ['Brainstorm', 'Script', 'Thumbs', 'Draw', 'Publish'];
       await stepper.getByRole('button', { name: stages[0] }).click();

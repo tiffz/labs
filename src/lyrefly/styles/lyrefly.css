@@ -714,7 +714,9 @@
 
 .lyrefly-workbench__nav-bar {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(22rem, 42rem) auto;
+  /* The title keeps a floor: without it the stepper took its max first and the actions the rest,
+     and at ~1000px wide the title column (and the comic's name) collapsed to 0px. */
+  grid-template-columns: minmax(8rem, 1fr) minmax(22rem, 42rem) auto;
   gap: 1rem 1.75rem;
   align-items: center;
   width: 100%;
@@ -744,7 +746,8 @@
   white-space: nowrap;
 }
 
-@media (max-width: 899px) {
+/* Title, stepper and actions only fit on one row from lg (1200px); below that, two rows. */
+@media (max-width: 1199px) {
   .lyrefly-workbench__nav-bar {
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-rows: auto auto;
