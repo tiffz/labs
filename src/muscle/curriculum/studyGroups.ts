@@ -142,7 +142,12 @@ export const STUDY_GROUPS_BY_MODULE: Partial<Record<MuscleRegion, StudyGroup[]>>
       label: 'Rotator cuff',
       moduleId: 'shoulder_neck',
       defaultExpanded: true,
-      children: [{ nodeId: 'muscle_supraspinatus' }, { nodeId: 'muscle_infraspinatus' }],
+      children: [
+        { nodeId: 'muscle_supraspinatus' },
+        { nodeId: 'muscle_infraspinatus' },
+        { nodeId: 'muscle_teres_minor' },
+        { nodeId: 'muscle_subscapularis' },
+      ],
     },
     leaf('sn_trapezius', 'Trapezius', 'shoulder_neck', 'muscle_trapezius_upper'),
     leaf('sn_scm', 'Sternocleidomastoid', 'shoulder_neck', 'muscle_sternocleidomastoid'),

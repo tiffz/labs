@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-10-26T23:46:37.174Z",
+  "generatedAt": "2026-10-27T17:41:39.329Z",
   "summary": {
     "curriculumTotal": 94,
     "manifestNodeIds": 429,
-    "csvRows": 208,
+    "csvRows": 210,
     "missingCurriculumCount": 15,
     "missingCsvNodeCount": 6,
     "atlasCompleteMeshes": 429,
