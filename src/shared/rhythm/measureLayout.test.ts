@@ -60,8 +60,10 @@ describe('visual tick lookups', () => {
 
   it('loops the second section on the played timeline', () => {
     const parsed = parseRhythm(TWO_SECTIONS, TWO_FOUR);
-    // Measure 5 drawn at 24..32 → played 40..48, plus its hidden copies through 64.
-    expect(expandSelectionToRepeats(parsed, 24, 32)).toEqual({ startTick: 40, endTick: 64 });
+    // The whole second section, drawn 16..32 → played 32..48, plus its hidden pass through 64.
+    expect(expandSelectionToRepeats(parsed, 16, 32)).toEqual({ startTick: 32, endTick: 64 });
+    // Its last measure alone (drawn 24..32) loops once: played 40..48.
+    expect(expandSelectionToRepeats(parsed, 24, 32)).toEqual({ startTick: 40, endTick: 48 });
   });
 
   it('still works for 4/4 section repeats followed by plain measures', () => {
@@ -69,5 +71,27 @@ describe('visual tick lookups', () => {
     const layout = buildMeasureLayout(parsed);
     expect(layout.map((s) => s.visualStartTick)).toEqual([0, null, null, 16]);
     expect(findMeasureIndexFromVisualTick(parsed, 16)).toMatchObject({ index: 3, logicalMeasureStartTick: 48 });
+  });
+});
+
+describe('looping a selection with repeats', () => {
+  // 2/4, |: A B :|x2 C: drawn A 0..8, B 8..16, C 16..24; played A B A' B' C = 0..40.
+  const n = '|: DKTKD-TK| D-TKTKTK:|x2 TKD-TKTK';
+
+  it('a whole section loops every pass', () => {
+    expect(expandSelectionToRepeats(parseRhythm(n, TWO_FOUR), 0, 16)).toEqual({ startTick: 0, endTick: 32 });
+  });
+
+  it('the last measure of a section alone loops once, not with the next pass of the first', () => {
+    // It used to run on through the hidden passes: B, A', B'.
+    expect(expandSelectionToRepeats(parseRhythm(n, TWO_FOUR), 8, 16)).toEqual({ startTick: 8, endTick: 16 });
+  });
+
+  it('a note inside a section loops once', () => {
+    expect(expandSelectionToRepeats(parseRhythm(n, TWO_FOUR), 12, 14)).toEqual({ startTick: 12, endTick: 14 });
+  });
+
+  it('a selection running past the section plays straight through, passes included', () => {
+    expect(expandSelectionToRepeats(parseRhythm(n, TWO_FOUR), 8, 24)).toEqual({ startTick: 8, endTick: 40 });
   });
 });

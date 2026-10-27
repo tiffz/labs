@@ -120,9 +120,21 @@ export default defineConfig({
     {
       name: 'e2e',
       testIgnore: ['**/*.visual.spec.ts', NESTED_AGENT_WORKTREES],
-      use: LOCAL_HARDWARE_GL
-        ? { channel: 'chromium', launchOptions: { args: HARDWARE_GL_ARGS } }
-        : {},
+      // Play into a fake output stream, never the real sound card. CI's Linux
+      // runners have no audio device and already fall back to one; on a Mac the
+      // default opens the built-in speaker, so every local run played test audio
+      // aloud and the playback specs (whose clocks follow the device) failed
+      // whenever another app held or switched it. The fake stream still advances
+      // AudioContext.currentTime in real time.
+      use: {
+        ...(LOCAL_HARDWARE_GL ? { channel: 'chromium' } : {}),
+        launchOptions: {
+          args: [
+            '--disable-audio-output',
+            ...(LOCAL_HARDWARE_GL ? HARDWARE_GL_ARGS : []),
+          ],
+        },
+      },
     },
     {
       name: 'visual',

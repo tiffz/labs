@@ -129,6 +129,23 @@ DRUMS_FUZZ_SEEDS=20000 npx vitest run src/drums/utils/notationEdits.fuzz.test.ts
 Every failure it finds becomes a named case in `notationEdits.test.ts`, because the rare ones
 (one in 100,000 edits) will not recur in 300 seeds.
 
+### Sequencer
+
+The grid is drawn from the notation (`notationToGrid`) and never edited directly: a click or a
+drag calls `setStrokeAt`, which edits the notation at one PLAYED tick, and the grid redraws.
+Copies follow their written measure because they are repeats of it; a click in a copy writes it
+out first. The grid used to keep its own model and rebuild the notation from it on every click,
+which linked cells by its own arithmetic (editing measure 2 when you clicked measure 6), and lost
+spaces and repeat signs. [`sequencer.fuzz.test.ts`](utils/sequencer.fuzz.test.ts) checks that a
+click changes the strokes at that cell and its linked copies and nothing else, and that the grid
+draws exactly the strokes that play.
+
+### Looping a selection
+
+A selection holding a whole repeated section loops every pass; part of a section loops as
+selected; a selection running past a section plays straight through it, passes included
+(`expandSelectionToRepeats`).
+
 ### Repeat Handling Strategy
 
 **Decision**: Use "Total Count" logic for Simile Repeats (`|xN`).

@@ -150,13 +150,13 @@ export function expandSimileMeasure(notation: string, measureIndex: number, pars
         const tokenGlobalStart = startSearch + suffixMatch.index;
         const tokenGlobalEnd = tokenGlobalStart + token.length;
 
-        let explicitSection = '';
-        for (let i = repeatGroup.startMeasure; i <= repeatGroup.endMeasure; i++) {
-          const mNotes = parsed.measures[i].notes;
-          const mStr = mNotes.map(noteToNotation).join('');
-          if (i > repeatGroup.startMeasure) explicitSection += ' | ';
-          explicitSection += mStr;
-        }
+        // The section's own characters, so ties and typed rests survive and the padding the
+        // parser added is not written in as typed rests.
+        const startMapping = parsed.measureMapping[repeatGroup.startMeasure];
+        const explicitSection = startMapping
+          ? notation.slice(startMapping.sourceStringIndex, tokenGlobalStart).trim()
+          : '';
+        if (!explicitSection) return notation;
 
         let expansion = ':| ';
         // FIX Phase 36: xN implies N Total Instances (Total Count Standard).
