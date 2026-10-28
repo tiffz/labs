@@ -331,3 +331,37 @@ describe('dropped files save without a confirm (ADR 0030, amended)', () => {
     expect(screen.queryByText('take.mp3')).toBeNull();
   });
 });
+
+describe('editing a staged plan', () => {
+  type Row = { songId: string };
+  const row = (name: string): LabsStagedUploadInspection<Row> => ({
+    ok: true,
+    name,
+    mimeType: 'application/pdf',
+    sizeBytes: 10,
+    outcome: 'Links to the song',
+    plan: { songId: '' },
+  });
+
+  it('commits the edited plan, and leaves a refused row alone', async () => {
+    const inspect = async (source: LabsStagedUploadSource) =>
+      source.kind === 'file' ? row(source.file.name) : ({ ok: false, name: stagedSourceName(source), message: 'No' } as const);
+    const { result } = renderHook(() => useLabsStagedUploads<Row>({ inspect }));
+    await act(async () => {
+      result.current.stageFiles([file('a.pdf')]);
+      result.current.stageLink('https://example.com/x');
+    });
+    const [ready, refused] = result.current.items;
+    act(() => {
+      result.current.updatePlan(ready!.id, (plan) => ({ ...plan, songId: 'song-1' }));
+      result.current.updatePlan(refused!.id, () => ({ songId: 'never' }));
+    });
+    expect(result.current.items[1]).toEqual(refused);
+
+    const commit = vi.fn(async () => {});
+    await act(async () => {
+      await result.current.confirm(commit);
+    });
+    expect((commit.mock.calls[0] as unknown[])[0]).toEqual([expect.objectContaining({ plan: { songId: 'song-1' } })]);
+  });
+});

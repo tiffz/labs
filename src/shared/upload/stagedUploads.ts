@@ -111,6 +111,19 @@ export function resolveStagedUpload<TPlan>(
   });
 }
 
+/**
+ * Change a ready item's plan: a review table where the user edits each row (which song a score
+ * belongs to, say). Items not ready are left alone, since a check still running would overwrite
+ * the edit.
+ */
+export function updateStagedUploadPlan<TPlan>(
+  items: readonly LabsStagedUpload<TPlan>[],
+  id: string,
+  update: (plan: TPlan) => TPlan,
+): LabsStagedUpload<TPlan>[] {
+  return items.map((item) => (item.id === id && item.status === 'ready' ? { ...item, plan: update(item.plan) } : item));
+}
+
 export function removeStagedUpload<TPlan>(
   items: readonly LabsStagedUpload<TPlan>[],
   id: string,

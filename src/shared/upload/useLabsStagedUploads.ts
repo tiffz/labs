@@ -6,6 +6,7 @@ import {
   resolveStagedUpload,
   stagedUploadsAwaitConfirm,
   stageSources,
+  updateStagedUploadPlan,
   type LabsReadyStagedUpload,
   type LabsStagedUpload,
   type LabsStagedUploadInspection,
@@ -33,6 +34,8 @@ export type LabsStagedUploadsController<TPlan> = {
   saveFiles: (files: readonly File[], commit: LabsStagedUploadCommit<TPlan>) => Promise<void>;
   /** A dropped folder, saved at once as one row. */
   saveBatch: (name: string, files: readonly File[], commit: LabsStagedUploadCommit<TPlan>) => Promise<void>;
+  /** Edit a ready item's plan, for surfaces that let the user adjust each row before confirming. */
+  updatePlan: (id: string, update: (plan: TPlan) => TPlan) => void;
   remove: (id: string) => void;
   clear: () => void;
   /** True while a picked or pasted item waits for the confirm button. */
@@ -171,6 +174,10 @@ export function useLabsStagedUploads<TPlan>({
     [save],
   );
 
+  const updatePlan = useCallback((id: string, update: (plan: TPlan) => TPlan) => {
+    setItems((current) => updateStagedUploadPlan(current, id, update));
+  }, []);
+
   const remove = useCallback((id: string) => {
     removedRef.current.add(id);
     setItems((current) => removeStagedUpload(current, id));
@@ -207,6 +214,7 @@ export function useLabsStagedUploads<TPlan>({
     stageBatch,
     saveFiles,
     saveBatch,
+    updatePlan,
     remove,
     clear,
     awaitingConfirm,

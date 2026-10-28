@@ -80,7 +80,6 @@ const SAVES_NOTHING = new Map([
 /** Migration plan (ADR 0030 § Rollout). Delete a row when its module stages. */
 const PENDING = new Map([
   ['encore/components/BulkPerformanceImportDialog.tsx', 'reviews in its own dialog'],
-  ['encore/components/BulkScoreImportDialog.tsx', 'reviews in its own dialog'],
 ]);
 
 function sourceFiles(dir: string): string[] {
