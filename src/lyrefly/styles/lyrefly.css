@@ -4988,31 +4988,6 @@
   margin-top: 0.75rem;
 }
 
-/* —— Empty shelf: second action —— */
-
-.lyrefly-studio__empty-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.lyrefly-studio__secondary {
-  padding: 10px 6px;
-  border: 0;
-  background: none;
-  color: var(--lyrefly-accent);
-  font-family: var(--lyrefly-body-font);
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.lyrefly-studio__secondary:focus-visible {
-  outline: 2px solid var(--lyrefly-accent-cool);
-  outline-offset: 3px;
-}
-
 /* —— Comic credit pickers (profile) —— */
 
 .lyrefly-credit-pickers {

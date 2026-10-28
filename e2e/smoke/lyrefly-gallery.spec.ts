@@ -1,11 +1,6 @@
-import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-
 import { expect, test } from '@playwright/test';
 
-const IMPORT_FIXTURES = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'src', 'lyrefly', 'import', '__fixtures__');
-// 1x1 transparent PNG: page art for the import, never shown at size.
+// 1x1 transparent PNG: a piece image for the bundle import, never shown at size.
 const PNG = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=',
   'base64',
@@ -79,36 +74,6 @@ test.describe('Lyrefly gallery', () => {
       }
     });
   }
-
-  test('imports a comics website from the Accounts tab', async ({ page }) => {
-    // The live site is never contacted: its index, home page and images come from fixtures.
-    await page.route('https://slantofrain.com/**', async (route) => {
-      const url = new URL(route.request().url());
-      if (url.pathname === '/page-data/index/page-data.json') {
-        return route.fulfill({ contentType: 'application/json', body: readFileSync(join(IMPORT_FIXTURES, 'slantofrain-index.page-data.json')) });
-      }
-      if (url.pathname === '/') {
-        return route.fulfill({ contentType: 'text/html', body: readFileSync(join(IMPORT_FIXTURES, 'slantofrain-home.html')) });
-      }
-      return route.fulfill({ contentType: 'image/png', body: PNG });
-    });
-
-    await page.getByTestId('lyrefly-accounts-tab').click();
-    await expect(page.getByTestId('lyrefly-accounts')).toBeVisible();
-    await page.getByRole('button', { name: 'Import from a website' }).click();
-    await page.getByRole('button', { name: 'slantofrain.com' }).click();
-    await expect(page.getByTestId('lyrefly-import-summary')).toContainText('2 comics');
-    await expect(page.getByLabel('Credit these comics to')).toHaveValue('Petrichor Lin');
-    await page.getByTestId('lyrefly-import-confirm').click();
-    await expect(page.getByTestId('lyrefly-import-done')).toHaveText('Added 2 comics.', { timeout: 30000 });
-    await page.getByRole('button', { name: 'Done' }).click();
-
-    await expect(page.getByRole('textbox', { name: 'Pen name' })).toHaveValue('Petrichor Lin');
-    await expect(page.getByRole('textbox', { name: 'Series title' })).toHaveValue('Slant of Rain');
-    await page.getByRole('button', { name: 'Your comics', exact: true }).click();
-    await expect(page.getByRole('button', { name: /Open Fighting/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /Open 600 Million Steps/i })).toBeVisible();
-  });
 
   test('makes, renames and archives a collection from the Sketchbook', async ({ page }) => {
     await page.getByTestId('lyrefly-sketchbook-tab').click();

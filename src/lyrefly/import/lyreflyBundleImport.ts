@@ -3,7 +3,7 @@
  * (a tracker doc, an old notes app). The owner's material is personal, so it travels as a file
  * they pick, never in this repo.
  *
- * Safe to run again, like the site import: every row gets an id derived from the entry's `key`,
+ * Safe to run again: every row gets an id derived from the entry's `key`,
  * so a second run finds what the first wrote. It fills gaps and never overwrites: a comic's queue
  * place, notes or script that already exist are left as they are, and an idea deleted since the
  * last run stays deleted (its marker row holds the same id).
@@ -27,7 +27,7 @@ import type {
   VisualDevAsset,
 } from '../types';
 import type { LyreflyWorkflowStage } from '../workflow/lyreflyWorkflowStages';
-import { lyreflyStableId } from './lyreflySiteImport';
+import { lyreflyStableId } from './lyreflyStableId';
 import {
   addLyreflyPiecesFromDriveFolder,
   ensureLyreflyCollectionFolder,

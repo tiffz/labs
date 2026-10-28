@@ -21,7 +21,6 @@ import AppTooltip from '../../shared/components/AppTooltip';
 import { useLyreflyIdentities } from '../hooks/useLyreflyIdentities';
 import type { LyreflyAccount } from '../types';
 import { PublishPlatformIcon } from './PublishPlatformIcon';
-import { LyreflySiteImportDialog } from './LyreflySiteImportDialog';
 
 type Owner = LyreflyAccount['owner'];
 
@@ -196,14 +195,12 @@ function AddOwner({ label, onAdd }: { label: string; onAdd: (name: string) => Pr
 
 export function LyreflyAccountsPage(): ReactElement {
   const { identities, identitiesHydrated } = useLyreflyIdentities();
-  const [importOpen, setImportOpen] = useState(false);
   const [showRetired, setShowRetired] = useState(false);
   const { personas, series, accounts } = identities;
 
   const ownedBy = (owner: Owner) =>
     accounts.filter((a) => a.owner.kind === owner.kind && a.owner.id === owner.id);
   const retiredCount = [...personas, ...series, ...accounts].filter((r) => r.retiredAt).length;
-  const empty = personas.length === 0 && series.length === 0;
   const visiblePersonas = personas.filter((p) => showRetired || !p.retiredAt);
   const visibleSeries = series.filter((s) => showRetired || !s.retiredAt);
 
@@ -214,9 +211,6 @@ export function LyreflyAccountsPage(): ReactElement {
           <h1 className="lyrefly-studio__title">Accounts</h1>
           <p className="lyrefly-studio__lede">Your pen names and series, and where each one posts.</p>
         </div>
-        <Button variant={empty ? 'contained' : 'outlined'} onClick={() => setImportOpen(true)}>
-          Import from a website
-        </Button>
       </header>
 
       {!identitiesHydrated ? null : (
@@ -229,7 +223,7 @@ export function LyreflyAccountsPage(): ReactElement {
               <AddOwner label="Add pen name" onAdd={createLyreflyPersona} />
             </div>
             {visiblePersonas.length === 0 ? (
-              <p className="lyrefly-accounts__empty">No pen names yet. Import a website or add one.</p>
+              <p className="lyrefly-accounts__empty">No pen names yet.</p>
             ) : (
               <ul className="lyrefly-accounts__owners">
                 {visiblePersonas.map((p) => (
@@ -286,8 +280,6 @@ export function LyreflyAccountsPage(): ReactElement {
           ) : null}
         </>
       )}
-
-      <LyreflySiteImportDialog open={importOpen} onClose={() => setImportOpen(false)} />
     </section>
   );
 }
