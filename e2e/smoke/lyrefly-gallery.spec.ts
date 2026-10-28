@@ -130,6 +130,37 @@ test.describe('Lyrefly gallery', () => {
     await expect(page.getByRole('button', { name: /Daily comics/ })).toBeVisible();
   });
 
+  test('previews a bundle of collections picked with its images', async ({ page }) => {
+    const bundle = {
+      format: 'lyrefly-bundle',
+      version: 1,
+      source: 'an old site',
+      comics: [],
+      seeds: [],
+      collections: [
+        {
+          key: 'e2e:old-site',
+          title: 'Old Site',
+          status: 'archived',
+          pieces: [
+            { key: '1', file: 'old-1.png', title: 'Sheep' },
+            { key: '2', file: 'old-2.png', title: 'Deer' },
+          ],
+        },
+      ],
+    };
+    await page.getByTestId('lyrefly-sketchbook-tab').click();
+    // One image picked with the bundle, one left behind.
+    await page.getByTestId('lyrefly-sketchbook-import-input').setInputFiles([
+      { name: 'archive.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(bundle)) },
+      { name: 'old-1.png', mimeType: 'image/png', buffer: PNG },
+    ]);
+    await expect(page.getByTestId('lyrefly-bundle-summary')).toHaveText(
+      'Old Site (archived): 1 image to upload, 1 not picked with the file',
+    );
+    await expect(page.getByTestId('lyrefly-bundle-confirm')).toBeEnabled();
+  });
+
   test('uses riso cube theme on app root', async ({ page }) => {
     await expect(page.getByTestId('lyrefly-app')).toHaveAttribute('data-lyrefly-theme', 'risocube');
     await expect(page.getByTestId('lyrefly-design-picker')).toHaveCount(0);
