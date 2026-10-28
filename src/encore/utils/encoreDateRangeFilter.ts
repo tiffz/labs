@@ -16,7 +16,9 @@ export function encoreCalendarDayFromIso(iso: string): string | null {
   return /^\d{4}-\d{2}-\d{2}$/.test(day) ? day : null;
 }
 
+/** True when `iso` falls inside `range`. An inactive range ("Any time") matches every row, dated or not. */
 export function encoreDateInRange(iso: string, range: EncoreDateRangeFilterValue): boolean {
+  if (!isEncoreDateRangeActive(range)) return true;
   const day = encoreCalendarDayFromIso(iso);
   if (!day) return false;
   if (range.after && day < range.after) return false;

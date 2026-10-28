@@ -154,7 +154,8 @@ export async function seedEncorePerfFixture(
     takes: Array.from({ length: s.takesPerOriginal }, (_, t) => ({
       id: `${p}take-${i}-${t}`,
       label: `Take ${t + 1}`,
-      createdAt: nowIso,
+      timestamp: now,
+      source: 'imported' as const,
     })),
     mainTakeId: null,
     history: Array.from({ length: s.historyPerOriginal }, (_, h) => ({
@@ -163,8 +164,8 @@ export async function seedEncorePerfFixture(
     })),
     startedAt: nowIso.slice(0, 10),
     createdAt: nowIso,
-    updatedAt: now - i * 1000,
-  })) as unknown as EncoreOriginalSong[];
+    updatedAt: new Date(now - i * 1000).toISOString(),
+  })) satisfies EncoreOriginalSong[];
 
   await encoreDb.transaction(
     'rw',

@@ -8,7 +8,8 @@ import { useMaterialReactTable, type MRT_ColumnDef, type MRT_RowSelectionState }
 import { useCallback, useMemo, type Dispatch, type MouseEvent as ReactMouseEvent, type ReactElement, type SetStateAction } from 'react';
 import { MRT_ROW_SELECT_COL } from '../../components/encoreMrtColumnOrder';
 import { chordProLyricSnippet } from '../../../shared/music/chordPro/chordProText';
-import { EncoreMrtTableShell, ENCORE_MRT_CLICKABLE_ROW_SX } from '../../components/EncoreMrtTableShell';
+import { EncoreMrtTableShell } from '../../components/EncoreMrtTableShell';
+import { ENCORE_MRT_CLICKABLE_ROW_SX } from '../../components/encoreMrtTableDefaults';
 import { formatShortDate } from '../../components/libraryScreenHelpers';
 import { encoreMrtOriginalsLibraryTableOptions } from '../../components/encoreMrtTableDefaults';
 import { EncoreBpmChip } from '../../ui/EncoreBpmChip';
