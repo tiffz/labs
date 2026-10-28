@@ -28,7 +28,12 @@ import type {
 } from '../types';
 import type { LyreflyWorkflowStage } from '../workflow/lyreflyWorkflowStages';
 import { lyreflyStableId } from './lyreflySiteImport';
-import { ensureLyreflyCollectionFolder, uploadLyreflyPieceFile } from '../db/lyreflyCollectionMutations';
+import {
+  addLyreflyPiecesFromDriveFolder,
+  ensureLyreflyCollectionFolder,
+  uploadLyreflyPieceFile,
+} from '../db/lyreflyCollectionMutations';
+import { parseDriveFolderIdFromUserInput } from '../../shared/drive/parseDriveFolderUrl';
 
 export type LyreflyBundleLink = { title: string; url: string };
 
@@ -81,6 +86,11 @@ export type LyreflyBundleCollection = {
   status: LyreflyCollection['status'];
   notes?: string;
   sourceUrl?: string;
+  /**
+   * A Google Drive folder of the owner's images. They are linked where they are, never copied
+   * (ADR 0029), and re-importing links only what is new in the folder.
+   */
+  driveFolder?: string;
   /** In reading order. */
   pieces: LyreflyBundlePiece[];
 };
@@ -143,6 +153,9 @@ export function parseLyreflyBundle(raw: unknown): LyreflyBundleV1 {
     if (c.status !== 'ongoing' && c.status !== 'archived') {
       throw new LyreflyBundleError(`Collection "${c.title}" has an unknown status "${String(c.status)}".`);
     }
+    if (c.driveFolder !== undefined && !parseDriveFolderIdFromUserInput(c.driveFolder)) {
+      throw new LyreflyBundleError(`Collection "${c.title}" has a Drive folder that is not a folder link.`);
+    }
     if (!Array.isArray(c.pieces)) throw new LyreflyBundleError(`Collection "${c.title}" has no pieces list.`);
     const pieceKeys = new Set<string>();
     for (const p of c.pieces) {
@@ -177,9 +190,19 @@ export type LyreflyBundlePlan = {
   collections: BundleCollectionPlan[];
 };
 
-/** Pieces the import will upload. Drive sign-in is needed only when this is above zero. */
+/** Pieces the import will upload. */
 export function bundlePiecesToUpload(plan: LyreflyBundlePlan): number {
   return plan.collections.reduce((n, c) => n + c.pieces.filter((p) => p.action === 'create').length, 0);
+}
+
+/** Collections that will link a Drive folder (a deleted one stays deleted). */
+export function bundleFoldersToLink(plan: LyreflyBundlePlan): BundleCollectionPlan[] {
+  return plan.collections.filter((c) => c.collection.driveFolder && c.action !== 'deleted');
+}
+
+/** Drive sign-in is needed only to upload or to link. */
+export function bundleNeedsDrive(plan: LyreflyBundlePlan): boolean {
+  return bundlePiecesToUpload(plan) > 0 || bundleFoldersToLink(plan).length > 0;
 }
 
 const lower = (s: string): string => s.trim().toLowerCase();
@@ -281,6 +304,8 @@ export type LyreflyBundleResult = {
   ideasAdded: number;
   collectionsCreated: number;
   piecesAdded: number;
+  /** Images linked from Drive folders, in place. */
+  piecesLinked: number;
 };
 
 export type ApplyBundleOptions = {
@@ -293,7 +318,7 @@ export async function applyLyreflyBundleImport(
   plan: LyreflyBundlePlan,
   { getAccessToken, onProgress = () => {} }: ApplyBundleOptions = {},
 ): Promise<LyreflyBundleResult> {
-  const result: LyreflyBundleResult = { comicsCreated: 0, comicsUpdated: 0, ideasAdded: 0, collectionsCreated: 0, piecesAdded: 0 };
+  const result: LyreflyBundleResult = { comicsCreated: 0, comicsUpdated: 0, ideasAdded: 0, collectionsCreated: 0, piecesAdded: 0, piecesLinked: 0 };
   const tables = [
     lyreflyDb.projects,
     lyreflyDb.scriptDocuments,
@@ -381,7 +406,7 @@ async function applyCollections(
   onProgress: (label: string) => void,
 ): Promise<void> {
   const total = bundlePiecesToUpload(plan);
-  if (total > 0 && !getAccessToken) throw new LyreflyBundleError('Sign in to Google Drive to import images.');
+  if (bundleNeedsDrive(plan) && !getAccessToken) throw new LyreflyBundleError('Sign in to Google Drive to import images.');
   let token: string | null = null;
   let uploaded = 0;
   for (const { collection, collectionId, pieces } of plan.collections) {
@@ -427,6 +452,12 @@ async function applyCollections(
       } satisfies LyreflyCollectionPiece);
       uploaded += 1;
       result.piecesAdded += 1;
+    }
+    if (collection.driveFolder) {
+      token ??= await getAccessToken!();
+      onProgress(`Linking ${row.title} from Drive`);
+      const linked = await addLyreflyPiecesFromDriveFolder(row, collection.driveFolder, token, onProgress);
+      result.piecesLinked += linked.added;
     }
   }
 }

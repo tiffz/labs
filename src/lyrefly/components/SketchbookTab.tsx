@@ -435,8 +435,11 @@ export function SketchbookTab({ onOpenProject }: SketchbookTabProps): ReactEleme
 
   const { dragActive, handlers } = useDragDropHighlight({
     disabled: busy,
-    // A drop saves at once (ADR 0030).
-    onDrop: (event) => saveAttachFiles(collectFilesFromDataTransfer(event.dataTransfer)),
+    // A drop saves at once (ADR 0030), unless it carries a bundle: then its preview is the review step.
+    onDrop: (event) => {
+      const files = collectFilesFromDataTransfer(event.dataTransfer);
+      if (!openBundleIn(files)) saveAttachFiles(files);
+    },
   });
 
   useEffect(() => {
@@ -506,15 +509,18 @@ export function SketchbookTab({ onOpenProject }: SketchbookTabProps): ReactEleme
     }
   };
 
+  /** Open the bundle among these files, if there is one, with the rest as its images. */
+  function openBundleIn(files: readonly File[]): boolean {
+    const bundleFile = files.find((f) => /\.json$/i.test(f.name));
+    if (!bundleFile) return false;
+    void openBundleFile(bundleFile, files.filter((f) => f !== bundleFile));
+    return true;
+  }
+
   const onImportFileInput = (event: ChangeEvent<HTMLInputElement>): void => {
     const files = event.target.files ? [...event.target.files] : [];
     event.target.value = '';
-    const bundleFile = files.find((f) => /\.json$/i.test(f.name));
-    if (bundleFile) {
-      void openBundleFile(bundleFile, files.filter((f) => f !== bundleFile));
-      return;
-    }
-    stageImportFiles(files);
+    if (!openBundleIn(files)) stageImportFiles(files);
   };
 
   const onComposerContainerKeyDown = (event: KeyboardEvent<HTMLDivElement>): void => {

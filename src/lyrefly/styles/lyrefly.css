@@ -2411,6 +2411,56 @@
   border: 1px solid var(--lyrefly-border);
 }
 
+/* Art: square tiles that wrap. Remove sits on the tile, shown on hover or focus. */
+.lyrefly-sketchbook-editor__tiles {
+  list-style: none;
+  margin: 0 0 0.65rem;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(6.5rem, 1fr));
+  gap: 0.5rem;
+}
+
+.lyrefly-sketchbook-editor__tile {
+  position: relative;
+  min-width: 0;
+}
+
+.lyrefly-sketchbook-editor__tile .lyrefly-sketchbook-editor__thumb {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+}
+
+.lyrefly-sketchbook-editor__tile .lyrefly-sketchbook-editor__file {
+  display: flex;
+  aspect-ratio: 1;
+  padding: 0.4rem;
+  border: 1px solid var(--lyrefly-border);
+  border-radius: 0.35rem;
+  font-size: 0.75rem;
+}
+
+.lyrefly-sketchbook-editor__tile-remove.lyrefly-sketchbook-editor__tile-remove {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  background: color-mix(in srgb, var(--lyrefly-paper) 88%, transparent);
+  opacity: 0;
+}
+
+.lyrefly-sketchbook-editor__tile:hover .lyrefly-sketchbook-editor__tile-remove,
+.lyrefly-sketchbook-editor__tile-remove.lyrefly-sketchbook-editor__tile-remove:focus-visible {
+  opacity: 1;
+}
+
+@media (pointer: coarse) {
+  .lyrefly-sketchbook-editor__tile-remove.lyrefly-sketchbook-editor__tile-remove {
+    opacity: 1;
+  }
+}
+
 .lyrefly-sketchbook-editor__add-row {
   display: flex;
   flex-wrap: wrap;
