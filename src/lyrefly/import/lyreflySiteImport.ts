@@ -13,6 +13,8 @@ import { analyzeScriptPacing } from '../script/scriptPacingAnalyzer';
 import { parseAndSortPageFiles } from '../../shared/zine/pageFileParser';
 import { displayNameFromParsedPageFile } from '../utils/artPageUploadUtils';
 import { createBlankComicProject } from '../types';
+import { DEFAULT_SCRIPT_HTML } from '../script/defaultScriptSample';
+import { isRichTextEmpty } from '../../shared/utils/richTextContent';
 import type {
   ComicArchiveBinder,
   ComicProject,
@@ -346,17 +348,23 @@ export async function applyLyreflySiteImport(
         result.skippedDeleted += 1;
         continue;
       }
+      // A comic you started by hand but never drew in takes the site's pages; one with any page of
+      // its own keeps its art untouched.
+      const fillPages = item.action === 'link' && (await hasNoPages(existing));
+      const files = fillPages ? await downloadPages(comic, fetchImpl, onProgress) : [];
       await lyreflyDb.transaction('rw', comicTables, async () => {
+        if (fillPages) await fillEmptyComic(existing, comic, files);
+        const current = (await lyreflyDb.projects.get(existing.id)) ?? existing;
         const archiveId = existing.archiveId ?? (lyreflyStableId(`archive:${comic.key}`));
         await addPublications(existing.id, archiveId, comic);
         await lyreflyDb.projects.put({
-          ...existing,
+          ...current,
           importKey: existing.importKey ?? comic.key,
           // Fill only what was never set: a deliberate "none" ([] / null) survives a re-run.
           personaIds: existing.personaIds !== undefined ? existing.personaIds : [plan.persona.id],
           seriesId: existing.seriesId !== undefined ? existing.seriesId : seriesId,
           archiveId,
-          modules: { ...existing.modules, archive: true },
+          modules: { ...current.modules, archive: true },
           updatedAt: new Date().toISOString(),
         });
         await markLyreflyDirtyRow('project', existing.id, 'upsert', existing.id);
@@ -369,6 +377,58 @@ export async function applyLyreflySiteImport(
     notifyLyreflyLocalChange({ immediate: true });
   }
   return result;
+}
+
+async function hasNoPages(project: ComicProject): Promise<boolean> {
+  if (project.layoutOrder?.length) return false;
+  return (await lyreflyDb.pageNodes.where('projectId').equals(project.id).count()) === 0;
+}
+
+/** A blank script is the starter template or nothing: never a script someone wrote. */
+function isBlankScript(markdown: string | undefined): boolean {
+  return isRichTextEmpty(markdown) || markdown?.trim() === DEFAULT_SCRIPT_HTML.trim();
+}
+
+/**
+ * Give a page-less comic the site's pages, and fill its script, notes and stages only where they
+ * are blank. The comic was published, so it is finished.
+ */
+async function fillEmptyComic(project: ComicProject, comic: CatalogComic, files: File[]): Promise<void> {
+  const now = new Date().toISOString();
+  const pages = await writeImportedPages(project, comic, files);
+  const script = await lyreflyDb.scriptDocuments.get(project.scriptDocumentId);
+  if (pages.script && isBlankScript(script?.markdown)) {
+    const blocks = parseScriptHtml(pages.script);
+    await lyreflyDb.scriptDocuments.put({
+      id: project.scriptDocumentId,
+      projectId: project.id,
+      markdown: pages.script,
+      blocks,
+      pacingWarnings: analyzeScriptPacing(blocks),
+      updatedAt: now,
+    });
+    await markLyreflyDirtyRow('script', project.scriptDocumentId, 'upsert', project.id);
+  }
+  const notes = brainstormFromComic(comic);
+  await lyreflyDb.projects.put({
+    ...project,
+    layoutOrder: pages.layoutOrder,
+    pageCount: pages.layoutOrder.length,
+    coverRef: project.coverRef ?? (pages.coverRevisionId ? { kind: 'page_revision', id: pages.coverRevisionId } : undefined),
+    brainstormHtml: isRichTextEmpty(project.brainstormHtml) && notes ? notes : project.brainstormHtml,
+    status: 'finished',
+    stageCompletion: Object.fromEntries(LYREFLY_WORKFLOW_STAGES.map((s) => [s.id, true])),
+    updatedAt: now,
+  });
+}
+
+function brainstormFromComic(comic: CatalogComic): string | undefined {
+  return (
+    [comic.description, comic.contentWarnings?.length ? `Content warning: ${comic.contentWarnings.join(', ')}` : '']
+      .filter(Boolean)
+      .map((t) => `<p>${escapeHtml(t!)}</p>`)
+      .join('') || undefined
+  );
 }
 
 async function createImportedComic(
@@ -389,11 +449,7 @@ async function createImportedComic(
     personaIds: [plan.persona.id],
     seriesId,
     stageCompletion: Object.fromEntries(LYREFLY_WORKFLOW_STAGES.map((s) => [s.id, true])),
-    brainstormHtml:
-      [comic.description, comic.contentWarnings?.length ? `Content warning: ${comic.contentWarnings.join(', ')}` : '']
-        .filter(Boolean)
-        .map((t) => `<p>${escapeHtml(t!)}</p>`)
-        .join('') || undefined,
+    brainstormHtml: brainstormFromComic(comic),
   };
   const pages = await writeImportedPages(project, comic, files);
   project.layoutOrder = pages.layoutOrder;
