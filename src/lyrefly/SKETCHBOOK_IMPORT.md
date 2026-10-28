@@ -115,6 +115,10 @@ whole folder's contents in **Import ideas**). Old sources rarely let a browser r
 ```
 
 - `status` is `ongoing` or `archived`; archived collections stay searchable but fold out of the way.
+- Images already in your Google Drive: give the collection a `driveFolder` link and an empty
+  `pieces` list. Its images are linked where they are, never copied, and re-importing links only
+  what is new in the folder.
+- Dropping the bundle and its images on the Sketchbook works the same as picking them.
 - Pieces keep the bundle's order. Each image uploads to Drive under `Lyrefly/collections/<title>/`,
   so Import asks you to sign in to Drive first.
 - Re-importing uploads only what is missing: a piece whose file you did not pick is listed and

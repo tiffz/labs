@@ -130,36 +130,58 @@ test.describe('Lyrefly gallery', () => {
     await expect(page.getByRole('button', { name: /Daily comics/ })).toBeVisible();
   });
 
-  test('previews a bundle of collections picked with its images', async ({ page }) => {
-    const bundle = {
-      format: 'lyrefly-bundle',
-      version: 1,
-      source: 'an old site',
-      comics: [],
-      seeds: [],
-      collections: [
-        {
-          key: 'e2e:old-site',
-          title: 'Old Site',
-          status: 'archived',
-          pieces: [
-            { key: '1', file: 'old-1.png', title: 'Sheep' },
-            { key: '2', file: 'old-2.png', title: 'Deer' },
-          ],
-        },
-      ],
-    };
-    await page.getByTestId('lyrefly-sketchbook-tab').click();
-    // One image picked with the bundle, one left behind.
-    await page.getByTestId('lyrefly-sketchbook-import-input').setInputFiles([
-      { name: 'archive.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(bundle)) },
-      { name: 'old-1.png', mimeType: 'image/png', buffer: PNG },
-    ]);
-    await expect(page.getByTestId('lyrefly-bundle-summary')).toHaveText(
-      'Old Site (archived): 1 image to upload, 1 not picked with the file',
-    );
-    await expect(page.getByTestId('lyrefly-bundle-confirm')).toBeEnabled();
-  });
+  // Picked with Import ideas, or dropped on the board: either way the bundle opens its preview.
+  // A drop used to save the whole folder as one idea with every image attached.
+  for (const how of ['picked', 'dropped'] as const) {
+    test(`previews a bundle of collections ${how} with its images`, async ({ page }) => {
+      const bundle = {
+        format: 'lyrefly-bundle',
+        version: 1,
+        source: 'an old site',
+        comics: [],
+        seeds: [],
+        collections: [
+          {
+            key: 'e2e:old-site',
+            title: 'Old Site',
+            status: 'archived',
+            pieces: [
+              { key: '1', file: 'old-1.png', title: 'Sheep' },
+              { key: '2', file: 'old-2.png', title: 'Deer' },
+            ],
+          },
+        ],
+      };
+      await page.getByTestId('lyrefly-sketchbook-tab').click();
+      // One image goes with the bundle, one is left behind.
+      const files = [
+        { name: 'archive.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(bundle)) },
+        { name: 'old-1.png', mimeType: 'image/png', buffer: PNG },
+      ];
+      if (how === 'picked') {
+        await page.getByTestId('lyrefly-sketchbook-import-input').setInputFiles(files);
+      } else {
+        const board = page.getByTestId('lyrefly-sketchbook-input').locator('..');
+        const dataTransfer = await page.evaluateHandle(
+          (list) => {
+            const dt = new DataTransfer();
+            for (const f of list) {
+              const bytes = Uint8Array.from(atob(f.base64), (c) => c.charCodeAt(0));
+              dt.items.add(new File([bytes], f.name, { type: f.type }));
+            }
+            return dt;
+          },
+          files.map((f) => ({ name: f.name, type: f.mimeType, base64: f.buffer.toString('base64') })),
+        );
+        await board.dispatchEvent('dragover', { dataTransfer });
+        await board.dispatchEvent('drop', { dataTransfer });
+      }
+      await expect(page.getByTestId('lyrefly-bundle-summary')).toHaveText(
+        'Old Site (archived): 1 image to upload, 1 not picked with the file',
+      );
+      await expect(page.getByTestId('lyrefly-bundle-confirm')).toBeEnabled();
+    });
+  }
 
   test('uses riso cube theme on app root', async ({ page }) => {
     await expect(page.getByTestId('lyrefly-app')).toHaveAttribute('data-lyrefly-theme', 'risocube');

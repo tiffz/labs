@@ -9,6 +9,8 @@ import { useState, type ReactElement } from 'react';
 import { ensureLyreflyGoogleDriveAccess } from '../drive/lyreflyGoogleDriveAccess';
 import {
   applyLyreflyBundleImport,
+  bundleFoldersToLink,
+  bundleNeedsDrive,
   bundlePiecesToUpload,
   type LyreflyBundlePlan,
   type LyreflyBundleResult,
@@ -45,7 +47,7 @@ export function LyreflyBundleImportDialog({ plan, onClose }: LyreflyBundleImport
     setError(null);
     try {
       // Sign in first, while the click still counts as the user's: a popup opened later is blocked.
-      const token = toUpload > 0 ? await ensureLyreflyGoogleDriveAccess({ interactive: true }) : null;
+      const token = bundleNeedsDrive(plan) ? await ensureLyreflyGoogleDriveAccess({ interactive: true }) : null;
       setResult(
         await applyLyreflyBundleImport(plan, {
           getAccessToken: token ? async () => token : undefined,
@@ -67,8 +69,10 @@ export function LyreflyBundleImportDialog({ plan, onClose }: LyreflyBundleImport
   const newIdeas = plan?.seeds.filter((s) => s.action === 'create').length ?? 0;
   const deletedIdeas = plan?.seeds.filter((s) => s.action === 'deleted').length ?? 0;
   const toUpload = plan ? bundlePiecesToUpload(plan) : 0;
+  const toLink = plan ? bundleFoldersToLink(plan).length : 0;
   const collectionLines = (plan?.collections ?? []).flatMap(({ collection, action, pieces }) => {
     if (action === 'deleted') return [`${collection.title}: you deleted it, left out`];
+    if (collection.driveFolder) return [`${collection.title}: images linked from your Drive folder, not copied`];
     const adding = pieces.filter((p) => p.action === 'create').length;
     const missing = pieces.filter((p) => p.action === 'missing').length;
     if (adding === 0 && missing === 0) return [];
@@ -78,7 +82,7 @@ export function LyreflyBundleImportDialog({ plan, onClose }: LyreflyBundleImport
         (missing > 0 ? `, ${missing} not picked with the file` : ''),
     ];
   });
-  const nothingNew = created === 0 && newIdeas === 0 && existing === 0 && toUpload === 0;
+  const nothingNew = created === 0 && newIdeas === 0 && existing === 0 && toUpload === 0 && toLink === 0;
 
   return (
     <Dialog open={Boolean(plan)} onClose={close} fullWidth maxWidth="xs" data-testid="lyrefly-bundle-dialog">
@@ -91,6 +95,7 @@ export function LyreflyBundleImportDialog({ plan, onClose }: LyreflyBundleImport
               result.comicsUpdated ? `Filled in ${plural(result.comicsUpdated, 'comic')} you already had.` : '',
               result.ideasAdded ? `Added ${plural(result.ideasAdded, 'idea')} to the Sketchbook.` : '',
               result.piecesAdded ? `Added ${plural(result.piecesAdded, 'image')} to collections.` : '',
+              result.piecesLinked ? `Linked ${plural(result.piecesLinked, 'image')} from Drive.` : '',
             ]
               .filter(Boolean)
               .join(' ') || 'Everything was already here.'}

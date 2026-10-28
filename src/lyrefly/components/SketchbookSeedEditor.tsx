@@ -75,7 +75,15 @@ function AttachmentThumb({ attachment }: { attachment: SketchbookAttachment }): 
   }
 
   if (url) {
-    return <img src={url} alt="" className="lyrefly-sketchbook-editor__thumb" loading="lazy" />;
+    return (
+      <img
+        src={url}
+        alt={attachment.fileName || attachment.title || ''}
+        title={attachment.fileName || attachment.title}
+        className="lyrefly-sketchbook-editor__thumb"
+        loading="lazy"
+      />
+    );
   }
 
   return (
@@ -303,6 +311,8 @@ export function SketchbookSeedEditor({
   };
 
   const attachments = localSeed.attachments ?? [];
+  const imageAttachments = attachments.filter((a) => a.kind === 'image');
+  const otherAttachments = attachments.filter((a) => a.kind !== 'image');
   const legacyLink = localSeed.url;
 
   return (
@@ -361,23 +371,48 @@ export function SketchbookSeedEditor({
         {attachments.length === 0 && !legacyLink ? (
           <p className="lyrefly-sketchbook-editor__empty">Drop art here or add a link below.</p>
         ) : (
-          <ul className="lyrefly-sketchbook-editor__list">
-            {attachments.map((attachment) => (
-              <li key={attachment.id} className="lyrefly-sketchbook-editor__row">
-                <AttachmentThumb attachment={attachment} />
-                <Tooltip title="Remove">
-                  <IconButton
-                    size="small"
-                    aria-label="Remove material"
-                    disabled={busy}
-                    onClick={() => void onRemoveAttachment(attachment.id)}
-                  >
-                    <DeleteOutlineIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-              </li>
-            ))}
-          </ul>
+          <>
+            {/* Art as a wrapping grid of tiles, so a dozen pieces fit on one screen. */}
+            {imageAttachments.length > 0 ? (
+              <ul className="lyrefly-sketchbook-editor__tiles" data-testid="lyrefly-sketchbook-material-tiles">
+                {imageAttachments.map((attachment) => (
+                  <li key={attachment.id} className="lyrefly-sketchbook-editor__tile">
+                    <AttachmentThumb attachment={attachment} />
+                    <Tooltip title="Remove">
+                      <IconButton
+                        size="small"
+                        className="lyrefly-sketchbook-editor__tile-remove"
+                        aria-label={`Remove ${attachment.fileName || attachment.title || 'image'}`}
+                        disabled={busy}
+                        onClick={() => void onRemoveAttachment(attachment.id)}
+                      >
+                        <DeleteOutlineIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+            {otherAttachments.length > 0 ? (
+              <ul className="lyrefly-sketchbook-editor__list">
+                {otherAttachments.map((attachment) => (
+                  <li key={attachment.id} className="lyrefly-sketchbook-editor__row">
+                    <AttachmentThumb attachment={attachment} />
+                    <Tooltip title="Remove">
+                      <IconButton
+                        size="small"
+                        aria-label="Remove material"
+                        disabled={busy}
+                        onClick={() => void onRemoveAttachment(attachment.id)}
+                      >
+                        <DeleteOutlineIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </>
         )}
 
         <div className="lyrefly-sketchbook-editor__add-row">

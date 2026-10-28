@@ -3,12 +3,27 @@ import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../shared/drive/driveFetch', () => ({
-  driveListFiles: vi.fn(async () => ({ files: [] })),
+  // The "daily-folder" folder holds two of the owner's own strips; every other query is empty.
+  driveListFiles: vi.fn(async (_token: string, q: string) => ({
+    files: q.startsWith("'daily-folder' in parents")
+      ? [
+          { id: 'strip-2', name: '2.png', mimeType: 'image/png' },
+          { id: 'strip-1', name: '1.png', mimeType: 'image/png' },
+        ]
+      : [],
+  })),
   driveCreateFolder: vi.fn(async (_token: string, name: string) => ({ id: `folder:${name}` })),
   driveUploadFileResumable: vi.fn(),
   driveCreateJsonFile: vi.fn(),
   driveGetMediaBlob: vi.fn(),
   driveResolveThumbnailLink: vi.fn(),
+}));
+vi.mock('../../shared/drive/importDriveFile', () => ({
+  planDriveFileImport: vi.fn(async (_t: string, id: string) => ({
+    ok: true,
+    plan: { kind: 'reference', fileId: id, name: id, mimeType: 'image/png' },
+  })),
+  executeDriveFileImport: vi.fn(async (plan: { fileId: string }) => ({ fileId: plan.fileId, name: '', via: 'reference' })),
 }));
 vi.mock('../../shared/drive/labsDrivePortfolioLayout', () => ({
   LABS_DRIVE_APP_FOLDER_LYREFLY: 'Lyrefly',
@@ -20,6 +35,7 @@ import { deleteLyreflyCollection, deleteLyreflyPiece } from '../db/lyreflyCollec
 import { lyreflyDb } from '../db/lyreflyDb';
 import {
   applyLyreflyBundleImport,
+  bundleNeedsDrive,
   bundlePiecesToUpload,
   LyreflyBundleError,
   parseLyreflyBundle,
@@ -144,6 +160,35 @@ describe('bundle collections', () => {
     await applyLyreflyBundleImport(await plan(), { getAccessToken: token });
     expect(upload).not.toHaveBeenCalled();
     expect((await lyreflyDb.collectionPieces.get(deer.id))?.deletedAt).toBeTruthy();
+  });
+
+  it('links a Drive folder in place, in number order, and links only what is new on a re-run', async () => {
+    const b = bundle();
+    b.collections!.push({
+      key: 'daily',
+      title: 'Daily comics',
+      status: 'ongoing',
+      driveFolder: 'https://drive.google.com/drive/folders/daily-folder',
+      pieces: [],
+    });
+    const first = await plan([], b);
+    expect(bundlePiecesToUpload(first)).toBe(0);
+    expect(bundleNeedsDrive(first)).toBe(true);
+    expect(await applyLyreflyBundleImport(first, { getAccessToken: token })).toMatchObject({ piecesLinked: 2, piecesAdded: 0 });
+
+    const daily = (await lyreflyDb.collections.toArray()).find((c) => c.title === 'Daily comics')!;
+    const linked = (await lyreflyDb.collectionPieces.where('collectionId').equals(daily.id).toArray()).sort((x, y) => x.order - y.order);
+    // The originals, not copies: nothing was uploaded.
+    expect(linked.map((p) => p.driveFileId)).toEqual(['strip-1', 'strip-2']);
+    expect(upload).not.toHaveBeenCalled();
+
+    expect(await applyLyreflyBundleImport(await plan([], b), { getAccessToken: token })).toMatchObject({ piecesLinked: 0 });
+  });
+
+  it('refuses a Drive folder that is not a folder link', () => {
+    const b = bundle();
+    b.collections![0]!.driveFolder = 'not a link at all';
+    expect(() => parseLyreflyBundle(b)).toThrow(/not a folder link/);
   });
 
   it('will not upload without Drive access', async () => {

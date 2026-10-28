@@ -87,7 +87,7 @@ describe('parseLyreflyBundle', () => {
 
 describe('importing a bundle', () => {
   it('creates comics in the queue with their stage, notes, script and links, and the ideas', async () => {
-    expect(await importBundle()).toEqual({ comicsCreated: 2, comicsUpdated: 0, ideasAdded: 2, collectionsCreated: 0, piecesAdded: 0 });
+    expect(await importBundle()).toEqual({ comicsCreated: 2, comicsUpdated: 0, ideasAdded: 2, collectionsCreated: 0, piecesAdded: 0, piecesLinked: 0 });
 
     const lantern = await byTitle('The Lantern');
     expect(lantern).toMatchObject({ pipelineStatus: 'ready_to_draw', priorityRank: 1, status: 'wip' });
@@ -108,7 +108,7 @@ describe('importing a bundle', () => {
   it('running it again adds nothing', async () => {
     await importBundle();
     const before = await counts();
-    expect(await importBundle()).toEqual({ comicsCreated: 0, comicsUpdated: 2, ideasAdded: 0, collectionsCreated: 0, piecesAdded: 0 });
+    expect(await importBundle()).toEqual({ comicsCreated: 0, comicsUpdated: 2, ideasAdded: 0, collectionsCreated: 0, piecesAdded: 0, piecesLinked: 0 });
     expect(await counts()).toEqual(before);
   });
 
