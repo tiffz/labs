@@ -4,6 +4,7 @@
  * Usage: npm run test:changed-apps [-- base-ref]
  */
 import { execSync } from 'node:child_process';
+import { listRepoWideGuardTests } from './repoWideGuardTests.mjs';
 
 function gitRef(base) {
   if (base) return base;
@@ -94,16 +95,11 @@ if (shared || apps.size === 0 || apps.size > 3) {
   process.exit(0);
 }
 
-// Repo-wide invariants scan ALL of src/ regardless of which app changed, so a per-app scoped run
-// would skip them — which let a file grow past the size baseline (and could hide a new import-
-// boundary or module-cycle violation) until a full-vitest PR tripped it. Always run them.
-const REPO_WIDE_GUARDRAILS = [
-  'src/shared/componentSizeGuardrails.test.ts', // advisory size report + hard new-god-file cap
-  'src/shared/sharedModuleCycles.test.ts', // blocking: no new cross-module cycles
-  'src/shared/importBoundaries.test.ts', // blocking: no cross-app imports
-];
-console.log('test:changed-apps: repo-wide guardrails');
-execSync(`npx vitest run ${REPO_WIDE_GUARDRAILS.join(' ')} --passWithNoTests ${vitestExtraArgs}`.trim(), {
+// Shared tests that read app code off disk govern every app, so a per-app scoped run would skip
+// them on exactly the PR that breaks them. The set is derived, not listed — see repoWideGuardTests.mjs.
+const repoWideGuards = listRepoWideGuardTests();
+console.log(`test:changed-apps: ${repoWideGuards.length} repo-wide guard tests`);
+execSync(`npx vitest run ${repoWideGuards.join(' ')} --passWithNoTests ${vitestExtraArgs}`.trim(), {
   stdio: 'inherit',
 });
 

@@ -10,7 +10,7 @@ Full merge bar unchanged for cross-cutting changes: presubmit + full CI on `src/
 | ------------------------------------------- | ------------------------------------------------------------ |
 | `npm run presubmit`                         | Before declaring done — build + scoped Vitest + scoped e2e   |
 | `npm run test:staged`                       | Husky pre-commit Vitest (staged files only)                  |
-| `npm run test:changed-apps`                 | Presubmit Vitest scope vs `main` (≤3 apps → app-only)        |
+| `npm run test:changed-apps`                 | Presubmit Vitest scope vs `main` (≤3 apps → app + guards)    |
 | `npm run verify:layout`                     | After layout/CSS on primary surfaces (mandatory in UX skill) |
 | `npm run test:fast`                         | Full fast suite (~3 min); before merge when shared touched   |
 | `npm run presubmit:push`                    | Before **push** — presubmit + full e2e smoke (default hook)  |
@@ -52,13 +52,30 @@ See [`docs/TEST_STRATEGY.md`](TEST_STRATEGY.md) and [`docs/ENGINEERING_HEALTH.md
 
 The workflow detects changed paths (PR base or push parent):
 
-| Changed paths                                                                                   | Vitest                                                     | E2e                                               | Visual                                           |
-| ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | ------------------------------------------------- | ------------------------------------------------ |
-| `src/shared/**`, `src/types/**`, `vite.config.*`, `vitest.config.*`, `package*.json`, workflows | Full `npm test`                                            | Full smoke (minus `@soak`) + playback regressions | Nightly full matrix (advisory)                   |
-| 1–3 apps `src/<app>/**` only (no shared)                                                        | Scoped via `run-changed-app-tests.mjs` (`--retry=1` in CI) | Scoped e2e via `run-scoped-e2e.mjs` (≤3 apps)     | Scoped via `run-scoped-visual.mts`, **blocking** |
-| Docs / `.cursor` only                                                                           | Skipped locally (`docs-only` presubmit); CI unchanged      | Full smoke (still fast)                           | Nightly full matrix (advisory)                   |
+| Changed paths                                                                                   | Vitest                                                                        | E2e                                               | Visual                                           |
+| ----------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- | ------------------------------------------------- | ------------------------------------------------ |
+| `src/shared/**`, `src/types/**`, `vite.config.*`, `vitest.config.*`, `package*.json`, workflows | Full `npm test`                                                               | Full smoke (minus `@soak`) + playback regressions | Nightly full matrix (advisory)                   |
+| 1–3 apps `src/<app>/**` only (no shared)                                                        | Scoped via `run-changed-app-tests.mjs` (`--retry=1` in CI) + repo-wide guards | Scoped e2e via `run-scoped-e2e.mjs` (≤3 apps)     | Scoped via `run-scoped-visual.mts`, **blocking** |
+| Docs / `.cursor` only                                                                           | Skipped locally (`docs-only` presubmit); CI unchanged                         | Full smoke (still fast)                           | Nightly full matrix (advisory)                   |
 
 Vitest scoping mirrors local `npm run test:changed-apps` in CI when the diff touches ≤3 apps and not `src/shared/**`. E2e changes still trigger full smoke via cross-cutting detection in the workflow.
+
+### Repo-wide guards always run
+
+A scoped run is `src/<app>` **plus every repo-wide guard test**. A guard test is any test under
+`src/shared/**` that reads files off disk (`node:fs`, `import.meta.glob`), minus the slow-by-name
+ones (`*regression*`, `*audit*`, `*benchmark*`, `*stress*`, `*.integration.*`). Import boundaries
+forbid shared code from importing an app, so reading disk is the only way a shared test can govern
+app code — which makes the set derivable. [`scripts/repoWideGuardTests.mjs`](../scripts/repoWideGuardTests.mjs)
+computes it; a new scanning guard joins by existing. About 35 files, ~15s.
+
+Why: until 2026-10-27 this was a hand-written list of three. `sidecarBatchTolerance.test.ts` walks
+`src/**` for Drive downloaders and was not on it, so #287 (Lyrefly only) merged an unguarded
+downloader with CI green, and the guard then failed in unrelated pre-commit hooks. Replaying #287's
+diff through the new runner fails on that guard. `ciScopeGuardrails.test.ts` fails if the runner goes
+back to a list or the derivation misses a shared test that reads files.
+
+The pre-commit hook (`test:staged`) is not covered; it is a backstop, and presubmit + CI are the gate.
 
 **Intentional asymmetry (documented, not drift):** on cross-cutting diffs CI runs **full Vitest** while local presubmit stays **scoped** (`test:changed-apps`). Local optimizes wall time before push; CI is the merge gate and pays the full cost once. Every other check runs identically in both places (`check:*` contract scripts, lint, typecheck, knip, build, playback regressions).
 
