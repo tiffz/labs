@@ -52,6 +52,12 @@ const FORWARDS = new Map([
   ['gesture/drive/gestureLocalFolderUpload.ts', 'reads a picked folder for the upload hook'],
   // Resuming an interrupted upload continues one the user already confirmed; it does not restage.
   ['gesture/components/InterruptedUploadBanner.tsx', 'resumes an upload already confirmed'],
+  // Encore: these hand videos to PerformanceEditorDialog, which stages them until Save.
+  ['encore/components/song/SongPerformancesPanel.tsx', 'a dropped video opens the performance editor'],
+  ['encore/components/song/SongPerformancesCompactPanel.tsx', 'a dropped video opens the performance editor'],
+  ['encore/components/song/usePerformanceSectionDrop.ts', 'passes a dropped video to onDropVideo'],
+  ['encore/components/performance/PerformanceAddVideoSourceStrip.tsx', 'passes picked videos to onPickFiles'],
+  ['encore/components/performance/PerformanceEditorVideosDropZone.tsx', 'passes dropped files to onDropVideos'],
   // Lyrefly: these hand files to a component that stages them.
   ['lyrefly/components/LyreflyArtEmptyUpload.tsx', 'passes picked, dropped and pasted pages to ArtStage'],
   ['lyrefly/components/BrainstormResourceDialog.tsx', 'holds the picked file, named, until "Add"'],
@@ -73,12 +79,6 @@ const SAVES_NOTHING = new Map([
 
 /** Migration plan (ADR 0030 § Rollout). Delete a row when its module stages. */
 const PENDING = new Map([
-  // Encore: performance videos stage until Save, and bulk imports review, each in their own UI
-  ['encore/components/song/SongPerformancesPanel.tsx', 'drop opens the performance editor (stages until Save)'],
-  ['encore/components/song/SongPerformancesCompactPanel.tsx', 'drop opens the performance editor (stages until Save)'],
-  ['encore/components/song/usePerformanceSectionDrop.ts', 'drop opens the performance editor (stages until Save)'],
-  ['encore/components/performance/PerformanceAddVideoSourceStrip.tsx', 'stages until Save in its own UI'],
-  ['encore/components/performance/PerformanceEditorVideosDropZone.tsx', 'stages until Save in its own UI'],
   ['encore/components/BulkPerformanceImportDialog.tsx', 'reviews in its own dialog'],
   ['encore/components/BulkScoreImportDialog.tsx', 'reviews in its own dialog'],
 ]);

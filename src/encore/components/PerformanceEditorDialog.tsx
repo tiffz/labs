@@ -60,12 +60,15 @@ import { PerformanceEditorSection, PERFORMANCE_EDITOR_SECTION_FIELD_SPACING } fr
 import { PerformanceMetadataSection } from './performance/PerformanceMetadataSection';
 import { PerformanceAddVideosPanel } from './performance/PerformanceAddVideosPanel';
 import { filterAcceptedPerformanceVideoFiles } from './performance/filterAcceptedPerformanceVideoFiles';
+import { inspectPerformanceVideoSource } from './performance/inspectPerformanceVideoSource';
 import { PerformanceEditorVideoCard } from './performance/PerformanceEditorVideoCard';
 import { PerformanceVideoCompactRow } from './performance/PerformanceVideoCompactRow';
 import { isVideoLinkInputDirty, videoToLinkInput } from './performance/performanceVideoLinkInput';
 import type { PerformanceAddVideoSourceStripProps } from './performance/PerformanceAddVideoSourceStrip';
 import { PerformanceEditorVideosDropZone } from './performance/PerformanceEditorVideosDropZone';
 import { setEncoreDropSurface } from './song/encoreDropSurface';
+import { readyStagedUploads } from '../../shared/upload/stagedUploads';
+import { useLabsStagedUploads } from '../../shared/upload/useLabsStagedUploads';
 
 type PendingLinkVideo = {
   /**
@@ -82,6 +85,9 @@ type PendingLinkVideo = {
   videoShortcutDriveFileId?: string;
   displayName?: string;
 };
+
+/** Thrown inside the staged commit to keep the files staged without reporting an error. */
+const SAVE_STOPPED = Symbol('performance save stopped');
 
 function buildVideoLinkDrafts(videos: { id: string; externalVideoUrl?: string; videoTargetDriveFileId?: string; videoShortcutDriveFileId?: string }[]): Record<string, string> {
   const map: Record<string, string> = {};
@@ -238,8 +244,17 @@ export function PerformanceEditorDialog(props: {
    */
   const [signInPrompt, setSignInPrompt] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
-  /** Device clips queued for upload on save (log + add-video). */
-  const [pendingLocalVideoFiles, setPendingLocalVideoFiles] = useState<File[]>([]);
+  /**
+   * Device clips staged for upload on save (log + add-video), through the shared staging (ADR 0030):
+   * each is checked when added, a file that can't be used stays listed with the reason, and Save is
+   * the confirm. A failed save keeps them staged.
+   */
+  const stagedVideos = useLabsStagedUploads<File>({ inspect: inspectPerformanceVideoSource });
+  const { stageFiles: stageVideoFiles, clear: clearStagedVideos, remove: removeStagedVideo } = stagedVideos;
+  const pendingLocalVideoFiles = useMemo(
+    () => readyStagedUploads(stagedVideos.items).map((item) => item.plan),
+    [stagedVideos.items],
+  );
   /** Staged link (YouTube / Drive) for add-video mode — appended on save only. */
   const [pendingLinkVideo, setPendingLinkVideo] = useState<PendingLinkVideo | null>(null);
   const pendingLinkVideoRef = useRef<PendingLinkVideo | null>(null);
@@ -286,7 +301,7 @@ export function PerformanceEditorDialog(props: {
       setVideoInput('');
       setShortcutMsg(null);
       setSignInPrompt(null);
-      setPendingLocalVideoFiles([]);
+      clearStagedVideos();
       setPendingLinkVideo(null);
       // Per-session staging state, like the two above: a source resolved in a previous editing
       // session describes a draft that no longer exists.
@@ -295,7 +310,7 @@ export function PerformanceEditorDialog(props: {
       setRemoveConfirmOpen(false);
       setDriveLinkFeedback(null);
     }
-  }, [open, performance, songId, subjectKind, initialLocalVideoFile, addVideoMode]);
+  }, [open, performance, songId, subjectKind, initialLocalVideoFile, addVideoMode, clearStagedVideos]);
 
   useEffect(() => {
     if (open) {
@@ -409,7 +424,7 @@ export function PerformanceEditorDialog(props: {
       const parsed = parsePerformanceVideoInput(input);
       if (parsed.kind === 'youtube') {
         applyFeedback(null);
-        setPendingLocalVideoFiles([]);
+        clearStagedVideos();
         if (metadataLocked) {
           setPendingLinkVideo({
             id: crypto.randomUUID(),
@@ -433,7 +448,7 @@ export function PerformanceEditorDialog(props: {
       }
       if (parsed.kind === 'external') {
         applyFeedback(null);
-        setPendingLocalVideoFiles([]);
+        clearStagedVideos();
         if (metadataLocked) {
           setPendingLinkVideo({ id: crypto.randomUUID(), externalVideoUrl: parsed.url, displayName: 'External video' });
           setVideoInput('');
@@ -448,12 +463,12 @@ export function PerformanceEditorDialog(props: {
         return;
       }
       if (parsed.kind === 'drive-folder') {
-        setPendingLocalVideoFiles([]);
+        clearStagedVideos();
         applyFeedback({ kind: 'folder' });
         return;
       }
       if (parsed.kind === 'drive') {
-        setPendingLocalVideoFiles([]);
+        clearStagedVideos();
         const fileIdForMeta = parsed.fileId;
         const gen = ++driveLookupGen.current;
         const isNewDriveLink = fileIdForMeta !== initialDriveFileIdRef.current;
@@ -592,7 +607,7 @@ export function PerformanceEditorDialog(props: {
         );
       }
     },
-    [googleAccessToken, performance, venueList, applyLinkedVideo, metadataLocked],
+    [googleAccessToken, performance, venueList, applyLinkedVideo, metadataLocked, clearStagedVideos],
   );
 
   const syncVideoFromInput = useCallback(
@@ -622,13 +637,9 @@ export function PerformanceEditorDialog(props: {
       return;
     }
 
-    const deviceFilesToUpload = [...pendingLocalVideoFiles];
-
-    if (deviceFilesToUpload.length > 0) {
-      if (!googleAccessToken) {
-        setSignInPrompt('Sign in to upload this video to your Drive.');
-        return;
-      }
+    /** Upload staged device clips and append them as videos. Throws {@link SAVE_STOPPED} to keep them staged. */
+    const uploadDeviceFiles = async (files: File[]) => {
+      if (!googleAccessToken) throw SAVE_STOPPED;
       setUploading(true);
       setShortcutMsg(null);
       try {
@@ -643,10 +654,10 @@ export function PerformanceEditorDialog(props: {
           }
           const venueForNaming = draft.venueTag.trim() || 'Venue';
           const perfLabel = `${draft.venueTag.trim() || 'Venue'} · Video`;
-          const fileCount = deviceFilesToUpload.length;
+          const fileCount = files.length;
 
           for (let fileIndex = 0; fileIndex < fileCount; fileIndex += 1) {
-            const file = deviceFilesToUpload[fileIndex]!;
+            const file = files[fileIndex]!;
             const { extension } = splitFileNameExtension(file.name);
             const desiredName = buildPerformanceVideoName(
               { date: draft.date, venueTag: venueForNaming },
@@ -677,10 +688,7 @@ export function PerformanceEditorDialog(props: {
                 return driveFileId;
               },
             });
-            if (!uploadedId) {
-              setUploading(false);
-              return;
-            }
+            if (!uploadedId) throw SAVE_STOPPED;
             setProgress((fileIndex + 1) / fileCount);
             const uploadedVideo = newPerformanceVideo({ videoTargetDriveFileId: uploadedId });
             if (videos.length === 0) {
@@ -694,12 +702,150 @@ export function PerformanceEditorDialog(props: {
           setProgress(1);
         });
       } catch (e) {
-        setShortcutMsg(`Upload failed: ${e instanceof Error ? e.message : String(e)}`);
+        if (e !== SAVE_STOPPED) setShortcutMsg(`Upload failed: ${e instanceof Error ? e.message : String(e)}`);
         setUploading(false);
-        return;
+        throw SAVE_STOPPED;
       }
       setUploading(false);
-    } else if (pendingLinkVideo) {
+    };
+
+    /**
+     * Copies, then the write. Throws {@link SAVE_STOPPED} when it stops early, so staged device
+     * clips stay for another Save.
+     */
+    const finishSave = async () => {
+      /*
+       * Take copies of any videos still pointing at someone else's Drive, in the same save the user
+       * just started — not a second workflow they have to notice and run themselves.
+       *
+       * Runs after the device-upload stage so both kinds of pending video resolve before the row is
+       * written, and rewrites in place, so one pasted link stays one video.
+       */
+      const copyTasks = planForeignVideoCopies(videos, foreignVideoSources);
+      if (copyTasks.length > 0) {
+        if (!googleAccessToken) {
+          setSignInPrompt('Sign in to save a copy of this video to your Drive.');
+          throw SAVE_STOPPED;
+        }
+        setUploading(true);
+        setShortcutMsg(null);
+        /*
+         * `startBlockingJob`, not `withBlockingJob`: the label has to change as the copy moves between
+         * stages. The first version showed one static label over a bar pinned at 0% for the whole
+         * download, about a minute on a real video, and it read as broken.
+         */
+        const copyPosition = { index: 0, count: copyTasks.length };
+        const copyJob = startBlockingJob(
+          foreignVideoCopyJobLabel({ stage: 'preparing', fraction: null }, copyPosition),
+        );
+        let lastCopyReportAt = 0;
+        let lastCopyStage: DriveCopyProgress['stage'] | null = null;
+        const reportCopyProgress = (progress: DriveCopyProgress) => {
+          // A download streams thousands of chunks; re-rendering the snackbar on each one is waste.
+          // Stage changes always go through so the words never lag the work.
+          const now = Date.now();
+          if (progress.stage === lastCopyStage && now - lastCopyReportAt < 100) return;
+          lastCopyReportAt = now;
+          lastCopyStage = progress.stage;
+          copyJob.updateLabel(foreignVideoCopyJobLabel(progress, copyPosition));
+          copyJob.updateProgress(foreignVideoCopyBatchFraction(progress, copyPosition));
+        };
+        try {
+          const layout = await ensureEncoreDriveLayout(googleAccessToken);
+          const parent =
+            resolveDriveUploadFolderId('performances', layout, repertoireExtras.driveUploadFolderOverrides) ??
+            layout.performancesFolderId;
+          if (!parent?.trim()) throw new Error('Performances folder is not ready yet.');
+
+          const copied: { videoId: string; copiedFileId: string }[] = [];
+          /*
+           * A copy needs the source's bytes. The session BFF signs in with `drive.readonly`, so the
+           * session token usually reads them. Builds without the BFF hold only `drive.file`, which
+           * reads the NAME of a friend's file (so the link resolves) but not its bytes; Drive answers
+           * 403/404. `executeDriveFileImport` then asks for `drive.readonly` once and retries.
+           */
+          let copyToken = googleAccessToken;
+          let broadened: Promise<string> | null = null;
+          // One consent prompt, then reuse the broadened token for the rest of the batch.
+          const requestReadAccess = () => {
+            if (!broadened) {
+              copyJob.updateLabel('Waiting for Google permission to read the shared video…');
+              copyJob.updateProgress(null);
+              broadened = ensureDriveCopyAccessToken().then((token) => (copyToken = token));
+            }
+            return broadened;
+          };
+          for (let index = 0; index < copyTasks.length; index += 1) {
+            const task = copyTasks[index]!;
+            copyPosition.index = index;
+            const result = await executeDriveFileImport(
+              { kind: 'copy', sourceFileId: task.sourceFileId, name: task.name, mimeType: null },
+              {
+                accessToken: copyToken,
+                parentFolderId: parent.trim(),
+                requestReadAccess,
+                onProgress: reportCopyProgress,
+              },
+            );
+            copied.push({ videoId: task.videoId, copiedFileId: result.fileId });
+          }
+          videos = applyForeignVideoCopies(videos, copied);
+          // The copy repointed these videos at the user's own files, so the sources that drove
+          // it no longer describe anything. Keeping them is what left "Save a copy to my Drive"
+          // on a video that had already been copied.
+          const copiedVideos = videos;
+          setForeignVideoSources((sources) => pruneStaleForeignVideoSources(sources, copiedVideos));
+          copyJob.updateProgress(1);
+        } catch (error) {
+          const reason = classifyDriveCopyFailure(error);
+          setShortcutMsg(
+            reason === 'no-access' || reason === 'not-found'
+              ? 'Could not read that video from Drive. If a permission prompt appeared, accept it and save again; otherwise check that this Google account can open the link.'
+              : reason === 'not-a-file'
+                ? 'That link is a Google Doc, not a video file.'
+                : 'Could not save a copy to your Drive. Check your connection and Drive storage, then try again.',
+          );
+          setUploading(false);
+          throw SAVE_STOPPED;
+        } finally {
+          copyJob.end();
+        }
+        setUploading(false);
+      }
+
+      const withVideos: EncorePerformance = syncPerformanceLegacyVideoFields({
+        ...draft,
+        venueTag: draft.venueTag.trim() || 'Venue',
+        date: draft.date,
+        accompanimentTags:
+          draft.accompanimentTags && draft.accompanimentTags.length > 0 ? draft.accompanimentTags : undefined,
+        notes: draft.notes?.trim() || undefined,
+        videos: videos.length > 0 ? videos : undefined,
+        primaryVideoId: primaryVideoId || undefined,
+        updatedAt: now,
+        createdAt: draft.createdAt || now,
+      });
+      await onSave(withVideos);
+      onClose();
+    };
+
+    if (pendingLocalVideoFiles.length > 0) {
+      if (!googleAccessToken) {
+        setSignInPrompt('Sign in to upload this video to your Drive.');
+        return;
+      }
+      try {
+        // Save is this surface's confirm: the clips leave the staged list only once the row is written.
+        await stagedVideos.confirm(async (ready) => {
+          await uploadDeviceFiles(ready.map((item) => item.plan));
+          await finishSave();
+        });
+      } catch (e) {
+        if (e !== SAVE_STOPPED) throw e;
+      }
+      return;
+    }
+    if (pendingLinkVideo) {
       // Keep the staged id — the foreign-copy registration is anchored to it — and drop
       // `displayName`, which is a caption for the staging UI and not part of the stored video.
       const stagedFields = {
@@ -714,120 +860,11 @@ export function PerformanceEditorDialog(props: {
       videos = upserted.videos;
       primaryVideoId = primaryVideoId ?? videos[0]?.id;
     }
-
-    /*
-     * Take copies of any videos still pointing at someone else's Drive, in the same save the user
-     * just started — not a second workflow they have to notice and run themselves.
-     *
-     * Runs after the device-upload stage so both kinds of pending video resolve before the row is
-     * written, and rewrites in place, so one pasted link stays one video.
-     */
-    const copyTasks = planForeignVideoCopies(videos, foreignVideoSources);
-    if (copyTasks.length > 0) {
-      if (!googleAccessToken) {
-        setSignInPrompt('Sign in to save a copy of this video to your Drive.');
-        return;
-      }
-      setUploading(true);
-      setShortcutMsg(null);
-      /*
-       * `startBlockingJob`, not `withBlockingJob`: the label has to change as the copy moves between
-       * stages. The first version showed one static label over a bar pinned at 0% for the whole
-       * download, about a minute on a real video, and it read as broken.
-       */
-      const copyPosition = { index: 0, count: copyTasks.length };
-      const copyJob = startBlockingJob(
-        foreignVideoCopyJobLabel({ stage: 'preparing', fraction: null }, copyPosition),
-      );
-      let lastCopyReportAt = 0;
-      let lastCopyStage: DriveCopyProgress['stage'] | null = null;
-      const reportCopyProgress = (progress: DriveCopyProgress) => {
-        // A download streams thousands of chunks; re-rendering the snackbar on each one is waste.
-        // Stage changes always go through so the words never lag the work.
-        const now = Date.now();
-        if (progress.stage === lastCopyStage && now - lastCopyReportAt < 100) return;
-        lastCopyReportAt = now;
-        lastCopyStage = progress.stage;
-        copyJob.updateLabel(foreignVideoCopyJobLabel(progress, copyPosition));
-        copyJob.updateProgress(foreignVideoCopyBatchFraction(progress, copyPosition));
-      };
-      try {
-        const layout = await ensureEncoreDriveLayout(googleAccessToken);
-        const parent =
-          resolveDriveUploadFolderId('performances', layout, repertoireExtras.driveUploadFolderOverrides) ??
-          layout.performancesFolderId;
-        if (!parent?.trim()) throw new Error('Performances folder is not ready yet.');
-
-        const copied: { videoId: string; copiedFileId: string }[] = [];
-        /*
-         * A copy needs the source's bytes. The session BFF signs in with `drive.readonly`, so the
-         * session token usually reads them. Builds without the BFF hold only `drive.file`, which
-         * reads the NAME of a friend's file (so the link resolves) but not its bytes; Drive answers
-         * 403/404. `executeDriveFileImport` then asks for `drive.readonly` once and retries.
-         */
-        let copyToken = googleAccessToken;
-        let broadened: Promise<string> | null = null;
-        // One consent prompt, then reuse the broadened token for the rest of the batch.
-        const requestReadAccess = () => {
-          if (!broadened) {
-            copyJob.updateLabel('Waiting for Google permission to read the shared video…');
-            copyJob.updateProgress(null);
-            broadened = ensureDriveCopyAccessToken().then((token) => (copyToken = token));
-          }
-          return broadened;
-        };
-        for (let index = 0; index < copyTasks.length; index += 1) {
-          const task = copyTasks[index]!;
-          copyPosition.index = index;
-          const result = await executeDriveFileImport(
-            { kind: 'copy', sourceFileId: task.sourceFileId, name: task.name, mimeType: null },
-            {
-              accessToken: copyToken,
-              parentFolderId: parent.trim(),
-              requestReadAccess,
-              onProgress: reportCopyProgress,
-            },
-          );
-          copied.push({ videoId: task.videoId, copiedFileId: result.fileId });
-        }
-        videos = applyForeignVideoCopies(videos, copied);
-        // The copy repointed these videos at the user's own files, so the sources that drove
-        // it no longer describe anything. Keeping them is what left "Save a copy to my Drive"
-        // on a video that had already been copied.
-        const copiedVideos = videos;
-        setForeignVideoSources((sources) => pruneStaleForeignVideoSources(sources, copiedVideos));
-        copyJob.updateProgress(1);
-      } catch (error) {
-        const reason = classifyDriveCopyFailure(error);
-        setShortcutMsg(
-          reason === 'no-access' || reason === 'not-found'
-            ? 'Could not read that video from Drive. If a permission prompt appeared, accept it and save again; otherwise check that this Google account can open the link.'
-            : reason === 'not-a-file'
-              ? 'That link is a Google Doc, not a video file.'
-              : 'Could not save a copy to your Drive. Check your connection and Drive storage, then try again.',
-        );
-        setUploading(false);
-        return;
-      } finally {
-        copyJob.end();
-      }
-      setUploading(false);
+    try {
+      await finishSave();
+    } catch (e) {
+      if (e !== SAVE_STOPPED) throw e;
     }
-
-    const withVideos: EncorePerformance = syncPerformanceLegacyVideoFields({
-      ...draft,
-      venueTag: draft.venueTag.trim() || 'Venue',
-      date: draft.date,
-      accompanimentTags:
-        draft.accompanimentTags && draft.accompanimentTags.length > 0 ? draft.accompanimentTags : undefined,
-      notes: draft.notes?.trim() || undefined,
-      videos: videos.length > 0 ? videos : undefined,
-      primaryVideoId: primaryVideoId || undefined,
-      updatedAt: now,
-      createdAt: draft.createdAt || now,
-    });
-    await onSave(withVideos);
-    onClose();
   };
 
   const handleConfirmRemoveFromLog = async () => {
@@ -845,32 +882,27 @@ export function PerformanceEditorDialog(props: {
   const appendLocalVideoFiles = useCallback(
     (files: File[]) => {
       if (!googleAccessToken || files.length === 0) return;
-      const valid = files.filter((file) => file.size > 0);
-      if (valid.length < files.length) {
-        setShortcutMsg('That file is empty (0 bytes). Pick a different video.');
-        return;
-      }
       setDriveLinkFeedback(null);
       setPendingLinkVideo(null);
       setVideoInput('');
-      setPendingLocalVideoFiles((prev) => {
-        if (!metadataLocked && prev.length === 0 && valid[0]) {
-          const file = valid[0];
-          setDraft((d) => {
-            const guessedVenue = suggestPerformanceVenueFromFile(venueList, file.name);
-            const dateFromFileName = performance == null ? guessIsoDateFromFreeText(file.name) : null;
-            return {
-              ...d,
-              date: dateFromFileName ?? d.date,
-              venueTag: d.venueTag.trim() ? d.venueTag : guessedVenue || d.venueTag,
-            };
-          });
-        }
-        return [...prev, ...valid];
-      });
+      // The first usable clip names the performance: its venue and date fill the empty fields.
+      const first = filterAcceptedPerformanceVideoFiles(files).find((file) => file.size > 0);
+      if (!metadataLocked && pendingLocalVideoFiles.length === 0 && first) {
+        setDraft((d) => {
+          const guessedVenue = suggestPerformanceVenueFromFile(venueList, first.name);
+          const dateFromFileName = performance == null ? guessIsoDateFromFreeText(first.name) : null;
+          return {
+            ...d,
+            date: dateFromFileName ?? d.date,
+            venueTag: d.venueTag.trim() ? d.venueTag : guessedVenue || d.venueTag,
+          };
+        });
+      }
+      // Every file is staged; one that can't be used stays listed with the reason (ADR 0030).
+      stageVideoFiles(files);
       setShortcutMsg(null);
     },
-    [googleAccessToken, performance, venueList, metadataLocked],
+    [googleAccessToken, performance, venueList, metadataLocked, pendingLocalVideoFiles.length, stageVideoFiles],
   );
 
   /**
@@ -894,9 +926,15 @@ export function PerformanceEditorDialog(props: {
   const draftVideos = useMemo(() => normalizeEncorePerformance(draft).videos ?? [], [draft]);
   const primaryVideo = useMemo(() => getPrimaryPerformanceVideo(draft), [draft]);
 
-  const handleRemoveDeviceFileAt = useCallback((index: number) => {
-    setPendingLocalVideoFiles((prev) => prev.filter((_, i) => i !== index));
-  }, []);
+  const stagedDeviceFiles = useMemo(
+    () =>
+      stagedVideos.items.flatMap((item) =>
+        item.source.kind === 'file'
+          ? [{ id: item.id, file: item.source.file, refusal: item.status === 'rejected' ? item.message : undefined }]
+          : [],
+      ),
+    [stagedVideos.items],
+  );
 
   const handleRemovePendingLinkVideo = useCallback(() => {
     setPendingLinkVideo(null);
@@ -905,12 +943,12 @@ export function PerformanceEditorDialog(props: {
   }, []);
 
   const handleKeepExistingVideo = useCallback(() => {
-    setPendingLocalVideoFiles([]);
+    clearStagedVideos();
     setPendingLinkVideo(null);
     setDriveLinkFeedback(null);
     const primary = getPrimaryPerformanceVideo(draft);
     setVideoInput(primary ? videoToLinkInput(primary) : '');
-  }, [draft]);
+  }, [draft, clearStagedVideos]);
 
   const handleInlineVideoLinkBlur = useCallback(
     (videoId: string) => {
@@ -939,9 +977,7 @@ export function PerformanceEditorDialog(props: {
         setSignInPrompt('Sign in to upload this video to your Drive.');
         return;
       }
-      const accepted = filterAcceptedPerformanceVideoFiles(files);
-      if (accepted.length === 0) return;
-      appendLocalVideoFiles(accepted);
+      appendLocalVideoFiles(files);
     },
     [googleAccessToken, appendLocalVideoFiles],
   );
@@ -1100,10 +1136,10 @@ export function PerformanceEditorDialog(props: {
           )
         : null}
       <PerformanceAddVideosPanel
-        deviceFiles={pendingLocalVideoFiles}
+        deviceFiles={stagedDeviceFiles}
         linkRows={pendingLinkRows}
         uploading={uploading}
-        onRemoveDeviceFileAt={handleRemoveDeviceFileAt}
+        onRemoveDeviceFile={removeStagedVideo}
         sourceStrip={addVideoSourceStrip}
         playbackActive={open}
         onKeepExistingVideo={

@@ -15,11 +15,18 @@ export type PerformancePendingLinkRow = {
   onRemove: () => void;
 };
 
+/** A device file staged in the editor; `refusal` marks one that can't be added (ADR 0030). */
+export type PerformanceStagedDeviceFile = {
+  id: string;
+  file: File;
+  refusal?: string;
+};
+
 export type PerformanceAddVideosPanelProps = {
-  deviceFiles: File[];
+  deviceFiles: PerformanceStagedDeviceFile[];
   linkRows?: PerformancePendingLinkRow[];
   uploading?: boolean;
-  onRemoveDeviceFileAt: (index: number) => void;
+  onRemoveDeviceFile: (id: string) => void;
   sourceStrip: PerformanceAddVideoSourceStripProps;
   /** When false, pause staged clip previews (modal closing). */
   playbackActive?: boolean;
@@ -36,7 +43,7 @@ export function PerformanceAddVideosPanel(props: PerformanceAddVideosPanelProps)
     deviceFiles,
     linkRows = [],
     uploading,
-    onRemoveDeviceFileAt,
+    onRemoveDeviceFile,
     sourceStrip,
     playbackActive = true,
     onKeepExistingVideo,
@@ -45,7 +52,7 @@ export function PerformanceAddVideosPanel(props: PerformanceAddVideosPanelProps)
 
   const hasRows = deviceFiles.length > 0 || linkRows.length > 0;
   const showKeepExisting =
-    Boolean(onKeepExistingVideo) && deviceFiles.length === 1 && linkRows.length === 0;
+    Boolean(onKeepExistingVideo) && deviceFiles.length === 1 && !deviceFiles[0]!.refusal && linkRows.length === 0;
 
   const keepExistingAction = showKeepExisting ? (
     <Button
@@ -70,13 +77,14 @@ export function PerformanceAddVideosPanel(props: PerformanceAddVideosPanelProps)
           sx={{ px: 1.5, py: 0.5, ...encorePerformanceStagedVideoSx() }}
           aria-label="Videos to upload"
         >
-          {deviceFiles.map((file, index) => (
-            <Box key={`device-${file.name}-${file.size}-${file.lastModified}-${index}`}>
+          {deviceFiles.map((staged, index) => (
+            <Box key={staged.id}>
               <PerformanceStagedVideoRow
-                file={file}
+                file={staged.file}
+                refusal={staged.refusal}
                 uploading={uploading}
                 playbackActive={playbackActive}
-                onRemove={() => onRemoveDeviceFileAt(index)}
+                onRemove={() => onRemoveDeviceFile(staged.id)}
                 extraActions={index === 0 ? keepExistingAction : undefined}
               />
             </Box>

@@ -1,7 +1,8 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 import { enterEncoreApp } from '../helpers/enterEncoreApp';
 import { seedZineboxE2eGoogleSession } from '../helpers/zineboxDriveImport';
 import { stubEncoreSignedInDrive, type E2eDriveFiles } from '../helpers/encoreDriveStub';
+import { openNewPerformance } from '../helpers/encorePerformanceEditor';
 
 /**
  * Pasting a Drive link into the performance editor: a file you own is referenced, a file someone
@@ -38,29 +39,6 @@ const FILES: E2eDriveFiles = {
     shortcutDetails: { targetId: FRIEND, targetMimeType: 'video/quicktime' },
   },
 };
-
-async function openNewPerformance(page: Page) {
-  await page.goto('/encore/#/library');
-  // Signed in, the heading names the account ("E2E's repertoire").
-  await expect(page.getByRole('heading', { name: /repertoire$/i })).toBeVisible(
-    { timeout: 15_000 }
-  );
-  await page.getByRole('button', { name: 'Add song' }).first().click();
-  const addSong = page.getByRole('dialog', { name: 'Add song' });
-  await addSong.getByLabel('Title').fill('E2E Ownership Song');
-  await addSong.getByLabel('Artist').fill('Labs Agent');
-  await addSong.getByRole('button', { name: 'Add song' }).click();
-  await expect(page).toHaveURL(/#\/song\//, { timeout: 15_000 });
-  await page
-    .getByRole('button', { name: /Add performance|Log performance/ })
-    .first()
-    .click();
-  const editor = page
-    .getByRole('dialog')
-    .filter({ has: page.getByPlaceholder('YouTube, Google Drive, or URL') });
-  await expect(editor).toBeVisible({ timeout: 10_000 });
-  return editor;
-}
 
 test.describe('Encore performance editor Drive ownership', () => {
   for (const { label, fileId, copiedFrom } of [
