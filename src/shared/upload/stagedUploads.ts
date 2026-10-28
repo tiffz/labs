@@ -53,6 +53,11 @@ export type LabsStagedUpload<TPlan> = { id: string; source: LabsStagedUploadSour
       sizeBytes: number | null;
       outcome: string;
       plan: TPlan;
+      /**
+       * Why the last confirm could not save it, when the surface keeps failed items for retry
+       * (`retryFailed`). The next confirm sends it again.
+       */
+      error?: string;
     }
   | { status: 'rejected'; name: string; message: string }
 );
@@ -108,6 +113,31 @@ export function resolveStagedUpload<TPlan>(
       outcome: inspection.outcome,
       plan: inspection.plan,
     };
+  });
+}
+
+/**
+ * Change a ready item's plan: a review table where the user edits each row (which song a score
+ * belongs to, say). Items not ready are left alone, since a check still running would overwrite
+ * the edit.
+ */
+export function updateStagedUploadPlan<TPlan>(
+  items: readonly LabsStagedUpload<TPlan>[],
+  id: string,
+  update: (plan: TPlan) => TPlan,
+): LabsStagedUpload<TPlan>[] {
+  return items.map((item) => (item.id === id && item.status === 'ready' ? { ...item, plan: update(item.plan) } : item));
+}
+
+/** Change every ready item's plan; `update` returns the same plan to leave one alone. */
+export function updateStagedUploadPlans<TPlan>(
+  items: readonly LabsStagedUpload<TPlan>[],
+  update: (plan: TPlan) => TPlan,
+): LabsStagedUpload<TPlan>[] {
+  return items.map((item) => {
+    if (item.status !== 'ready') return item;
+    const plan = update(item.plan);
+    return plan === item.plan ? item : { ...item, plan };
   });
 }
 

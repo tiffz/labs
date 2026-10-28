@@ -71,5 +71,8 @@ Drive links and bulk imports. The owner chose the narrower change.
 - One extra click for every picked file and pasted link. None for a drop.
 - A file picked but not confirmed is lost on reload. Accepted: nothing was saved, so nothing is lost
   that the user had confirmed.
-- Migrating every intake path is phased. The guard lists each one not yet moved (`PENDING`) with
-  what it does today; the list may only shrink.
+- Migrating every intake path was phased, through a `PENDING` list in the guard. It emptied in
+  October 2026, when Encore's performance editor and bulk score and video imports moved onto
+  `useLabsStagedUploads`, and the list was deleted. Review tables keep their own layout, edit
+  rows with `updatePlan` / `updatePlans`, and pass `retryFailed`, so a row that fails to save stays
+  with its edits and the reason and the next confirm retries only it.

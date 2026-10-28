@@ -331,3 +331,84 @@ describe('dropped files save without a confirm (ADR 0030, amended)', () => {
     expect(screen.queryByText('take.mp3')).toBeNull();
   });
 });
+
+describe('editing a staged plan', () => {
+  type Row = { songId: string };
+  const row = (name: string): LabsStagedUploadInspection<Row> => ({
+    ok: true,
+    name,
+    mimeType: 'application/pdf',
+    sizeBytes: 10,
+    outcome: 'Links to the song',
+    plan: { songId: '' },
+  });
+
+  it('commits the edited plan, and leaves a refused row alone', async () => {
+    const inspect = async (source: LabsStagedUploadSource) =>
+      source.kind === 'file' ? row(source.file.name) : ({ ok: false, name: stagedSourceName(source), message: 'No' } as const);
+    const { result } = renderHook(() => useLabsStagedUploads<Row>({ inspect }));
+    await act(async () => {
+      result.current.stageFiles([file('a.pdf')]);
+      result.current.stageLink('https://example.com/x');
+    });
+    const [ready, refused] = result.current.items;
+    act(() => {
+      result.current.updatePlan(ready!.id, (plan) => ({ ...plan, songId: 'song-1' }));
+      result.current.updatePlan(refused!.id, () => ({ songId: 'never' }));
+    });
+    expect(result.current.items[1]).toEqual(refused);
+
+    const commit = vi.fn(async () => {});
+    await act(async () => {
+      await result.current.confirm(commit);
+    });
+    expect((commit.mock.calls[0] as unknown[])[0]).toEqual([expect.objectContaining({ plan: { songId: 'song-1' } })]);
+  });
+});
+
+describe('review tables (retryFailed, updatePlans)', () => {
+  type Row = { songId: string };
+  const inspect = async (source: LabsStagedUploadSource): Promise<LabsStagedUploadInspection<Row>> => ({
+    ok: true,
+    name: stagedSourceName(source),
+    mimeType: null,
+    sizeBytes: null,
+    outcome: 'Links to the song',
+    plan: { songId: '' },
+  });
+
+  it('keeps a failed row ready with its edits and reason, and sends it again on the next confirm', async () => {
+    const { result } = renderHook(() => useLabsStagedUploads<Row>({ inspect, retryFailed: true }));
+    await act(async () => {
+      result.current.stageFiles([file('a.pdf'), file('b.pdf')]);
+    });
+    act(() => result.current.updatePlans(() => ({ songId: 'song-1' })));
+    const [a, b] = result.current.items;
+    await act(async () => {
+      await result.current.confirm(async () => ({ failed: [{ id: b!.id, message: 'Offline' }] }));
+    });
+    expect(result.current.items).toEqual([
+      expect.objectContaining({ id: b!.id, status: 'ready', error: 'Offline', plan: { songId: 'song-1' } }),
+    ]);
+    expect(result.current.items.some((i) => i.id === a!.id)).toBe(false);
+
+    const retry = vi.fn(async () => {});
+    await act(async () => {
+      await result.current.confirm(retry);
+    });
+    expect((retry.mock.calls[0] as unknown[])[0]).toEqual([expect.objectContaining({ id: b!.id })]);
+    expect(result.current.items).toEqual([]);
+  });
+
+  it('updatePlans reaches a row checked in the same tick', async () => {
+    const { result } = renderHook(() => useLabsStagedUploads<Row>({ inspect }));
+    await act(async () => {
+      result.current.stageFiles([file('a.pdf')]);
+      // Let the check resolve, but edit before React renders the ready row: a ref of rendered
+      // items would still be empty here.
+      for (let i = 0; i < 5; i += 1) await Promise.resolve();
+      result.current.updatePlans((plan) => ({ ...plan, songId: 'early' }));
+    });
+    expect(result.current.items[0]).toEqual(expect.objectContaining({ plan: { songId: 'early' } }));
+  });
+});

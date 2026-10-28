@@ -14,9 +14,10 @@ import { describe, expect, it } from 'vitest';
  *  - **staged**: imports the shared staging (`src/shared/upload/`) or calls a `stage*()` or
  *    `save*Files*()` function that feeds it;
  *  - **forwards**: a primitive that hands files to its caller and writes nothing itself;
- *  - **saves nothing**: reads a file into memory only (a palette from an image, say);
- *  - **pending**: a known path not yet moved onto staging. This list is the migration plan. It may
- *    only shrink: delete the row in the PR that migrates the module.
+ *  - **saves nothing**: reads a file into memory only (a palette from an image, say).
+ *
+ * There is no pending list: every intake path stages. A new one must stage too, or be listed above
+ * with its reason.
  *
  * What this cannot see: whether a module sends a PICKED file to `save*()`, which would skip the
  * review, or saves through something other than the shared hook under a `save*` name. A source scan
@@ -52,11 +53,17 @@ const FORWARDS = new Map([
   ['gesture/drive/gestureLocalFolderUpload.ts', 'reads a picked folder for the upload hook'],
   // Resuming an interrupted upload continues one the user already confirmed; it does not restage.
   ['gesture/components/InterruptedUploadBanner.tsx', 'resumes an upload already confirmed'],
+  // Encore: these hand videos to PerformanceEditorDialog, which stages them until Save.
+  ['encore/components/song/SongPerformancesPanel.tsx', 'a dropped video opens the performance editor'],
+  ['encore/components/song/SongPerformancesCompactPanel.tsx', 'a dropped video opens the performance editor'],
+  ['encore/components/song/usePerformanceSectionDrop.ts', 'passes a dropped video to onDropVideo'],
+  ['encore/components/performance/PerformanceAddVideoSourceStrip.tsx', 'passes picked videos to onPickFiles'],
+  ['encore/components/performance/PerformanceEditorVideosDropZone.tsx', 'passes dropped files to onDropVideos'],
   // Lyrefly: these hand files to a component that stages them.
   ['lyrefly/components/LyreflyArtEmptyUpload.tsx', 'passes picked, dropped and pasted pages to ArtStage'],
   ['lyrefly/components/BrainstormResourceDialog.tsx', 'holds the picked file, named, until "Add"'],
-  // Zine Box's LibraryView sends every pick and drop to its "Review import" dialog, which shows
-  // new vs duplicate PDFs before "Import N PDFs" (kept over the shared panel for the dedupe view).
+  // Zine Box's LibraryView sends every pick and drop to its "Review import" dialog, which stages the
+  // PDFs as one batch (useLabsStagedUploads) and shows new vs duplicate before "Import N PDFs".
   ['zinebox/components/ZineboxLibraryAddPanel.tsx', 'passes picked PDFs to the Review import dialog'],
   ['zinebox/hooks/useZineboxLibraryDrop.ts', 'passes dropped PDFs to the Review import dialog'],
 ]);
@@ -69,18 +76,6 @@ const SAVES_NOTHING = new Map([
   ['zines/components/ImageUploaderSlot.tsx', 'booklet images live in React state only'],
   ['zines/components/SpreadPreview.tsx', 'booklet images live in React state only'],
   ['ui/melodia/MelodiaCorpusReview.tsx', 'dev page that previews MusicXML'],
-]);
-
-/** Migration plan (ADR 0030 § Rollout). Delete a row when its module stages. */
-const PENDING = new Map([
-  // Encore: performance videos stage until Save, and bulk imports review, each in their own UI
-  ['encore/components/song/SongPerformancesPanel.tsx', 'drop opens the performance editor (stages until Save)'],
-  ['encore/components/song/SongPerformancesCompactPanel.tsx', 'drop opens the performance editor (stages until Save)'],
-  ['encore/components/song/usePerformanceSectionDrop.ts', 'drop opens the performance editor (stages until Save)'],
-  ['encore/components/performance/PerformanceAddVideoSourceStrip.tsx', 'stages until Save in its own UI'],
-  ['encore/components/performance/PerformanceEditorVideosDropZone.tsx', 'stages until Save in its own UI'],
-  ['encore/components/BulkPerformanceImportDialog.tsx', 'reviews in its own dialog'],
-  ['encore/components/BulkScoreImportDialog.tsx', 'reviews in its own dialog'],
 ]);
 
 function sourceFiles(dir: string): string[] {
@@ -114,7 +109,7 @@ describe('every upload stages before it saves (ADR 0030)', () => {
   it('classifies every intake module', () => {
     const unclassified = intake
       .filter((f) => !STAGED.test(f.code))
-      .filter((f) => !FORWARDS.has(f.rel) && !SAVES_NOTHING.has(f.rel) && !PENDING.has(f.rel))
+      .filter((f) => !FORWARDS.has(f.rel) && !SAVES_NOTHING.has(f.rel))
       .map((f) => f.rel);
     expect(
       unclassified,
@@ -125,7 +120,7 @@ describe('every upload stages before it saves (ADR 0030)', () => {
 
   it('keeps every listed module real, so the lists cannot rot', () => {
     const intakeNames = new Set(intake.map((f) => f.rel));
-    const stale = [...FORWARDS.keys(), ...SAVES_NOTHING.keys(), ...PENDING.keys()].filter(
+    const stale = [...FORWARDS.keys(), ...SAVES_NOTHING.keys()].filter(
       (rel) => !intakeNames.has(rel),
     );
     expect(stale, 'Listed modules that no longer take files in (moved, renamed or done). Remove them.').toEqual([]);

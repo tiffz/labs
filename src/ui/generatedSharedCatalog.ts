@@ -34856,6 +34856,36 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-upload-stageduploads-ts-updatestageduploadplan",
+    "name": "updateStagedUploadPlan",
+    "path": "src/shared/upload/stagedUploads.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Change a ready item's plan: a review table where the user edits each row (which song a score belongs to, say). Items not ready are left alone, since a check still running would overwrite the edit.",
+    "tags": [],
+    "appsUsing": [
+      "ui"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-upload-stageduploads-ts-updatestageduploadplans",
+    "name": "updateStagedUploadPlans",
+    "path": "src/shared/upload/stagedUploads.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Change every ready item's plan; `update` returns the same plan to leave one alone.",
+    "tags": [],
+    "appsUsing": [
+      "ui"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-upload-uselabsstagedfileuploads-tsx-labsstagedfileuploadsoptions",
     "name": "LabsStagedFileUploadsOptions",
     "path": "src/shared/upload/useLabsStagedFileUploads.tsx",

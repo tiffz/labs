@@ -4,9 +4,7 @@ import { alpha } from '@mui/material/styles';
 import type { DragEvent, ReactElement, ReactNode } from 'react';
 import { useCallback } from 'react';
 import { useDragDropHighlight } from '../../../shared/hooks/useDragDropHighlight';
-import { fileMatchesAccept } from '../../../shared/utils/fileMatchesAccept';
 import { encorePerformanceSectionDropSx, encoreShadowSurface } from '../../theme/encoreUiTokens';
-import { PERF_LOCAL_VIDEO_ACCEPT } from '../../utils/performanceVideoAccept';
 import { dataTransferHasPerformanceVideoFile } from '../song/encoreDragPayload';
 
 type UsePerformanceEditorVideoDropOptions = {
@@ -30,8 +28,9 @@ function usePerformanceEditorVideoDrop(options: UsePerformanceEditorVideoDropOpt
     stopPropagation: true,
     onDrop: (e) => {
       if (!enabled || !e.dataTransfer.types.includes('Files')) return;
-      const videos = Array.from(e.dataTransfer.files).filter((f) => fileMatchesAccept(f, PERF_LOCAL_VIDEO_ACCEPT));
-      if (videos.length > 0) onDropVideos(videos);
+      // Every file goes to the editor, which stages it and lists any that can't be used (ADR 0030).
+      const files = Array.from(e.dataTransfer.files);
+      if (files.length > 0) onDropVideos(files);
     },
   });
 

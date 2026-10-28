@@ -54,6 +54,7 @@ Rules:
 
 - **Source** is a subheading inside the card, not a duplicate “Videos (1)” header plus loose fields.
 - **Add videos** (log, edit, add-video): one {@link PerformanceAddVideosPanel} card — queued rows separated by dividers, then a tinted footer with {@link PerformanceAddVideoSourceStrip} (“From your device” | “From a link”). No Drive folder shortcut in this flow.
+- Device clips stage through the shared upload code ([ADR 0030](../../docs/adr/0030-every-upload-stages-before-it-saves.md)): [`inspectPerformanceVideoSource`](components/performance/inspectPerformanceVideoSource.ts) checks each one, a file that isn't a video stays in the queue with the reason, and **Save** is the confirm. A failed save keeps the clips queued.
 - Saved videos in **edit** mode: one bordered **list card** per clip — left-aligned preview (play Drive inline; YouTube embeds in-frame), editable **Video link** and Drive resolve feedback in the card body, **Revert** when dirty, **Primary video** / **Make primary** star actions (same slot, same styling) and **Remove**. Matches staged upload row layout.
 - Secondary videos in a stack: same card in edit mode.
 - Use shared tokens from [`encoreUiTokens.ts`](theme/encoreUiTokens.ts): `encorePerformanceListRowSx`, `encorePerformanceVideoPanelSx`, `encorePerformanceStagedVideoSx`, `encorePerformanceSectionDropSx`, `encorePerformanceDropHintSx`. Prefer hairline borders and `encoreShadowSurface` over `border: 2` or MUI `boxShadow: 1`.

@@ -30,6 +30,8 @@ import { alpha, useTheme } from '@mui/material/styles';
 import { useMaterialReactTable, type MRT_ColumnDef } from 'material-react-table';
 import { LabsMaterialReactTable } from '../../shared/components/LabsMaterialReactTable';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactElement } from 'react';
+import { readyStagedUploads, stagedSourceName, type LabsStagedUploadSource } from '../../shared/upload/stagedUploads';
+import { useLabsStagedUploads } from '../../shared/upload/useLabsStagedUploads';
 import { useLabsUndo } from '../../shared/undo/LabsUndoContext';
 import { useEncoreBlockingJobs } from '../context/EncoreBlockingJobContext';
 import { applyTemplateProgressToSong } from '../repertoire/repertoireMilestones';
@@ -151,6 +153,14 @@ function BulkImportDriveThumbCell({
   );
 }
 
+/** Plain words for a row that failed to import. Never raw HTTP text. */
+function describePerfImportError(error: unknown): string {
+  const text = error instanceof Error ? error.message : '';
+  return /network|fetch|offline/i.test(text)
+    ? "Couldn't reach Google Drive. Check your connection and save again."
+    : "Couldn't import this video. Save again to retry.";
+}
+
 function effectiveSong(r: BulkPerfRow, songs: EncoreSong[]) {
   if (r.newSongFromSpotify) {
     return {
@@ -236,7 +246,47 @@ export function BulkPerformanceImportDialog(props: {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [scanNote, setScanNote] = useState<string | null>(null);
-  const [rows, setRows] = useState<BulkPerfRow[]>([]);
+  /*
+   * Every row is a staged upload (ADR 0030): a picked video stages as itself, and a Drive video the
+   * folder scan found stages as a link to it. "Import" is the confirm. Rows it writes leave the
+   * table; a row that fails stays, with its edits and the reason, and the next save retries it.
+   */
+  const scannedDriveRowsRef = useRef(new Map<string, BulkPerfRow>());
+  const buildUploadRowRef = useRef<(file: File) => BulkPerfRow>(() => {
+    throw new Error('not ready');
+  });
+  const inspectPerfSource = useCallback(async (source: LabsStagedUploadSource) => {
+    if (source.kind === 'file') {
+      const row = buildUploadRowRef.current(source.file);
+      return {
+        ok: true as const,
+        name: row.name,
+        mimeType: source.file.type || null,
+        sizeBytes: source.file.size,
+        outcome: 'Uploads to your Drive performances folder',
+        plan: row,
+      };
+    }
+    const row = source.kind === 'link' ? scannedDriveRowsRef.current.get(source.url) : undefined;
+    if (!row) return { ok: false as const, name: stagedSourceName(source), message: "That file isn't a video." };
+    return { ok: true as const, name: row.name, mimeType: null, sizeBytes: null, outcome: 'Links the video in your Drive', plan: row };
+  }, []);
+  const staged = useLabsStagedUploads<BulkPerfRow>({ inspect: inspectPerfSource, retryFailed: true });
+  const { stageFiles, stageLink, updatePlan, updatePlans: mapRows, clear: clearStaged } = staged;
+  const rows = useMemo(() => readyStagedUploads(staged.items).map((item) => item.plan), [staged.items]);
+  /** Rows the last import could not write, with the reason. They stay in the table for a retry. */
+  const failedRows = useMemo(
+    () =>
+      readyStagedUploads(staged.items).flatMap((item) =>
+        item.error ? [{ id: item.id, name: item.name, message: item.error }] : [],
+      ),
+    [staged.items],
+  );
+  /** Drop every row, scanned or picked. */
+  const clearRows = useCallback(() => {
+    clearStaged();
+    scannedDriveRowsRef.current.clear();
+  }, [clearStaged]);
   const [driveUploadLayout, setDriveUploadLayout] = useState<DriveUploadFolderLayout | null>(null);
   const [libraryPickerRowId, setLibraryPickerRowId] = useState<string | null>(null);
   const [libraryPickQuery, setLibraryPickQuery] = useState('');
@@ -267,7 +317,7 @@ export function BulkPerformanceImportDialog(props: {
     setBusy(false);
     setMsg(null);
     setScanNote(null);
-    setRows([]);
+    clearRows();
     setLibraryPickerRowId(null);
     setLibraryPickQuery('');
     setSongMatchRowId(null);
@@ -277,7 +327,7 @@ export function BulkPerformanceImportDialog(props: {
     lockedRowOrderRef.current = null;
     setOrderLockActive(false);
     window.clearTimeout(blurScheduleRef.current);
-  }, []);
+  }, [clearRows]);
 
   const handleClose = useCallback(() => {
     reset();
@@ -326,26 +376,22 @@ export function BulkPerformanceImportDialog(props: {
     [songs, repertoireExtras.venueCatalog],
   );
 
+  useEffect(() => {
+    buildUploadRowRef.current = buildLocalUploadRow;
+  }, [buildLocalUploadRow]);
+
   const handleLocalFiles = useCallback(
     (files: File[]) => {
-      if (files.length === 0) return;
-      const newRows = files.map(buildLocalUploadRow);
-      setRows((prev) => {
-        /* Dedupe by name + size against existing pending uploads (avoid double-add). */
-        const seen = new Set(
-          prev
-            .filter((r) => r.pendingUploadFile)
-            .map((r) => `${r.name}::${r.pendingUploadFile?.size ?? 0}::${r.pendingUploadFile?.lastModified ?? 0}`),
-        );
-        const filtered = newRows.filter(
-          (r) => !seen.has(`${r.name}::${r.pendingUploadFile?.size ?? 0}::${r.pendingUploadFile?.lastModified ?? 0}`),
-        );
-        return [...prev, ...filtered];
-      });
+      /* Skip a file already in the table: picking the same one twice is not a second video. */
+      const key = (f: File) => `${f.name}::${f.size}::${f.lastModified}`;
+      const seen = new Set(rows.flatMap((r) => (r.pendingUploadFile ? [key(r.pendingUploadFile)] : [])));
+      const fresh = files.filter((f) => !seen.has(key(f)));
+      if (fresh.length === 0) return;
+      stageFiles(fresh);
       setMsg(null);
       setStep('review');
     },
-    [buildLocalUploadRow],
+    [rows, stageFiles],
   );
 
   const venueOptions = useMemo(() => {
@@ -501,7 +547,7 @@ export function BulkPerformanceImportDialog(props: {
           setMsg(
             'No video files in that folder tree. If bulk import used to fail empty, sign in to Google once more (Account → Disconnect Google, then sign in) so Drive metadata access is granted.',
           );
-          setRows([]);
+          clearRows();
           return;
         }
         const seenIds = new Set<string>();
@@ -561,7 +607,12 @@ export function BulkPerformanceImportDialog(props: {
             folderAccompanimentTags: folderAcc && folderAcc.length > 0 ? folderAcc : undefined,
           };
         });
-        setRows(built);
+        // A scan replaces the table, as it always has.
+        clearRows();
+        for (const row of built) {
+          scannedDriveRowsRef.current.set(row.id, row);
+          stageLink(row.id);
+        }
         setLibraryPairFilter('all');
         setTableQuery('');
         setTableSorting(BULK_PERF_DEFAULT_SORTING);
@@ -574,150 +625,166 @@ export function BulkPerformanceImportDialog(props: {
     } finally {
       setBusy(false);
     }
-  }, [folderInput, googleAccessToken, songs, performances, repertoireExtras.venueCatalog, withBlockingJob]);
+  }, [folderInput, googleAccessToken, songs, performances, repertoireExtras.venueCatalog, withBlockingJob, clearRows, stageLink]);
 
   const applyAll = useCallback(async () => {
     setBusy(true);
     setMsg(null);
     try {
-      const totalRows = rows.length;
-      let rowStep = 0;
+      // Checked before any row is written, so a missing sign-in cannot leave half an import behind.
+      const uploading = rows.some((r) => r.pendingUploadFile && !perfRowExcluded(r));
+      if (uploading && !googleAccessToken) throw new Error('Sign in to Google to upload videos.');
+      if (uploading && !performancesUploadFolderId) {
+        throw new Error('Drive Performances folder is not ready yet. Try again in a moment.');
+      }
+      let failedCount = 0;
       await withBlockingJob('Importing performances…', async (setBlockingProgress) => {
         await withBatch(async () => {
-        const now = new Date().toISOString();
-        const perf: EncorePerformance[] = [];
-        for (const r of rows) {
-          if (perfRowExcluded(r)) {
-            rowStep += 1;
-            setBlockingProgress(totalRows ? rowStep / totalRows : null);
-            continue;
-          }
-          const folderMeta = parseEncoreFolderMetadata(r.parentPathHint ?? '');
-          let songId = r.guessedSongId;
-          if (r.newSongFromSpotify) {
-            const ns = r.newSongFromSpotify;
-            const song: EncoreSong = {
-              id: crypto.randomUUID(),
-              title: ns.title,
-              artist: ns.artist?.trim() || folderMeta.artist?.trim() || 'Unknown artist',
-              albumArtUrl: ns.albumArtUrl,
-              spotifyTrackId: ns.spotifyTrackId,
-              journalMarkdown: '',
-              createdAt: now,
-              updatedAt: now,
-              ...(folderMeta.performanceKey?.trim() ? { performanceKey: folderMeta.performanceKey.trim() } : {}),
-              ...(folderMeta.tags?.length ? { tags: folderMeta.tags } : {}),
-            };
-            // Seed milestones like every other create path; this one hand-rolls its literal to fold in
-        // folder-derived metadata and silently skipped the template.
-        await onSaveSong(applyTemplateProgressToSong(song, repertoireExtras.milestoneTemplate));
-            songId = song.id;
-          } else if (r.newSongManual) {
-            const song = encoreSongFromManualTitleArtist(
-              r.newSongManual.title,
-              r.newSongManual.artist.trim() || folderMeta.artist?.trim() || '',
-              now,
-            );
-            const withFolder: EncoreSong = {
-              ...song,
-              ...(folderMeta.performanceKey?.trim() ? { performanceKey: folderMeta.performanceKey.trim() } : {}),
-              ...(folderMeta.tags?.length ? { tags: folderMeta.tags } : {}),
-            };
-            await onSaveSong(applyTemplateProgressToSong(withFolder, repertoireExtras.milestoneTemplate));
-            songId = withFolder.id;
-          }
-          if (!songId && r.linkedPerformanceId) {
-            const prev = performances.find((p) => p.id === r.linkedPerformanceId);
-            songId = prev?.songId ?? '';
-          }
-          if (!songId) {
-            rowStep += 1;
-            setBlockingProgress(totalRows ? rowStep / totalRows : null);
-            continue;
-          }
+          await staged.confirm(async (ready) => {
+            const totalRows = ready.length;
+            let rowStep = 0;
+            const now = new Date().toISOString();
+            const perf: EncorePerformance[] = [];
+            const failed: { id: string; message: string }[] = [];
+            for (const item of ready) {
+              const r = item.plan;
+              if (perfRowExcluded(r)) {
+                rowStep += 1;
+                setBlockingProgress(totalRows ? rowStep / totalRows : null);
+                continue;
+              }
+              try {
+                const folderMeta = parseEncoreFolderMetadata(r.parentPathHint ?? '');
+                let songId = r.guessedSongId;
+                /* A song made for this row is kept on the row, so a retry after a failure does not make it twice. */
+                const keepSong = (id: string) =>
+                  updatePlan(item.id, (row) => ({ ...row, guessedSongId: id, newSongFromSpotify: undefined, newSongManual: undefined }));
+                if (r.newSongFromSpotify) {
+                  const ns = r.newSongFromSpotify;
+                  const song: EncoreSong = {
+                    id: crypto.randomUUID(),
+                    title: ns.title,
+                    artist: ns.artist?.trim() || folderMeta.artist?.trim() || 'Unknown artist',
+                    albumArtUrl: ns.albumArtUrl,
+                    spotifyTrackId: ns.spotifyTrackId,
+                    journalMarkdown: '',
+                    createdAt: now,
+                    updatedAt: now,
+                    ...(folderMeta.performanceKey?.trim() ? { performanceKey: folderMeta.performanceKey.trim() } : {}),
+                    ...(folderMeta.tags?.length ? { tags: folderMeta.tags } : {}),
+                  };
+                  // Seed milestones like every other create path; this one hand-rolls its literal to fold in
+              // folder-derived metadata and silently skipped the template.
+              await onSaveSong(applyTemplateProgressToSong(song, repertoireExtras.milestoneTemplate));
+                  songId = song.id;
+                  keepSong(song.id);
+                } else if (r.newSongManual) {
+                  const song = encoreSongFromManualTitleArtist(
+                    r.newSongManual.title,
+                    r.newSongManual.artist.trim() || folderMeta.artist?.trim() || '',
+                    now,
+                  );
+                  const withFolder: EncoreSong = {
+                    ...song,
+                    ...(folderMeta.performanceKey?.trim() ? { performanceKey: folderMeta.performanceKey.trim() } : {}),
+                    ...(folderMeta.tags?.length ? { tags: folderMeta.tags } : {}),
+                  };
+                  await onSaveSong(applyTemplateProgressToSong(withFolder, repertoireExtras.milestoneTemplate));
+                  songId = withFolder.id;
+                  keepSong(withFolder.id);
+                }
+                if (!songId && r.linkedPerformanceId) {
+                  const prev = performances.find((p) => p.id === r.linkedPerformanceId);
+                  songId = prev?.songId ?? '';
+                }
+                if (!songId) {
+                  rowStep += 1;
+                  setBlockingProgress(totalRows ? rowStep / totalRows : null);
+                  continue;
+                }
 
-          let videoFileId = r.driveFileId;
-          if (r.pendingUploadFile) {
-            if (!googleAccessToken) {
-              throw new Error('Sign in to Google to upload videos.');
-            }
-            if (!performancesUploadFolderId) {
-              throw new Error('Drive Performances folder is not ready yet. Try again in a moment.');
-            }
-            const perfIndexLabel = `${r.venue.trim() || r.name} · Video`;
-            const uploadedId = await uploadWithDuplicateCheck({
-              file: r.pendingUploadFile,
-              uploadNew: async () => {
-                const created = await driveUploadFileResumable(
-                  googleAccessToken,
-                  r.pendingUploadFile!,
-                  [performancesUploadFolderId],
-                );
-                await registerUploadedDriveFile(created.id, perfIndexLabel);
-                return created.id;
-              },
-              reuseExisting: async (id) => {
-                await registerUploadedDriveFile(id, perfIndexLabel);
-                return id;
-              },
-            });
-            if (!uploadedId) {
+                let videoFileId = r.driveFileId;
+                if (r.pendingUploadFile && googleAccessToken && performancesUploadFolderId) {
+                  const perfIndexLabel = `${r.venue.trim() || r.name} · Video`;
+                  const uploadedId = await uploadWithDuplicateCheck({
+                    file: r.pendingUploadFile,
+                    uploadNew: async () => {
+                      const created = await driveUploadFileResumable(
+                        googleAccessToken,
+                        r.pendingUploadFile!,
+                        [performancesUploadFolderId],
+                      );
+                      await registerUploadedDriveFile(created.id, perfIndexLabel);
+                      return created.id;
+                    },
+                    reuseExisting: async (id) => {
+                      await registerUploadedDriveFile(id, perfIndexLabel);
+                      return id;
+                    },
+                  });
+                  if (!uploadedId) {
+                    rowStep += 1;
+                    setBlockingProgress(totalRows ? rowStep / totalRows : null);
+                    continue;
+                  }
+                  videoFileId = uploadedId;
+                }
+
+                if (r.linkedPerformanceId) {
+                  const prev = performances.find((p) => p.id === r.linkedPerformanceId);
+                  if (!prev) {
+                    rowStep += 1;
+                    setBlockingProgress(totalRows ? rowStep / totalRows : null);
+                    continue;
+                  }
+                  const importLine = `Imported: ${r.name}`;
+                  const nextNotes = prev.notes?.includes(importLine)
+                    ? prev.notes
+                    : [prev.notes?.trim(), importLine].filter(Boolean).join('\n');
+                  perf.push({
+                    ...prev,
+                    songId,
+                    date: r.date,
+                    venueTag: r.venue.trim() || 'Venue',
+                    notes: nextNotes,
+                    videoTargetDriveFileId: videoFileId || prev.videoTargetDriveFileId,
+                    ...(r.folderAccompanimentTags?.length
+                      ? { accompanimentTags: r.folderAccompanimentTags }
+                      : {}),
+                    updatedAt: now,
+                  });
+                  rowStep += 1;
+                  setBlockingProgress(totalRows ? rowStep / totalRows : null);
+                  continue;
+                }
+
+                perf.push({
+                  id: crypto.randomUUID(),
+                  songId,
+                  date: r.date,
+                  venueTag: r.venue.trim() || 'Venue',
+                  videoTargetDriveFileId: videoFileId || undefined,
+                  externalVideoUrl: undefined,
+                  notes: `Imported: ${r.name}`,
+                  ...(r.folderAccompanimentTags?.length
+                    ? { accompanimentTags: r.folderAccompanimentTags }
+                    : {}),
+                  createdAt: now,
+                  updatedAt: now,
+                });
+              } catch (e) {
+                failed.push({ id: item.id, message: describePerfImportError(e) });
+              }
               rowStep += 1;
               setBlockingProgress(totalRows ? rowStep / totalRows : null);
-              continue;
             }
-            videoFileId = uploadedId;
-          }
-
-          if (r.linkedPerformanceId) {
-            const prev = performances.find((p) => p.id === r.linkedPerformanceId);
-            if (!prev) {
-              rowStep += 1;
-              setBlockingProgress(totalRows ? rowStep / totalRows : null);
-              continue;
-            }
-            const importLine = `Imported: ${r.name}`;
-            const nextNotes = prev.notes?.includes(importLine)
-              ? prev.notes
-              : [prev.notes?.trim(), importLine].filter(Boolean).join('\n');
-            perf.push({
-              ...prev,
-              songId,
-              date: r.date,
-              venueTag: r.venue.trim() || 'Venue',
-              notes: nextNotes,
-              videoTargetDriveFileId: videoFileId || prev.videoTargetDriveFileId,
-              ...(r.folderAccompanimentTags?.length
-                ? { accompanimentTags: r.folderAccompanimentTags }
-                : {}),
-              updatedAt: now,
-            });
-            rowStep += 1;
-            setBlockingProgress(totalRows ? rowStep / totalRows : null);
-            continue;
-          }
-
-          perf.push({
-            id: crypto.randomUUID(),
-            songId,
-            date: r.date,
-            venueTag: r.venue.trim() || 'Venue',
-            videoTargetDriveFileId: videoFileId || undefined,
-            externalVideoUrl: undefined,
-            notes: `Imported: ${r.name}`,
-            ...(r.folderAccompanimentTags?.length
-              ? { accompanimentTags: r.folderAccompanimentTags }
-              : {}),
-            createdAt: now,
-            updatedAt: now,
+            await onSavePerformances(perf);
+            failedCount = failed.length;
+            return { failed };
           });
-          rowStep += 1;
-          setBlockingProgress(totalRows ? rowStep / totalRows : null);
-        }
-        await onSavePerformances(perf);
-        handleClose();
         });
       });
+      if (failedCount === 0) handleClose();
     } catch (e) {
       setMsg(e instanceof Error ? e.message : String(e));
     } finally {
@@ -725,6 +792,8 @@ export function BulkPerformanceImportDialog(props: {
     }
   }, [
     rows,
+    staged,
+    updatePlan,
     performances,
     repertoireExtras.milestoneTemplate,
     onSavePerformances,
@@ -756,16 +825,14 @@ export function BulkPerformanceImportDialog(props: {
               checked={!excluded}
               onChange={(e) => {
                 const wantIncluded = e.target.checked;
-                setRows((prev) =>
-                  prev.map((row) => {
+                mapRows((row) => {
                     if (row.id !== r.id) return row;
                     const isDup = perfBatchDupIds.has(row.id) || perfLibraryDupIds.has(row.id);
                     if (wantIncluded) {
                       return { ...row, skipRow: isDup ? false : undefined };
                     }
                     return { ...row, skipRow: true };
-                  }),
-                );
+                  });
               }}
               slotProps={{
                 input: { 'aria-label': `Include ${r.name} when saving` }
@@ -935,8 +1002,7 @@ export function BulkPerformanceImportDialog(props: {
                       size="small"
                       aria-label="Clear song match"
                       onClick={() =>
-                        setRows((prev) =>
-                          prev.map((row) =>
+                        mapRows((row) =>
                             row.id === r.id
                               ? {
                                   ...row,
@@ -945,8 +1011,7 @@ export function BulkPerformanceImportDialog(props: {
                                   newSongManual: undefined,
                                 }
                               : row,
-                          ),
-                        )
+                          )
                       }
                     >
                       <HighlightOffOutlinedIcon sx={{ fontSize: 20 }} />
@@ -977,10 +1042,10 @@ export function BulkPerformanceImportDialog(props: {
               size="small"
               options={venueOptions}
               value={r.venue}
-              onInputChange={(_, v) => setRows((prev) => prev.map((x) => (x.id === r.id ? { ...x, venue: v } : x)))}
+              onInputChange={(_, v) => mapRows((x) => (x.id === r.id ? { ...x, venue: v } : x))}
               onChange={(_, v) => {
                 const next = typeof v === 'string' ? v : (v ?? '');
-                setRows((prev) => prev.map((x) => (x.id === r.id ? { ...x, venue: next } : x)));
+                mapRows((x) => (x.id === r.id ? { ...x, venue: next } : x));
               }}
               slotProps={{
                 popper: {
@@ -1024,7 +1089,7 @@ export function BulkPerformanceImportDialog(props: {
               value={r.date}
               onChange={(e) => {
                 const v = e.target.value;
-                setRows((prev) => prev.map((x) => (x.id === r.id ? { ...x, date: v } : x)));
+                mapRows((x) => (x.id === r.id ? { ...x, date: v } : x));
               }}
               onFocus={beginEditStabilize}
               onBlur={scheduleEndEditStabilize}
@@ -1041,7 +1106,7 @@ export function BulkPerformanceImportDialog(props: {
         },
       },
     ],
-    [perfRowExcluded, perfBatchDupIds, perfLibraryDupIds, songs, venueOptions, beginEditStabilize, scheduleEndEditStabilize, googleAccessToken],
+    [perfRowExcluded, perfBatchDupIds, perfLibraryDupIds, songs, venueOptions, beginEditStabilize, scheduleEndEditStabilize, googleAccessToken, mapRows],
   );
 
   const table = useMaterialReactTable({
@@ -1435,6 +1500,15 @@ export function BulkPerformanceImportDialog(props: {
                     {msg}
                   </Alert>
                 ) : null}
+                {failedRows.length > 0 ? (
+                  <Alert severity="error" aria-label="Videos not imported" sx={{ py: 0.25, px: 1 }}>
+                    {failedRows.map((item) => (
+                      <Typography key={item.id} variant="body2">
+                        <strong>{item.name}</strong>: {item.message}
+                      </Typography>
+                    ))}
+                  </Alert>
+                ) : null}
               </Stack>
               <Box
                 ref={tableFocusRootRef}
@@ -1456,7 +1530,7 @@ export function BulkPerformanceImportDialog(props: {
             <Button
               onClick={() => {
                 setStep('folder');
-                setRows([]);
+                clearRows();
                 setMsg(null);
                 setScanNote(null);
                 setLibraryPairFilter('all');
@@ -1502,8 +1576,7 @@ export function BulkPerformanceImportDialog(props: {
         onSelect={(song) => {
           const id = libraryPickerRowId;
           if (!id) return;
-          setRows((prev) =>
-            prev.map((row) =>
+          mapRows((row) =>
               row.id === id
                 ? {
                     ...row,
@@ -1512,8 +1585,7 @@ export function BulkPerformanceImportDialog(props: {
                     newSongManual: undefined,
                   }
                 : row,
-            ),
-          );
+            );
           closeLibraryPicker();
         }}
       />
@@ -1527,8 +1599,7 @@ export function BulkPerformanceImportDialog(props: {
         onPickSpotify={(track) => {
           const id = songMatchRowId;
           if (!id) return;
-          setRows((prev) =>
-            prev.map((row) =>
+          mapRows((row) =>
               row.id === id
                 ? {
                     ...row,
@@ -1542,14 +1613,12 @@ export function BulkPerformanceImportDialog(props: {
                     newSongManual: undefined,
                   }
                 : row,
-            ),
-          );
+            );
         }}
         onPickManual={(title, artist) => {
           const id = songMatchRowId;
           if (!id) return;
-          setRows((prev) =>
-            prev.map((row) =>
+          mapRows((row) =>
               row.id === id
                 ? {
                     ...row,
@@ -1558,8 +1627,7 @@ export function BulkPerformanceImportDialog(props: {
                     newSongFromSpotify: undefined,
                   }
                 : row,
-            ),
-          );
+            );
         }}
       />
     </>

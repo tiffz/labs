@@ -21,18 +21,20 @@ export type PerformanceStagedVideoRowProps = {
   onRemove: () => void;
   /** e.g. Keep existing — only when replacing a single saved clip. */
   extraActions?: ReactNode;
+  /** Why this file can't be added. The row stays so the user sees why; it is never uploaded. */
+  refusal?: string;
 };
 
 /** One queued clip inside the unified add-videos panel. */
 export function PerformanceStagedVideoRow(props: PerformanceStagedVideoRowProps): ReactElement {
-  const { file, linkLabel, uploading, playbackActive = true, onRemove, extraActions } = props;
+  const { file, linkLabel, uploading, playbackActive = true, onRemove, extraActions, refusal } = props;
   const title = file?.name ?? linkLabel ?? 'Linked video';
 
   return (
     <Stack direction="row" spacing={1.25} sx={{
       alignItems: "flex-start"
     }}>
-      {file ? (
+      {file && !refusal ? (
         <LocalVideoFilePreview file={file} layout="editor" playbackActive={playbackActive} />
       ) : (
         <Box
@@ -59,12 +61,12 @@ export function PerformanceStagedVideoRow(props: PerformanceStagedVideoRowProps)
         <Typography
           variant="caption"
           sx={{
-            color: "text.secondary",
+            color: refusal ? 'error.main' : 'text.secondary',
             display: "block",
             mt: 0.25,
             lineHeight: 1.4
           }}>
-          {uploading ? 'Uploading…' : 'Uploads when you save'}
+          {refusal ?? (uploading ? 'Uploading…' : 'Uploads when you save')}
         </Typography>
         {extraActions ? (
           <Stack

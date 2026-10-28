@@ -36,6 +36,7 @@ test.describe('Zine Box library', () => {
       buffer: Buffer.from('%PDF-1.1\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj 2 0 obj<</Type/Pages/Kids[]/Count 0>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF'),
     });
     await expect(page.getByRole('dialog', { name: /Review import/i })).toBeVisible({ timeout: 15000 });
-    await expect(page.getByRole('button', { name: /Import 1 PDF/ })).toBeVisible();
+    await page.getByRole('button', { name: /Import 1 PDF/ }).click();
+    await expect(page.getByText(/Added 1 PDF/i)).toBeVisible({ timeout: 30000 });
   });
 });

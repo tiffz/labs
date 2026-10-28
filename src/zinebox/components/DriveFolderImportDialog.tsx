@@ -14,12 +14,16 @@ import { ensureZineboxGoogleDriveAccess } from '../drive/zineboxGoogleDriveAcces
 import { LabsGoogleInteractiveAuthRequiredError } from '../../shared/google/labsGoogleDriveAccess';
 import { useLabsBlockingJobs } from '../../shared/jobs/LabsBlockingJobContext';
 import { reportBlockingJobItemProgress } from '../../shared/jobs/labsBlockingJobItemProgress';
+import { stagedSourceName, type LabsStagedUploadSource } from '../../shared/upload/stagedUploads';
+import { useLabsStagedUploads } from '../../shared/upload/useLabsStagedUploads';
 import { importScannedDriveFolderPdfs } from '../drive/importDriveFolderPdfs';
 import { formatZineboxDriveImportError } from '../drive/zineboxDriveImportErrors';
 import type { DriveFolderScanResult } from '../drive/scanDriveFolderForImport';
 import { scanDriveFolderForImport } from '../drive/scanDriveFolderForImport';
 import type { ZineboxImportBatchMetadata } from '../drive/zineboxImportMetadata';
 import ZineboxTagsAutocomplete from './ZineboxTagsAutocomplete';
+
+type DriveFolderImportPlan = { scan: DriveFolderScanResult; token: string };
 
 type DriveFolderImportDialogProps = {
   open: boolean;
@@ -42,11 +46,10 @@ export default function DriveFolderImportDialog({
   onError,
 }: DriveFolderImportDialogProps): React.ReactElement {
   const { startBlockingJob } = useLabsBlockingJobs();
-  const [scan, setScan] = useState<DriveFolderScanResult | null>(null);
-  const [scanBusy, setScanBusy] = useState(false);
   const [importBusy, setImportBusy] = useState(false);
-  const [source, setSource] = useState('');
-  const [tags, setTags] = useState<string[]>([]);
+  /* The user's edits; until they make one, source and tags come from the scanned folder. */
+  const [sourceEdit, setSource] = useState<string | null>(null);
+  const [tagsEdit, setTags] = useState<string[] | null>(null);
   const [useSubfolderAsSource, setUseSubfolderAsSource] = useState(false);
   const accessTokenRef = useRef<string | null>(null);
   const onCloseRef = useRef(onClose);
@@ -56,14 +59,52 @@ export default function DriveFolderImportDialog({
   onErrorRef.current = onError;
   accessTokenRef.current = accessToken;
 
+  /*
+   * The pasted folder stages as a link (ADR 0030). Its check scans the folder for new PDFs and
+   * writes nothing; "Import" is the confirm.
+   */
+  const inspectFolder = useCallback(async (input: LabsStagedUploadSource) => {
+    const name = stagedSourceName(input);
+    if (input.kind !== 'link') return { ok: false as const, name, message: 'Could not scan that folder.' };
+    try {
+      const token =
+        accessTokenRef.current ??
+        (await ensureZineboxGoogleDriveAccess({
+          interactive: true,
+          upgradeScopes: false,
+        }));
+      const result = await scanDriveFolderForImport(token, input.url);
+      return {
+        ok: true as const,
+        name: result.folderName,
+        mimeType: 'application/pdf',
+        sizeBytes: null,
+        outcome: `${result.newCount} new`,
+        plan: { scan: result, token },
+      };
+    } catch (e) {
+      const message =
+        e instanceof LabsGoogleInteractiveAuthRequiredError
+          ? 'Sign in with Google first (Account menu, top right).'
+          : e instanceof Error
+            ? e.message
+            : 'Could not scan that folder.';
+      return { ok: false as const, name, message };
+    }
+  }, []);
+  const staged = useLabsStagedUploads<DriveFolderImportPlan>({ inspect: inspectFolder });
+  const { stageLink, clear: clearStaged } = staged;
+  const folder = staged.items[0];
+  const scan = folder?.status === 'ready' ? folder.plan.scan : null;
+  const scanBusy = folder?.status === 'checking';
+
   useEffect(() => {
     if (!open) {
       scannedInputRef.current = null;
-      setScan(null);
-      setScanBusy(false);
+      clearStaged();
       setImportBusy(false);
-      setSource('');
-      setTags([]);
+      setSource(null);
+      setTags(null);
       setUseSubfolderAsSource(false);
       return;
     }
@@ -71,50 +112,32 @@ export default function DriveFolderImportDialog({
     const inputKey = folderInput.trim();
     if (!inputKey) return;
     if (scannedInputRef.current === inputKey) return;
+    scannedInputRef.current = inputKey;
+    onErrorRef.current(null);
+    clearStaged();
+    stageLink(folderInput);
+  }, [folderInput, open, stageLink, clearStaged]);
 
-    let cancelled = false;
-    const runScan = async () => {
-      setScanBusy(true);
-      onErrorRef.current(null);
-      try {
-        const token =
-          accessTokenRef.current ??
-          (await ensureZineboxGoogleDriveAccess({
-            interactive: true,
-            upgradeScopes: false,
-          }));
-        const result = await scanDriveFolderForImport(token, folderInput);
-        if (cancelled) return;
-        scannedInputRef.current = inputKey;
-        accessTokenRef.current = token;
-        setScan(result);
-        setSource(result.folderName);
-        const folderLower = result.folderName.toLowerCase();
-        if (folderLower.includes('shortbox')) {
-          setTags(['Shortbox']);
-        }
-      } catch (e) {
-        if (cancelled) return;
-        if (e instanceof LabsGoogleInteractiveAuthRequiredError) {
-          onErrorRef.current('Sign in with Google first (Account menu, top right).');
-        } else {
-          onErrorRef.current(e instanceof Error ? e.message : 'Could not scan that folder.');
-        }
-        onCloseRef.current();
-      } finally {
-        if (!cancelled) setScanBusy(false);
-      }
-    };
-    void runScan();
-    return () => {
-      cancelled = true;
-    };
-  }, [folderInput, open]);
+  /* Once the scan answers: keep its token, or close and say why it failed. */
+  useEffect(() => {
+    if (folder?.status === 'ready') {
+      accessTokenRef.current = folder.plan.token;
+    } else if (folder?.status === 'rejected') {
+      onErrorRef.current(folder.message);
+      onCloseRef.current();
+    }
+  }, [folder]);
 
   const sampleNames = useMemo(() => {
     if (!scan) return [];
     return scan.files.slice(0, 5).map((f) => f.name ?? 'zine.pdf');
   }, [scan]);
+
+  const source = sourceEdit ?? scan?.folderName ?? '';
+  const tags = useMemo(
+    () => tagsEdit ?? (scan?.folderName.toLowerCase().includes('shortbox') ? ['Shortbox'] : []),
+    [tagsEdit, scan],
+  );
 
   const metadata: ZineboxImportBatchMetadata = useMemo(
     () => ({
@@ -143,21 +166,23 @@ export default function DriveFolderImportDialog({
 
     const folderName = scan.folderName;
     const newCount = scan.newCount;
-    onClose();
 
     const job = startBlockingJob(`Importing from ${folderName}…`);
     try {
-      const result = await importScannedDriveFolderPdfs(token, scan, metadata, (message) => {
-        const match = message.match(/(\d+) of (\d+)/);
-        if (match) {
-          reportBlockingJobItemProgress(job, {
-            current: Number.parseInt(match[1] ?? '0', 10),
-            total: Number.parseInt(match[2] ?? '1', 10),
-            detail: message.split('…').slice(1).join('…').trim() || undefined,
-          });
-          return;
-        }
-        job.updateLabel(message);
+      await staged.confirm(async () => {
+        // Close inside the commit: closing clears the staged folder, and confirm has it by now.
+        onClose();
+        const result = await importScannedDriveFolderPdfs(token, scan, metadata, (message) => {
+          const match = message.match(/(\d+) of (\d+)/);
+          if (match) {
+            reportBlockingJobItemProgress(job, {
+              current: Number.parseInt(match[1] ?? '0', 10),
+              total: Number.parseInt(match[2] ?? '1', 10),
+              detail: message.split('…').slice(1).join('…').trim() || undefined,
+            });
+            return;
+          }
+          job.updateLabel(message);
       });
       if (result.imported === 0 && newCount > 0) {
         onError(formatZineboxDriveImportError(new Error('No PDFs were downloaded.')));
@@ -168,13 +193,14 @@ export default function DriveFolderImportDialog({
       onComplete(
         `Added ${result.imported} PDF${result.imported === 1 ? '' : 's'} from ${result.folderName}.${skippedNote}`,
       );
+      });
     } catch (e) {
       onError(formatZineboxDriveImportError(e));
     } finally {
       job.end();
       setImportBusy(false);
     }
-  }, [metadata, onClose, onComplete, onError, scan, startBlockingJob]);
+  }, [metadata, onClose, onComplete, onError, scan, staged, startBlockingJob]);
 
   const interactionDisabled = scanBusy || importBusy;
 

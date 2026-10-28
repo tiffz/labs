@@ -6,6 +6,8 @@ import {
   resolveStagedUpload,
   stagedUploadsAwaitConfirm,
   stageSources,
+  updateStagedUploadPlan,
+  updateStagedUploadPlans,
   type LabsReadyStagedUpload,
   type LabsStagedUpload,
   type LabsStagedUploadInspection,
@@ -33,6 +35,10 @@ export type LabsStagedUploadsController<TPlan> = {
   saveFiles: (files: readonly File[], commit: LabsStagedUploadCommit<TPlan>) => Promise<void>;
   /** A dropped folder, saved at once as one row. */
   saveBatch: (name: string, files: readonly File[], commit: LabsStagedUploadCommit<TPlan>) => Promise<void>;
+  /** Edit a ready item's plan, for surfaces that let the user adjust each row before confirming. */
+  updatePlan: (id: string, update: (plan: TPlan) => TPlan) => void;
+  /** Edit every ready item's plan at once. Runs on the latest items, so it never misses one just checked. */
+  updatePlans: (update: (plan: TPlan) => TPlan) => void;
   remove: (id: string) => void;
   clear: () => void;
   /** True while a picked or pasted item waits for the confirm button. */
@@ -58,8 +64,15 @@ const SAVE_FAILED = "Couldn't save this file. Check your connection and try agai
  */
 export function useLabsStagedUploads<TPlan>({
   inspect,
+  retryFailed = false,
 }: {
   inspect: (source: LabsStagedUploadSource) => Promise<LabsStagedUploadInspection<TPlan>>;
+  /**
+   * Keep an item that failed to save as ready, with `error`, so the next confirm retries it. For
+   * review tables, where a row holds edits (a song pairing, a date) that a refusal would throw away.
+   * Otherwise a failed item turns into a refusal and is not sent again.
+   */
+  retryFailed?: boolean;
 }): LabsStagedUploadsController<TPlan> {
   const [items, setItems] = useState<LabsStagedUpload<TPlan>[]>([]);
   const [committing, setCommitting] = useState(false);
@@ -109,6 +122,7 @@ export function useLabsStagedUploads<TPlan>({
         current.flatMap((item): LabsStagedUpload<TPlan>[] => {
           const message = failed.get(item.id);
           if (message !== undefined) {
+            if (retryFailed && item.status === 'ready') return [{ ...item, error: message }];
             return [{ id: item.id, source: item.source, autoSave: item.autoSave, status: 'rejected', name: item.name, message }];
           }
           if (sent.has(item.id) || (clearRejected && item.status === 'rejected')) return [];
@@ -116,7 +130,7 @@ export function useLabsStagedUploads<TPlan>({
         }),
       );
     },
-    [],
+    [retryFailed],
   );
 
   const stageFiles = useCallback(
@@ -171,6 +185,14 @@ export function useLabsStagedUploads<TPlan>({
     [save],
   );
 
+  const updatePlan = useCallback((id: string, update: (plan: TPlan) => TPlan) => {
+    setItems((current) => updateStagedUploadPlan(current, id, update));
+  }, []);
+
+  const updatePlans = useCallback((update: (plan: TPlan) => TPlan) => {
+    setItems((current) => updateStagedUploadPlans(current, update));
+  }, []);
+
   const remove = useCallback((id: string) => {
     removedRef.current.add(id);
     setItems((current) => removeStagedUpload(current, id));
@@ -207,6 +229,8 @@ export function useLabsStagedUploads<TPlan>({
     stageBatch,
     saveFiles,
     saveBatch,
+    updatePlan,
+    updatePlans,
     remove,
     clear,
     awaitingConfirm,
