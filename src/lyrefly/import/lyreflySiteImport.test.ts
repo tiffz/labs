@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { lyreflyDb } from '../db/lyreflyDb';
-import { deleteLyreflyProject, saveLyreflyProject } from '../db/lyreflyProjectMutations';
+import { createPageNode, deleteLyreflyProject, saveLyreflyProject } from '../db/lyreflyProjectMutations';
 import { createBlankComicProject } from '../types';
 import { readComicsYamlPages, readSiteCatalog, type SiteCatalog } from './lyreflySiteCatalog';
 import { applyLyreflySiteImport, planLyreflySiteImport, scriptHtmlFromAltText } from './lyreflySiteImport';
@@ -123,17 +123,36 @@ describe('importing tiffatiel.com', () => {
     expect(await lyreflyDb.projects.get(wedding.id)).toBeUndefined();
   });
 
-  it('links a comic made by hand with the same title instead of duplicating it, and leaves its art alone', async () => {
+  it('links an empty comic made by hand with the same title, and gives it the site pages', async () => {
     const mine = createBlankComicProject();
     mine.title = 'the perfect wedding';
+    mine.brainstormHtml = '<p>My own note.</p>';
     await saveLyreflyProject(mine);
 
     const { result } = await importSite(tiffatielCatalog());
     expect(result).toEqual({ created: 4, updated: 0, linked: 1, skippedDeleted: 0 });
     const linked = await lyreflyDb.projects.get(mine.id);
     expect(linked?.importKey).toBe('tiffatiel.com:perfect-wedding');
-    expect(linked?.layoutOrder).toEqual([]);
+    expect(linked?.layoutOrder).toHaveLength(18);
+    expect(linked?.status).toBe('finished');
+    // What you wrote stays; only blanks are filled.
+    expect(linked?.brainstormHtml).toBe('<p>My own note.</p>');
+    expect(linked?.title).toBe('the perfect wedding');
     expect((await lyreflyDb.archives.get(linked!.archiveId!))?.publishLog).toHaveLength(7);
+  });
+
+  it('leaves the art alone on a comic that has any page of its own', async () => {
+    const mine = createBlankComicProject();
+    mine.title = 'The Perfect Wedding';
+    await saveLyreflyProject(mine);
+    await createPageNode((await lyreflyDb.projects.get(mine.id))!, 'My sketch');
+
+    await importSite(tiffatielCatalog());
+    const linked = await lyreflyDb.projects.get(mine.id);
+    expect(await lyreflyDb.pageNodes.where('projectId').equals(mine.id).count()).toBe(1);
+    expect(linked?.layoutOrder).toHaveLength(1);
+    expect(linked?.status).not.toBe('finished');
+    expect(linked?.importKey).toBe('tiffatiel.com:perfect-wedding');
   });
 
   it('running it again keeps a series you deliberately removed', async () => {
