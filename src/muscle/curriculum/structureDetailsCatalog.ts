@@ -463,6 +463,16 @@ export const STRUCTURE_DETAILS_BY_ID: Record<string, StructureDetails> = {
     latinName: 'Musculus supraspinatus',
     wikipediaUrl: 'https://en.wikipedia.org/wiki/Supraspinatus_muscle',
   },
+  muscle_teres_minor: {
+    definition: 'Small rotator cuff strap from the lateral border of the scapula to the greater tubercle, just above teres major; externally rotates the arm.',
+    latinName: 'Musculus teres minor',
+    wikipediaUrl: 'https://en.wikipedia.org/wiki/Teres_minor_muscle',
+  },
+  muscle_subscapularis: {
+    definition: 'Rotator cuff on the front of the scapula, between it and the ribs, to the lesser tubercle; internally rotates the arm. Hidden except deep in the armpit.',
+    latinName: 'Musculus subscapularis',
+    wikipediaUrl: 'https://en.wikipedia.org/wiki/Subscapularis_muscle',
+  },
 };
 
 export const ATLAS_REFERENCE_DETAILS: StructureDetails = {

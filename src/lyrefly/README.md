@@ -26,6 +26,29 @@ matches Draw via `resolveLyreflyPrintSpec`; mockups persist per page in `pageMoc
 Inline idea capture (notes, flashes, links, art, files) that promotes into a comic project.
 Bulk import past flashes from Markdown or JSONL — see [`SKETCHBOOK_IMPORT.md`](SKETCHBOOK_IMPORT.md).
 
+Seeds sync in the gallery envelope (`progress.json` → `sketchbook`); their images and files upload
+to `Lyrefly/sketchbook/` before the envelope is written (`drive/lyreflySketchbookSync.ts`). A delete
+leaves a small marker row (`deletedAt`, status archived, content cleared) that syncs like an edit, so
+the newer of a delete and an edit wins. Before this, seeds never left the browser they were made in.
+
+## Collections
+
+**Sketchbook → Collections** (`#/collections`, `#/collections/:id`): named sets of finished pieces
+(daily strips, zine photos, old webcomic pages). Raw material, not projects. Ongoing collections
+show first; archived ones collapse under **Archived** but stay searchable.
+
+- **Add from Drive:** paste a folder link. Images are added in number order (`2.png` before
+  `10.png`). Files you own are referenced in place (ADR 0029); a file someone else owns is copied to
+  `Lyrefly/collections/` first. Adding the same folder again adds only what is new.
+- **Lyrefly never edits, moves or trashes a piece's Drive file.** Deleting a piece or a collection
+  removes Lyrefly's record only (`lyreflyCollections.test.ts` asserts no Drive write happens).
+- **Make a comic:** select pieces (badges show the order picked), then **Make a comic**. Each image
+  is copied in as a page, in that order, so the comic can be redrawn without touching the original.
+  Pieces remember which comics they went into (`usedInProjectIds`).
+- Sync: collections and pieces ride in the gallery envelope (`collections`), merged through
+  policy maps; deletes are marker rows (`drive/lyreflyCollectionsSync.ts`). Thumbnails are fetched
+  from Drive on view and cached per device (`pieceThumbs`, never synced).
+
 ## Pen names, series and accounts
 
 Four kinds of thing, flat and linked rather than nested (rationale:

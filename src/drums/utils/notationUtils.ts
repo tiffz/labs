@@ -1,4 +1,5 @@
 
+import { measureLayoutOf } from '../../shared/rhythm/rhythmParser';
 import type { ParsedRhythm } from '../../shared/rhythm/types';
 import type { DrumSound, TimeSignature, RepeatMarker } from '../types';
 import { parsePatternToNotes } from './notationHelpers';
@@ -78,33 +79,18 @@ export function expandSimileMeasure(notation: string, measureIndex: number, pars
   // 1. Check for Repeat Group membership using parsed metadata
   let repeatGroup: RepeatMarker | null = null;
   if (parsed.repeats) {
+    const hidden = measureLayoutOf(parsed)[measureIndex];
     for (const rep of parsed.repeats) {
       if (rep.type === 'measure' && rep.repeatMeasures.includes(measureIndex)) {
         repeatGroup = rep;
         break;
       }
-      // NEW Case C: Section Repeat
-      if (rep.type === 'section') {
-        // Check if measureIndex is within the logical range of this section repeat
-        // BUT excludes the source iteration (startMeasure to endMeasure)
-        // The repeat covers: [startMeasure ... endMeasure] + (Count)*Length
-        // We need to know if this specific index is a Ghost.
-
-        const len = rep.endMeasure - rep.startMeasure + 1;
-        const relativeIdx = measureIndex - rep.startMeasure;
-
-        // FIX Phase 36: Correct Ghost Detection Range (Total Count Alignment)
-        // Ghosts start AFTER the source block. Source block length is 'len'.
-        // repeatCount is Total Instances. So Ghosts = repeatCount - 1.
-        // Ghosts range from [len ... len + totalScoped - 1] (relative to startMeasure)
-        const ghostInstanceCount = rep.repeatCount - 1;
-        const totalScoped = len * ghostInstanceCount;
-
-        if (relativeIdx >= len && relativeIdx < len + totalScoped) {
-          // It belongs to this section block and is a ghost.
-          repeatGroup = rep;
-          break;
-        }
+      // Case C: a hidden pass of a section repeat. The measure layout says which measures are
+      // hidden and which written measure each one plays; this used to redo that arithmetic.
+      if (rep.type === 'section' && hidden?.isHidden
+        && hidden.drawnIndex >= rep.startMeasure && hidden.drawnIndex <= rep.endMeasure) {
+        repeatGroup = rep;
+        break;
       }
     }
   }

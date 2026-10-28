@@ -48,6 +48,8 @@ test.describe('Lyrefly gallery', () => {
   // to resize their grid column and slide the stepper up to 33px sideways on every click.
   for (const viewport of [
     { width: 1440, height: 900 },
+    // Between md and lg the title column used to collapse to 0px and the comic's name vanished.
+    { width: 1024, height: 768 },
     { width: 390, height: 844 },
   ]) {
     test(`workbench header holds still across stages at ${viewport.width}px`, async ({ page }) => {
@@ -62,6 +64,9 @@ test.describe('Lyrefly gallery', () => {
         const a = await actions.boundingBox();
         return [s?.x, s?.y, s?.width, a?.x, a?.width].map((n) => Math.round(n ?? NaN));
       };
+
+      const title = page.getByRole('textbox', { name: 'Comic title' });
+      expect((await title.boundingBox())?.width ?? 0, 'comic title width').toBeGreaterThan(100);
 
       const stages = ['Brainstorm', 'Script', 'Thumbs', 'Draw', 'Publish'];
       await stepper.getByRole('button', { name: stages[0] }).click();
@@ -103,6 +108,26 @@ test.describe('Lyrefly gallery', () => {
     await page.getByRole('button', { name: 'Your comics', exact: true }).click();
     await expect(page.getByRole('button', { name: /Open Fighting/i })).toBeVisible();
     await expect(page.getByRole('button', { name: /Open 600 Million Steps/i })).toBeVisible();
+  });
+
+  test('makes, renames and archives a collection from the Sketchbook', async ({ page }) => {
+    await page.getByTestId('lyrefly-sketchbook-tab').click();
+    await page.getByTestId('lyrefly-sketchbook-mode-switch').getByRole('button', { name: 'Collections' }).click();
+    await expect(page.getByTestId('lyrefly-collections')).toBeVisible();
+    await page.getByRole('button', { name: 'New collection' }).click();
+
+    await expect(page.getByTestId('lyrefly-collection')).toBeVisible();
+    // An empty collection opens straight onto adding pieces.
+    await expect(page.getByTestId('lyrefly-collection-add')).toBeVisible();
+    const title = page.getByRole('textbox', { name: 'Collection title' });
+    await title.fill('Daily comics');
+    await title.blur();
+    await page.getByRole('button', { name: 'Archive' }).click();
+    await page.getByRole('button', { name: 'All collections' }).click();
+
+    await expect(page.getByText('No collections yet.', { exact: false })).toBeVisible();
+    await page.getByRole('button', { name: 'Archived (1)' }).click();
+    await expect(page.getByRole('button', { name: /Daily comics/ })).toBeVisible();
   });
 
   test('uses riso cube theme on app root', async ({ page }) => {

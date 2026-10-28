@@ -714,7 +714,9 @@
 
 .lyrefly-workbench__nav-bar {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(22rem, 42rem) auto;
+  /* The title keeps a floor: without it the stepper took its max first and the actions the rest,
+     and at ~1000px wide the title column (and the comic's name) collapsed to 0px. */
+  grid-template-columns: minmax(8rem, 1fr) minmax(22rem, 42rem) auto;
   gap: 1rem 1.75rem;
   align-items: center;
   width: 100%;
@@ -744,7 +746,8 @@
   white-space: nowrap;
 }
 
-@media (max-width: 899px) {
+/* Title, stepper and actions only fit on one row from lg (1200px); below that, two rows. */
+@media (max-width: 1199px) {
   .lyrefly-workbench__nav-bar {
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-rows: auto auto;
@@ -4976,4 +4979,223 @@
   white-space: nowrap;
   font-size: 0.75rem;
   color: var(--lyrefly-muted);
+}
+
+/* —— Collections (finished pieces; under the Sketchbook) —— */
+
+.lyrefly-collections__masthead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.lyrefly-collections__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.lyrefly-collections__search {
+  flex: 1 1 14rem;
+  max-width: 24rem;
+}
+
+.lyrefly-collections__empty,
+.lyrefly-collections__count {
+  margin: 0 0 1rem;
+  color: var(--lyrefly-muted);
+  font-size: 0.875rem;
+}
+
+.lyrefly-collections__grid {
+  list-style: none;
+  margin: 0 0 1.5rem;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+  gap: 1rem;
+}
+
+.lyrefly-collection-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 0.6rem;
+  border: 1px solid var(--lyrefly-border);
+  border-radius: var(--lyrefly-radius);
+  background: var(--lyrefly-paper);
+  font: inherit;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+}
+
+.lyrefly-collection-card:focus-visible,
+.lyrefly-piece:focus-visible {
+  outline: 2px solid var(--lyrefly-accent);
+  outline-offset: 2px;
+}
+
+.lyrefly-collection-card--archived {
+  opacity: 0.7;
+}
+
+.lyrefly-collection-card__strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 3px;
+  aspect-ratio: 4 / 1.4;
+  overflow: hidden;
+}
+
+.lyrefly-collection-card__title {
+  font-weight: 600;
+}
+
+.lyrefly-collection-card__meta,
+.lyrefly-piece__meta {
+  font-size: 0.75rem;
+  color: var(--lyrefly-muted);
+}
+
+.lyrefly-collections__archived {
+  margin-top: 0.5rem;
+}
+
+.lyrefly-collection__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+/* Class doubled on purpose: MUI's input styles are injected unlayered at runtime and tie on a
+   single class, which left this title at body size (measured 15px). */
+.lyrefly-collection__title.lyrefly-collection__title {
+  font-family: var(--lyrefly-title-font);
+  font-size: clamp(1.375rem, 3vw, 1.75rem);
+  font-weight: var(--lyrefly-title-weight);
+  letter-spacing: -0.03em;
+  padding: 0;
+}
+
+.lyrefly-collection__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.lyrefly-collection__add {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: 36rem;
+  margin-bottom: 1.25rem;
+}
+
+.lyrefly-pieces {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 5rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+  gap: 0.75rem;
+}
+
+.lyrefly-piece {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+}
+
+.lyrefly-piece__thumb {
+  aspect-ratio: 3 / 4;
+  border: 1px solid var(--lyrefly-border);
+  border-radius: var(--lyrefly-radius);
+  background: var(--lyrefly-paper);
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+}
+
+.lyrefly-collection-card__strip .lyrefly-piece__thumb {
+  aspect-ratio: auto;
+  height: 100%;
+}
+
+.lyrefly-piece__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.lyrefly-piece__thumb-placeholder {
+  font-size: 0.6875rem;
+  color: var(--lyrefly-muted);
+}
+
+.lyrefly-piece--selected .lyrefly-piece__thumb {
+  outline: 3px solid var(--lyrefly-accent);
+  outline-offset: -3px;
+}
+
+.lyrefly-piece__badge {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.35rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  background: var(--lyrefly-accent);
+  color: var(--lyrefly-paper);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.lyrefly-piece__label {
+  font-size: 0.8125rem;
+}
+
+.lyrefly-selection-bar {
+  /* Fixed, not sticky: an ancestor's overflow broke sticky, and the bar sat 1,000px below the
+     fold on a phone. The piece grid keeps bottom padding so the bar never covers the last row. */
+  position: fixed;
+  left: 50%;
+  bottom: 1rem;
+  transform: translateX(-50%);
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: max-content;
+  max-width: calc(100vw - 2rem);
+  box-shadow: 0 2px 12px color-mix(in srgb, var(--lyrefly-ink) 12%, transparent);
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--lyrefly-border);
+  border-radius: var(--lyrefly-radius);
+  background: var(--lyrefly-paper);
+  font-size: 0.875rem;
+}
+
+/* The tiny card strip has no room for a "No preview" label; an empty frame says enough there. */
+.lyrefly-collection-card__strip .lyrefly-piece__thumb-placeholder {
+  display: none;
 }

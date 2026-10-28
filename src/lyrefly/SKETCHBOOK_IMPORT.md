@@ -40,3 +40,55 @@ One JSON object per line:
 
 PDF text isn't parsed in the browser. Export the PDF to plain text or Markdown first (most word
 processors and note apps offer this), then import that file.
+
+## Lyrefly bundles (comics and ideas together)
+
+To move a whole tracker in at once (a queue of comics with their stage, story notes, scripts and
+links, plus Sketchbook ideas), pick a `.json` **Lyrefly bundle** with **Import ideas**. A preview
+says what will be added before anything is written.
+
+```json
+{
+  "format": "lyrefly-bundle",
+  "version": 1,
+  "source": "My story tracker",
+  "comics": [
+    {
+      "key": "tracker:the-lantern",
+      "title": "The Lantern",
+      "pipelineStatus": "ready_to_draw",
+      "priorityRank": 1,
+      "brainstormHtml": "<p><strong>Setting</strong></p><p>A shore at low tide.</p>",
+      "scriptHtml": "<ul><li><p>Page 1</p><ul><li><p>Wide shot</p></li></ul></li></ul>",
+      "links": [
+        {
+          "title": "Lantern script",
+          "url": "https://docs.google.com/document/d/…"
+        }
+      ]
+    }
+  ],
+  "seeds": [
+    {
+      "key": "tracker:seed:kite",
+      "kind": "idea",
+      "title": "Kite",
+      "body": "Plain text.\n- Bullets are fine."
+    },
+    {
+      "key": "tracker:flash:rain",
+      "kind": "daily_flash",
+      "title": "Rain",
+      "occurredOn": "2025-10-07"
+    }
+  ]
+}
+```
+
+- `pipelineStatus` is `fleshing_out`, `ready_to_draw` or `complete`; lower `priorityRank` comes first
+  in the queue. "Ready to draw" marks Brainstorm and Script done.
+- A comic's `scriptHtml` is the Script stage's nested list: page, then panel, then content.
+- An idea's `body` is **plain text** (the Sketchbook shows tags literally; HTML is refused).
+- Every `key` must be unique and stable. Rows get ids derived from it, so importing the same file
+  again adds nothing, a comic you already have (same key, or same title) only has its gaps filled,
+  and an idea you deleted stays deleted. Your edits in Lyrefly are never overwritten.

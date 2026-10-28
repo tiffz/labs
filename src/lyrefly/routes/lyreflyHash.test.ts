@@ -15,6 +15,11 @@ describe('parseLyreflyHash', () => {
     expect(parseLyreflyHash('#/sketchbook')).toEqual({ kind: 'sketchbook' });
   });
 
+  it('parses collections and one collection', () => {
+    expect(parseLyreflyHash('#/collections')).toEqual({ kind: 'collections' });
+    expect(parseLyreflyHash('#/collections/abc-1')).toEqual({ kind: 'collections', collectionId: 'abc-1' });
+  });
+
   it('parses project with stage', () => {
     expect(parseLyreflyHash('#/project/abc/script')).toEqual({
       kind: 'project',

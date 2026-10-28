@@ -42,6 +42,7 @@ import {
 } from './constants';
 import type { LyreflySyncPayload } from './lyreflyDriveEnvelope';
 import { applyLyreflyProjectPackageToDb, buildLyreflyProjectPackageFromDb } from './lyreflyProjectPackageDb';
+import { downloadMissingLyreflySketchbookBlobs, uploadLyreflySketchbookBlobs } from './lyreflySketchbookSync';
 import {
   backfillLyreflyPackagePullsOnce,
   clearLyreflyPackagePullPending,
@@ -235,6 +236,14 @@ export async function uploadLyreflyProjectSidecars(
   _local: LyreflySyncPayload,
   onLabel: (label: string) => void,
 ): Promise<void> {
+  // Sketchbook files first: the envelope written after this names their Drive ids.
+  const sketchbookCache: FolderCache = new Map();
+  await uploadLyreflySketchbookBlobs(
+    accessToken,
+    (name) => resolveFolderPath(accessToken, sketchbookCache, appFolderId, [name]),
+    onLabel,
+  );
+
   const dirtyRows = await listLyreflyDirtyRows();
   const projectIds = new Set(
     dirtyRows.map((r) => r.projectId).filter((id): id is string => Boolean(id)),
@@ -429,6 +438,8 @@ export async function downloadMissingLyreflyProjectSidecars(
   merged: LyreflySyncPayload,
   onProgress: (label: string) => void,
 ): Promise<void> {
+  await downloadMissingLyreflySketchbookBlobs(accessToken, onProgress);
+
   const candidates = merged.projects.filter((p) => Boolean(p.projectFolderId));
   if (candidates.length === 0) return;
   backfillLyreflyPackagePullsOnce(candidates.map((p) => p.id));
@@ -460,5 +471,8 @@ export async function downloadMissingLyreflyProjectSidecars(
 
 /** `needsSidecarDownload` for {@link lyreflyPortfolioDriveBackupConfig} — synchronous by contract. */
 export function lyreflyNeedsSidecarDownload(merged: LyreflySyncPayload): boolean {
-  return merged.projects.some((p) => Boolean(p.projectFolderId));
+  return (
+    merged.projects.some((p) => Boolean(p.projectFolderId)) ||
+    (merged.sketchbook ?? []).some((s) => !s.deletedAt && Object.keys(s.blobDriveFileIds ?? {}).length > 0)
+  );
 }

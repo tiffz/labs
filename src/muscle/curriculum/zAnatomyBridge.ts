@@ -137,6 +137,8 @@ export const Z_ANATOMY_BRIDGE: readonly ZAnatomyBridgeEntry[] = [
   { zAnatomyName: "Teres major muscle.r", nodeId: "muscle_teres_major", region: "atlas_supplement" },
   { zAnatomyName: "Infraspinatus muscle.r", nodeId: "muscle_infraspinatus", region: "atlas_supplement" },
   { zAnatomyName: "Supraspinatus muscle.r", nodeId: "muscle_supraspinatus", region: "atlas_supplement" },
+  { zAnatomyName: "Teres minor muscle.r", nodeId: "muscle_teres_minor", region: "atlas_supplement" },
+  { zAnatomyName: "Subscapular muscle.r", nodeId: "muscle_subscapularis", region: "atlas_supplement" },
   { zAnatomyName: "Rhomboid major muscle.r", nodeId: "muscle_rhomboid_major", region: "atlas_supplement" },
   { zAnatomyName: "Splenius capitis muscle.r", nodeId: "muscle_splenius_capitis", region: "atlas_supplement" },
   { zAnatomyName: "Omohyoid muscle.r", nodeId: "muscle_omohyoid", region: "atlas_supplement" },

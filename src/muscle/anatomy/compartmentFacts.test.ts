@@ -33,6 +33,9 @@ const IN_FRONT_OF: Array<[front: string, back: string]> = [
   ['muscle_deltoid_anterior', 'muscle_deltoid_posterior'],
   ['muscle_pectoralis_major', 'muscle_latissimus_dorsi'],
   ['muscle_pectoralis_major', 'muscle_rhomboid_major'],
+  // Rotator cuff: subscapularis on the front of the scapula, the other three behind it.
+  ['muscle_subscapularis', 'muscle_infraspinatus'],
+  ['muscle_subscapularis', 'muscle_teres_minor'],
   // Thigh and leg.
   ['muscle_quadriceps_rectus_femoris', 'muscle_hamstrings_biceps_femoris'],
   ['muscle_vastus_medialis', 'muscle_semitendinosus'],

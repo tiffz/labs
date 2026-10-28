@@ -60,6 +60,8 @@ export const ARTIST_STUDY_MANIFEST: ArtistStudyEntry[] = [
   { id: 'muscle_infraspinatus', displayName: 'Infraspinatus', moduleId: 'shoulder_neck', studyGroupPath: ['Rotator cuff'], defaultVisible: true, quizEligible: true, prokoLessonRef: 'Shoulder Muscles' },
   { id: 'muscle_teres_major', displayName: 'Teres major', moduleId: 'shoulder_neck', studyGroupPath: [], defaultVisible: true, quizEligible: true, prokoLessonRef: 'Shoulder Muscles' },
   { id: 'muscle_supraspinatus', displayName: 'Supraspinatus', moduleId: 'shoulder_neck', studyGroupPath: ['Rotator cuff'], defaultVisible: true, quizEligible: true, prokoLessonRef: 'Shoulder Muscles' },
+  { id: 'muscle_teres_minor', displayName: 'Teres minor', moduleId: 'shoulder_neck', studyGroupPath: ['Rotator cuff'], defaultVisible: true, quizEligible: true, prokoLessonRef: 'Shoulder Muscles' },
+  { id: 'muscle_subscapularis', displayName: 'Subscapularis', moduleId: 'shoulder_neck', studyGroupPath: ['Rotator cuff'], defaultVisible: true, quizEligible: true, prokoLessonRef: 'Shoulder Muscles' },
   // Arm — individual muscles (forearm is a region, not a muscle group)
   { id: 'muscle_biceps_brachii', displayName: 'Biceps brachii', moduleId: 'arm', studyGroupPath: [], defaultVisible: true, quizEligible: true, prokoLessonRef: 'Arms', afsChapterTag: 'Arm and Hand in Motion' },
   { id: 'muscle_triceps_long_head', displayName: 'Triceps (long head)', moduleId: 'arm', studyGroupPath: ['Triceps brachii'], defaultVisible: true, quizEligible: true, prokoLessonRef: 'Triceps' },

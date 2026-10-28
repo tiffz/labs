@@ -824,11 +824,13 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
                 // Position dots to the LEFT of the "Nx" text (since text is right-aligned)
                 // textX is the right edge.
                 const dotSpacing = 7;
-                const totalDotsWidth = (sectionRepeatEnd.repeatCount - 1) * dotSpacing;
+                // One dot per pass; the gaps between them set the width.
+                const dotCount = sectionRepeatEnd.repeatCount;
+                const totalDotsWidth = (dotCount - 1) * dotSpacing;
                 // Start from textX and go left
                 const startDotX = textX - totalDotsWidth;
 
-                for (let i = 0; i < sectionRepeatEnd.repeatCount; i++) {
+                for (let i = 0; i < dotCount; i++) {
                   const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
                   dot.setAttribute('cx', String(startDotX + (i * dotSpacing)));
                   dot.setAttribute('cy', String(dotsY));
