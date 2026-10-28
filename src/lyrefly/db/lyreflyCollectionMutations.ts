@@ -11,7 +11,6 @@ import {
   driveCreateFolder,
   driveGetMediaBlob,
   driveListFiles,
-  driveResolveThumbnailLink,
   driveUploadFileResumable,
 } from '../../shared/drive/driveFetch';
 import { escapeDriveQueryLiteral } from '../../shared/drive/escapeDriveQueryLiteral';
@@ -19,6 +18,7 @@ import { executeDriveFileImport, planDriveFileImport } from '../../shared/drive/
 import { LABS_DRIVE_APP_FOLDER_LYREFLY } from '../../shared/drive/labsDrivePortfolioLayout';
 import { ensureLabsDrivePortfolioProgressLayout } from '../../shared/drive/labsDrivePortfolioLayout';
 import { parseDriveFolderIdFromUserInput } from '../../shared/drive/parseDriveFolderUrl';
+import { COMIC_PLATFORM_PRESETS, resizeImageBlobForPlatform } from '../../shared/zine/platformResize';
 import { lyreflyStableId } from '../import/lyreflyStableId';
 import { createBlankComicProject, createBlankScriptDocument } from '../types';
 import type { ComicProject, LyreflyCollection, LyreflyCollectionPiece } from '../types';
@@ -184,15 +184,18 @@ export async function addLyreflyPiecesFromDriveFolder(
   return result;
 }
 
-/** A small cached thumbnail, fetched once per device. Null when Drive offers none (try again later). */
+/** Pieces show in a grid a few hundred pixels wide; 480 stays sharp on a 2x screen. */
+const PIECE_THUMB_PRESET = { ...COMIC_PLATFORM_PRESETS.webtoon, maxWidthPx: 480, jpegQuality: 0.85 };
+
+/** A small cached thumbnail, made once per device. Null when the file is empty. */
 export async function loadLyreflyPieceThumb(piece: LyreflyCollectionPiece, accessToken: string): Promise<Blob | null> {
   const cached = await lyreflyDb.pieceThumbs.get(piece.driveFileId);
   if (cached?.blob && cached.blob.size > 0) return cached.blob;
-  const link = await driveResolveThumbnailLink(accessToken, piece.driveFileId);
-  if (!link) return null;
-  const res = await fetch(link.replace(/=s\d+$/, '=s480'), { headers: { Authorization: `Bearer ${accessToken}` } });
-  if (!res.ok) return null;
-  const blob = await res.blob();
+  // Drive's thumbnailLink host sends no CORS headers, so fetch() of it always fails. The Drive API
+  // does, so download the original and shrink it here.
+  const original = await driveGetMediaBlob(accessToken, piece.driveFileId);
+  if (original.size === 0) return null;
+  const blob = await resizeImageBlobForPlatform(original, PIECE_THUMB_PRESET);
   if (blob.size === 0) return null;
   await lyreflyDb.pieceThumbs.put({ driveFileId: piece.driveFileId, blob });
   return blob;
