@@ -6,8 +6,10 @@ import DialogTitle from '@mui/material/DialogTitle';
 import Typography from '@mui/material/Typography';
 import { useState, type ReactElement } from 'react';
 
+import { ensureLyreflyGoogleDriveAccess } from '../drive/lyreflyGoogleDriveAccess';
 import {
   applyLyreflyBundleImport,
+  bundlePiecesToUpload,
   type LyreflyBundlePlan,
   type LyreflyBundleResult,
 } from '../import/lyreflyBundleImport';
@@ -27,11 +29,13 @@ export function LyreflyBundleImportDialog({ plan, onClose }: LyreflyBundleImport
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<LyreflyBundleResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [progress, setProgress] = useState<string | null>(null);
 
   const close = (): void => {
     if (busy) return;
     setResult(null);
     setError(null);
+    setProgress(null);
     onClose();
   };
 
@@ -40,12 +44,20 @@ export function LyreflyBundleImportDialog({ plan, onClose }: LyreflyBundleImport
     setBusy(true);
     setError(null);
     try {
-      setResult(await applyLyreflyBundleImport(plan));
+      // Sign in first, while the click still counts as the user's: a popup opened later is blocked.
+      const token = toUpload > 0 ? await ensureLyreflyGoogleDriveAccess({ interactive: true }) : null;
+      setResult(
+        await applyLyreflyBundleImport(plan, {
+          getAccessToken: token ? async () => token : undefined,
+          onProgress: setProgress,
+        }),
+      );
     } catch (e) {
-      // Each comic writes in one transaction and every row is keyed, so a re-run finishes the rest.
+      // Every row is keyed and written as it lands, so a re-run finishes the rest.
       setError(e instanceof Error ? `${e.message} Import the file again to finish.` : 'Import stopped.');
     } finally {
       setBusy(false);
+      setProgress(null);
     }
   };
 
@@ -54,7 +66,19 @@ export function LyreflyBundleImportDialog({ plan, onClose }: LyreflyBundleImport
   const queued = plan?.comics.filter((c) => c.comic.pipelineStatus && c.comic.pipelineStatus !== 'complete').length ?? 0;
   const newIdeas = plan?.seeds.filter((s) => s.action === 'create').length ?? 0;
   const deletedIdeas = plan?.seeds.filter((s) => s.action === 'deleted').length ?? 0;
-  const nothingNew = created === 0 && newIdeas === 0 && existing === 0;
+  const toUpload = plan ? bundlePiecesToUpload(plan) : 0;
+  const collectionLines = (plan?.collections ?? []).flatMap(({ collection, action, pieces }) => {
+    if (action === 'deleted') return [`${collection.title}: you deleted it, left out`];
+    const adding = pieces.filter((p) => p.action === 'create').length;
+    const missing = pieces.filter((p) => p.action === 'missing').length;
+    if (adding === 0 && missing === 0) return [];
+    const where = collection.status === 'archived' ? ' (archived)' : '';
+    return [
+      `${collection.title}${where}: ${plural(adding, 'image')} to upload` +
+        (missing > 0 ? `, ${missing} not picked with the file` : ''),
+    ];
+  });
+  const nothingNew = created === 0 && newIdeas === 0 && existing === 0 && toUpload === 0;
 
   return (
     <Dialog open={Boolean(plan)} onClose={close} fullWidth maxWidth="xs" data-testid="lyrefly-bundle-dialog">
@@ -66,6 +90,7 @@ export function LyreflyBundleImportDialog({ plan, onClose }: LyreflyBundleImport
               result.comicsCreated ? `Added ${plural(result.comicsCreated, 'comic')}.` : '',
               result.comicsUpdated ? `Filled in ${plural(result.comicsUpdated, 'comic')} you already had.` : '',
               result.ideasAdded ? `Added ${plural(result.ideasAdded, 'idea')} to the Sketchbook.` : '',
+              result.piecesAdded ? `Added ${plural(result.piecesAdded, 'image')} to collections.` : '',
             ]
               .filter(Boolean)
               .join(' ') || 'Everything was already here.'}
@@ -81,9 +106,17 @@ export function LyreflyBundleImportDialog({ plan, onClose }: LyreflyBundleImport
             {existing > 0 ? <li>{plural(existing, 'comic')} you already have: gaps filled, your edits kept</li> : null}
             {newIdeas > 0 ? <li>{plural(newIdeas, 'idea')} for the Sketchbook</li> : null}
             {deletedIdeas > 0 ? <li>{plural(deletedIdeas, 'idea')} you deleted, left out</li> : null}
+            {collectionLines.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
             {nothingNew ? <li>Nothing new in this file.</li> : null}
           </ul>
         )}
+        {progress ? (
+          <p className="lyrefly-import__progress" role="status" data-testid="lyrefly-bundle-progress">
+            {progress}
+          </p>
+        ) : null}
         {error ? (
           <Typography className="lyrefly-import__error" role="alert" color="error" variant="body2">
             {error}

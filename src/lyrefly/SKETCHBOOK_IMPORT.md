@@ -92,3 +92,33 @@ says what will be added before anything is written.
 - Every `key` must be unique and stable. Rows get ids derived from it, so importing the same file
   again adds nothing, a comic you already have (same key, or same title) only has its gaps filled,
   and an idea you deleted stays deleted. Your edits in Lyrefly are never overwritten.
+
+### Collections of images
+
+A bundle can also carry `collections`: finished pieces, such as old strips or a run of daily zines.
+Each piece names an image file, and you pick those files **together with the bundle** (select the
+whole folder's contents in **Import ideas**). Old sources rarely let a browser read their images
+(Google Photos shared albums do not), so download them first and import from disk.
+
+```json
+"collections": [
+  {
+    "key": "archive:old-site",
+    "title": "Old Site",
+    "status": "archived",
+    "sourceUrl": "https://example.com/",
+    "pieces": [
+      { "key": "1", "file": "old-01.jpg", "title": "Sheep", "notes": "The caption.", "sourceUrl": "https://example.com/1" }
+    ]
+  }
+]
+```
+
+- `status` is `ongoing` or `archived`; archived collections stay searchable but fold out of the way.
+- Pieces keep the bundle's order. Each image uploads to Drive under `Lyrefly/collections/<title>/`,
+  so Import asks you to sign in to Drive first.
+- Re-importing uploads only what is missing: a piece whose file you did not pick is listed and
+  skipped, and a stopped import resumes where it stopped. A piece or collection you deleted stays
+  deleted.
+- `occurredOn` (YYYY-MM-DD) is the day you made the piece. Leave it out rather than guess: a
+  photo's capture date is when it was photographed, not drawn.

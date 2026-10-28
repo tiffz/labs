@@ -497,10 +497,10 @@ export function SketchbookTab({ onOpenProject }: SketchbookTabProps): ReactEleme
   };
 
   /** A Lyrefly bundle (comics and ideas). Its preview dialog is the review step (ADR 0030). */
-  const openBundleFile = async (file: File): Promise<void> => {
+  const openBundleFile = async (file: File, images: readonly File[]): Promise<void> => {
     setImportSummary(null);
     try {
-      setBundlePlan(await planLyreflyBundleImport(parseLyreflyBundle(JSON.parse(await file.text()))));
+      setBundlePlan(await planLyreflyBundleImport(parseLyreflyBundle(JSON.parse(await file.text())), images));
     } catch (e) {
       setImportSummary(e instanceof LyreflyBundleError ? e.message : `${file.name} is not a file Lyrefly can read.`);
     }
@@ -511,7 +511,7 @@ export function SketchbookTab({ onOpenProject }: SketchbookTabProps): ReactEleme
     event.target.value = '';
     const bundleFile = files.find((f) => /\.json$/i.test(f.name));
     if (bundleFile) {
-      void openBundleFile(bundleFile);
+      void openBundleFile(bundleFile, files.filter((f) => f !== bundleFile));
       return;
     }
     stageImportFiles(files);
@@ -547,7 +547,7 @@ export function SketchbookTab({ onOpenProject }: SketchbookTabProps): ReactEleme
         <input
           ref={importInputRef}
           type="file"
-          accept=".md,.txt,.jsonl,.json"
+          accept=".md,.txt,.jsonl,.json,image/*"
           multiple
           hidden
           onChange={onImportFileInput}

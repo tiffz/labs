@@ -12,6 +12,7 @@ import {
   driveGetMediaBlob,
   driveListFiles,
   driveResolveThumbnailLink,
+  driveUploadFileResumable,
 } from '../../shared/drive/driveFetch';
 import { escapeDriveQueryLiteral } from '../../shared/drive/escapeDriveQueryLiteral';
 import { executeDriveFileImport, planDriveFileImport } from '../../shared/drive/importDriveFile';
@@ -89,6 +90,20 @@ async function ensureCollectionsFolder(accessToken: string): Promise<string> {
   const q = `name='collections' and mimeType='application/vnd.google-apps.folder' and '${appFolderId}' in parents and trashed=false`;
   const existing = (await driveListFiles(accessToken, q)).files?.[0] as { id?: string } | undefined;
   return existing?.id ?? (await driveCreateFolder(accessToken, 'collections', appFolderId)).id;
+}
+
+/** `Lyrefly/collections/<title>/`: where imported images live, one folder per collection. */
+export async function ensureLyreflyCollectionFolder(collectionTitle: string, accessToken: string): Promise<string> {
+  const parent = await ensureCollectionsFolder(accessToken);
+  const name = collectionTitle.trim() || 'Untitled collection';
+  const q = `name='${escapeDriveQueryLiteral(name)}' and mimeType='application/vnd.google-apps.folder' and '${parent}' in parents and trashed=false`;
+  const existing = (await driveListFiles(accessToken, q)).files?.[0] as { id?: string } | undefined;
+  return existing?.id ?? (await driveCreateFolder(accessToken, name, parent)).id;
+}
+
+/** Upload one image into a collection folder. Returns the new Drive file id. */
+export async function uploadLyreflyPieceFile(file: File, folderId: string, accessToken: string): Promise<string> {
+  return (await driveUploadFileResumable(accessToken, file, [folderId], file.name)).id;
 }
 
 export type AddFromFolderResult = { added: number; alreadyHere: number; skipped: number };
