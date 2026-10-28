@@ -62,8 +62,8 @@ const FORWARDS = new Map([
   // Lyrefly: these hand files to a component that stages them.
   ['lyrefly/components/LyreflyArtEmptyUpload.tsx', 'passes picked, dropped and pasted pages to ArtStage'],
   ['lyrefly/components/BrainstormResourceDialog.tsx', 'holds the picked file, named, until "Add"'],
-  // Zine Box's LibraryView sends every pick and drop to its "Review import" dialog, which shows
-  // new vs duplicate PDFs before "Import N PDFs" (kept over the shared panel for the dedupe view).
+  // Zine Box's LibraryView sends every pick and drop to its "Review import" dialog, which stages the
+  // PDFs as one batch (useLabsStagedUploads) and shows new vs duplicate before "Import N PDFs".
   ['zinebox/components/ZineboxLibraryAddPanel.tsx', 'passes picked PDFs to the Review import dialog'],
   ['zinebox/hooks/useZineboxLibraryDrop.ts', 'passes dropped PDFs to the Review import dialog'],
 ]);

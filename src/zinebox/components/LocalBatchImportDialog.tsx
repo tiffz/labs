@@ -10,11 +10,38 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useLabsBlockingJobs } from '../../shared/jobs/LabsBlockingJobContext';
 import { reportBlockingJobItemProgress } from '../../shared/jobs/labsBlockingJobItemProgress';
+import { stagedSourceName, type LabsStagedUploadSource } from '../../shared/upload/stagedUploads';
+import { useLabsStagedUploads } from '../../shared/upload/useLabsStagedUploads';
 import { importLocalPdfFiles } from '../drive/importLocalPdfs';
 import type { LocalFilesScanResult } from '../drive/scanLocalFilesForImport';
 import { scanLocalFilesForImport } from '../drive/scanLocalFilesForImport';
 import type { ZineboxImportBatchMetadata } from '../drive/zineboxImportMetadata';
 import ZineboxTagsAutocomplete from './ZineboxTagsAutocomplete';
+
+const NO_PDFS = 'No PDF files were found. Try again with .pdf files.';
+
+/**
+ * The batch's check (ADR 0030): which PDFs are new and which are already in the library. Writes
+ * nothing; "Import" is the confirm.
+ */
+async function inspectLocalPdfBatch(source: LabsStagedUploadSource) {
+  const name = stagedSourceName(source);
+  if (source.kind !== 'batch') return { ok: false as const, name, message: NO_PDFS };
+  try {
+    const plan = await scanLocalFilesForImport(source.files);
+    if (plan.totalPdfCount === 0) return { ok: false as const, name, message: NO_PDFS };
+    return {
+      ok: true as const,
+      name,
+      mimeType: 'application/pdf',
+      sizeBytes: null,
+      outcome: `${plan.newCount} new`,
+      plan,
+    };
+  } catch (e) {
+    return { ok: false as const, name, message: e instanceof Error ? e.message : 'Could not scan those files.' };
+  }
+}
 
 type LocalBatchImportDialogProps = {
   open: boolean;
@@ -34,8 +61,12 @@ export default function LocalBatchImportDialog({
   onError,
 }: LocalBatchImportDialogProps): React.ReactElement {
   const { startBlockingJob } = useLabsBlockingJobs();
-  const [scan, setScan] = useState<LocalFilesScanResult | null>(null);
-  const [scanBusy, setScanBusy] = useState(false);
+  /* The picked PDFs stage as one batch: the review is about the batch, not each file. */
+  const staged = useLabsStagedUploads<LocalFilesScanResult>({ inspect: inspectLocalPdfBatch });
+  const { stageBatch, clear: clearStaged } = staged;
+  const batch = staged.items[0];
+  const scan = batch?.status === 'ready' ? batch.plan : null;
+  const scanBusy = batch?.status === 'checking';
   const [source, setSource] = useState('Local');
   const [tags, setTags] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
@@ -50,41 +81,24 @@ export default function LocalBatchImportDialog({
   );
 
   useEffect(() => {
+    clearStaged();
     if (!open) {
-      setScan(null);
-      setScanBusy(false);
       setSource('Local');
       setTags([]);
       setBusy(false);
       return;
     }
+    onErrorRef.current(null);
+    stageBatch('PDFs', files);
+  }, [files, filesKey, open, stageBatch, clearStaged]);
 
-    let cancelled = false;
-    const runScan = async () => {
-      setScanBusy(true);
-      onErrorRef.current(null);
-      try {
-        const result = await scanLocalFilesForImport(files);
-        if (cancelled) return;
-        if (result.totalPdfCount === 0) {
-          onErrorRef.current('No PDF files were found. Try again with .pdf files.');
-          onCloseRef.current();
-          return;
-        }
-        setScan(result);
-      } catch (e) {
-        if (cancelled) return;
-        onErrorRef.current(e instanceof Error ? e.message : 'Could not scan those files.');
-        onCloseRef.current();
-      } finally {
-        if (!cancelled) setScanBusy(false);
-      }
-    };
-    void runScan();
-    return () => {
-      cancelled = true;
-    };
-  }, [files, filesKey, open]);
+  /* A batch with nothing to import closes the dialog and says why, as it always has. */
+  const refusal = batch?.status === 'rejected' ? batch.message : null;
+  useEffect(() => {
+    if (!refusal) return;
+    onErrorRef.current(refusal);
+    onCloseRef.current();
+  }, [refusal]);
 
   const metadata: ZineboxImportBatchMetadata = useMemo(
     () => ({
@@ -104,20 +118,22 @@ export default function LocalBatchImportDialog({
 
     const job = startBlockingJob(`Importing ${newCount} PDF${newCount === 1 ? '' : 's'}…`);
     try {
-      const result = await importLocalPdfFiles(scan.files, metadata, {
-        skipDedup: true,
-        onProgress: (progress) => reportBlockingJobItemProgress(job, progress),
+      await staged.confirm(async () => {
+        const result = await importLocalPdfFiles(scan.files, metadata, {
+          skipDedup: true,
+          onProgress: (progress) => reportBlockingJobItemProgress(job, progress),
+        });
+        const skippedNote =
+          result.skipped > 0 ? ` Skipped ${result.skipped} already in your library.` : '';
+        onComplete(`Added ${result.imported} PDF${result.imported === 1 ? '' : 's'}.${skippedNote}`);
       });
-      const skippedNote =
-        result.skipped > 0 ? ` Skipped ${result.skipped} already in your library.` : '';
-      onComplete(`Added ${result.imported} PDF${result.imported === 1 ? '' : 's'}.${skippedNote}`);
     } catch (e) {
       onError(e instanceof Error ? e.message : 'Could not import those PDFs.');
     } finally {
       job.end();
       setBusy(false);
     }
-  }, [metadata, onClose, onComplete, onError, scan, startBlockingJob]);
+  }, [metadata, onClose, onComplete, onError, scan, staged, startBlockingJob]);
 
   const interactionDisabled = scanBusy || busy;
 
