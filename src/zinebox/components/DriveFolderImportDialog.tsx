@@ -166,11 +166,12 @@ export default function DriveFolderImportDialog({
 
     const folderName = scan.folderName;
     const newCount = scan.newCount;
-    onClose();
 
     const job = startBlockingJob(`Importing from ${folderName}…`);
     try {
       await staged.confirm(async () => {
+        // Close inside the commit: closing clears the staged folder, and confirm has it by now.
+        onClose();
         const result = await importScannedDriveFolderPdfs(token, scan, metadata, (message) => {
           const match = message.match(/(\d+) of (\d+)/);
           if (match) {

@@ -882,11 +882,14 @@ export function PerformanceEditorDialog(props: {
   const appendLocalVideoFiles = useCallback(
     (files: File[]) => {
       if (!googleAccessToken || files.length === 0) return;
-      setDriveLinkFeedback(null);
-      setPendingLinkVideo(null);
-      setVideoInput('');
       // The first usable clip names the performance: its venue and date fill the empty fields.
       const first = filterAcceptedPerformanceVideoFiles(files).find((file) => file.size > 0);
+      // A usable clip replaces a staged link. Files that can't be used leave the link alone.
+      if (first) {
+        setDriveLinkFeedback(null);
+        setPendingLinkVideo(null);
+        setVideoInput('');
+      }
       if (!metadataLocked && pendingLocalVideoFiles.length === 0 && first) {
         setDraft((d) => {
           const guessedVenue = suggestPerformanceVenueFromFile(venueList, first.name);

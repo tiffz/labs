@@ -5,8 +5,9 @@ import { stubEncoreSignedInDrive } from '../helpers/encoreDriveStub';
 
 /**
  * Bulk score and video imports run through the shared upload code (ADR 0030): when one file fails,
- * the rows that imported leave the table and the failed one is listed with the reason. Before, a
- * failure kept every row, so a retry imported the rows that had already imported a second time.
+ * the rows that imported leave the table, and the failed one stays, with its reason, for a retry
+ * that sends only it. Before, a failure kept every row, so a retry imported the rows that had
+ * already imported a second time.
  */
 async function addSong(page: Page, title: string) {
   await page.getByRole('button', { name: 'Add song' }).first().click();
@@ -19,12 +20,13 @@ async function addSong(page: Page, title: string) {
   await expect(page).toHaveURL(/#\/library/);
 }
 
-async function signedInWithTwoSongs(page: Page) {
+async function signedInWithTwoSongs(page: Page): Promise<{ drive: { uploads: string[] }; heal: () => void }> {
+  let failing = true;
   await seedZineboxE2eGoogleSession(page);
   const drive = await stubEncoreSignedInDrive(page, {});
   // Registered after the stub, so it answers first: the upload of the Blue Skies file fails.
   await page.route(/uploadType=resumable/, async (route) => {
-    if (route.request().postData()?.includes('Blue Skies')) {
+    if (failing && route.request().postData()?.includes('Blue Skies')) {
       return route.fulfill({ status: 403, headers: { 'Access-Control-Allow-Origin': '*' }, body: '' });
     }
     return route.fallback();
@@ -34,12 +36,12 @@ async function signedInWithTwoSongs(page: Page) {
   await expect(page.getByRole('heading', { name: /repertoire$/i })).toBeVisible({ timeout: 15_000 });
   await addSong(page, 'Moon River');
   await addSong(page, 'Blue Skies');
-  return drive;
+  return { drive, heal: () => (failing = false) };
 }
 
 test('a failed score stays listed with the reason; the imported one leaves', async ({ page }) => {
   test.setTimeout(90_000);
-  const drive = await signedInWithTwoSongs(page);
+  const { drive, heal } = await signedInWithTwoSongs(page);
   await page.getByRole('button', { name: 'Import', exact: true }).click();
   await page.getByRole('menuitem', { name: /Bulk import scores/ }).click();
   const dialog = page.getByRole('dialog', { name: /score/i });
@@ -54,12 +56,19 @@ test('a failed score stays listed with the reason; the imported one leaves', asy
   const failures = dialog.getByLabel('Files not imported');
   await expect(failures).toContainText('Blue Skies.pdf', { timeout: 15_000 });
   await expect(dialog.getByRole('cell', { name: /Moon River\.pdf/ })).toHaveCount(0);
+  await expect(dialog.getByRole('checkbox', { name: /Include Blue Skies\.pdf/ })).toBeChecked();
   expect(drive.uploads).toContain('Moon River.pdf');
+
+  // The retry sends only the row that failed, still paired to its song.
+  heal();
+  await dialog.getByRole('button', { name: 'Import 1 score' }).click();
+  await expect(dialog).toBeHidden({ timeout: 15_000 });
+  expect(drive.uploads.filter((name) => name === 'Moon River.pdf')).toHaveLength(1);
 });
 
 test('a failed video stays listed with the reason; the imported one leaves', async ({ page }) => {
   test.setTimeout(90_000);
-  const drive = await signedInWithTwoSongs(page);
+  const { drive, heal } = await signedInWithTwoSongs(page);
 
   await page.getByRole('button', { name: 'Import', exact: true }).click();
   await page.getByRole('menuitem', { name: /Bulk import videos/ }).click();
@@ -75,5 +84,12 @@ test('a failed video stays listed with the reason; the imported one leaves', asy
   const failures = dialog.getByLabel('Videos not imported');
   await expect(failures).toContainText('Blue Skies.mp4', { timeout: 15_000 });
   await expect(dialog.getByRole('cell', { name: /Moon River\.mp4/ })).toHaveCount(0);
+  await expect(dialog.getByRole('checkbox', { name: /Include Blue Skies\.mp4/ })).toBeChecked();
   expect(drive.uploads).toContain('Moon River.mp4');
+
+  // The retry sends only the row that failed, still paired to its song.
+  heal();
+  await dialog.getByRole('button', { name: 'Save 1 row' }).click();
+  await expect(dialog).toBeHidden({ timeout: 15_000 });
+  expect(drive.uploads.filter((name) => name === 'Moon River.mp4')).toHaveLength(1);
 });

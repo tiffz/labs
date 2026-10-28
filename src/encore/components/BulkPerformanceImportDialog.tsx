@@ -157,8 +157,8 @@ function BulkImportDriveThumbCell({
 function describePerfImportError(error: unknown): string {
   const text = error instanceof Error ? error.message : '';
   return /network|fetch|offline/i.test(text)
-    ? "Couldn't reach Google Drive. Check your connection and add the video again."
-    : "Couldn't import this video. Add it again to retry.";
+    ? "Couldn't reach Google Drive. Check your connection and save again."
+    : "Couldn't import this video. Save again to retry.";
 }
 
 function effectiveSong(r: BulkPerfRow, songs: EncoreSong[]) {
@@ -249,7 +249,7 @@ export function BulkPerformanceImportDialog(props: {
   /*
    * Every row is a staged upload (ADR 0030): a picked video stages as itself, and a Drive video the
    * folder scan found stages as a link to it. "Import" is the confirm. Rows it writes leave the
-   * table, and a row that fails is listed with the reason instead of being sent again.
+   * table; a row that fails stays, with its edits and the reason, and the next save retries it.
    */
   const scannedDriveRowsRef = useRef(new Map<string, BulkPerfRow>());
   const buildUploadRowRef = useRef<(file: File) => BulkPerfRow>(() => {
@@ -271,27 +271,16 @@ export function BulkPerformanceImportDialog(props: {
     if (!row) return { ok: false as const, name: stagedSourceName(source), message: "That file isn't a video." };
     return { ok: true as const, name: row.name, mimeType: null, sizeBytes: null, outcome: 'Links the video in your Drive', plan: row };
   }, []);
-  const staged = useLabsStagedUploads<BulkPerfRow>({ inspect: inspectPerfSource });
-  const { stageFiles, stageLink, updatePlan, clear: clearStaged } = staged;
-  const stagedItemsRef = useRef(staged.items);
-  useEffect(() => {
-    stagedItemsRef.current = staged.items;
-  });
+  const staged = useLabsStagedUploads<BulkPerfRow>({ inspect: inspectPerfSource, retryFailed: true });
+  const { stageFiles, stageLink, updatePlan, updatePlans: mapRows, clear: clearStaged } = staged;
   const rows = useMemo(() => readyStagedUploads(staged.items).map((item) => item.plan), [staged.items]);
-  /** Rows the last import could not write, with the reason. */
+  /** Rows the last import could not write, with the reason. They stay in the table for a retry. */
   const failedRows = useMemo(
-    () => staged.items.flatMap((item) => (item.status === 'rejected' ? [item] : [])),
+    () =>
+      readyStagedUploads(staged.items).flatMap((item) =>
+        item.error ? [{ id: item.id, name: item.name, message: item.error }] : [],
+      ),
     [staged.items],
-  );
-  /** The table edits rows as it always has; each edit lands on the staged plan that holds the row. */
-  const mapRows = useCallback(
-    (update: (row: BulkPerfRow) => BulkPerfRow) => {
-      for (const item of readyStagedUploads(stagedItemsRef.current)) {
-        const next = update(item.plan);
-        if (next !== item.plan) updatePlan(item.id, () => next);
-      }
-    },
-    [updatePlan],
   );
   /** Drop every row, scanned or picked. */
   const clearRows = useCallback(() => {
@@ -651,148 +640,148 @@ export function BulkPerformanceImportDialog(props: {
       let failedCount = 0;
       await withBlockingJob('Importing performances…', async (setBlockingProgress) => {
         await withBatch(async () => {
-        await staged.confirm(async (ready) => {
-        const totalRows = ready.length;
-        let rowStep = 0;
-        const now = new Date().toISOString();
-        const perf: EncorePerformance[] = [];
-        const failed: { id: string; message: string }[] = [];
-        for (const item of ready) {
-          const r = item.plan;
-          if (perfRowExcluded(r)) {
-            rowStep += 1;
-            setBlockingProgress(totalRows ? rowStep / totalRows : null);
-            continue;
-          }
-          try {
-          const folderMeta = parseEncoreFolderMetadata(r.parentPathHint ?? '');
-          let songId = r.guessedSongId;
-          /* A song made for this row is kept on the row, so a retry after a failure does not make it twice. */
-          const keepSong = (id: string) =>
-            updatePlan(item.id, (row) => ({ ...row, guessedSongId: id, newSongFromSpotify: undefined, newSongManual: undefined }));
-          if (r.newSongFromSpotify) {
-            const ns = r.newSongFromSpotify;
-            const song: EncoreSong = {
-              id: crypto.randomUUID(),
-              title: ns.title,
-              artist: ns.artist?.trim() || folderMeta.artist?.trim() || 'Unknown artist',
-              albumArtUrl: ns.albumArtUrl,
-              spotifyTrackId: ns.spotifyTrackId,
-              journalMarkdown: '',
-              createdAt: now,
-              updatedAt: now,
-              ...(folderMeta.performanceKey?.trim() ? { performanceKey: folderMeta.performanceKey.trim() } : {}),
-              ...(folderMeta.tags?.length ? { tags: folderMeta.tags } : {}),
-            };
-            // Seed milestones like every other create path; this one hand-rolls its literal to fold in
-        // folder-derived metadata and silently skipped the template.
-        await onSaveSong(applyTemplateProgressToSong(song, repertoireExtras.milestoneTemplate));
-            songId = song.id;
-            keepSong(song.id);
-          } else if (r.newSongManual) {
-            const song = encoreSongFromManualTitleArtist(
-              r.newSongManual.title,
-              r.newSongManual.artist.trim() || folderMeta.artist?.trim() || '',
-              now,
-            );
-            const withFolder: EncoreSong = {
-              ...song,
-              ...(folderMeta.performanceKey?.trim() ? { performanceKey: folderMeta.performanceKey.trim() } : {}),
-              ...(folderMeta.tags?.length ? { tags: folderMeta.tags } : {}),
-            };
-            await onSaveSong(applyTemplateProgressToSong(withFolder, repertoireExtras.milestoneTemplate));
-            songId = withFolder.id;
-            keepSong(withFolder.id);
-          }
-          if (!songId && r.linkedPerformanceId) {
-            const prev = performances.find((p) => p.id === r.linkedPerformanceId);
-            songId = prev?.songId ?? '';
-          }
-          if (!songId) {
-            rowStep += 1;
-            setBlockingProgress(totalRows ? rowStep / totalRows : null);
-            continue;
-          }
+          await staged.confirm(async (ready) => {
+            const totalRows = ready.length;
+            let rowStep = 0;
+            const now = new Date().toISOString();
+            const perf: EncorePerformance[] = [];
+            const failed: { id: string; message: string }[] = [];
+            for (const item of ready) {
+              const r = item.plan;
+              if (perfRowExcluded(r)) {
+                rowStep += 1;
+                setBlockingProgress(totalRows ? rowStep / totalRows : null);
+                continue;
+              }
+              try {
+                const folderMeta = parseEncoreFolderMetadata(r.parentPathHint ?? '');
+                let songId = r.guessedSongId;
+                /* A song made for this row is kept on the row, so a retry after a failure does not make it twice. */
+                const keepSong = (id: string) =>
+                  updatePlan(item.id, (row) => ({ ...row, guessedSongId: id, newSongFromSpotify: undefined, newSongManual: undefined }));
+                if (r.newSongFromSpotify) {
+                  const ns = r.newSongFromSpotify;
+                  const song: EncoreSong = {
+                    id: crypto.randomUUID(),
+                    title: ns.title,
+                    artist: ns.artist?.trim() || folderMeta.artist?.trim() || 'Unknown artist',
+                    albumArtUrl: ns.albumArtUrl,
+                    spotifyTrackId: ns.spotifyTrackId,
+                    journalMarkdown: '',
+                    createdAt: now,
+                    updatedAt: now,
+                    ...(folderMeta.performanceKey?.trim() ? { performanceKey: folderMeta.performanceKey.trim() } : {}),
+                    ...(folderMeta.tags?.length ? { tags: folderMeta.tags } : {}),
+                  };
+                  // Seed milestones like every other create path; this one hand-rolls its literal to fold in
+              // folder-derived metadata and silently skipped the template.
+              await onSaveSong(applyTemplateProgressToSong(song, repertoireExtras.milestoneTemplate));
+                  songId = song.id;
+                  keepSong(song.id);
+                } else if (r.newSongManual) {
+                  const song = encoreSongFromManualTitleArtist(
+                    r.newSongManual.title,
+                    r.newSongManual.artist.trim() || folderMeta.artist?.trim() || '',
+                    now,
+                  );
+                  const withFolder: EncoreSong = {
+                    ...song,
+                    ...(folderMeta.performanceKey?.trim() ? { performanceKey: folderMeta.performanceKey.trim() } : {}),
+                    ...(folderMeta.tags?.length ? { tags: folderMeta.tags } : {}),
+                  };
+                  await onSaveSong(applyTemplateProgressToSong(withFolder, repertoireExtras.milestoneTemplate));
+                  songId = withFolder.id;
+                  keepSong(withFolder.id);
+                }
+                if (!songId && r.linkedPerformanceId) {
+                  const prev = performances.find((p) => p.id === r.linkedPerformanceId);
+                  songId = prev?.songId ?? '';
+                }
+                if (!songId) {
+                  rowStep += 1;
+                  setBlockingProgress(totalRows ? rowStep / totalRows : null);
+                  continue;
+                }
 
-          let videoFileId = r.driveFileId;
-          if (r.pendingUploadFile && googleAccessToken && performancesUploadFolderId) {
-            const perfIndexLabel = `${r.venue.trim() || r.name} · Video`;
-            const uploadedId = await uploadWithDuplicateCheck({
-              file: r.pendingUploadFile,
-              uploadNew: async () => {
-                const created = await driveUploadFileResumable(
-                  googleAccessToken,
-                  r.pendingUploadFile!,
-                  [performancesUploadFolderId],
-                );
-                await registerUploadedDriveFile(created.id, perfIndexLabel);
-                return created.id;
-              },
-              reuseExisting: async (id) => {
-                await registerUploadedDriveFile(id, perfIndexLabel);
-                return id;
-              },
-            });
-            if (!uploadedId) {
+                let videoFileId = r.driveFileId;
+                if (r.pendingUploadFile && googleAccessToken && performancesUploadFolderId) {
+                  const perfIndexLabel = `${r.venue.trim() || r.name} · Video`;
+                  const uploadedId = await uploadWithDuplicateCheck({
+                    file: r.pendingUploadFile,
+                    uploadNew: async () => {
+                      const created = await driveUploadFileResumable(
+                        googleAccessToken,
+                        r.pendingUploadFile!,
+                        [performancesUploadFolderId],
+                      );
+                      await registerUploadedDriveFile(created.id, perfIndexLabel);
+                      return created.id;
+                    },
+                    reuseExisting: async (id) => {
+                      await registerUploadedDriveFile(id, perfIndexLabel);
+                      return id;
+                    },
+                  });
+                  if (!uploadedId) {
+                    rowStep += 1;
+                    setBlockingProgress(totalRows ? rowStep / totalRows : null);
+                    continue;
+                  }
+                  videoFileId = uploadedId;
+                }
+
+                if (r.linkedPerformanceId) {
+                  const prev = performances.find((p) => p.id === r.linkedPerformanceId);
+                  if (!prev) {
+                    rowStep += 1;
+                    setBlockingProgress(totalRows ? rowStep / totalRows : null);
+                    continue;
+                  }
+                  const importLine = `Imported: ${r.name}`;
+                  const nextNotes = prev.notes?.includes(importLine)
+                    ? prev.notes
+                    : [prev.notes?.trim(), importLine].filter(Boolean).join('\n');
+                  perf.push({
+                    ...prev,
+                    songId,
+                    date: r.date,
+                    venueTag: r.venue.trim() || 'Venue',
+                    notes: nextNotes,
+                    videoTargetDriveFileId: videoFileId || prev.videoTargetDriveFileId,
+                    ...(r.folderAccompanimentTags?.length
+                      ? { accompanimentTags: r.folderAccompanimentTags }
+                      : {}),
+                    updatedAt: now,
+                  });
+                  rowStep += 1;
+                  setBlockingProgress(totalRows ? rowStep / totalRows : null);
+                  continue;
+                }
+
+                perf.push({
+                  id: crypto.randomUUID(),
+                  songId,
+                  date: r.date,
+                  venueTag: r.venue.trim() || 'Venue',
+                  videoTargetDriveFileId: videoFileId || undefined,
+                  externalVideoUrl: undefined,
+                  notes: `Imported: ${r.name}`,
+                  ...(r.folderAccompanimentTags?.length
+                    ? { accompanimentTags: r.folderAccompanimentTags }
+                    : {}),
+                  createdAt: now,
+                  updatedAt: now,
+                });
+              } catch (e) {
+                failed.push({ id: item.id, message: describePerfImportError(e) });
+              }
               rowStep += 1;
               setBlockingProgress(totalRows ? rowStep / totalRows : null);
-              continue;
             }
-            videoFileId = uploadedId;
-          }
-
-          if (r.linkedPerformanceId) {
-            const prev = performances.find((p) => p.id === r.linkedPerformanceId);
-            if (!prev) {
-              rowStep += 1;
-              setBlockingProgress(totalRows ? rowStep / totalRows : null);
-              continue;
-            }
-            const importLine = `Imported: ${r.name}`;
-            const nextNotes = prev.notes?.includes(importLine)
-              ? prev.notes
-              : [prev.notes?.trim(), importLine].filter(Boolean).join('\n');
-            perf.push({
-              ...prev,
-              songId,
-              date: r.date,
-              venueTag: r.venue.trim() || 'Venue',
-              notes: nextNotes,
-              videoTargetDriveFileId: videoFileId || prev.videoTargetDriveFileId,
-              ...(r.folderAccompanimentTags?.length
-                ? { accompanimentTags: r.folderAccompanimentTags }
-                : {}),
-              updatedAt: now,
-            });
-            rowStep += 1;
-            setBlockingProgress(totalRows ? rowStep / totalRows : null);
-            continue;
-          }
-
-          perf.push({
-            id: crypto.randomUUID(),
-            songId,
-            date: r.date,
-            venueTag: r.venue.trim() || 'Venue',
-            videoTargetDriveFileId: videoFileId || undefined,
-            externalVideoUrl: undefined,
-            notes: `Imported: ${r.name}`,
-            ...(r.folderAccompanimentTags?.length
-              ? { accompanimentTags: r.folderAccompanimentTags }
-              : {}),
-            createdAt: now,
-            updatedAt: now,
+            await onSavePerformances(perf);
+            failedCount = failed.length;
+            return { failed };
           });
-          } catch (e) {
-            failed.push({ id: item.id, message: describePerfImportError(e) });
-          }
-          rowStep += 1;
-          setBlockingProgress(totalRows ? rowStep / totalRows : null);
-        }
-        await onSavePerformances(perf);
-        failedCount = failed.length;
-        return { failed };
-        });
         });
       });
       if (failedCount === 0) handleClose();

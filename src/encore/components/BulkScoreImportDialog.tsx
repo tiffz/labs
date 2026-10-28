@@ -44,7 +44,7 @@ import { encoreAppHref, isModifiedOrNonPrimaryClick } from '../routes/encoreAppH
 import { parseEncoreFolderMetadata } from '../import/encoreFolderMetadata';
 import { parseScoreFilename, type ParsedScoreFilename } from '../import/parseScoreFilename';
 import { pickLibrarySongForScore } from '../import/pickLibrarySongForScore';
-import { readScoreFileMetadata } from '../import/readScoreFileMetadata';
+import { readScoreFileMetadata, type ScoreFileMetadata } from '../import/readScoreFileMetadata';
 import {
   bulkImportEffectiveSkip,
   bulkScoreDuplicateIdsInBatch,
@@ -107,8 +107,8 @@ export interface BulkScoreImportDialogProps {
 function describeScoreImportError(error: unknown): string {
   const text = error instanceof Error ? error.message : '';
   return /network|fetch|offline/i.test(text)
-    ? "Couldn't reach Google Drive. Check your connection and add the file again."
-    : "Couldn't import this file. Add it again to retry.";
+    ? "Couldn't reach Google Drive. Check your connection and import again."
+    : "Couldn't import this file. Import again to retry.";
 }
 
 function defaultRowFromParsed(parsed: ParsedScoreFilename): { applyKey: boolean } {
@@ -176,15 +176,20 @@ export function BulkScoreImportDialog(props: BulkScoreImportDialogProps): ReactE
   /*
    * Every row is a staged upload (ADR 0030): a picked file stages as itself, and a Drive file the
    * folder scan found stages as a link to it. "Import" is the confirm. Rows it writes leave the
-   * table, and a row that fails is listed with the reason instead of being sent again.
+   * table; a row that fails stays, with its edits and the reason, and the next import retries it.
    */
   const scannedDriveRowsRef = useRef(new Map<string, BulkScoreRow>());
+  /** Metadata read from a picked file, kept in case it arrives before the file's row is checked. */
+  const scoreMetaRef = useRef(new Map<File, ScoreFileMetadata>());
   const buildUploadRowRef = useRef<(file: File) => BulkScoreRow>(() => {
     throw new Error('not ready');
   });
+  const enrichScoreRowRef = useRef<(row: BulkScoreRow, meta: ScoreFileMetadata) => BulkScoreRow>((row) => row);
   const inspectScoreSource = useCallback(async (source: LabsStagedUploadSource) => {
     if (source.kind === 'file') {
-      const row = buildUploadRowRef.current(source.file);
+      const meta = scoreMetaRef.current.get(source.file);
+      const built = buildUploadRowRef.current(source.file);
+      const row = meta ? enrichScoreRowRef.current(built, meta) : built;
       return {
         ok: true as const,
         name: row.name,
@@ -198,16 +203,15 @@ export function BulkScoreImportDialog(props: BulkScoreImportDialogProps): ReactE
     if (!row) return { ok: false as const, name: stagedSourceName(source), message: "That file isn't a score." };
     return { ok: true as const, name: row.name, mimeType: null, sizeBytes: null, outcome: 'Links the file in your Drive', plan: row };
   }, []);
-  const staged = useLabsStagedUploads<BulkScoreRow>({ inspect: inspectScoreSource });
-  const { stageFiles, stageLink, updatePlan, clear: clearStaged } = staged;
-  const stagedItemsRef = useRef(staged.items);
-  useEffect(() => {
-    stagedItemsRef.current = staged.items;
-  });
+  const staged = useLabsStagedUploads<BulkScoreRow>({ inspect: inspectScoreSource, retryFailed: true });
+  const { stageFiles, stageLink, updatePlans, clear: clearStaged } = staged;
   const rows = useMemo(() => readyStagedUploads(staged.items).map((item) => item.plan), [staged.items]);
-  /** Rows the last import could not write, with the reason. */
+  /** Rows the last import could not write, with the reason. They stay in the table for a retry. */
   const failedRows = useMemo(
-    () => staged.items.flatMap((item) => (item.status === 'rejected' ? [item] : [])),
+    () =>
+      readyStagedUploads(staged.items).flatMap((item) =>
+        item.error ? [{ id: item.id, name: item.name, message: item.error }] : [],
+      ),
     [staged.items],
   );
   const [driveUploadLayout, setDriveUploadLayout] = useState<DriveUploadFolderLayout | null>(null);
@@ -225,6 +229,7 @@ export function BulkScoreImportDialog(props: BulkScoreImportDialogProps): ReactE
       setMsg(null);
       clearStaged();
       scannedDriveRowsRef.current.clear();
+      scoreMetaRef.current.clear();
       setBusy(false);
       setProgress(null);
       setPickerOpenForRowId(null);
@@ -282,12 +287,38 @@ export function BulkScoreImportDialog(props: BulkScoreImportDialogProps): ReactE
 
   /** Edit a row by its own id. Rows carry their id; the staged item that holds one has another. */
   const updateRowPlan = useCallback(
-    (rowId: string, update: (row: BulkScoreRow) => BulkScoreRow) => {
-      const item = readyStagedUploads(stagedItemsRef.current).find((i) => i.plan.id === rowId);
-      if (item) updatePlan(item.id, update);
-    },
-    [updatePlan],
+    (rowId: string, update: (row: BulkScoreRow) => BulkScoreRow) =>
+      updatePlans((row) => (row.id === rowId ? update(row) : row)),
+    [updatePlans],
   );
+
+  /* Supplement filename-derived fields from the file's own metadata. Never overwrites what the
+     filename parser produced: the filename is the more reliable source for MusicNotes/Tunescribers. */
+  const enrichScoreRow = useCallback(
+    (row: BulkScoreRow, meta: ScoreFileMetadata): BulkScoreRow => {
+      const parsed = row.parsed;
+      const enriched: ParsedScoreFilename = {
+        ...parsed,
+        title: parsed.title || meta.title || parsed.title,
+        artist: parsed.artist || meta.artist || parsed.artist,
+        key: parsed.key || meta.key || parsed.key,
+        base: parsed.base,
+        raw: parsed.raw,
+      };
+      /* Re-pair if title/artist enrichment changes the picture. */
+      const repick = pickLibrarySongForScore(songs, enriched);
+      return {
+        ...row,
+        parsed: enriched,
+        guessedSongId: row.guessedSongId || (repick?.id ?? ''),
+        applyKey: row.applyKey || Boolean(meta.key),
+      };
+    },
+    [songs],
+  );
+  useEffect(() => {
+    enrichScoreRowRef.current = enrichScoreRow;
+  }, [enrichScoreRow]);
 
   const buildRowFromDriveFile = useCallback(
     (f: { id?: string; name?: string; parentPathHint?: string; webViewLink?: string }): BulkScoreRow => {
@@ -326,38 +357,17 @@ export function BulkScoreImportDialog(props: BulkScoreImportDialogProps): ReactE
       setMsg(null);
       setStep('review');
       stageFiles(fresh);
-      /* Best-effort: read PDF / MusicXML metadata in the background and
-         supplement filename-derived fields when they're missing. We never
-         overwrite values the filename parser already produced — the
-         filename is a more reliable source for MusicNotes/Tunescribers. */
+      /* Best-effort: read PDF / MusicXML metadata in the background. The read can land before or
+         after the row is checked, so it is kept for the check and applied to a checked row. */
       for (const file of fresh) {
         void readScoreFileMetadata(file).then((meta) => {
           if (!meta || (!meta.title && !meta.artist && !meta.key)) return;
-          const item = readyStagedUploads(stagedItemsRef.current).find((i) => i.plan.file === file);
-          if (!item) return;
-          updateRowPlan(item.plan.id, (row) => {
-            const parsed = row.parsed;
-            const enriched: ParsedScoreFilename = {
-              ...parsed,
-              title: parsed.title || meta.title || parsed.title,
-              artist: parsed.artist || meta.artist || parsed.artist,
-              key: parsed.key || meta.key || parsed.key,
-              base: parsed.base,
-              raw: parsed.raw,
-            };
-            /* Re-pair if title/artist enrichment changes the picture. */
-            const repick = pickLibrarySongForScore(songs, enriched);
-            return {
-              ...row,
-              parsed: enriched,
-              guessedSongId: row.guessedSongId || (repick?.id ?? ''),
-              applyKey: row.applyKey || Boolean(meta.key),
-            };
-          });
+          scoreMetaRef.current.set(file, meta);
+          updatePlans((row) => (row.file === file ? enrichScoreRow(row, meta) : row));
         });
       }
     },
-    [rows, songs, stageFiles, updateRowPlan],
+    [rows, stageFiles, updatePlans, enrichScoreRow],
   );
 
   const scanFolder = useCallback(async () => {

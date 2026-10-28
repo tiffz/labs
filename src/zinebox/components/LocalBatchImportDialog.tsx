@@ -114,11 +114,12 @@ export default function LocalBatchImportDialog({
     setBusy(true);
     onError(null);
     const newCount = scan.newCount;
-    onClose();
 
     const job = startBlockingJob(`Importing ${newCount} PDF${newCount === 1 ? '' : 's'}…`);
     try {
       await staged.confirm(async () => {
+        // Close inside the commit: closing clears the staged batch, and confirm has it by now.
+        onClose();
         const result = await importLocalPdfFiles(scan.files, metadata, {
           skipDedup: true,
           onProgress: (progress) => reportBlockingJobItemProgress(job, progress),
