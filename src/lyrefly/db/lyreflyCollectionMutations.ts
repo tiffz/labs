@@ -19,7 +19,7 @@ import { executeDriveFileImport, planDriveFileImport } from '../../shared/drive/
 import { LABS_DRIVE_APP_FOLDER_LYREFLY } from '../../shared/drive/labsDrivePortfolioLayout';
 import { ensureLabsDrivePortfolioProgressLayout } from '../../shared/drive/labsDrivePortfolioLayout';
 import { parseDriveFolderIdFromUserInput } from '../../shared/drive/parseDriveFolderUrl';
-import { lyreflyStableId } from '../import/lyreflySiteImport';
+import { lyreflyStableId } from '../import/lyreflyStableId';
 import { createBlankComicProject, createBlankScriptDocument } from '../types';
 import type { ComicProject, LyreflyCollection, LyreflyCollectionPiece } from '../types';
 import { notifyLyreflyLocalChange } from './lyreflyChangeBus';

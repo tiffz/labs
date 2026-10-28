@@ -117,7 +117,7 @@ export interface ComicProject {
   /** Series this comic belongs to. Absent = never set; `null` = deliberately in no series. */
   seriesId?: string | null;
   /**
-   * Stable key for a comic brought in by the site importer (`tiffatiel.com:perfect-wedding`).
+   * Stable key for a comic brought in by an import (`tiffatiel.com:perfect-wedding`).
    * Derived ids hang off it, so re-running an import finds the comic instead of duplicating it.
    */
   importKey?: string;

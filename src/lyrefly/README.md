@@ -63,20 +63,6 @@ Four kinds of thing, flat and linked rather than nested (rationale:
 - `personaIds: []` and `seriesId: null` mean "deliberately none" and win a merge; absent means "never set".
 - Which account posted a publication is read from its URL (`utils/lyreflyAccountUrl.ts`), never stored.
 
-## Importing from a website
-
-**Accounts → Import from a website** (or the empty shelf) reads a Gatsby comics site's
-`page-data/…/page-data.json` in the browser (both owner sites send `access-control-allow-origin: *`).
-Two layouts are known: one YAML entry per comic (tiffatiel.com) and one folder per issue (slantofrain.com).
-See `import/lyreflySiteCatalog.ts` and `import/lyreflySiteImport.ts`.
-
-- Every row the import writes has an id derived from the comic's `importKey` (`host:slug`), so re-running it,
-  or running it on a second device, finds what is there instead of duplicating it.
-- A comic deleted after import keeps its tombstone on that same id and is not brought back.
-- A comic you made by hand with the same title is linked (credit, series, publications), its art left alone.
-- A site that only gives a year leaves `publishedAt` as `''` (unknown), shown as "Add date". Never a made-up day.
-- Slant of Rain's page alt text is a panel-by-panel script; the import turns it into `script.md`.
-
 ## Local storage
 
 Dexie database `lyrefly`: projects, page nodes, revisions, script documents, snapshots, archives.
