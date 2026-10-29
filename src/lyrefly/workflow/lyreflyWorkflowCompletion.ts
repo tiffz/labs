@@ -1,5 +1,6 @@
 import { isRichTextEmpty } from '../../shared/utils/richTextContent';
 import type { ComicArchiveBinder, ComicProject, ScriptDocument } from '../types';
+import { lyreflyScriptHasText } from './lyreflyWorkPhase';
 import type { LyreflyWorkflowStage } from './lyreflyWorkflowStages';
 import { LYREFLY_WORKFLOW_STAGES, workflowStageIndex } from './lyreflyWorkflowStages';
 
@@ -28,7 +29,7 @@ export function isWorkflowStageCompleteDirect(
     case 'brainstorm':
       return !isRichTextEmpty(project.brainstormHtml) || (ctx.visualDevCount ?? 0) > 0;
     case 'script':
-      return Boolean(ctx.script?.markdown && !isRichTextEmpty(ctx.script.markdown));
+      return lyreflyScriptHasText(ctx.script?.markdown);
     case 'art':
       return (ctx.revisionCount ?? 0) > 0 || (ctx.pageNodeCount ?? 0) > 0;
     case 'publish':

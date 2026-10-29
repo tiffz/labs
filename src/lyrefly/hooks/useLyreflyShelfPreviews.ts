@@ -3,7 +3,9 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { resolveDexieLiveQuery } from '../../shared/dexie/resolveDexieLiveQuery';
 import { lyreflyDb } from '../db/lyreflyDb';
 import type { ComicProject, PageNode, VisualDevAsset } from '../types';
+import { isLyreflyPackagePullPending } from '../drive/lyreflyPendingPackagePulls';
 import { inferredWorkflowStage } from '../workflow/lyreflyWorkflowCompletion';
+import { lyreflyWorkPhase, type LyreflyWorkPhase } from '../workflow/lyreflyWorkPhase';
 import type { LyreflyWorkflowStage } from '../workflow/lyreflyWorkflowStages';
 import { LYREFLY_WORKFLOW_STAGES } from '../workflow/lyreflyWorkflowStages';
 
@@ -14,6 +16,8 @@ export type LyreflyShelfPreview = {
   conceptAssetId?: string;
   workflowStage: LyreflyWorkflowStage;
   publishLogCount: number;
+  /** Where the work shows; null while its package is not on this device (ADR 0031). */
+  phase: LyreflyWorkPhase | null;
 };
 
 function isConceptPreviewAsset(asset: VisualDevAsset): boolean {
@@ -108,6 +112,13 @@ export function useLyreflyShelfPreviews(projects: ComicProject[]): {
         conceptAssetId: newestConceptByProject.get(project.id),
         workflowStage,
         publishLogCount: archive?.publishLog.length ?? 0,
+        phase: lyreflyWorkPhase(project, {
+          scriptMarkdown: script?.markdown,
+          pageNodeCount: projectNodes.length,
+          publishLogCount: archive?.publishLog.length ?? 0,
+          // A summary stub has no folder id and no script until its package arrives.
+          packageOnDevice: !isLyreflyPackagePullPending(project.id) && Boolean(project.projectFolderId || script),
+        }),
       });
     }
 

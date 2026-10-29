@@ -161,12 +161,17 @@ export async function createVisualDevAsset(
     url?: string;
     markdown?: string;
     driveFileId?: string;
+    /** Name and type of the Drive file `driveFileId` points at, when no `file` comes with it. */
+    fileName?: string;
+    mimeType?: string;
     file?: File;
+    /** A derived id, so the same asset made on two devices is one row (ADR 0031). */
+    id?: string;
   },
 ): Promise<VisualDevAsset> {
   const now = new Date().toISOString();
   const asset: VisualDevAsset = {
-    id: crypto.randomUUID(),
+    id: input.id ?? crypto.randomUUID(),
     projectId,
     kind: input.kind,
     title: input.title.trim() || 'Untitled',
@@ -175,6 +180,8 @@ export async function createVisualDevAsset(
     url: input.url,
     markdown: input.markdown,
     driveFileId: input.driveFileId,
+    fileName: input.fileName,
+    mimeType: input.mimeType,
     createdAt: now,
     updatedAt: now,
   };

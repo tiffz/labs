@@ -1,7 +1,6 @@
 import GridViewIcon from '@mui/icons-material/GridView';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import FormControlLabel from '@mui/material/FormControlLabel';
-import MenuItem from '@mui/material/MenuItem';
 import Switch from '@mui/material/Switch';
 import TextField from '@mui/material/TextField';
 import ToggleButton from '@mui/material/ToggleButton';
@@ -16,13 +15,13 @@ import { useLyreflyProjects } from '../hooks/useLyreflyProjects';
 import { useLyreflyShelfPreviews } from '../hooks/useLyreflyShelfPreviews';
 import { createBlankComicProject, createBlankScriptDocument, type ComicProject } from '../types';
 import { isLyreflyProjectArchived } from '../workflow/lyreflyProjectProgress';
-import { LYREFLY_WORKFLOW_STAGES } from '../workflow/lyreflyWorkflowStages';
 import {
   EMPTY_LYREFLY_SHELF_FILTERS,
   filterLyreflyShelfRows,
   readLyreflyShelfViewMode,
   sortLyreflyShelfRows,
   writeLyreflyShelfViewMode,
+  buildLyreflyShelfRows,
   type LyreflyShelfFilterState,
   type LyreflyShelfRow,
   type LyreflyShelfViewMode,
@@ -113,20 +112,7 @@ export function ShowcaseGallery({ onOpenProject, onOpenProfile }: ShowcaseGaller
     writeLyreflyShelfViewMode(viewMode);
   }, [viewMode]);
 
-  const rows: LyreflyShelfRow[] = useMemo(
-    () =>
-      projects.map((project) => {
-        const preview = previewByProject.get(project.id);
-        return {
-          project,
-          workflowStage: preview?.workflowStage ?? 'brainstorm',
-          publishLogCount: preview?.publishLogCount ?? 0,
-          coverRevisionId: preview?.coverRevisionId,
-          conceptAssetId: preview?.conceptAssetId,
-        };
-      }),
-    [projects, previewByProject],
-  );
+  const rows: LyreflyShelfRow[] = useMemo(() => buildLyreflyShelfRows(projects, previewByProject), [projects, previewByProject]);
 
   const filteredRows = useMemo(() => filterLyreflyShelfRows(rows, filters), [rows, filters]);
   const gridRows = useMemo(
@@ -136,6 +122,8 @@ export function ShowcaseGallery({ onOpenProject, onOpenProfile }: ShowcaseGaller
 
   const handleNewProject = async (): Promise<void> => {
     const project = createBlankComicProject();
+    // Made here on purpose, so it goes straight to the Workbench rather than the Sketchbook.
+    project.developingAt = project.createdAt;
     const script = createBlankScriptDocument(project.id);
     script.id = project.scriptDocumentId;
     await lyreflyDb.scriptDocuments.put(script);
@@ -170,7 +158,7 @@ export function ShowcaseGallery({ onOpenProject, onOpenProfile }: ShowcaseGaller
         <p className="lyrefly-studio__lede">
           {empty
             ? 'A quiet shelf for finished comics and brave works in progress.'
-            : `${projects.length} comic${projects.length === 1 ? '' : 's'} on your shelf.`}
+            : `${filteredRows.length} comic${filteredRows.length === 1 ? '' : 's'} on your shelf.`}
         </p>
       </header>
       {empty ? (
@@ -190,26 +178,22 @@ export function ShowcaseGallery({ onOpenProject, onOpenProfile }: ShowcaseGaller
               onChange={(event) => setFilters((prev) => ({ ...prev, query: event.target.value }))}
               className="lyrefly-shelf-toolbar__search"
             />
-            <TextField
-              select
-              size="small"
-              label="Stage"
-              value={filters.stage}
-              onChange={(event) =>
-                setFilters((prev) => ({
-                  ...prev,
-                  stage: event.target.value as LyreflyShelfFilterState['stage'],
-                }))
+            <FormControlLabel
+              className="lyrefly-shelf-toolbar__archived"
+              control={
+                <Switch
+                  size="small"
+                  checked={filters.showUnfinished}
+                  onChange={(event) =>
+                    setFilters((prev) => ({ ...prev, showUnfinished: event.target.checked }))
+                  }
+                  slotProps={{
+                    input: { 'aria-label': 'Show unfinished comics' }
+                  }}
+                />
               }
-              className="lyrefly-shelf-toolbar__select"
-            >
-              <MenuItem value="">All stages</MenuItem>
-              {LYREFLY_WORKFLOW_STAGES.map((step) => (
-                <MenuItem key={step.id} value={step.id}>
-                  {step.label}
-                </MenuItem>
-              ))}
-            </TextField>
+              label="Show unfinished"
+            />
             <FormControlLabel
               className="lyrefly-shelf-toolbar__archived"
               control={
@@ -249,7 +233,7 @@ export function ShowcaseGallery({ onOpenProject, onOpenProfile }: ShowcaseGaller
             </ToggleButtonGroup>
           </div>
 
-          {filteredRows.length === 0 ? (
+          {filteredRows.length === 0 && filters.query.trim() ? (
             <p className="lyrefly-shelf-empty-filter" data-testid="lyrefly-shelf-empty-filter">
               No comics match these filters.
             </p>

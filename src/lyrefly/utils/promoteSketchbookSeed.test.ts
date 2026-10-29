@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { putSketchbookSeed } from '../db/sketchbookMutations';
 import { lyreflyDb } from '../db/lyreflyDb';
 import type { SketchbookSeed } from '../types';
-import { promoteSketchbookSeed } from './promoteSketchbookSeed';
+import { LyreflyPromoteError, lyreflyWorkIdForSeed, promoteSketchbookSeed } from './promoteSketchbookSeed';
 
 describe('promoteSketchbookSeed', () => {
   beforeEach(async () => {
@@ -63,5 +63,49 @@ describe('promoteSketchbookSeed', () => {
     const promoted = await lyreflyDb.sketchbookSeeds.get(seed.id);
     expect(promoted?.status).toBe('promoted');
     expect(promoted?.promotedProjectId).toBe(project.id);
+  });
+
+  function bareSeed(patch: Partial<SketchbookSeed> = {}): SketchbookSeed {
+    const now = new Date().toISOString();
+    return { id: 'seed-1', kind: 'idea', title: 'Moon girl', tags: [], status: 'active', sortOrder: 1, createdAt: now, updatedAt: now, ...patch };
+  }
+
+  it('starts the comic on the Workbench', async () => {
+    const project = await promoteSketchbookSeed(bareSeed());
+    expect(project.developingAt).toBeTruthy();
+  });
+
+  // Two devices (or a retry) developing the same note must land on one comic, one script, one
+  // copy of each asset. Random ids made two of everything.
+  it('developing the same note twice makes one comic with one of each asset', async () => {
+    const seed = bareSeed({ url: 'https://example.com/ref' });
+    const first = await promoteSketchbookSeed(seed);
+    await promoteSketchbookSeed({ ...seed, status: 'active' });
+    expect(first.id).toBe(lyreflyWorkIdForSeed(seed.id));
+    expect(await lyreflyDb.projects.count()).toBe(1);
+    expect(await lyreflyDb.scriptDocuments.count()).toBe(1);
+    expect(await lyreflyDb.visualDevAssets.count()).toBe(1);
+  });
+
+  it('references a file the note already has on Drive instead of copying it', async () => {
+    const seed = bareSeed({
+      attachments: [{ id: 'art-1', kind: 'image', fileName: 'moon.png', mimeType: 'image/png', createdAt: '' }],
+      blobDriveFileIds: { 'art-1': 'drive-moon' },
+    });
+    const project = await promoteSketchbookSeed(seed);
+    const [asset] = await lyreflyDb.visualDevAssets.where('projectId').equals(project.id).toArray();
+    expect(asset).toMatchObject({ driveFileId: 'drive-moon', fileName: 'moon.png' });
+    expect(await lyreflyDb.visualDevBlobs.count()).toBe(0);
+  });
+
+  // The old code skipped the missing image and hid the note anyway.
+  it('refuses, writing nothing, when an attachment is neither here nor on Drive', async () => {
+    const seed = bareSeed({
+      attachments: [{ id: 'art-2', kind: 'image', fileName: 'lost.png', createdAt: '' }],
+    });
+    await lyreflyDb.sketchbookSeeds.put(seed);
+    await expect(promoteSketchbookSeed(seed)).rejects.toThrow(LyreflyPromoteError);
+    expect(await lyreflyDb.projects.count()).toBe(0);
+    expect((await lyreflyDb.sketchbookSeeds.get(seed.id))?.status).toBe('active');
   });
 });

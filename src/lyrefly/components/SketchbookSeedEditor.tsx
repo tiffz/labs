@@ -26,7 +26,7 @@ import {
   isSketchbookAttachableFile,
   isSketchbookImageFile,
 } from '../utils/sketchbookCaptureUtils';
-import { promoteSketchbookSeed } from '../utils/promoteSketchbookSeed';
+import { LyreflyPromoteError, promoteSketchbookSeed } from '../utils/promoteSketchbookSeed';
 import { useLabsStagedFileUploads } from '../../shared/upload/useLabsStagedFileUploads';
 
 const AUTOSAVE_MS = 450;
@@ -114,6 +114,7 @@ export function SketchbookSeedEditor({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const titleRef = useRef<HTMLInputElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
+  const [promoteError, setPromoteError] = useState<string | null>(null);
   const saveTimerRef = useRef<number | null>(null);
   const latestRef = useRef({ title, notes, localSeed });
 
@@ -221,6 +222,7 @@ export function SketchbookSeedEditor({
   };
 
   const onPromote = async (): Promise<void> => {
+    setPromoteError(null);
     setBusy(true);
     try {
       if (saveTimerRef.current != null) {
@@ -232,6 +234,9 @@ export function SketchbookSeedEditor({
       onChanged(null);
       onCollapse();
       onPromoted(project.id);
+    } catch (e) {
+      if (!(e instanceof LyreflyPromoteError)) throw e;
+      setPromoteError(e.message);
     } finally {
       setBusy(false);
     }
@@ -479,9 +484,14 @@ export function SketchbookSeedEditor({
           Close
         </Button>
         <Button size="small" variant="contained" disabled={busy} onClick={() => void onPromote()}>
-          Promote to comic
+          Start developing
         </Button>
       </div>
+      {promoteError ? (
+        <p className="lyrefly-sketchbook__promote-error" role="alert">
+          {promoteError}
+        </p>
+      ) : null}
       {deleteDialog}
     </div>
   );
