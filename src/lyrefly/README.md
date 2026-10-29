@@ -13,7 +13,12 @@ One function, `lyreflyWorkPhase` (`workflow/lyreflyWorkPhase.ts`), decides where
 - **Your comics** (`complete`): finished or published. "Show unfinished" shows the rest.
 
 A note stays a lightweight `SketchbookSeed` until it is developed; then it becomes a comic whose
-ids derive from the note, so two devices make the same one. No view reads `pipelineStatus`
+ids derive from the note, so two devices make the same one.
+
+**Merge** (comic header ⋯ → "Merge into another comic…", `db/lyreflyMergeWorks.ts`): the target
+gains the source's brainstorm notes, script and brainstorm assets (Drive files referenced, not
+copied); the source is archived with `mergedIntoId`, never deleted. Refused, writing nothing, when
+the source has pages or either script has not reached this device. No view reads `pipelineStatus`
 (`workflow/lyreflyWorkPhaseGuardrails.test.ts`).
 
 ## Script

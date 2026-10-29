@@ -208,6 +208,21 @@ test.describe('Lyrefly gallery', () => {
     await expect(page.getByTestId('lyrefly-board-script').getByRole('button', { name: /Open A moon girl/ })).toBeVisible();
   });
 
+  // ADR 0031: merging archives the merged-away comic with a pointer; it never deletes it.
+  test('merges a comic into another from the comic actions menu', async ({ page }) => {
+    await page.getByRole('button', { name: /New comic/i }).click();
+    await expect(page.getByTestId('lyrefly-project-workbench')).toBeVisible({ timeout: 15000 });
+    await page.getByRole('textbox', { name: 'Comic title' }).fill('A Far Away Moon');
+    await page.getByRole('button', { name: 'Comic actions' }).click();
+    await page.getByRole('menuitem', { name: 'Merge into another comic…' }).click();
+    const dialog = page.getByTestId('lyrefly-merge-dialog');
+    await dialog.getByLabel('Into').click();
+    await page.getByRole('option', { name: 'Midnight Courier' }).click();
+    await expect(dialog.getByTestId('lyrefly-merge-summary')).toContainText('archived, not deleted');
+    await dialog.getByRole('button', { name: 'Merge' }).click();
+    await expect(page.getByRole('textbox', { name: 'Comic title' })).toHaveValue('Midnight Courier');
+  });
+
   test('uses riso cube theme on app root', async ({ page }) => {
     await expect(page.getByTestId('lyrefly-app')).toHaveAttribute('data-lyrefly-theme', 'risocube');
     await expect(page.getByTestId('lyrefly-design-picker')).toHaveCount(0);
