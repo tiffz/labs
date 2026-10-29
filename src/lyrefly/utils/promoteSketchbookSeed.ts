@@ -1,3 +1,4 @@
+import { richTextPlainText } from '../../shared/utils/richTextContent';
 import { loadSketchbookBlob } from '../db/sketchbookMutations';
 import { lyreflyDb, markLyreflyDirtyRow } from '../db/lyreflyDb';
 import { createVisualDevAsset, saveLyreflyProject } from '../db/lyreflyProjectMutations';
@@ -32,8 +33,7 @@ export function lyreflyWorkIdForSeed(seedId: string): string {
 }
 
 function plainFirstLine(html: string | undefined): string | undefined {
-  const line = html?.split('\n')[0]?.replace(/<[^>]*>/g, '').trim();
-  return line || undefined;
+  return richTextPlainText(html?.split('\n')[0]) || undefined;
 }
 
 async function planFile(

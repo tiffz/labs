@@ -2,20 +2,17 @@ import AutoStoriesOutlinedIcon from '@mui/icons-material/AutoStoriesOutlined';
 import Button from '@mui/material/Button';
 import type { ReactElement } from 'react';
 
+import { richTextPlainText } from '../../shared/utils/richTextContent';
 import { saveLyreflyProject } from '../db/lyreflyProjectMutations';
 import { lyreflyProjectStageHref, navigateLyreflyHash } from '../routes/lyreflyHash';
 import type { ComicProject } from '../types';
-
-function excerpt(html: string | undefined): string {
-  return (html ?? '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-}
 
 /**
  * A comic still in brainstorming, shown in the Sketchbook beside loose notes (ADR 0031). It reads
  * and acts like a note: open it to keep brainstorming, or start developing it onto the Workbench.
  */
 export function LyreflyIdeaWorkCard({ project }: { project: ComicProject }): ReactElement {
-  const text = project.subtitle?.trim() || excerpt(project.brainstormHtml);
+  const text = project.subtitle?.trim() || richTextPlainText(project.brainstormHtml);
 
   const startDeveloping = async (): Promise<void> => {
     const now = new Date().toISOString();

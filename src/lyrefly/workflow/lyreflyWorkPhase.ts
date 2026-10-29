@@ -1,4 +1,4 @@
-import { isRichTextEmpty } from '../../shared/utils/richTextContent';
+import { isRichTextEmpty, richTextPlainText } from '../../shared/utils/richTextContent';
 import { DEFAULT_SCRIPT_HTML } from '../script/defaultScriptSample';
 import type { ComicProject } from '../types';
 
@@ -17,14 +17,7 @@ export type LyreflyWorkPhaseContext = {
   packageOnDevice: boolean;
 };
 
-function plainText(html: string): string {
-  return html
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-const SAMPLE_SCRIPT_TEXT = plainText(DEFAULT_SCRIPT_HTML);
+const SAMPLE_SCRIPT_TEXT = richTextPlainText(DEFAULT_SCRIPT_HTML);
 
 /**
  * True when the script holds words the owner wrote. New scripts start as the courier sample, and
@@ -32,7 +25,7 @@ const SAMPLE_SCRIPT_TEXT = plainText(DEFAULT_SCRIPT_HTML);
  */
 export function lyreflyScriptHasText(markdown: string | null | undefined): boolean {
   if (isRichTextEmpty(markdown ?? undefined)) return false;
-  return plainText(markdown!) !== SAMPLE_SCRIPT_TEXT;
+  return richTextPlainText(markdown!) !== SAMPLE_SCRIPT_TEXT;
 }
 
 export function lyreflyWorkPhase(project: ComicProject, ctx: LyreflyWorkPhaseContext): LyreflyWorkPhase | null {
