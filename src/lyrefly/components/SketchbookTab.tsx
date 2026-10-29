@@ -48,6 +48,7 @@ import { useLyreflyShelfPreviews } from '../hooks/useLyreflyShelfPreviews';
 import { isLyreflyProjectArchived } from '../workflow/lyreflyProjectProgress';
 import { LyreflyBundleImportDialog } from './LyreflyBundleImportDialog';
 import { LyreflyCollectionStack } from './LyreflyCollectionsView';
+import { LyreflyEncoreSongsSection } from './LyreflyEncoreSongsSection';
 import { LyreflyIdeaWorkCard } from './LyreflyIdeaWorkCard';
 import { LyreflyDateChip } from './LyreflyDateChip';
 import { SketchbookSeedEditor } from './SketchbookSeedEditor';
@@ -710,6 +711,7 @@ export function SketchbookTab({ onOpenProject }: SketchbookTabProps): ReactEleme
           ) : null}
         </section>
       ) : null}
+      <LyreflyEncoreSongsSection projects={projects} />
       <LyreflyBundleImportDialog plan={bundlePlan} onClose={() => setBundlePlan(null)} />
     </section>
   );

@@ -5168,3 +5168,23 @@
   outline: 2px solid var(--lyrefly-accent);
   outline-offset: 2px;
 }
+
+.lyrefly-sketchbook__songs {
+  margin-top: 2rem;
+}
+
+.lyrefly-sketchbook__songs-title {
+  margin: 0 0 0.75rem;
+  font-family: var(--lyrefly-title-font);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--lyrefly-muted);
+}
+
+.lyrefly-sketchbook__songs-note {
+  margin: 2rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--lyrefly-muted);
+}

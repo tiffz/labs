@@ -18877,6 +18877,120 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-federation-encoreoriginalsreader-ts-encore-app-folder-name",
+    "name": "ENCORE_APP_FOLDER_NAME",
+    "path": "src/shared/federation/encoreOriginalsReader.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Read-only access to Encore's original songs on Drive, for apps other than Encore (ADR 0032). Encore owns the songs; a reader never creates, edits or trashes anything under `Encore_App`. This module imports only Drive *read* helpers, and a guardrail test holds it to that. Layout (Encore's own sync writes it, `src/encore/originals/drive/originalsSharded.ts`): My Drive/Encore_App/Originals/originals_manifest.json → { originals: { [songId]: { fileId, updatedAt } } } one JSON file per song, opened through the manifest's `fileId`, never by name",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-federation-encoreoriginalsreader-ts-encore-originals-folder-name",
+    "name": "ENCORE_ORIGINALS_FOLDER_NAME",
+    "path": "src/shared/federation/encoreOriginalsReader.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Read-only access to Encore's original songs on Drive, for apps other than Encore (ADR 0032). Encore owns the songs; a reader never creates, edits or trashes anything under `Encore_App`. This module imports only Drive *read* helpers, and a guardrail test holds it to that. Layout (Encore's own sync writes it, `src/encore/originals/drive/originalsSharded.ts`): My Drive/Encore_App/Originals/originals_manifest.json → { originals: { [songId]: { fileId, updatedAt } } } one JSON file per song, opened through the manifest's `fileId`, never by name",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-federation-encoreoriginalsreader-ts-encore-originals-manifest-name",
+    "name": "ENCORE_ORIGINALS_MANIFEST_NAME",
+    "path": "src/shared/federation/encoreOriginalsReader.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Read-only access to Encore's original songs on Drive, for apps other than Encore (ADR 0032). Encore owns the songs; a reader never creates, edits or trashes anything under `Encore_App`. This module imports only Drive *read* helpers, and a guardrail test holds it to that. Layout (Encore's own sync writes it, `src/encore/originals/drive/originalsSharded.ts`): My Drive/Encore_App/Originals/originals_manifest.json → { originals: { [songId]: { fileId, updatedAt } } } one JSON file per song, opened through the manifest's `fileId`, never by name",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-federation-encoreoriginalsreader-ts-encorelyricsplaintext",
+    "name": "encoreLyricsPlainText",
+    "path": "src/shared/federation/encoreOriginalsReader.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Lyrics without the ChordPro chords and directives, for quoting.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-federation-encoreoriginalsreader-ts-encoreoriginalsread",
+    "name": "EncoreOriginalsRead",
+    "path": "src/shared/federation/encoreOriginalsReader.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "`unavailable` means the songs could not be checked (no Encore folder yet, no manifest, a Drive error). It never comes back as an empty list, which would read as \"you have no songs\".",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-federation-encoreoriginalsreader-ts-encoreoriginalsummary",
+    "name": "EncoreOriginalSummary",
+    "path": "src/shared/federation/encoreOriginalsReader.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "The few song fields another app may rely on. Encore's round-trip test guards them.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-federation-encoreoriginalsreader-ts-parseencoreoriginalsong",
+    "name": "parseEncoreOriginalSong",
+    "path": "src/shared/federation/encoreOriginalsReader.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Parse one song file. Null when it is not a song this reader understands.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-federation-encoreoriginalsreader-ts-readencoreoriginals",
+    "name": "readEncoreOriginals",
+    "path": "src/shared/federation/encoreOriginalsReader.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Every original song in the owner's Encore, newest first. Fetches the manifest, then each song file whose version this tab has not read yet, a few at a time.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-google-encoregoogletokenstorage-ts-clearpersistedgoogleidentity",
     "name": "clearPersistedGoogleIdentity",
     "path": "src/shared/google/encoreGoogleTokenStorage.ts",

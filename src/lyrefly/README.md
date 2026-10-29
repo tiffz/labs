@@ -21,6 +21,11 @@ copied); the source is archived with `mergedIntoId`, never deleted. Refused, wri
 the source has pages or either script has not reached this device. No view reads `pipelineStatus`
 (`workflow/lyreflyWorkPhaseGuardrails.test.ts`).
 
+**Songs from Encore** (Sketchbook, [ADR 0032](../../docs/adr/0032-other-apps-read-encore-originals.md)):
+your Encore originals, read from Drive through `src/shared/federation/encoreOriginalsReader.ts`.
+"Start a comic" makes a comic idea with the lyrics quoted and a snapshot of the song in `sources`;
+the comic's id derives from the song, so a song starts one comic. Lyrefly never writes Encore data.
+
 ## Script
 
 Nested-bullet comic script (Google Docs style). See [`SCRIPT_FORMAT.md`](SCRIPT_FORMAT.md).
