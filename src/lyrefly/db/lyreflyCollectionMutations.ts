@@ -21,7 +21,8 @@ import { parseDriveFolderIdFromUserInput } from '../../shared/drive/parseDriveFo
 import { COMIC_PLATFORM_PRESETS, resizeImageBlobForPlatform } from '../../shared/zine/platformResize';
 import { lyreflyStableId } from '../import/lyreflyStableId';
 import { createBlankComicProject, createBlankScriptDocument } from '../types';
-import type { ComicProject, LyreflyCollection, LyreflyCollectionPiece } from '../types';
+import type { ComicProject, LyreflyCollection,
+  LyreflyCollectionMember, LyreflyCollectionPiece } from '../types';
 import { notifyLyreflyLocalChange } from './lyreflyChangeBus';
 import { lyreflyDb, markLyreflyDirtyRow } from './lyreflyDb';
 import { addPageRevisionFromFile, createPageNode, saveLyreflyProject } from './lyreflyProjectMutations';
@@ -69,6 +70,43 @@ export async function updateLyreflyPiece(
 export async function deleteLyreflyPiece(piece: LyreflyCollectionPiece): Promise<void> {
   const at = now();
   await lyreflyDb.collectionPieces.put({ ...piece, deletedAt: at, updatedAt: at });
+  notifyLyreflyLocalChange();
+}
+
+/** The member row for a work in a collection. Derived, so two devices adding it agree. */
+export function lyreflyCollectionMemberId(collectionId: string, kind: LyreflyCollectionMember['kind'], refId: string): string {
+  return lyreflyStableId(`member:${collectionId}:${kind}:${refId}`);
+}
+
+/** Put a note or a comic in a collection. Adding it again, even after removing it, is one row. */
+export async function addToLyreflyCollection(
+  collectionId: string,
+  kind: LyreflyCollectionMember['kind'],
+  refId: string,
+): Promise<void> {
+  const at = now();
+  const id = lyreflyCollectionMemberId(collectionId, kind, refId);
+  await lyreflyDb.transaction('rw', lyreflyDb.collectionMembers, async () => {
+    const existing = await lyreflyDb.collectionMembers.get(id);
+    if (existing && !existing.deletedAt) return;
+    const order = await lyreflyDb.collectionMembers.where('collectionId').equals(collectionId).count();
+    await lyreflyDb.collectionMembers.put({
+      id,
+      collectionId,
+      kind,
+      refId,
+      order,
+      createdAt: existing?.createdAt ?? at,
+      updatedAt: at,
+    });
+  });
+  notifyLyreflyLocalChange();
+}
+
+/** Take a work out of a collection. A marker row syncs the removal; the work itself is untouched. */
+export async function removeFromLyreflyCollection(member: LyreflyCollectionMember): Promise<void> {
+  const at = now();
+  await lyreflyDb.collectionMembers.put({ ...member, deletedAt: at, updatedAt: at });
   notifyLyreflyLocalChange();
 }
 

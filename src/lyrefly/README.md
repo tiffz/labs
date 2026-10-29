@@ -13,8 +13,18 @@ One function, `lyreflyWorkPhase` (`workflow/lyreflyWorkPhase.ts`), decides where
 - **Your comics** (`complete`): finished or published. "Show unfinished" shows the rest.
 
 A note stays a lightweight `SketchbookSeed` until it is developed; then it becomes a comic whose
-ids derive from the note, so two devices make the same one. No view reads `pipelineStatus`
+ids derive from the note, so two devices make the same one.
+
+**Merge** (comic header ⋯ → "Merge into another comic…", `db/lyreflyMergeWorks.ts`): the target
+gains the source's brainstorm notes, script and brainstorm assets (Drive files referenced, not
+copied); the source is archived with `mergedIntoId`, never deleted. Refused, writing nothing, when
+the source has pages or either script has not reached this device. No view reads `pipelineStatus`
 (`workflow/lyreflyWorkPhaseGuardrails.test.ts`).
+
+**Songs from Encore** (Sketchbook, [ADR 0032](../../docs/adr/0032-other-apps-read-encore-originals.md)):
+your Encore originals, read from Drive through `src/shared/federation/encoreOriginalsReader.ts`.
+"Start a comic" makes a comic idea with the lyrics quoted and a snapshot of the song in `sources`;
+the comic's id derives from the song, so a song starts one comic. Lyrefly never writes Encore data.
 
 ## Script
 
@@ -47,9 +57,15 @@ the newer of a delete and an edit wins. Before this, seeds never left the browse
 
 ## Collections
 
-**Sketchbook → Collections** (`#/collections`, `#/collections/:id`): named sets of finished pieces
-(daily strips, zine photos, old webcomic pages). Raw material, not projects. Ongoing collections
-show first; archived ones collapse under **Archived** but stay searchable.
+Collections (`#/collections/:id`) are named sets of finished pieces (daily strips, zine photos, old
+webcomic pages): raw material, not projects. They show as stacks in the Sketchbook grid, ahead of
+loose notes, rather than on a tab of their own; `#/collections` opens the Sketchbook. Archived
+collections collapse under **Archived collections**.
+
+Collections also hold notes and comics (`collectionMembers`, ADR 0031): comic header ⋯ → "Add to
+collection…". A work can be in many collections; member ids derive from collection and work, and a
+removal is a marker row. The collection page lists them above its pieces, and Your comics can filter
+by any collection that holds a comic.
 
 - **Add from Drive:** paste a folder link. Images are added in number order (`2.png` before
   `10.png`). Files you own are referenced in place (ADR 0029); a file someone else owns is copied to

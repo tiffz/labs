@@ -139,13 +139,14 @@ export default function App(): ReactElement {
         onBack={openGallery}
       />
     );
-  } else if (route.kind === 'collections') {
+  } else if (route.kind === 'collections' && route.collectionId) {
     mainContent = <LyreflyCollectionsView collectionId={route.collectionId} onOpenProject={openProject} />;
   } else if (route.kind === 'accounts') {
     mainContent = <LyreflyAccountsPage />;
   } else if (route.kind === 'workbench') {
     mainContent = <LyreflyWorkbenchBoard />;
-  } else if (route.kind === 'sketchbook') {
+  } else if (route.kind === 'sketchbook' || route.kind === 'collections') {
+    // Collections are stacks in the Sketchbook; `#/collections` alone opens it.
     mainContent = <SketchbookTab onOpenProject={openProject} />;
   } else {
     mainContent = <ShowcaseGallery onOpenProject={openProject} onOpenProfile={openProfile} />;

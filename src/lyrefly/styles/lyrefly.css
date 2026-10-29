@@ -4798,42 +4798,11 @@
 
 /* —— Collections (finished pieces; under the Sketchbook) —— */
 
-.lyrefly-collections__masthead {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 1.25rem;
-}
-
-.lyrefly-collections__toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 1.25rem;
-}
-
-.lyrefly-collections__search {
-  flex: 1 1 14rem;
-  max-width: 24rem;
-}
-
 .lyrefly-collections__empty,
 .lyrefly-collections__count {
   margin: 0 0 1rem;
   color: var(--lyrefly-muted);
   font-size: 0.875rem;
-}
-
-.lyrefly-collections__grid {
-  list-style: none;
-  margin: 0 0 1.5rem;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
-  gap: 1rem;
 }
 
 .lyrefly-collection-card {
@@ -4861,6 +4830,28 @@
   opacity: 0.7;
 }
 
+/* In the sketchbook grid a collection is a stack of notes: same card as a note, with the sheets
+   underneath showing at the edge. */
+.lyrefly-sketchbook__grid .lyrefly-collection-card {
+  height: 100%;
+  padding: 0.9rem 0.8rem 0.8rem;
+  border-color: color-mix(in srgb, var(--lyrefly-border) 70%, transparent);
+  border-radius: 0.75rem;
+  box-shadow:
+    4px 4px 0 -1px var(--lyrefly-paper),
+    4px 4px 0 0 color-mix(in srgb, var(--lyrefly-border) 70%, transparent),
+    8px 8px 0 -1px var(--lyrefly-paper),
+    8px 8px 0 0 color-mix(in srgb, var(--lyrefly-border) 50%, transparent);
+}
+
+.lyrefly-sketchbook__grid .lyrefly-collection-card:hover {
+  border-color: color-mix(
+    in srgb,
+    var(--lyrefly-ink) 22%,
+    var(--lyrefly-border)
+  );
+}
+
 .lyrefly-collection-card__strip {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -4877,10 +4868,6 @@
 .lyrefly-piece__meta {
   font-size: 0.75rem;
   color: var(--lyrefly-muted);
-}
-
-.lyrefly-collections__archived {
-  margin-top: 0.5rem;
 }
 
 .lyrefly-collection__head {
@@ -5129,4 +5116,75 @@
   margin: 0.5rem 0 0;
   font-size: 0.8125rem;
   color: var(--lyrefly-accent);
+}
+
+.lyrefly-sketchbook__archived {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.lyrefly-sketchbook__archived .lyrefly-sketchbook__grid {
+  align-self: stretch;
+}
+
+.lyrefly-collection-picker__new {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.lyrefly-collection__works {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 1.25rem;
+  padding: 0;
+  list-style: none;
+}
+
+.lyrefly-collection__work {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.25rem;
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--lyrefly-border);
+  border-radius: var(--lyrefly-radius);
+  background: var(--lyrefly-paper);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.lyrefly-collection__work:hover {
+  border-color: var(--lyrefly-border-strong);
+}
+
+.lyrefly-collection__work:focus-visible {
+  outline: 2px solid var(--lyrefly-accent);
+  outline-offset: 2px;
+}
+
+.lyrefly-sketchbook__songs {
+  margin-top: 2rem;
+}
+
+.lyrefly-sketchbook__songs-title {
+  margin: 0 0 0.75rem;
+  font-family: var(--lyrefly-title-font);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--lyrefly-muted);
+}
+
+.lyrefly-sketchbook__songs-note {
+  margin: 2rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--lyrefly-muted);
 }
