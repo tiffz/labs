@@ -1,5 +1,5 @@
 {
-  "total": 662,
+  "total": 661,
   "byRule": {
     "react-hooks/config": 0,
     "react-hooks/error-boundaries": 0,
@@ -9,8 +9,8 @@
     "react-hooks/incompatible-library": 0,
     "react-hooks/preserve-manual-memoization": 23,
     "react-hooks/purity": 7,
-    "react-hooks/refs": 419,
-    "react-hooks/set-state-in-effect": 187,
+    "react-hooks/refs": 420,
+    "react-hooks/set-state-in-effect": 185,
     "react-hooks/set-state-in-render": 0,
     "react-hooks/static-components": 9,
     "react-hooks/unsupported-syntax": 0,

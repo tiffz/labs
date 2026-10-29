@@ -26,7 +26,7 @@ import {
   collectImageFilesFromDataTransfer,
   collectFilesFromDataTransfer,
 } from '../utils/conceptShelfFileIntake';
-import { promoteSketchbookSeed } from '../utils/promoteSketchbookSeed';
+import { LyreflyPromoteError, promoteSketchbookSeed } from '../utils/promoteSketchbookSeed';
 import {
   inferSketchbookCaptureFromText,
   isSketchbookAttachableFile,
@@ -40,7 +40,11 @@ import {
   planLyreflyBundleImport,
   type LyreflyBundlePlan,
 } from '../import/lyreflyBundleImport';
+import { useLyreflyProjects } from '../hooks/useLyreflyProjects';
+import { useLyreflyShelfPreviews } from '../hooks/useLyreflyShelfPreviews';
+import { isLyreflyProjectArchived } from '../workflow/lyreflyProjectProgress';
 import { LyreflyBundleImportDialog } from './LyreflyBundleImportDialog';
+import { LyreflyIdeaWorkCard } from './LyreflyIdeaWorkCard';
 import { LyreflySketchbookModeSwitch } from './LyreflySketchbookModeSwitch';
 import { LyreflyDateChip } from './LyreflyDateChip';
 import { SketchbookSeedEditor } from './SketchbookSeedEditor';
@@ -219,7 +223,7 @@ function SketchbookSeedCard({
           }}
           data-testid={`lyrefly-promote-${seed.id}`}
         >
-          Promote
+          Start developing
         </Button>
       </div>
     </li>
@@ -241,6 +245,17 @@ export function SketchbookTab({ onOpenProject }: SketchbookTabProps): ReactEleme
   const importInputRef = useRef<HTMLInputElement>(null);
 
   const activeSeeds = useMemo(() => seeds ?? [], [seeds]);
+  // Comics still in brainstorming are ideas too, and sit with the notes (ADR 0031).
+  const { projects } = useLyreflyProjects();
+  const { previewByProject } = useLyreflyShelfPreviews(projects);
+  const ideaWorks = useMemo(
+    () =>
+      projects.filter(
+        (p) =>
+          previewByProject.get(p.id)?.phase === 'idea' && !isLyreflyProjectArchived(p) && !p.mergedIntoId,
+      ),
+    [projects, previewByProject],
+  );
 
   const createSeed = useCallback(
     async (
@@ -482,6 +497,9 @@ export function SketchbookTab({ onOpenProject }: SketchbookTabProps): ReactEleme
     try {
       const project = await promoteSketchbookSeed(seed);
       onOpenProject(project.id);
+    } catch (e) {
+      if (!(e instanceof LyreflyPromoteError)) throw e;
+      setImportSummary(e.message);
     } finally {
       setBusy(false);
     }
@@ -625,12 +643,15 @@ export function SketchbookTab({ onOpenProject }: SketchbookTabProps): ReactEleme
         </p>
       ) : null}
 
-      {activeSeeds.length === 0 ? (
+      {activeSeeds.length === 0 && ideaWorks.length === 0 ? (
         <p className="lyrefly-sketchbook__empty">
           Nothing here yet. Start typing, paste a link, or drop a reference image.
         </p>
       ) : (
         <ul className="lyrefly-sketchbook__grid">
+          {ideaWorks.map((project) => (
+            <LyreflyIdeaWorkCard key={project.id} project={project} />
+          ))}
           {activeSeeds.map((seed) => (
             <SketchbookSeedCard
               key={seed.id}

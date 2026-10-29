@@ -104,7 +104,14 @@ export interface ComicProject {
   printSpec?: LyreflyPrintSpec;
   /** Optional project color palette (Chromacle / Coolors import). */
   colorPalette?: ComicPalette;
-  /** Gallery pipeline status when in active queue. */
+  /**
+   * Set by "Start developing": the owner moved this work to the Workbench before it had a script
+   * or pages. Last-writer-wins, unlike `stageCompletion`, whose OR merge could never move it back.
+   */
+  developingAt?: string;
+  /** Set when this work was merged into another. The work is archived, never deleted. */
+  mergedIntoId?: string;
+  /** Kept from the tracker import; no view reads it (ADR 0031). */
   pipelineStatus?: LyreflyPipelineStatus;
   /** Lower sorts earlier in priority queue. */
   priorityRank?: number;

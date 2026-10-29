@@ -9,9 +9,9 @@ function row(
   title: string,
   workflowStage: LyreflyWorkflowStage,
   patch: Partial<ComicProject> = {},
-  publishLogCount = 0,
+  phase: LyreflyShelfRow['phase'] = 'developing',
 ): LyreflyShelfRow {
-  return { project: { ...createBlankComicProject(), title, ...patch }, workflowStage, publishLogCount };
+  return { project: { ...createBlankComicProject(), title, ...patch }, workflowStage, publishLogCount: 0, phase };
 }
 
 const titles = (rows: LyreflyShelfRow[]) => rows.map((r) => r.project.title);
@@ -23,11 +23,13 @@ describe('lyreflyWorkbenchColumns', () => {
     expect(columns.map((c) => titles(c.rows))).toEqual([['A'], ['C'], ['B'], []]);
   });
 
-  it('leaves finished, published and archived comics on the shelf', () => {
+  it('holds only works being developed: ideas, complete, archived, merged and unknown stay off', () => {
     const columns = lyreflyWorkbenchColumns([
-      row('Finished', 'publish', { status: 'finished' }),
-      row('Published', 'publish', {}, 2),
+      row('Idea', 'brainstorm', {}, 'idea'),
+      row('Done', 'publish', {}, 'complete'),
+      row('Not here yet', 'brainstorm', {}, null),
       row('Archived', 'art', { status: 'archived' }),
+      row('Merged', 'script', { mergedIntoId: 'x' }),
       row('Waiting to post', 'publish'),
     ]);
     expect(columns.flatMap((c) => titles(c.rows))).toEqual(['Waiting to post']);

@@ -3,7 +3,7 @@ import { useMemo, type ReactElement } from 'react';
 import { useLyreflyProjects } from '../hooks/useLyreflyProjects';
 import { useLyreflyShelfPreviews } from '../hooks/useLyreflyShelfPreviews';
 import { lyreflyProjectStageHref, navigateLyreflyHash } from '../routes/lyreflyHash';
-import type { LyreflyShelfRow } from '../utils/lyreflyShelfFilters';
+import { buildLyreflyShelfRows, type LyreflyShelfRow } from '../utils/lyreflyShelfFilters';
 import { lyreflyWorkbenchColumns } from '../utils/lyreflyWorkbenchColumns';
 import { LyreflyShelfCover } from './LyreflyShelfCover';
 
@@ -41,19 +41,7 @@ export function LyreflyWorkbenchBoard(): ReactElement {
   const { previewByProject, previewsHydrated } = useLyreflyShelfPreviews(projects);
 
   const columns = useMemo(
-    () =>
-      lyreflyWorkbenchColumns(
-        projects.map((project) => {
-          const preview = previewByProject.get(project.id);
-          return {
-            project,
-            workflowStage: preview?.workflowStage ?? 'brainstorm',
-            publishLogCount: preview?.publishLogCount ?? 0,
-            coverRevisionId: preview?.coverRevisionId,
-            conceptAssetId: preview?.conceptAssetId,
-          };
-        }),
-      ),
+    () => lyreflyWorkbenchColumns(buildLyreflyShelfRows(projects, previewByProject)),
     [projects, previewByProject],
   );
 

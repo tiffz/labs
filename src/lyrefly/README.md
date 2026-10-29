@@ -2,13 +2,28 @@
 
 Local-first comic workbench for tracking projects from sketchbook through script, art, and publishing.
 
+## Ideas, works and where they show
+
+One function, `lyreflyWorkPhase` (`workflow/lyreflyWorkPhase.ts`), decides where a comic shows
+([ADR 0031](../../docs/adr/0031-lyrefly-ideas-and-works.md)):
+
+- **Sketchbook** (`idea`): notes, and comics with only brainstorm material.
+- **Workbench** (`developing`): "Start developing" (`developingAt`), real script text, or a page.
+  The sample script a new comic starts with does not count.
+- **Your comics** (`complete`): finished or published. "Show unfinished" shows the rest.
+
+A note stays a lightweight `SketchbookSeed` until it is developed; then it becomes a comic whose
+ids derive from the note, so two devices make the same one. No view reads `pipelineStatus`
+(`workflow/lyreflyWorkPhaseGuardrails.test.ts`).
+
 ## Script
 
 Nested-bullet comic script (Google Docs style). See [`SCRIPT_FORMAT.md`](SCRIPT_FORMAT.md).
 
 ## Routes
 
-- `#/gallery` — Your comics shelf (default)
+- `#/gallery` — Your comics: finished work (default)
+- `#/workbench` — Comics being developed, by step
 - `#/project/:id` — Project workbench (brainstorm → script → art → publish)
 - `#/project/:id/script` — Script stage (also reachable via workbench stepper)
 - `#/identities` — Pen names, series, and the accounts each one posts from (`#/accounts` still works)
@@ -21,7 +36,8 @@ bringing it back loses nothing.
 
 ## Sketchbook
 
-Inline idea capture (notes, flashes, links, art, files) that promotes into a comic project.
+Inline idea capture (notes, flashes, links, art, files). "Start developing" turns a note into a
+comic on the Workbench.
 Bulk import past flashes from Markdown or JSONL — see [`SKETCHBOOK_IMPORT.md`](SKETCHBOOK_IMPORT.md).
 
 Seeds sync in the gallery envelope (`progress.json` → `sketchbook`); their images and files upload

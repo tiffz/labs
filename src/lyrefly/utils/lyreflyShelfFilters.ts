@@ -1,4 +1,6 @@
+import type { LyreflyShelfPreview } from '../hooks/useLyreflyShelfPreviews';
 import type { ComicProject } from '../types';
+import type { LyreflyWorkPhase } from '../workflow/lyreflyWorkPhase';
 import { isLyreflyProjectArchived } from '../workflow/lyreflyProjectProgress';
 import type { LyreflyWorkflowStage } from '../workflow/lyreflyWorkflowStages';
 import { LYREFLY_WORKFLOW_STAGES } from '../workflow/lyreflyWorkflowStages';
@@ -8,17 +10,17 @@ export type LyreflyShelfViewMode = 'grid' | 'table';
 export const LYREFLY_SHELF_VIEW_STORAGE_KEY = 'lyrefly.shelf.view';
 
 /**
- * Shelf filters use workflow **stage** as progress.
- * Archived comics are hidden unless `showArchived` is on (Draft/WIP/Finished are not filter axes).
+ * The Library is for finished work: complete comics only, unless `showUnfinished` is on (ADR 0031).
+ * Archived comics are hidden unless `showArchived` is on.
  */
 export type LyreflyShelfFilterState = {
-  stage: LyreflyWorkflowStage | '';
+  showUnfinished: boolean;
   query: string;
   showArchived: boolean;
 };
 
 export const EMPTY_LYREFLY_SHELF_FILTERS: LyreflyShelfFilterState = {
-  stage: '',
+  showUnfinished: false,
   query: '',
   showArchived: false,
 };
@@ -27,6 +29,8 @@ export type LyreflyShelfRow = {
   project: ComicProject;
   workflowStage: LyreflyWorkflowStage;
   publishLogCount: number;
+  /** From `lyreflyWorkPhase`; null while the package is not on this device. */
+  phase: LyreflyWorkPhase | null;
   coverRevisionId?: string;
   conceptAssetId?: string;
 };
@@ -54,9 +58,10 @@ export function filterLyreflyShelfRows(
   filters: LyreflyShelfFilterState,
 ): LyreflyShelfRow[] {
   const q = filters.query.trim().toLowerCase();
-  return rows.filter(({ project, workflowStage }) => {
+  return rows.filter(({ project, phase }) => {
+    if (project.mergedIntoId) return false;
     if (!filters.showArchived && isLyreflyProjectArchived(project)) return false;
-    if (filters.stage && workflowStage !== filters.stage) return false;
+    if (!filters.showUnfinished && phase !== 'complete') return false;
     if (!q) return true;
     return (
       project.title.toLowerCase().includes(q) ||
@@ -95,5 +100,23 @@ export function sortLyreflyShelfRows(
     }
     if (cmp !== 0) return cmp * mult;
     return a.project.title.localeCompare(b.project.title) * mult;
+  });
+}
+
+/** One row per project, from the shelf previews. A project with no preview yet has an unknown phase. */
+export function buildLyreflyShelfRows(
+  projects: readonly ComicProject[],
+  previewByProject: ReadonlyMap<string, LyreflyShelfPreview>,
+): LyreflyShelfRow[] {
+  return projects.map((project) => {
+    const preview = previewByProject.get(project.id);
+    return {
+      project,
+      workflowStage: preview?.workflowStage ?? 'brainstorm',
+      publishLogCount: preview?.publishLogCount ?? 0,
+      phase: preview ? preview.phase : null,
+      coverRevisionId: preview?.coverRevisionId,
+      conceptAssetId: preview?.conceptAssetId,
+    };
   });
 }

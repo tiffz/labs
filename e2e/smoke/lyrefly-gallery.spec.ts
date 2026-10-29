@@ -6,6 +6,11 @@ const PNG = Buffer.from(
   'base64',
 );
 
+/** The demo comic is still being made, so the Library hides it until "Show unfinished" is on. */
+async function showUnfinished(page: import('@playwright/test').Page): Promise<void> {
+  await page.getByLabel('Show unfinished comics').check();
+}
+
 test.describe('Lyrefly gallery', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/lyrefly/?e2eSeed=1');
@@ -14,7 +19,16 @@ test.describe('Lyrefly gallery', () => {
     await expect(page.getByTestId('lyrefly-showcase')).toBeVisible({ timeout: 15000 });
   });
 
+  // ADR 0031: the Library is for finished work. The demo comic has pages but no publish log.
+  test('the Library shows complete comics only until Show unfinished is on', async ({ page }) => {
+    await expect(page.getByTestId('lyrefly-shelf-toolbar')).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole('button', { name: /Open Midnight Courier/i })).toHaveCount(0);
+    await showUnfinished(page);
+    await expect(page.getByRole('button', { name: /Open Midnight Courier/i })).toBeVisible();
+  });
+
   test('opens script stage from seeded project', async ({ page }) => {
+    await showUnfinished(page);
     await expect(page.getByRole('heading', { name: /Midnight Courier/i })).toBeVisible({ timeout: 15000 });
     await page.getByRole('button', { name: /Open Midnight Courier/i }).click();
     await expect(page).toHaveURL(/#\/project\//, { timeout: 15000 });
@@ -49,6 +63,7 @@ test.describe('Lyrefly gallery', () => {
   ]) {
     test(`workbench header holds still across stages at ${viewport.width}px`, async ({ page }) => {
       await page.setViewportSize(viewport);
+      await showUnfinished(page);
       await page.getByRole('button', { name: /Open Midnight Courier/i }).click();
       const stepper = page.getByTestId('lyrefly-workflow-stepper');
       const actions = page.getByTestId('lyrefly-stage-actions');
@@ -90,6 +105,7 @@ test.describe('Lyrefly gallery', () => {
   // shrink to 2px under a tall page grid.
   test('the print-size panel keeps its height above the page grid', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
+    await showUnfinished(page);
     await page.getByRole('button', { name: /Open Midnight Courier/i }).click();
     await page.getByTestId('lyrefly-workflow-stepper').getByRole('button', { name: 'Draw' }).click();
     const panel = page.locator('.lyrefly-print-spec');
@@ -177,6 +193,21 @@ test.describe('Lyrefly gallery', () => {
     });
   }
 
+  // A brand-new comic left with nothing but the sample script is an idea: it sits in the
+  // Sketchbook, and "Start developing" moves it to the Workbench.
+  test('a brainstorm-only comic sits in the Sketchbook until you start developing it', async ({ page }) => {
+    await page.getByTestId('lyrefly-sketchbook-tab').click();
+    await expect(page.getByTestId('lyrefly-sketchbook')).toBeVisible();
+    await page.getByTestId('lyrefly-sketchbook-input').fill('A moon girl who is lonely');
+    await page.getByTestId('lyrefly-sketchbook-add').click();
+    const card = page.locator('[data-testid^="lyrefly-sketchbook-seed-"]').first();
+    await card.getByRole('button', { name: 'Start developing' }).click();
+    await expect(page).toHaveURL(/#\/project\//, { timeout: 15000 });
+    await page.getByTestId('lyrefly-workbench-tab').click();
+    // The note's text counts as brainstorming done, so the comic waits in the Script column.
+    await expect(page.getByTestId('lyrefly-board-script').getByRole('button', { name: /Open A moon girl/ })).toBeVisible();
+  });
+
   test('uses riso cube theme on app root', async ({ page }) => {
     await expect(page.getByTestId('lyrefly-app')).toHaveAttribute('data-lyrefly-theme', 'risocube');
     await expect(page.getByTestId('lyrefly-design-picker')).toHaveCount(0);
@@ -184,6 +215,7 @@ test.describe('Lyrefly gallery', () => {
 
   test('switches between shelf and table views with shared toolbar', async ({ page }) => {
     await expect(page.getByTestId('lyrefly-shelf-toolbar')).toBeVisible({ timeout: 15000 });
+    await showUnfinished(page);
     await expect(page.getByTestId('lyrefly-shelf-view-grid')).toHaveAttribute('aria-pressed', 'true');
     await page.getByTestId('lyrefly-shelf-view-table').click();
     await expect(page.getByTestId('lyrefly-shelf-table')).toBeVisible();

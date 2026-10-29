@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { createBlankComicProject } from '../types';
 import {
+  EMPTY_LYREFLY_SHELF_FILTERS,
   filterLyreflyShelfRows,
   sortLyreflyShelfRows,
   type LyreflyShelfRow,
@@ -11,6 +12,7 @@ function row(
   title: string,
   overrides: Partial<LyreflyShelfRow['project']> & {
     workflowStage?: LyreflyShelfRow['workflowStage'];
+    phase?: LyreflyShelfRow['phase'];
   } = {},
 ): LyreflyShelfRow {
   const project = createBlankComicProject();
@@ -18,35 +20,34 @@ function row(
   if (overrides.status) project.status = overrides.status;
   if (overrides.updatedAt) project.updatedAt = overrides.updatedAt;
   if (overrides.pageCount != null) project.pageCount = overrides.pageCount;
+  if (overrides.mergedIntoId) project.mergedIntoId = overrides.mergedIntoId;
   return {
     project,
     workflowStage: overrides.workflowStage ?? 'brainstorm',
     publishLogCount: 0,
+    phase: 'phase' in overrides ? (overrides.phase ?? null) : 'complete',
   };
 }
 
 describe('lyreflyShelfFilters', () => {
-  it('filters by stage and query; hides archived by default', () => {
+  it('shows complete comics by default; the switch shows the rest; archived stays hidden', () => {
     const rows = [
-      row('Alpha', { status: 'draft', workflowStage: 'script' }),
-      row('Beta', { status: 'finished', workflowStage: 'publish' }),
-      row('Old', { status: 'archived', workflowStage: 'art' }),
+      row('Idea', { phase: 'idea' }),
+      row('Drawing', { phase: 'developing' }),
+      row('Not here yet', { phase: null }),
+      row('Done', { phase: 'complete' }),
+      row('Old', { status: 'archived', phase: 'complete' }),
     ];
-    expect(filterLyreflyShelfRows(rows, { stage: '', query: '', showArchived: false })).toHaveLength(
-      2,
-    );
-    expect(
-      filterLyreflyShelfRows(rows, { stage: '', query: '', showArchived: true }).map(
-        (r) => r.project.title,
-      ),
-    ).toEqual(['Alpha', 'Beta', 'Old']);
-    expect(
-      filterLyreflyShelfRows(rows, { stage: 'script', query: '', showArchived: false })[0]?.project
-        .title,
-    ).toBe('Alpha');
-    expect(filterLyreflyShelfRows(rows, { stage: '', query: 'bet', showArchived: false })).toHaveLength(
-      1,
-    );
+    const titles = (f: Partial<typeof EMPTY_LYREFLY_SHELF_FILTERS>) =>
+      filterLyreflyShelfRows(rows, { ...EMPTY_LYREFLY_SHELF_FILTERS, ...f }).map((r) => r.project.title);
+    expect(titles({})).toEqual(['Done']);
+    expect(titles({ showUnfinished: true })).toEqual(['Idea', 'Drawing', 'Not here yet', 'Done']);
+    expect(titles({ showArchived: true })).toEqual(['Done', 'Old']);
+    expect(titles({ showUnfinished: true, query: 'draw' })).toEqual(['Drawing']);
+  });
+
+  it('never shows a work merged into another', () => {
+    expect(filterLyreflyShelfRows([row('Gone', { mergedIntoId: 'x' })], EMPTY_LYREFLY_SHELF_FILTERS)).toEqual([]);
   });
 
   it('sorts by title and page count', () => {
