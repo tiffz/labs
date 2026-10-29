@@ -77,7 +77,7 @@ export function ShowcaseComicsTable({
         minSize: 100,
         size: 120,
         sortingFn: (a, b) => {
-          const order = ['brainstorm', 'script', 'thumbs', 'art', 'publish'];
+          const order = ['brainstorm', 'script', 'art', 'publish'];
           return (
             order.indexOf(a.original.workflowStage) - order.indexOf(b.original.workflowStage)
           );

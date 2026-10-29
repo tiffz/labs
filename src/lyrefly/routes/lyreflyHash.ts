@@ -3,6 +3,7 @@ import type { LyreflyWorkflowStage } from '../workflow/lyreflyWorkflowStages';
 export type LyreflyRoute =
   | { kind: 'gallery' }
   | { kind: 'sketchbook' }
+  | { kind: 'workbench' }
   | { kind: 'accounts' }
   | { kind: 'collections'; collectionId?: string }
   | { kind: 'project'; projectId: string; stage?: LyreflyWorkflowStage }
@@ -10,7 +11,7 @@ export type LyreflyRoute =
   | { kind: 'script'; projectId: string }
   | { kind: 'share'; fileId: string };
 
-const STAGE_IDS = new Set<LyreflyWorkflowStage>(['brainstorm', 'script', 'thumbs', 'art', 'publish']);
+const STAGE_IDS = new Set<LyreflyWorkflowStage>(['brainstorm', 'script', 'art', 'publish']);
 
 export function parseLyreflyHash(hash: string): LyreflyRoute {
   const raw = hash.replace(/^#/, '').replace(/^\//, '');
@@ -18,10 +19,14 @@ export function parseLyreflyHash(hash: string): LyreflyRoute {
   if (segments.length === 0 || segments[0] === 'gallery' || segments[0] === 'logo-gallery') {
     return { kind: 'gallery' };
   }
+  if (segments[0] === 'workbench') {
+    return { kind: 'workbench' };
+  }
   if (segments[0] === 'sketchbook') {
     return { kind: 'sketchbook' };
   }
-  if (segments[0] === 'accounts') {
+  // `accounts` is the tab's old name; links to it still land here.
+  if (segments[0] === 'identities' || segments[0] === 'accounts') {
     return { kind: 'accounts' };
   }
   if (segments[0] === 'collections') {
@@ -50,6 +55,10 @@ export function lyreflyGalleryHref(): string {
   return '#/gallery';
 }
 
+export function lyreflyWorkbenchHref(): string {
+  return '#/workbench';
+}
+
 export function lyreflySketchbookHref(): string {
   return '#/sketchbook';
 }
@@ -59,7 +68,7 @@ export function lyreflyCollectionsHref(collectionId?: string): string {
 }
 
 export function lyreflyAccountsHref(): string {
-  return '#/accounts';
+  return '#/identities';
 }
 
 export function lyreflyProjectHref(projectId: string): string {

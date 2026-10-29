@@ -21,6 +21,7 @@ import { ensureLyreflyGoogleDriveAccess } from '../drive/lyreflyGoogleDriveAcces
 import { useLyreflyCollections } from '../hooks/useLyreflyCollections';
 import { lyreflyCollectionsHref, navigateLyreflyHash } from '../routes/lyreflyHash';
 import type { LyreflyCollection, LyreflyCollectionPiece } from '../types';
+import { lyreflySourceLinkLabel } from '../utils/lyreflySourceLink';
 import { LyreflySketchbookModeSwitch } from './LyreflySketchbookModeSwitch';
 
 function plural(n: number, word: string): string {
@@ -396,6 +397,7 @@ function CollectionDetail({
   const archived = collection.status === 'archived';
   // An empty collection has nothing to show yet, so it opens straight onto adding pieces.
   const showAdd = adding || pieces.length === 0;
+  const sourceLabel = collection.sourceUrl ? lyreflySourceLinkLabel(collection.sourceUrl) : null;
 
   return (
     <section className="lyrefly-studio lyrefly-collection" data-testid="lyrefly-collection">
@@ -431,11 +433,11 @@ function CollectionDetail({
       </header>
       <p className="lyrefly-collections__count">
         {plural(pieces.length, 'piece')}
-        {collection.sourceUrl ? (
+        {sourceLabel ? (
           <>
             {' · '}
             <a href={collection.sourceUrl} target="_blank" rel="noopener noreferrer">
-              Source folder
+              {sourceLabel}
             </a>
           </>
         ) : null}

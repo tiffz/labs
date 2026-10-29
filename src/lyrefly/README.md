@@ -1,6 +1,6 @@
 # Lyrefly
 
-Local-first comic workbench for tracking projects from sketchbook through script, thumbs, art, and publishing.
+Local-first comic workbench for tracking projects from sketchbook through script, art, and publishing.
 
 ## Script
 
@@ -11,15 +11,13 @@ Nested-bullet comic script (Google Docs style). See [`SCRIPT_FORMAT.md`](SCRIPT_
 - `#/gallery` — Your comics shelf (default)
 - `#/project/:id` — Project workbench (brainstorm → script → art → publish)
 - `#/project/:id/script` — Script stage (also reachable via workbench stepper)
-- `#/accounts` — Pen names, series, and the accounts each one posts from
+- `#/identities` — Pen names, series, and the accounts each one posts from (`#/accounts` still works)
 
-## Thumbs
+## Thumbs (removed)
 
-Rough panel mockups per script page (script left / mockup right). Parses the script into
-panels/dialogue/SFX via [`utils/lyreflyScriptMockup.ts`](utils/lyreflyScriptMockup.ts) and renders
-them with the shared `src/shared/comic` mockup engine (`PanelMockupSvg`, `MockupFitCanvas`) under
-Lyrefly's own Riso Cube chrome — it does not embed Scrapboard's `ScrapboardBoardEditor`. Print size
-matches Draw via `resolveLyreflyPrintSpec`; mockups persist per page in `pageMockups`.
+The Thumbs step (rough panel mockups) is gone from the workflow for now: it was more confusing than
+useful. Mockups and characters made with it still sync in `pageMockups` and `comicCharacters`, so
+bringing it back loses nothing.
 
 ## Sketchbook
 

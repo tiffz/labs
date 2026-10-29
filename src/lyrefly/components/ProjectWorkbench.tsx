@@ -28,7 +28,6 @@ import { BrainstormStage } from './BrainstormStage';
 import { LyreflyWorkbenchChrome } from './LyreflyWorkbenchChrome';
 import { PublishStage } from './PublishStage';
 import { ScriptStage } from './ScriptStage';
-import { ThumbsStage } from './ThumbsStage';
 
 const BRAINSTORM_SAVE_MS = 500;
 
@@ -138,13 +137,6 @@ export function ProjectWorkbench({ projectId, initialStage, onBack }: ProjectWor
         }}>
         Script module is disabled for this project.
       </Typography>
-    );
-  } else if (stage === 'thumbs') {
-    stageContent = (
-      <ThumbsStage
-        project={project}
-        onProjectChange={(next) => void onPersistProject(next)}
-      />
     );
   } else if (stage === 'art') {
     stageContent = (

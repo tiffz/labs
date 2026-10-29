@@ -256,7 +256,7 @@ export async function planLyreflyBundleImport(
 /** Stages a tracker status implies are done: "ready to draw" means the story and script are. */
 function stagesDone(status: LyreflyPipelineStatus | undefined): Partial<Record<LyreflyWorkflowStage, boolean>> | undefined {
   if (status === 'ready_to_draw') return { brainstorm: true, script: true };
-  if (status === 'complete') return { brainstorm: true, script: true, thumbs: true, art: true, publish: true };
+  if (status === 'complete') return { brainstorm: true, script: true, art: true, publish: true };
   return undefined;
 }
 

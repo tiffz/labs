@@ -208,7 +208,7 @@ export function LyreflyAccountsPage(): ReactElement {
     <section className="lyrefly-studio lyrefly-accounts" data-testid="lyrefly-accounts">
       <header className="lyrefly-studio__masthead lyrefly-accounts__masthead">
         <div>
-          <h1 className="lyrefly-studio__title">Accounts</h1>
+          <h1 className="lyrefly-studio__title">Identities</h1>
           <p className="lyrefly-studio__lede">Your pen names and series, and where each one posts.</p>
         </div>
       </header>

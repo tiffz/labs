@@ -6,6 +6,7 @@ import {
   lyreflyAccountsHref,
   lyreflyGalleryHref,
   lyreflySketchbookHref,
+  lyreflyWorkbenchHref,
   navigateLyreflyHash,
 } from '../routes/lyreflyHash';
 import type { LyreflyRoute } from '../routes/lyreflyHash';
@@ -16,6 +17,7 @@ export type LyreflyAppHeaderProps = {
 
 export function LyreflyAppHeader({ route }: LyreflyAppHeaderProps): ReactElement {
   const onGallery = route.kind === 'gallery';
+  const onWorkbench = route.kind === 'workbench';
   // Collections live under the Sketchbook: raw material, like ideas.
   const onSketchbook = route.kind === 'sketchbook' || route.kind === 'collections';
   const onAccounts = route.kind === 'accounts';
@@ -51,6 +53,19 @@ export function LyreflyAppHeader({ route }: LyreflyAppHeaderProps): ReactElement
             className={[
               'lyrefly-header__nav-item',
               'lyrefly-header__nav-button',
+              onWorkbench ? 'lyrefly-header__nav-item--current' : '',
+            ].join(' ')}
+            aria-current={onWorkbench ? 'page' : undefined}
+            onClick={() => navigateLyreflyHash(lyreflyWorkbenchHref())}
+            data-testid="lyrefly-workbench-tab"
+          >
+            Workbench
+          </button>
+          <button
+            type="button"
+            className={[
+              'lyrefly-header__nav-item',
+              'lyrefly-header__nav-button',
               onSketchbook ? 'lyrefly-header__nav-item--current' : '',
             ].join(' ')}
             aria-current={onSketchbook ? 'page' : undefined}
@@ -70,7 +85,7 @@ export function LyreflyAppHeader({ route }: LyreflyAppHeaderProps): ReactElement
             onClick={() => navigateLyreflyHash(lyreflyAccountsHref())}
             data-testid="lyrefly-accounts-tab"
           >
-            Accounts
+            Identities
           </button>
         </nav>
 
