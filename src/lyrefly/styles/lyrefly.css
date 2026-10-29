@@ -5118,3 +5118,9 @@
   font-size: 0.75rem;
   color: var(--lyrefly-muted);
 }
+
+/* The Draw stage scrolls as one column. Its children must keep their own height: the print-size
+   panel hides overflow, so as a shrinkable flex item it collapsed to 2px under a tall page grid. */
+.lyrefly-art-stage > * {
+  flex-shrink: 0;
+}

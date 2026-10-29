@@ -86,6 +86,18 @@ test.describe('Lyrefly gallery', () => {
     await expect(page).toHaveURL(/#\/project\/.+\/publish/);
   });
 
+  // The Draw stage scrolls as one flex column; the print-size panel hides overflow, so it used to
+  // shrink to 2px under a tall page grid.
+  test('the print-size panel keeps its height above the page grid', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.getByRole('button', { name: /Open Midnight Courier/i }).click();
+    await page.getByTestId('lyrefly-workflow-stepper').getByRole('button', { name: 'Draw' }).click();
+    const panel = page.locator('.lyrefly-print-spec');
+    await expect(panel).toBeVisible();
+    const fits = await panel.evaluate((el) => el.getBoundingClientRect().height >= el.scrollHeight);
+    expect(fits, 'print-size panel shows all of its content').toBe(true);
+  });
+
   test('the old Accounts link opens Identities', async ({ page }) => {
     await page.goto('/lyrefly/?e2eSeed=1#/accounts');
     await expect(page.getByRole('heading', { name: 'Identities' })).toBeVisible();
