@@ -1,6 +1,7 @@
 import GridViewIcon from '@mui/icons-material/GridView';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import FormControlLabel from '@mui/material/FormControlLabel';
+import MenuItem from '@mui/material/MenuItem';
 import Switch from '@mui/material/Switch';
 import TextField from '@mui/material/TextField';
 import ToggleButton from '@mui/material/ToggleButton';
@@ -11,6 +12,7 @@ import { useEffect, useMemo, useState, type ReactElement } from 'react';
 import { lyreflyDb, markLyreflyDirtyRow } from '../db/lyreflyDb';
 import { saveLyreflyProject } from '../db/lyreflyProjectMutations';
 import { seedLyreflyE2eProjectIfEmpty } from '../e2e/lyreflyE2eSeed';
+import { useLyreflyCollections } from '../hooks/useLyreflyCollections';
 import { useLyreflyProjects } from '../hooks/useLyreflyProjects';
 import { useLyreflyShelfPreviews } from '../hooks/useLyreflyShelfPreviews';
 import { createBlankComicProject, createBlankScriptDocument, type ComicProject } from '../types';
@@ -114,7 +116,20 @@ export function ShowcaseGallery({ onOpenProject, onOpenProfile }: ShowcaseGaller
 
   const rows: LyreflyShelfRow[] = useMemo(() => buildLyreflyShelfRows(projects, previewByProject), [projects, previewByProject]);
 
-  const filteredRows = useMemo(() => filterLyreflyShelfRows(rows, filters), [rows, filters]);
+  const { collections, membersByCollection } = useLyreflyCollections();
+  const workIdsByCollection = useMemo(() => {
+    const map = new Map<string, Set<string>>();
+    for (const [id, members] of membersByCollection) {
+      map.set(id, new Set(members.filter((m) => m.kind === 'work').map((m) => m.refId)));
+    }
+    return map;
+  }, [membersByCollection]);
+  // Only collections that hold a comic can narrow the shelf.
+  const comicCollections = collections.filter((c) => (workIdsByCollection.get(c.id)?.size ?? 0) > 0);
+  const filteredRows = useMemo(
+    () => filterLyreflyShelfRows(rows, filters, workIdsByCollection),
+    [rows, filters, workIdsByCollection],
+  );
   const gridRows = useMemo(
     () => sortLyreflyShelfRows(filteredRows, 'updatedAt', 'desc'),
     [filteredRows],
@@ -178,6 +193,23 @@ export function ShowcaseGallery({ onOpenProject, onOpenProfile }: ShowcaseGaller
               onChange={(event) => setFilters((prev) => ({ ...prev, query: event.target.value }))}
               className="lyrefly-shelf-toolbar__search"
             />
+            {comicCollections.length > 0 ? (
+              <TextField
+                select
+                size="small"
+                label="Collection"
+                value={filters.collectionId}
+                onChange={(event) => setFilters((prev) => ({ ...prev, collectionId: event.target.value }))}
+                className="lyrefly-shelf-toolbar__select"
+              >
+                <MenuItem value="">All comics</MenuItem>
+                {comicCollections.map((c) => (
+                  <MenuItem key={c.id} value={c.id}>
+                    {c.title}
+                  </MenuItem>
+                ))}
+              </TextField>
+            ) : null}
             <FormControlLabel
               className="lyrefly-shelf-toolbar__archived"
               control={

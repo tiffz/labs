@@ -6,7 +6,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import MenuItem from '@mui/material/MenuItem';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
-import { useEffect, useMemo, useState, type ReactElement } from 'react';
+import { useMemo, useRef, useState, type ReactElement } from 'react';
 
 import {
   LyreflyMergeError,
@@ -45,26 +45,27 @@ export function LyreflyMergeWorkDialog({
     [projects, source.id],
   );
 
-  useEffect(() => {
+  // The latest pick wins: an older plan arriving late is dropped.
+  const latestPick = useRef('');
+  const pick = (id: string): void => {
+    latestPick.current = id;
+    setTargetId(id);
     setPlan(null);
     setError(null);
-    if (!targetId) return undefined;
-    let cancelled = false;
-    planLyreflyWorkMerge(source.id, targetId).then(
-      (next) => !cancelled && setPlan(next),
+    if (!id) return;
+    planLyreflyWorkMerge(source.id, id).then(
+      (next) => {
+        if (latestPick.current === id) setPlan(next);
+      },
       (e: unknown) => {
-        if (cancelled) return;
         if (!(e instanceof LyreflyMergeError)) throw e;
-        setError(e.message);
+        if (latestPick.current === id) setError(e.message);
       },
     );
-    return () => {
-      cancelled = true;
-    };
-  }, [source.id, targetId]);
+  };
 
   const close = (): void => {
-    setTargetId('');
+    pick('');
     onClose();
   };
 
@@ -92,7 +93,7 @@ export function LyreflyMergeWorkDialog({
           size="small"
           label="Into"
           value={targetId}
-          onChange={(e) => setTargetId(e.target.value)}
+          onChange={(e) => pick(e.target.value)}
           sx={{ mt: 1 }}
         >
           {targets.map((t) => (

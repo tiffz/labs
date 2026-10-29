@@ -40,7 +40,8 @@ export function buildLyreflyDriveEnvelope(
     identities: lyreflyIdentitiesAreEmpty(payload.identities) ? undefined : payload.identities,
     sketchbook: payload.sketchbook?.length ? payload.sketchbook : undefined,
     collections:
-      payload.collections && (payload.collections.collections.length || payload.collections.pieces.length)
+      payload.collections &&
+      (payload.collections.collections.length || payload.collections.pieces.length || payload.collections.members?.length)
         ? payload.collections
         : undefined,
   };

@@ -6,7 +6,7 @@
  * separate tombstone list, as in the Sketchbook.
  */
 import { lyreflyDb } from '../db/lyreflyDb';
-import type { LyreflyCollection, LyreflyCollectionPiece } from '../types';
+import type { LyreflyCollection, LyreflyCollectionMember, LyreflyCollectionPiece } from '../types';
 
 /** A new field is a compile error until it gets a disposition here (ADR 0019). */
 type MergePolicy = 'lww' | 'union-set';
@@ -39,6 +39,17 @@ const PIECE_MERGE_POLICY = {
   deletedAt: 'lww',
 } satisfies Record<keyof LyreflyCollectionPiece, MergePolicy>;
 
+const MEMBER_MERGE_POLICY = {
+  id: 'lww',
+  collectionId: 'lww',
+  kind: 'lww',
+  refId: 'lww',
+  order: 'lww',
+  createdAt: 'lww',
+  updatedAt: 'lww',
+  deletedAt: 'lww',
+} satisfies Record<keyof LyreflyCollectionMember, MergePolicy>;
+
 type Row = { id: string; updatedAt: string; deletedAt?: string };
 
 function mergeRow<T extends Row>(policy: Record<keyof T, MergePolicy>, local: T, remote: T): T {
@@ -69,6 +80,8 @@ function mergeRows<T extends Row>(policy: Record<keyof T, MergePolicy>, local: r
 export type LyreflyCollectionsPayload = {
   collections: LyreflyCollection[];
   pieces: LyreflyCollectionPiece[];
+  /** Works in collections. Absent in backups written before collections held works. */
+  members?: LyreflyCollectionMember[];
 };
 
 export function mergeLyreflyCollections(
@@ -78,15 +91,17 @@ export function mergeLyreflyCollections(
   return {
     collections: mergeRows(COLLECTION_MERGE_POLICY, local?.collections ?? [], remote?.collections ?? []),
     pieces: mergeRows(PIECE_MERGE_POLICY, local?.pieces ?? [], remote?.pieces ?? []),
+    members: mergeRows(MEMBER_MERGE_POLICY, local?.members ?? [], remote?.members ?? []),
   };
 }
 
 export async function readLyreflyCollectionsLocal(): Promise<LyreflyCollectionsPayload> {
-  const [collections, pieces] = await Promise.all([
+  const [collections, pieces, members] = await Promise.all([
     lyreflyDb.collections.toArray(),
     lyreflyDb.collectionPieces.toArray(),
+    lyreflyDb.collectionMembers.toArray(),
   ]);
-  return { collections, pieces };
+  return { collections, pieces, members };
 }
 
 /**
@@ -94,7 +109,7 @@ export async function readLyreflyCollectionsLocal(): Promise<LyreflyCollectionsP
  * so an edit made while the sync ran is newer and must survive the write-back.
  */
 export async function writeLyreflyCollectionsLocal(payload: LyreflyCollectionsPayload): Promise<void> {
-  await lyreflyDb.transaction('rw', [lyreflyDb.collections, lyreflyDb.collectionPieces], async () => {
+  await lyreflyDb.transaction('rw', [lyreflyDb.collections, lyreflyDb.collectionPieces, lyreflyDb.collectionMembers], async () => {
     for (const row of payload.collections) {
       const current = await lyreflyDb.collections.get(row.id);
       if (!current || row.updatedAt > current.updatedAt) await lyreflyDb.collections.put(row);
@@ -102,6 +117,10 @@ export async function writeLyreflyCollectionsLocal(payload: LyreflyCollectionsPa
     for (const row of payload.pieces) {
       const current = await lyreflyDb.collectionPieces.get(row.id);
       if (!current || row.updatedAt > current.updatedAt) await lyreflyDb.collectionPieces.put(row);
+    }
+    for (const row of payload.members ?? []) {
+      const current = await lyreflyDb.collectionMembers.get(row.id);
+      if (!current || row.updatedAt > current.updatedAt) await lyreflyDb.collectionMembers.put(row);
     }
   });
 }

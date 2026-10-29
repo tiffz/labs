@@ -120,10 +120,10 @@ test.describe('Lyrefly gallery', () => {
     await expect(page.getByTestId('lyrefly-accounts-tab')).toHaveText('Identities');
   });
 
-  test('makes, renames and archives a collection from the Sketchbook', async ({ page }) => {
+  // Collections are stacks among the notes, not a second tab.
+  test('makes, renames and archives a collection in the Sketchbook', async ({ page }) => {
     await page.getByTestId('lyrefly-sketchbook-tab').click();
-    await page.getByTestId('lyrefly-sketchbook-mode-switch').getByRole('button', { name: 'Collections' }).click();
-    await expect(page.getByTestId('lyrefly-collections')).toBeVisible();
+    await expect(page.getByTestId('lyrefly-sketchbook')).toBeVisible();
     await page.getByRole('button', { name: 'New collection' }).click();
 
     await expect(page.getByTestId('lyrefly-collection')).toBeVisible();
@@ -132,11 +132,15 @@ test.describe('Lyrefly gallery', () => {
     const title = page.getByRole('textbox', { name: 'Collection title' });
     await title.fill('Daily comics');
     await title.blur();
-    await page.getByRole('button', { name: 'Archive' }).click();
-    await page.getByRole('button', { name: 'All collections' }).click();
+    await page.getByRole('button', { name: 'Sketchbook', exact: true }).first().click();
+    await expect(page.getByTestId('lyrefly-sketchbook').getByRole('button', { name: /Daily comics/ })).toBeVisible();
 
-    await expect(page.getByText('No collections yet.', { exact: false })).toBeVisible();
-    await page.getByRole('button', { name: 'Archived (1)' }).click();
+    await page.getByTestId('lyrefly-sketchbook').getByRole('button', { name: /Daily comics/ }).click();
+    await page.getByRole('button', { name: 'Archive' }).click();
+    await page.goto('/lyrefly/?e2eSeed=1#/collections');
+    await expect(page.getByTestId('lyrefly-sketchbook')).toBeVisible();
+    await expect(page.getByRole('button', { name: /Daily comics/ })).toHaveCount(0);
+    await page.getByRole('button', { name: 'Archived collections (1)' }).click();
     await expect(page.getByRole('button', { name: /Daily comics/ })).toBeVisible();
   });
 
@@ -221,6 +225,29 @@ test.describe('Lyrefly gallery', () => {
     await expect(dialog.getByTestId('lyrefly-merge-summary')).toContainText('archived, not deleted');
     await dialog.getByRole('button', { name: 'Merge' }).click();
     await expect(page.getByRole('textbox', { name: 'Comic title' })).toHaveValue('Midnight Courier');
+  });
+
+  // ADR 0031: collections hold comics as well as pieces, and the Library can narrow to one.
+  test('puts a comic in a new collection and filters the Library by it', async ({ page }) => {
+    await showUnfinished(page);
+    await page.getByRole('button', { name: /Open Midnight Courier/i }).click();
+    await page.getByRole('button', { name: 'Comic actions' }).click();
+    await page.getByRole('menuitem', { name: 'Add to collection…' }).click();
+    const picker = page.getByTestId('lyrefly-collection-picker');
+    await picker.getByLabel('New collection').fill('Sci-fi');
+    await picker.getByRole('button', { name: 'Add' }).click();
+    await expect(picker.getByRole('checkbox', { name: 'Sci-fi' })).toBeChecked();
+    await picker.getByRole('button', { name: 'Done' }).click();
+
+    await page.getByRole('button', { name: 'Your comics', exact: true }).click();
+    await showUnfinished(page);
+    await page.getByLabel('Collection').click();
+    await page.getByRole('option', { name: 'Sci-fi' }).click();
+    await expect(page.getByRole('button', { name: /Open Midnight Courier/i })).toBeVisible();
+
+    await page.getByTestId('lyrefly-sketchbook-tab').click();
+    await page.getByRole('button', { name: /Sci-fi/ }).click();
+    await expect(page.getByRole('list', { name: 'Notes and comics' })).toContainText('Midnight Courier');
   });
 
   test('uses riso cube theme on app root', async ({ page }) => {

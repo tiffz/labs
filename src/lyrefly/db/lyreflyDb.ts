@@ -8,6 +8,7 @@ import type {
   ComicProject,
   LyreflyAccount,
   LyreflyCollection,
+  LyreflyCollectionMember,
   LyreflyCollectionPiece,
   LyreflyDirtySyncRow,
   LyreflyPersona,
@@ -59,6 +60,7 @@ export class LyreflyDb extends Dexie {
   accounts!: EntityTable<LyreflyAccount, 'id'>;
   collections!: EntityTable<LyreflyCollection, 'id'>;
   collectionPieces!: EntityTable<LyreflyCollectionPiece, 'id'>;
+  collectionMembers!: EntityTable<LyreflyCollectionMember, 'id'>;
   pieceThumbs!: EntityTable<{ driveFileId: string; blob: Blob }, 'driveFileId'>;
 
   constructor() {
@@ -133,6 +135,9 @@ export class LyreflyDb extends Dexie {
       collectionPieces: 'id, collectionId',
       /** Thumbnail cache, keyed by Drive file id. Never synced: any device can refetch it. */
       pieceThumbs: 'driveFileId',
+    });
+    this.version(7).stores({
+      collectionMembers: 'id, collectionId, refId',
     });
   }
 }

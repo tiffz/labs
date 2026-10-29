@@ -1,4 +1,5 @@
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import PhotoLibraryOutlinedIcon from '@mui/icons-material/PhotoLibraryOutlined';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
@@ -7,22 +8,23 @@ import DialogTitle from '@mui/material/DialogTitle';
 import LinearProgress from '@mui/material/LinearProgress';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 
 import {
   addLyreflyPiecesFromDriveFolder,
-  createLyreflyCollection,
   deleteLyreflyCollection,
   loadLyreflyPieceThumb,
   makeLyreflyComicFromPieces,
   updateLyreflyCollection,
 } from '../db/lyreflyCollectionMutations';
+import { lyreflyDb } from '../db/lyreflyDb';
 import { ensureLyreflyGoogleDriveAccess } from '../drive/lyreflyGoogleDriveAccess';
 import { useLyreflyCollections } from '../hooks/useLyreflyCollections';
-import { lyreflyCollectionsHref, navigateLyreflyHash } from '../routes/lyreflyHash';
-import type { LyreflyCollection, LyreflyCollectionPiece } from '../types';
+import { useLyreflyProjects } from '../hooks/useLyreflyProjects';
+import { lyreflyCollectionsHref, lyreflySketchbookHref, navigateLyreflyHash } from '../routes/lyreflyHash';
+import type { LyreflyCollection, LyreflyCollectionMember, LyreflyCollectionPiece } from '../types';
 import { lyreflySourceLinkLabel } from '../utils/lyreflySourceLink';
-import { LyreflySketchbookModeSwitch } from './LyreflySketchbookModeSwitch';
 
 function plural(n: number, word: string): string {
   return `${n} ${word}${n === 1 ? '' : 's'}`;
@@ -85,11 +87,56 @@ function PieceThumb({ piece }: { piece: LyreflyCollectionPiece }): ReactElement 
   );
 }
 
+const EMPTY_MEMBERS: LyreflyCollectionMember[] = [];
+
+/** The notes and comics in a collection, each opening where it lives. */
+function CollectionWorks({
+  members,
+  onOpenProject,
+}: {
+  members: LyreflyCollectionMember[];
+  onOpenProject: (projectId: string) => void;
+}): ReactElement {
+  const { projects } = useLyreflyProjects();
+  const seeds = useLiveQuery(() => lyreflyDb.sketchbookSeeds.toArray(), []);
+  return (
+    <ul className="lyrefly-collection__works" aria-label="Notes and comics">
+      {members.map((member) => {
+        if (member.kind === 'work') {
+          const project = projects.find((p) => p.id === member.refId);
+          // A comic merged away shows as the one it went into.
+          const shown = project?.mergedIntoId ? projects.find((p) => p.id === project.mergedIntoId) : project;
+          if (!shown) return null;
+          return (
+            <li key={member.id}>
+              <button type="button" className="lyrefly-collection__work" onClick={() => onOpenProject(shown.id)}>
+                <span className="lyrefly-sketchbook__kind">Comic</span>
+                {shown.title || 'Untitled'}
+              </button>
+            </li>
+          );
+        }
+        const seed = seeds?.find((s) => s.id === member.refId && !s.deletedAt);
+        if (!seed) return null;
+        return (
+          <li key={member.id}>
+            <button type="button" className="lyrefly-collection__work" onClick={() => navigateLyreflyHash(lyreflySketchbookHref())}>
+              <span className="lyrefly-sketchbook__kind">Note</span>
+              {seed.title || 'Untitled'}
+            </button>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 function pieceLabel(piece: LyreflyCollectionPiece, index: number): string {
   return piece.title ?? `#${index + 1}`;
 }
 
-function CollectionCard({
+/** A collection in the Sketchbook grid: a titled stack of pieces, among the loose notes. */
+export function LyreflyCollectionStack({
   collection,
   pieces,
 }: {
@@ -103,6 +150,11 @@ function CollectionCard({
         className={['lyrefly-collection-card', collection.status === 'archived' ? 'lyrefly-collection-card--archived' : ''].join(' ')}
         onClick={() => navigateLyreflyHash(lyreflyCollectionsHref(collection.id))}
       >
+        {/* Labelled like a note's kind, so a stack reads as one more thing in the sketchbook. */}
+        <span className="lyrefly-sketchbook__kind">
+          <PhotoLibraryOutlinedIcon fontSize="inherit" aria-hidden />
+          Collection
+        </span>
         <span className="lyrefly-collection-card__strip">
           {pieces.slice(0, 4).map((p) => (
             <PieceThumb key={p.id} piece={p} />
@@ -112,113 +164,6 @@ function CollectionCard({
         <span className="lyrefly-collection-card__meta">{plural(pieces.length, 'piece')}</span>
       </button>
     </li>
-  );
-}
-
-function CollectionsIndex(): ReactElement {
-  const { collections, piecesByCollection, hydrated } = useLyreflyCollections();
-  const [showArchived, setShowArchived] = useState(false);
-  const [query, setQuery] = useState('');
-
-  const ongoing = collections.filter((c) => c.status === 'ongoing');
-  const archived = collections.filter((c) => c.status === 'archived');
-  const q = query.trim().toLowerCase();
-  const matches = useMemo(() => {
-    if (!q) return [];
-    const byId = new Map(collections.map((c) => [c.id, c] as const));
-    return collections.flatMap((c) =>
-      (piecesByCollection.get(c.id) ?? [])
-        .map((p, i) => ({ piece: p, index: i, collection: byId.get(p.collectionId)! }))
-        .filter(({ piece, collection }) =>
-          [piece.title, piece.notes, piece.fileName, piece.occurredOn, collection.title]
-            .filter(Boolean)
-            .some((s) => s!.toLowerCase().includes(q)),
-        ),
-    );
-  }, [q, collections, piecesByCollection]);
-
-  const newCollection = async (): Promise<void> => {
-    const created = await createLyreflyCollection('Untitled collection');
-    navigateLyreflyHash(lyreflyCollectionsHref(created.id));
-  };
-
-  return (
-    <section className="lyrefly-studio lyrefly-collections" data-testid="lyrefly-collections">
-      <header className="lyrefly-collections__masthead">
-        <div>
-          <h1 className="lyrefly-studio__title">Sketchbook</h1>
-          <p className="lyrefly-studio__lede">Finished pieces, gathered. Pick a few to start a comic.</p>
-        </div>
-        <LyreflySketchbookModeSwitch mode="collections" />
-      </header>
-
-      <div className="lyrefly-collections__toolbar">
-        <TextField
-          size="small"
-          label="Search pieces"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          className="lyrefly-collections__search"
-        />
-        <Button variant="outlined" onClick={() => void newCollection()}>
-          New collection
-        </Button>
-      </div>
-
-      {!hydrated ? null : q ? (
-        <section aria-label="Search results">
-          <p className="lyrefly-collections__count">{plural(matches.length, 'piece')} found</p>
-          <ul className="lyrefly-pieces">
-            {matches.map(({ piece, index, collection }) => (
-              <li key={piece.id}>
-                <button
-                  type="button"
-                  className="lyrefly-piece"
-                  onClick={() => navigateLyreflyHash(lyreflyCollectionsHref(collection.id))}
-                >
-                  <PieceThumb piece={piece} />
-                  <span className="lyrefly-piece__label">{pieceLabel(piece, index)}</span>
-                  <span className="lyrefly-piece__meta">{collection.title}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : (
-        <>
-          {ongoing.length === 0 ? (
-            <p className="lyrefly-collections__empty">
-              No collections yet. Make one, then add a Drive folder of finished pieces.
-            </p>
-          ) : (
-            <ul className="lyrefly-collections__grid">
-              {ongoing.map((c) => (
-                <CollectionCard key={c.id} collection={c} pieces={piecesByCollection.get(c.id) ?? []} />
-              ))}
-            </ul>
-          )}
-          {archived.length > 0 ? (
-            <section className="lyrefly-collections__archived" aria-label="Archived collections">
-              <Button
-                size="small"
-                sx={{ color: 'text.secondary' }}
-                aria-expanded={showArchived}
-                onClick={() => setShowArchived((v) => !v)}
-              >
-                {showArchived ? 'Hide archived' : `Archived (${archived.length})`}
-              </Button>
-              {showArchived ? (
-                <ul className="lyrefly-collections__grid">
-                  {archived.map((c) => (
-                    <CollectionCard key={c.id} collection={c} pieces={piecesByCollection.get(c.id) ?? []} />
-                  ))}
-                </ul>
-              ) : null}
-            </section>
-          ) : null}
-        </>
-      )}
-    </section>
   );
 }
 
@@ -371,7 +316,8 @@ function CollectionDetail({
   collectionId: string;
   onOpenProject: (projectId: string) => void;
 }): ReactElement {
-  const { collections, piecesByCollection, hydrated } = useLyreflyCollections();
+  const { collections, piecesByCollection, membersByCollection, hydrated } = useLyreflyCollections();
+  const members = membersByCollection.get(collectionId) ?? EMPTY_MEMBERS;
   const collection = collections.find((c) => c.id === collectionId);
   const pieces = useMemo(() => piecesByCollection.get(collectionId) ?? [], [piecesByCollection, collectionId]);
   const [selected, setSelected] = useState<string[]>([]);
@@ -384,7 +330,7 @@ function CollectionDetail({
     return (
       <section className="lyrefly-studio">
         <p className="lyrefly-collections__empty">This collection is gone.</p>
-        <Button onClick={() => navigateLyreflyHash(lyreflyCollectionsHref())}>All collections</Button>
+        <Button onClick={() => navigateLyreflyHash(lyreflySketchbookHref())}>Back to Sketchbook</Button>
       </section>
     );
   }
@@ -396,13 +342,13 @@ function CollectionDetail({
     .filter((p): p is LyreflyCollectionPiece => Boolean(p));
   const archived = collection.status === 'archived';
   // An empty collection has nothing to show yet, so it opens straight onto adding pieces.
-  const showAdd = adding || pieces.length === 0;
+  const showAdd = adding || (pieces.length === 0 && members.length === 0);
   const sourceLabel = collection.sourceUrl ? lyreflySourceLinkLabel(collection.sourceUrl) : null;
 
   return (
     <section className="lyrefly-studio lyrefly-collection" data-testid="lyrefly-collection">
-      <Button size="small" sx={{ alignSelf: 'flex-start', mb: 1 }} onClick={() => navigateLyreflyHash(lyreflyCollectionsHref())}>
-        All collections
+      <Button size="small" sx={{ alignSelf: 'flex-start', mb: 1 }} onClick={() => navigateLyreflyHash(lyreflySketchbookHref())}>
+        Sketchbook
       </Button>
       <header className="lyrefly-collection__head">
         <TextField
@@ -446,6 +392,8 @@ function CollectionDetail({
       {showAdd ? (
         <AddFromDriveForm collection={collection} onDone={pieces.length > 0 ? () => setAdding(false) : undefined} />
       ) : null}
+
+      {members.length > 0 ? <CollectionWorks members={members} onOpenProject={onOpenProject} /> : null}
 
       <ul className="lyrefly-pieces" aria-label="Pieces. Select some to make a comic.">
         {pieces.map((piece, index) => {
@@ -509,7 +457,7 @@ function CollectionDetail({
           <Button
             color="error"
             onClick={() => {
-              void deleteLyreflyCollection(collection).then(() => navigateLyreflyHash(lyreflyCollectionsHref()));
+              void deleteLyreflyCollection(collection).then(() => navigateLyreflyHash(lyreflySketchbookHref()));
             }}
           >
             Delete
@@ -524,8 +472,8 @@ export function LyreflyCollectionsView({
   collectionId,
   onOpenProject,
 }: {
-  collectionId?: string;
+  collectionId: string;
   onOpenProject: (projectId: string) => void;
 }): ReactElement {
-  return collectionId ? <CollectionDetail collectionId={collectionId} onOpenProject={onOpenProject} /> : <CollectionsIndex />;
+  return <CollectionDetail collectionId={collectionId} onOpenProject={onOpenProject} />;
 }

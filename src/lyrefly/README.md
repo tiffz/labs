@@ -52,9 +52,15 @@ the newer of a delete and an edit wins. Before this, seeds never left the browse
 
 ## Collections
 
-**Sketchbook → Collections** (`#/collections`, `#/collections/:id`): named sets of finished pieces
-(daily strips, zine photos, old webcomic pages). Raw material, not projects. Ongoing collections
-show first; archived ones collapse under **Archived** but stay searchable.
+Collections (`#/collections/:id`) are named sets of finished pieces (daily strips, zine photos, old
+webcomic pages): raw material, not projects. They show as stacks in the Sketchbook grid, ahead of
+loose notes, rather than on a tab of their own; `#/collections` opens the Sketchbook. Archived
+collections collapse under **Archived collections**.
+
+Collections also hold notes and comics (`collectionMembers`, ADR 0031): comic header ⋯ → "Add to
+collection…". A work can be in many collections; member ids derive from collection and work, and a
+removal is a marker row. The collection page lists them above its pieces, and Your comics can filter
+by any collection that holds a comic.
 
 - **Add from Drive:** paste a folder link. Images are added in number order (`2.png` before
   `10.png`). Files you own are referenced in place (ADR 0029); a file someone else owns is copied to

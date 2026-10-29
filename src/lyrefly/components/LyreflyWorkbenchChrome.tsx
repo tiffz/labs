@@ -11,6 +11,7 @@ import { useLabsDisclosureMenu } from '../../shared/a11y/useLabsDisclosureMenu';
 import type { ComicProject } from '../types';
 import type { LyreflyStageCompletionContext } from '../workflow/lyreflyWorkflowCompletion';
 import type { LyreflyWorkflowStage } from '../workflow/lyreflyWorkflowStages';
+import { LyreflyCollectionPickerDialog } from './LyreflyCollectionPickerDialog';
 import { LyreflyMergeWorkDialog } from './LyreflyMergeWorkDialog';
 import { LyreflyProjectModeSwitch } from './LyreflyProjectModeSwitch';
 import { LyreflyStageActions } from './LyreflyStageChrome';
@@ -38,6 +39,7 @@ export function LyreflyWorkbenchChrome({
 }: LyreflyWorkbenchChromeProps): ReactElement {
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
   const [merging, setMerging] = useState(false);
+  const [collecting, setCollecting] = useState(false);
   const { menuId, getTriggerA11yProps } = useLabsDisclosureMenu();
   return (
     <header className="lyrefly-workbench__chrome lyrefly-shell-bar">
@@ -75,6 +77,14 @@ export function LyreflyWorkbenchChrome({
               <MenuItem
                 onClick={() => {
                   setMenuAnchor(null);
+                  setCollecting(true);
+                }}
+              >
+                Add to collection…
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  setMenuAnchor(null);
                   setMerging(true);
                 }}
               >
@@ -82,6 +92,13 @@ export function LyreflyWorkbenchChrome({
               </MenuItem>
             </Menu>
             <LyreflyMergeWorkDialog source={project} open={merging} onClose={() => setMerging(false)} />
+            <LyreflyCollectionPickerDialog
+              kind="work"
+              refId={project.id}
+              title={project.title}
+              open={collecting}
+              onClose={() => setCollecting(false)}
+            />
           </Stack>
           <div className="lyrefly-workbench__nav-stepper">
             <LyreflyWorkflowStepper

@@ -178,6 +178,22 @@ export interface LyreflyCollection {
   deletedAt?: string;
 }
 
+/**
+ * A work in a collection (ADR 0031): a note (`seed`) or a comic (`work`). A work can be in many
+ * collections. The id derives from the collection and the work, so two devices adding the same
+ * work make one row; removing leaves a `deletedAt` marker, like every other envelope delete.
+ */
+export interface LyreflyCollectionMember {
+  id: string;
+  collectionId: string;
+  kind: 'seed' | 'work';
+  refId: string;
+  order: number;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt?: string;
+}
+
 /** One finished piece in a collection. The image is the owner's own Drive file, referenced. */
 export interface LyreflyCollectionPiece {
   id: string;

@@ -46,6 +46,16 @@ describe('lyreflyShelfFilters', () => {
     expect(titles({ showUnfinished: true, query: 'draw' })).toEqual(['Drawing']);
   });
 
+  it('filters to one collection', () => {
+    const rows = [row('In'), row('Out')];
+    const byCollection = new Map([['c1', new Set([rows[0]!.project.id])]]);
+    expect(
+      filterLyreflyShelfRows(rows, { ...EMPTY_LYREFLY_SHELF_FILTERS, collectionId: 'c1' }, byCollection).map(
+        (r) => r.project.title,
+      ),
+    ).toEqual(['In']);
+  });
+
   it('never shows a work merged into another', () => {
     expect(filterLyreflyShelfRows([row('Gone', { mergedIntoId: 'x' })], EMPTY_LYREFLY_SHELF_FILTERS)).toEqual([]);
   });

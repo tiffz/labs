@@ -20,7 +20,10 @@ import {
 
 import { useDragDropHighlight } from '../../shared/hooks/useDragDropHighlight';
 import { loadSketchbookBlob, putSketchbookSeed, putSketchbookSeeds } from '../db/sketchbookMutations';
+import { createLyreflyCollection } from '../db/lyreflyCollectionMutations';
 import { lyreflyDb } from '../db/lyreflyDb';
+import { useLyreflyCollections } from '../hooks/useLyreflyCollections';
+import { lyreflyCollectionsHref, navigateLyreflyHash } from '../routes/lyreflyHash';
 import type { SketchbookAttachment, SketchbookSeed } from '../types';
 import {
   collectImageFilesFromDataTransfer,
@@ -44,8 +47,8 @@ import { useLyreflyProjects } from '../hooks/useLyreflyProjects';
 import { useLyreflyShelfPreviews } from '../hooks/useLyreflyShelfPreviews';
 import { isLyreflyProjectArchived } from '../workflow/lyreflyProjectProgress';
 import { LyreflyBundleImportDialog } from './LyreflyBundleImportDialog';
+import { LyreflyCollectionStack } from './LyreflyCollectionsView';
 import { LyreflyIdeaWorkCard } from './LyreflyIdeaWorkCard';
-import { LyreflySketchbookModeSwitch } from './LyreflySketchbookModeSwitch';
 import { LyreflyDateChip } from './LyreflyDateChip';
 import { SketchbookSeedEditor } from './SketchbookSeedEditor';
 import { useLabsStagedFileUploads } from '../../shared/upload/useLabsStagedFileUploads';
@@ -256,6 +259,15 @@ export function SketchbookTab({ onOpenProject }: SketchbookTabProps): ReactEleme
       ),
     [projects, previewByProject],
   );
+  const { collections, piecesByCollection } = useLyreflyCollections();
+  const [showArchived, setShowArchived] = useState(false);
+  const ongoingCollections = collections.filter((c) => c.status === 'ongoing');
+  const archivedCollections = collections.filter((c) => c.status === 'archived');
+
+  const onNewCollection = async (): Promise<void> => {
+    const created = await createLyreflyCollection('Untitled collection');
+    navigateLyreflyHash(lyreflyCollectionsHref(created.id));
+  };
 
   const createSeed = useCallback(
     async (
@@ -552,7 +564,9 @@ export function SketchbookTab({ onOpenProject }: SketchbookTabProps): ReactEleme
             Catch scraps as they come. Click a card to expand it on the board and keep adding.
           </p>
         </div>
-        <LyreflySketchbookModeSwitch mode="ideas" />
+        <Button size="small" variant="text" onClick={() => void onNewCollection()} disabled={busy}>
+          New collection
+        </Button>
         <Button
           size="small"
           variant="text"
@@ -643,12 +657,15 @@ export function SketchbookTab({ onOpenProject }: SketchbookTabProps): ReactEleme
         </p>
       ) : null}
 
-      {activeSeeds.length === 0 && ideaWorks.length === 0 ? (
+      {activeSeeds.length === 0 && ideaWorks.length === 0 && ongoingCollections.length === 0 ? (
         <p className="lyrefly-sketchbook__empty">
           Nothing here yet. Start typing, paste a link, or drop a reference image.
         </p>
       ) : (
         <ul className="lyrefly-sketchbook__grid">
+          {ongoingCollections.map((c) => (
+            <LyreflyCollectionStack key={c.id} collection={c} pieces={piecesByCollection.get(c.id) ?? []} />
+          ))}
           {ideaWorks.map((project) => (
             <LyreflyIdeaWorkCard key={project.id} project={project} />
           ))}
@@ -674,6 +691,25 @@ export function SketchbookTab({ onOpenProject }: SketchbookTabProps): ReactEleme
           ))}
         </ul>
       )}
+      {archivedCollections.length > 0 ? (
+        <section className="lyrefly-sketchbook__archived" aria-label="Archived collections">
+          <Button
+            size="small"
+            sx={{ color: 'text.secondary' }}
+            aria-expanded={showArchived}
+            onClick={() => setShowArchived((v) => !v)}
+          >
+            {showArchived ? 'Hide archived' : `Archived collections (${archivedCollections.length})`}
+          </Button>
+          {showArchived ? (
+            <ul className="lyrefly-sketchbook__grid">
+              {archivedCollections.map((c) => (
+                <LyreflyCollectionStack key={c.id} collection={c} pieces={piecesByCollection.get(c.id) ?? []} />
+              ))}
+            </ul>
+          ) : null}
+        </section>
+      ) : null}
       <LyreflyBundleImportDialog plan={bundlePlan} onClose={() => setBundlePlan(null)} />
     </section>
   );

@@ -15,12 +15,15 @@ export const LYREFLY_SHELF_VIEW_STORAGE_KEY = 'lyrefly.shelf.view';
  */
 export type LyreflyShelfFilterState = {
   showUnfinished: boolean;
+  /** Only comics in this collection; '' for all. */
+  collectionId: string;
   query: string;
   showArchived: boolean;
 };
 
 export const EMPTY_LYREFLY_SHELF_FILTERS: LyreflyShelfFilterState = {
   showUnfinished: false,
+  collectionId: '',
   query: '',
   showArchived: false,
 };
@@ -56,12 +59,15 @@ export function writeLyreflyShelfViewMode(mode: LyreflyShelfViewMode): void {
 export function filterLyreflyShelfRows(
   rows: LyreflyShelfRow[],
   filters: LyreflyShelfFilterState,
+  /** Comic ids in each collection, for the collection filter. */
+  workIdsByCollection: ReadonlyMap<string, ReadonlySet<string>> = new Map(),
 ): LyreflyShelfRow[] {
   const q = filters.query.trim().toLowerCase();
   return rows.filter(({ project, phase }) => {
     if (project.mergedIntoId) return false;
     if (!filters.showArchived && isLyreflyProjectArchived(project)) return false;
     if (!filters.showUnfinished && phase !== 'complete') return false;
+    if (filters.collectionId && !workIdsByCollection.get(filters.collectionId)?.has(project.id)) return false;
     if (!q) return true;
     return (
       project.title.toLowerCase().includes(q) ||
