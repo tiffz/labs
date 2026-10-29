@@ -9,7 +9,7 @@ import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import Typography from '@mui/material/Typography';
 import { alpha, useTheme } from '@mui/material/styles';
-import { useCallback, useEffect, useRef, useState, type ChangeEvent, type ReactElement } from 'react';
+import { useCallback, useEffect, useRef, useState, type ChangeEvent, type CSSProperties, type ReactElement } from 'react';
 
 import type { ComicProject, PageNode, PageRevision } from '../types';
 import {
@@ -20,6 +20,7 @@ import {
 } from '../db/lyreflyProjectMutations';
 import { useLabsStagedFileUploads } from '../../shared/upload/useLabsStagedFileUploads';
 import { filterImageFilesForPageUpload } from '../utils/artPageUploadUtils';
+import { printSpecSummary, resolveLyreflyPrintSpec } from '../utils/lyreflyPrintSpec';
 
 export const PAGE_IMAGE_ACCEPT = 'image/*,.png,.jpg,.jpeg,.webp,.gif,.avif,.bmp,.tiff,.tif';
 
@@ -323,7 +324,12 @@ export function ArtPageGrid({
   return (
     <>
     {versionUploads.panel}
-    <div className="lyrefly-art-grid" data-testid="lyrefly-art-page-grid">
+    <div
+      className="lyrefly-art-grid"
+      data-testid="lyrefly-art-page-grid"
+      // Tiles take the comic's own trim, not one shape for every book.
+      style={{ '--lyrefly-page-aspect': String(printSpecSummary(resolveLyreflyPrintSpec(project)).aspectRatio) } as CSSProperties}
+    >
       {pageNodes.map((node) => (
         <ArtPageGridTile
           key={node.id}

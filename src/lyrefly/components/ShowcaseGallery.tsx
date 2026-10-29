@@ -13,10 +13,9 @@ import { lyreflyDb, markLyreflyDirtyRow } from '../db/lyreflyDb';
 import { saveLyreflyProject } from '../db/lyreflyProjectMutations';
 import { seedLyreflyE2eProjectIfEmpty } from '../e2e/lyreflyE2eSeed';
 import { useLyreflyProjects } from '../hooks/useLyreflyProjects';
-import { useLyreflyShelfPreviews, workflowStageShelfLabel } from '../hooks/useLyreflyShelfPreviews';
+import { useLyreflyShelfPreviews } from '../hooks/useLyreflyShelfPreviews';
 import { createBlankComicProject, createBlankScriptDocument, type ComicProject } from '../types';
 import { isLyreflyProjectArchived } from '../workflow/lyreflyProjectProgress';
-import type { LyreflyWorkflowStage } from '../workflow/lyreflyWorkflowStages';
 import { LYREFLY_WORKFLOW_STAGES } from '../workflow/lyreflyWorkflowStages';
 import {
   EMPTY_LYREFLY_SHELF_FILTERS,
@@ -30,7 +29,6 @@ import {
 } from '../utils/lyreflyShelfFilters';
 import { LyreflySearchHighlight } from './LyreflySearchHighlight';
 import { LyreflyShelfCover } from './LyreflyShelfCover';
-import { GalleryPipelineQueue } from './SketchbookTab';
 import { ShowcaseComicsTable } from './ShowcaseComicsTable';
 
 export type ShowcaseGalleryProps = {
@@ -46,14 +44,12 @@ function ProjectCard({
   project,
   coverRevisionId,
   conceptAssetId,
-  workflowStage,
   searchQuery,
   onOpen,
 }: {
   project: ComicProject;
   coverRevisionId?: string;
   conceptAssetId?: string;
-  workflowStage: LyreflyWorkflowStage;
   searchQuery: string;
   onOpen: (id: string) => void;
 }): ReactElement {
@@ -84,7 +80,6 @@ function ProjectCard({
               </p>
             ) : null}
             <div className="lyrefly-shelf__meta">
-              <span className="lyrefly-shelf__stage-pill">{workflowStageShelfLabel(workflowStage)}</span>
               {archived ? (
                 <span className="lyrefly-shelf__status lyrefly-shelf__status--archived">Archived</span>
               ) : null}
@@ -178,7 +173,6 @@ export function ShowcaseGallery({ onOpenProject, onOpenProfile }: ShowcaseGaller
             : `${projects.length} comic${projects.length === 1 ? '' : 's'} on your shelf.`}
         </p>
       </header>
-      <GalleryPipelineQueue />
       {empty ? (
         <div className="lyrefly-studio__empty">
           <p>Your shelf is waiting for its first comic. Start blank and move at your own pace.</p>
@@ -282,13 +276,12 @@ export function ShowcaseGallery({ onOpenProject, onOpenProfile }: ShowcaseGaller
                   </button>
                 </li>
                 {gridRows.map(
-                  ({ project, coverRevisionId, conceptAssetId, workflowStage }) => (
+                  ({ project, coverRevisionId, conceptAssetId }) => (
                     <ProjectCard
                       key={project.id}
                       project={project}
                       coverRevisionId={coverRevisionId}
                       conceptAssetId={conceptAssetId}
-                      workflowStage={workflowStage}
                       searchQuery={filters.query}
                       onOpen={handleOpenComic}
                     />

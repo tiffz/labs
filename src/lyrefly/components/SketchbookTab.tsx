@@ -50,12 +50,6 @@ export type SketchbookTabProps = {
   onOpenProject: (projectId: string) => void;
 };
 
-function pipelineLabel(status: string | undefined): string {
-  if (status === 'ready_to_draw') return 'Ready to draw';
-  if (status === 'complete') return 'Complete';
-  return 'Fleshing out';
-}
-
 function SketchbookKindIcon({ kind }: { kind: SketchbookSeed['kind'] }): ReactElement {
   if (kind === 'image') return <ImageOutlinedIcon fontSize="inherit" aria-hidden />;
   if (kind === 'link') return <LinkOutlinedIcon fontSize="inherit" aria-hidden />;
@@ -660,33 +654,6 @@ export function SketchbookTab({ onOpenProject }: SketchbookTabProps): ReactEleme
         </ul>
       )}
       <LyreflyBundleImportDialog plan={bundlePlan} onClose={() => setBundlePlan(null)} />
-    </section>
-  );
-}
-
-export function GalleryPipelineQueue(): ReactElement {
-  const projects = useLiveQuery(
-    () =>
-      lyreflyDb.projects
-        .filter((p) => Boolean(p.pipelineStatus))
-        .toArray()
-        .then((rows) => rows.sort((a, b) => (a.priorityRank ?? 999) - (b.priorityRank ?? 999))),
-    [],
-  );
-
-  if (!projects || projects.length === 0) return <></>;
-
-  return (
-    <section className="lyrefly-pipeline" aria-label="Priority queue" data-testid="lyrefly-pipeline-queue">
-      <h2 className="lyrefly-pipeline__title">Priority queue</h2>
-      <ol className="lyrefly-pipeline__list">
-        {projects.map((project) => (
-          <li key={project.id}>
-            <span className="lyrefly-pipeline__name">{project.title}</span>
-            <span className="lyrefly-pipeline__status">{pipelineLabel(project.pipelineStatus)}</span>
-          </li>
-        ))}
-      </ol>
     </section>
   );
 }

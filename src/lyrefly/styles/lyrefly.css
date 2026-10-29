@@ -192,11 +192,13 @@
   margin-left: auto;
 }
 
-/* Phones: three tabs plus the account menu only fit with the wordmark dropped (the feather stays,
-   and the brand button keeps its accessible name). Without this the account menu sat off-screen. */
+/* Phones: four tabs and the account menu do not fit on one line, so the tabs take a row of their
+   own under the feather and the account menu. The wordmark drops; the brand button keeps its
+   accessible name. */
 @media (max-width: 479px) {
   .lyrefly-header__inner {
-    gap: 0 1rem;
+    flex-wrap: wrap;
+    gap: 0.75rem 1rem;
   }
 
   .lyrefly-header__title {
@@ -204,6 +206,9 @@
   }
 
   .lyrefly-header__nav {
+    order: 3;
+    flex-basis: 100%;
+    justify-content: space-between;
     gap: 0.875rem;
   }
 
@@ -2277,6 +2282,15 @@
   overflow-wrap: anywhere;
 }
 
+/* A note can hold a whole short story; in the grid it shows a taste, and opening it shows the rest. */
+.lyrefly-sketchbook__seed-body {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 6;
+  line-clamp: 6;
+  overflow: hidden;
+}
+
 .lyrefly-sketchbook__seed-link {
   font-size: 0.8125rem;
   overflow-wrap: anywhere;
@@ -2553,238 +2567,13 @@
   color: var(--lyrefly-muted);
 }
 
-.lyrefly-pipeline {
-  margin-bottom: 1rem;
-  padding: 0.65rem 0.75rem;
-  border: 1px dashed var(--lyrefly-border);
-  border-radius: 0.5rem;
-}
-
-.lyrefly-pipeline__title {
-  margin: 0 0 0.4rem;
-  font-size: 0.8125rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.lyrefly-pipeline__list {
-  margin: 0;
-  padding-left: 1.1rem;
-  font-size: 0.8125rem;
-}
-
-.lyrefly-pipeline__status {
-  margin-left: 0.5rem;
-  color: var(--lyrefly-muted);
-}
-
-.lyrefly-thumbs.lyrefly-stage-body {
-  flex: 1;
-  min-height: 0;
-  overflow: auto;
-  display: flex;
-  flex-direction: column;
-}
-
 .lyrefly-workbench--thumbs .lyrefly-workbench__stage {
   overflow: hidden;
   display: flex;
   flex-direction: column;
 }
 
-.lyrefly-thumbs__header {
-  margin-bottom: 1rem;
-}
-
-.lyrefly-thumbs__lede {
-  margin: 0.35rem 0 0;
-  max-width: 40rem;
-}
-
-.lyrefly-thumbs__toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.85rem;
-}
-
-.lyrefly-thumbs__toolbar-spacer {
-  flex: 1;
-}
-
-.lyrefly-thumbs__popover {
-  max-width: min(20rem, calc(100vw - 1.5rem));
-}
-
-.lyrefly-thumbs__popover-inner {
-  padding: 0.85rem 0.9rem 1rem;
-  max-width: 20rem;
-}
-
-.lyrefly-thumbs__cast-add {
-  display: flex;
-  gap: 0.35rem;
-  margin: 0.5rem 0 0.6rem;
-}
-
-.lyrefly-thumbs__cast-list {
-  margin: 0;
-  padding-left: 1rem;
-  font-size: 0.8125rem;
-}
-
-.lyrefly-thumbs__background-current {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
-  padding: 0.4rem 0.55rem;
-  border: 1px solid var(--lyrefly-border);
-  border-radius: 0.4rem;
-  background: var(--lyrefly-paper);
-}
-
-.lyrefly-thumbs__background-title {
-  font-size: 0.75rem;
-  color: var(--lyrefly-muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.lyrefly-thumbs__grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
-  gap: clamp(16px, 2vw, 24px);
-  align-items: start;
-  flex: 1;
-  min-height: 0;
-}
-
 @media (max-width: 900px) {
-  .lyrefly-thumbs__grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-.lyrefly-thumbs__script-pane {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  gap: 0.5rem;
-}
-
-.lyrefly-thumbs__script-pane-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-}
-
-.lyrefly-thumbs__script-pane-header .lyrefly-script-split__label {
-  margin: 0;
-}
-
-.lyrefly-thumbs__script-editor {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  min-height: 16rem;
-}
-
-.lyrefly-thumbs__script-editor .lyrefly-script-rich-editor {
-  flex: 1;
-  min-height: 14rem;
-}
-
-.lyrefly-thumbs__script-preview {
-  padding: clamp(12px, 1.4vw, 18px) clamp(14px, 1.6vw, 20px);
-  border: 1px solid var(--lyrefly-border);
-  border-radius: var(--lyrefly-radius);
-  background: color-mix(
-    in srgb,
-    var(--lyrefly-gallery-bg) 22%,
-    var(--lyrefly-paper)
-  );
-}
-
-.lyrefly-thumbs__board {
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
-  min-width: 0;
-}
-
-.lyrefly-thumbs__board-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.65rem 0.85rem;
-}
-
-.lyrefly-thumbs__panel-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
-  gap: 0.55rem;
-}
-
-.lyrefly-thumbs__panel-card {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  padding: 0.55rem 0.6rem;
-  border: 1px solid var(--lyrefly-border);
-  border-radius: 0.45rem;
-  background: var(--lyrefly-paper);
-}
-
-.lyrefly-thumbs__panel-label {
-  font-size: 0.75rem;
-  font-weight: 650;
-  color: var(--lyrefly-muted);
-}
-
-.lyrefly-thumbs__panel-script-hint {
-  margin: 0;
-  font-size: 0.6875rem;
-  color: var(--lyrefly-muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.lyrefly-thumbs__fit-canvas {
-  min-height: 16rem;
-  padding: 0.85rem;
-  border: 1px solid var(--lyrefly-border);
-  border-radius: 0.55rem;
-  background: color-mix(
-    in srgb,
-    var(--lyrefly-surface) 30%,
-    var(--lyrefly-paper)
-  );
-}
-
-.lyrefly-thumbs__fit-canvas-inner {
-  border: 1px solid var(--lyrefly-border-strong);
-  border-radius: 0.2rem;
-  background: #fff;
-}
-
-.lyrefly-thumbs__fit-canvas-inner .comic-mockup-svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
-.lyrefly-thumbs__flag {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  font-size: 0.8125rem;
-  margin: 0;
 }
 
 .lyrefly-script-empty-banner {
@@ -2988,12 +2777,12 @@
   );
   cursor: pointer;
   overflow: hidden;
-  aspect-ratio: 3 / 4;
+  aspect-ratio: var(--lyrefly-page-aspect, 0.75);
   position: relative;
 }
 
 .lyrefly-art-grid__tile--spread .lyrefly-art-grid__thumb {
-  aspect-ratio: 3 / 2;
+  aspect-ratio: calc(var(--lyrefly-page-aspect, 0.75) * 2);
 }
 
 .lyrefly-art-grid__thumb:focus {
@@ -3008,7 +2797,8 @@
 .lyrefly-art-grid__thumb-image {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  /* A page whose shape differs from the trim shows whole, never cropped. */
+  object-fit: contain;
   display: block;
 }
 
@@ -5223,4 +5013,114 @@
 /* The tiny card strip has no room for a "No preview" label; an empty frame says enough there. */
 .lyrefly-collection-card__strip .lyrefly-piece__thumb-placeholder {
   display: none;
+}
+
+/* Workbench: comics in progress, one column per workflow step. A tracker, so flat and dense;
+   the shelf keeps the covers-forward library look. */
+.lyrefly-board {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+@media (max-width: 900px) {
+  .lyrefly-board {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .lyrefly-board {
+    grid-template-columns: 1fr;
+  }
+}
+
+.lyrefly-board__column {
+  min-width: 0;
+  padding-top: 0.5rem;
+  border-top: 2px solid var(--lyrefly-ink);
+}
+
+.lyrefly-board__column-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 0 0 0.75rem;
+  font-family: var(--lyrefly-title-font);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--lyrefly-ink);
+}
+
+.lyrefly-board__count {
+  font-weight: 400;
+  color: var(--lyrefly-muted);
+}
+
+.lyrefly-board__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lyrefly-board__card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  min-width: 0;
+  padding: 0.5rem;
+  border: 1px solid var(--lyrefly-border);
+  border-radius: var(--lyrefly-radius);
+  background: var(--lyrefly-paper);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.lyrefly-board__card:hover {
+  border-color: var(--lyrefly-border-strong);
+}
+
+.lyrefly-board__card:focus-visible {
+  outline: 2px solid var(--lyrefly-accent);
+  outline-offset: 2px;
+}
+
+.lyrefly-board__cover {
+  flex: 0 0 2.5rem;
+  width: 2.5rem;
+}
+
+.lyrefly-board__card-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.lyrefly-board__card-title {
+  overflow: hidden;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lyrefly-board__card-meta {
+  font-size: 0.75rem;
+  color: var(--lyrefly-muted);
+}
+
+/* The Draw stage scrolls as one column. Its children must keep their own height: the print-size
+   panel hides overflow, so as a shrinkable flex item it collapsed to 2px under a tall page grid. */
+.lyrefly-art-stage > * {
+  flex-shrink: 0;
 }

@@ -63,7 +63,7 @@ test.describe('Lyrefly gallery', () => {
       const title = page.getByRole('textbox', { name: 'Comic title' });
       expect((await title.boundingBox())?.width ?? 0, 'comic title width').toBeGreaterThan(100);
 
-      const stages = ['Brainstorm', 'Script', 'Thumbs', 'Draw', 'Publish'];
+      const stages = ['Brainstorm', 'Script', 'Draw', 'Publish'];
       await stepper.getByRole('button', { name: stages[0] }).click();
       await expect(stepper.getByRole('button', { name: `${stages[0]} (current step)` })).toBeVisible();
       const baseline = await geometry();
@@ -74,6 +74,35 @@ test.describe('Lyrefly gallery', () => {
       }
     });
   }
+
+  test('the Workbench tracks comics in progress by step; the shelf stays a library', async ({ page }) => {
+    // The shelf no longer carries the old priority queue or a step pill per cover.
+    await expect(page.getByTestId('lyrefly-pipeline-queue')).toHaveCount(0);
+    await page.getByTestId('lyrefly-workbench-tab').click();
+    await expect(page).toHaveURL(/#\/workbench/);
+    const publish = page.getByTestId('lyrefly-board-publish');
+    await expect(publish.getByRole('button', { name: /Open Midnight Courier/i })).toBeVisible({ timeout: 15000 });
+    await publish.getByRole('button', { name: /Open Midnight Courier/i }).click();
+    await expect(page).toHaveURL(/#\/project\/.+\/publish/);
+  });
+
+  // The Draw stage scrolls as one flex column; the print-size panel hides overflow, so it used to
+  // shrink to 2px under a tall page grid.
+  test('the print-size panel keeps its height above the page grid', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.getByRole('button', { name: /Open Midnight Courier/i }).click();
+    await page.getByTestId('lyrefly-workflow-stepper').getByRole('button', { name: 'Draw' }).click();
+    const panel = page.locator('.lyrefly-print-spec');
+    await expect(panel).toBeVisible();
+    const fits = await panel.evaluate((el) => el.getBoundingClientRect().height >= el.scrollHeight);
+    expect(fits, 'print-size panel shows all of its content').toBe(true);
+  });
+
+  test('the old Accounts link opens Identities', async ({ page }) => {
+    await page.goto('/lyrefly/?e2eSeed=1#/accounts');
+    await expect(page.getByRole('heading', { name: 'Identities' })).toBeVisible();
+    await expect(page.getByTestId('lyrefly-accounts-tab')).toHaveText('Identities');
+  });
 
   test('makes, renames and archives a collection from the Sketchbook', async ({ page }) => {
     await page.getByTestId('lyrefly-sketchbook-tab').click();

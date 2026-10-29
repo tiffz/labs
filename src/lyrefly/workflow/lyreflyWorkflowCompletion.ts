@@ -12,8 +12,6 @@ export type LyreflyStageCompletionContext = {
   /** Any uploaded page revision (replaces legacy final-only count). */
   revisionCount?: number;
   archive?: ComicArchiveBinder | null;
-  mockupCount?: number;
-  characterCount?: number;
 };
 
 /** Manual override + stage heuristic only (no later-stage implication). */
@@ -31,8 +29,6 @@ export function isWorkflowStageCompleteDirect(
       return !isRichTextEmpty(project.brainstormHtml) || (ctx.visualDevCount ?? 0) > 0;
     case 'script':
       return Boolean(ctx.script?.markdown && !isRichTextEmpty(ctx.script.markdown));
-    case 'thumbs':
-      return (ctx.mockupCount ?? 0) > 0 || (ctx.characterCount ?? 0) > 0;
     case 'art':
       return (ctx.revisionCount ?? 0) > 0 || (ctx.pageNodeCount ?? 0) > 0;
     case 'publish':

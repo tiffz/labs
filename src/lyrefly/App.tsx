@@ -22,6 +22,9 @@ const SketchbookTab = lazy(() =>
 const LyreflyCollectionsView = lazy(() =>
   import('./components/LyreflyCollectionsView').then((m) => ({ default: m.LyreflyCollectionsView }))
 );
+const LyreflyWorkbenchBoard = lazy(() =>
+  import('./components/LyreflyWorkbenchBoard').then((m) => ({ default: m.LyreflyWorkbenchBoard }))
+);
 const LyreflyAccountsPage = lazy(() =>
   import('./components/LyreflyAccountsPage').then((m) => ({ default: m.LyreflyAccountsPage }))
 );
@@ -140,6 +143,8 @@ export default function App(): ReactElement {
     mainContent = <LyreflyCollectionsView collectionId={route.collectionId} onOpenProject={openProject} />;
   } else if (route.kind === 'accounts') {
     mainContent = <LyreflyAccountsPage />;
+  } else if (route.kind === 'workbench') {
+    mainContent = <LyreflyWorkbenchBoard />;
   } else if (route.kind === 'sketchbook') {
     mainContent = <SketchbookTab onOpenProject={openProject} />;
   } else {
