@@ -19,9 +19,25 @@ import { enterEncoreApp } from '../helpers/enterEncoreApp';
  * BFF answered, because the app did not then notice a closed popup. It does now (unit-tested in
  * labsGoogleSessionPort.test.ts; e2e builds have no BFF URL, so that path cannot run here), but
  * a smoke still must not depend on a production service.
+ *
+ * Nor on Google. A failed BFF start is recoverable, so Encore falls back to Google's own token
+ * popup, and closing that real accounts.google.com window raced Google's script: on CI the
+ * button sat on "Signing in…" past the 15s wait (failed on main 2026-10-26 and 2026-10-28, and
+ * on four unrelated branches). A fake GIS script now reports the closed popup at once.
  */
+const FAKE_GIS_SCRIPT = `window.google = { accounts: { oauth2: {
+  initTokenClient: (config) => {
+    const client = { callback: config.callback, error_callback: config.error_callback,
+      requestAccessToken: () => setTimeout(() => client.error_callback?.({ type: 'popup_closed' }), 0) };
+    return client;
+  },
+} } };`;
+
 test.describe('Encore performance editor sign-in', () => {
   test('sign in from the video link notice keeps the dialog and the draft', async ({ page }) => {
+    await page.route('https://accounts.google.com/gsi/client**', (route) =>
+      route.fulfill({ status: 200, contentType: 'text/javascript', body: FAKE_GIS_SCRIPT }),
+    );
     await enterEncoreApp(page);
     await page.goto('/encore/#/library');
     await expect(page.getByRole('heading', { name: 'Your repertoire' })).toBeVisible({ timeout: 15_000 });

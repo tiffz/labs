@@ -176,6 +176,8 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v7
+      with:
+        fetch-depth: 0  # The unused-exports ratchet diffs against origin/main after a knip bump
 
     - name: Setup project (Node + cached deps)
       uses: ./.github/actions/setup-project

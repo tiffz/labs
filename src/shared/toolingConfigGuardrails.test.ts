@@ -146,7 +146,7 @@ describe('every way of starting a dev server agrees on the port', () => {
   });
 
   it('the resolver gives a linked worktree its own port and the main checkout 5173', async () => {
-    const { DEFAULT_DEV_PORT, resolveDevServerPort } = await import(
+    const { DEFAULT_DEV_PORT, derivedDevPort, resolveDevServerPort } = await import(
       '../../scripts/labs-dev-port.mjs'
     );
 
@@ -177,7 +177,14 @@ describe('every way of starting a dev server agrees on the port', () => {
         DEFAULT_DEV_PORT,
       );
       expect(b).not.toBe(DEFAULT_DEV_PORT);
-      expect(a, 'two worktrees must not collide with each other').not.toBe(b);
+      expect(a, 'a linked worktree derives its port from its path').toBe(derivedDevPort(linkedA));
+      // Two different paths get different ports. Checked on fixed paths: the temp dirs above are
+      // random, and two random paths share one of 800 ports about once in 800 runs, which failed
+      // the nightly audit on 2026-10-31.
+      expect(
+        derivedDevPort('/repo/.claude/worktrees/alpha'),
+        'two worktrees must not collide with each other',
+      ).not.toBe(derivedDevPort('/repo/.claude/worktrees/beta'));
       // Deterministic, so a worktree reuses its own server across runs rather
       // than stranding a fresh Vite on every invocation.
       expect(resolveDevServerPort(linkedA, {})).toBe(a);

@@ -7,6 +7,9 @@ if [ -z "$INITIAL_STAGED_FILES" ]; then
   exit 0
 fi
 
+# Gates below run what is installed; match the lockfile first (npm ci when drifted, ~15s).
+npm run --silent check:node-modules-sync
+
 # Keep generated shared catalog in sync for every commit, even when
 # only workflow/docs files changed.
 npm run generate:shared-catalog

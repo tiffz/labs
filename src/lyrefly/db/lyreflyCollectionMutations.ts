@@ -58,14 +58,6 @@ export async function deleteLyreflyCollection(collection: LyreflyCollection): Pr
   notifyLyreflyLocalChange();
 }
 
-export async function updateLyreflyPiece(
-  piece: LyreflyCollectionPiece,
-  patch: Partial<Pick<LyreflyCollectionPiece, 'title' | 'notes' | 'occurredOn'>>,
-): Promise<void> {
-  await lyreflyDb.collectionPieces.put({ ...piece, ...patch, updatedAt: now() });
-  notifyLyreflyLocalChange();
-}
-
 /** Remove a piece from its collection. Only Lyrefly's record goes; the Drive file stays. */
 export async function deleteLyreflyPiece(piece: LyreflyCollectionPiece): Promise<void> {
   const at = now();

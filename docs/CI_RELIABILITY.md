@@ -99,6 +99,47 @@ Running the **full cross-app e2e** (browsers for every app) locally exhausts RAM
 - **Local parallelism is capped** for whatever e2e does run (CI is uncapped — dedicated RAM): Playwright `workers: 2`, Vitest `maxWorkers: 3`, `!CI`-gated, overridable via `LABS_E2E_WORKERS` / `LABS_VITEST_WORKERS`. `LABS_E2E_PREVIEW=1` runs e2e against a production `vite preview` build (needs `npm run build` first). All enforced by `src/shared/toolingConfigGuardrails.test.ts`.
 - **If a push still flakes on a playback spec** (e.g. with `LABS_FULL_E2E_PUSH=1`): it is memory, not code. Free RAM or push from a **fresh terminal**. Do **not** widen the flaky waits to chase it, and never `git push --no-verify`.
 
+## Failure audit, 2026-10-31
+
+Measured from `gh run list` and the failing jobs' logs: every failed CI/CD run since 2026-09-01,
+the two failed nightlies, and the gate failures in one long Lyrefly session.
+
+**What failed, by cause:**
+
+| Cause                                                          | Share                                  | Status                                                                   |
+| -------------------------------------------------------------- | -------------------------------------- | ------------------------------------------------------------------------ |
+| Intended UI change fails the blocking visual step once         | 4 of 5 CI failures in the last week    | Unavoidable without a local Linux renderer; `npm run visual:review`      |
+| `encore-performance-signin` reached real Google                | Both `main` failures in October, 4 PRs | Fixed: fake GIS script, falsified                                        |
+| Maqam read a menu before it opened (`allTextContents` no wait) | 1 `main` failure                       | Fixed                                                                    |
+| Port test hashed two random paths into 800 ports               | 1 nightly (about 1 run in 800)         | Fixed: fixed paths, falsified                                            |
+| Unused-exports ratchet **skipped itself** after the knip bump  | Silent: off in CI for weeks            | Fixed: gates changed files on a version mismatch, re-baselined at 6.42.1 |
+| Local `node_modules` drifted from the lockfile                 | All 38 checkouts, 127 to 1063 packages | Fixed: `check:node-modules-sync` resyncs in presubmit and pre-commit     |
+| Real regressions caught by pre-commit (types, tests, ratchets) | Most local hook failures               | Working as designed                                                      |
+
+**Three patterns behind most of it:**
+
+1. **Local gates did not run CI's toolchain.** Nothing reinstalled after a pull, so a checkout ran
+   Playwright 1.63 and MUI 9.4 against CI's 1.64 and 9.5. A local failure on that machine is not
+   evidence about CI, which is why several failures here got filed as "environmental" (see the
+   memory-pressure section above): some may have been drift. Now the first presubmit step.
+2. **Tests that touch production services fail on someone else's schedule.** The sign-in smoke
+   stubbed the session service, the app fell back to Google, and the test raced Google's popup.
+   Any e2e request that leaves `127.0.0.1` is a flake waiting for a slow day.
+3. **A check that can skip itself will.** The ratchet's skip printed one log line and exited 0.
+   A gate either gates or fails loudly; "skipped, see log" is off.
+
+**Not yet done:**
+
+- **Block external hosts in every e2e by default.** Specs import `test` from `@playwright/test`
+  directly, so there is no shared fixture to hang a network allowlist on. A `e2e/fixtures.ts`
+  that aborts any request to a host it does not know, plus a guard that specs import it, closes
+  pattern 2 for good.
+- **A local Linux renderer** (Docker or colima) would let presubmit run the scoped visual step,
+  turning "push, fail, import, push" into one push. `npm run test:e2e:visual:docker` already exists.
+- **Shared-touch fan-out.** Any `src/shared/**` edit runs the full Vitest and cross-app smoke,
+  which is most of why presubmit runs past its 300s budget. Scoping shared modules by their real
+  importers would cut it.
+
 ## Related
 
 - [`.github/workflows/ci.yml`](../.github/workflows/ci.yml)

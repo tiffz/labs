@@ -107,24 +107,42 @@ if (!baseline || update) {
 }
 
 /*
- * Different analyser than the one that produced the baseline: the two counts are not comparable,
- * so this check cannot make a claim either way. Say so and pass, rather than reporting a code
- * regression that did not happen. The gate resumes in full the moment the baseline is regenerated
- * against the new version, which is the one action this message asks for.
+ * Different analyser than the one that produced the baseline: a count that rose in a file this
+ * change never touched came from the new knip, not from the change. It used to skip the whole gate
+ * here and say so in a log line. Nobody read it: the gate was off in CI from the 6.35 bump until
+ * 2026-10-31 while the bumps kept landing (`check-with-no-teeth`).
+ *
+ * So it keeps gating, on the files this branch changed. A Dependabot bump changes no source and
+ * passes; a feature branch still cannot add an unused export to a file it edits. What a mismatch
+ * cannot see is an export elsewhere that this change orphaned, which is why the note asks for a
+ * re-baseline.
  */
-if (baseline.knipVersion && knipVersion && baseline.knipVersion !== knipVersion) {
+function changedFilesSinceMain() {
+  try {
+    execSync('git rev-parse --verify origin/main', { cwd: root, stdio: 'ignore' });
+    const committed = execSync('git diff --name-only origin/main...HEAD', { cwd: root, encoding: 'utf8' });
+    const working = execSync('git diff --name-only HEAD', { cwd: root, encoding: 'utf8' });
+    return new Set(`${committed}\n${working}`.split('\n').filter(Boolean));
+  } catch {
+    // No base to diff against (shallow clone): gate every file, the strict answer.
+    return null;
+  }
+}
+
+const versionMismatch = Boolean(baseline.knipVersion && knipVersion && baseline.knipVersion !== knipVersion);
+let gated = null;
+if (versionMismatch) {
+  gated = changedFilesSinceMain();
   console.log(
-    `check:knip-exports-ratchet: SKIPPED — baseline was measured with knip ${baseline.knipVersion}, ` +
-      `installed is ${knipVersion}. A version bump changes what knip detects, so the counts are not ` +
-      `comparable and a difference here would not mean the code got worse.\n` +
-      `Regenerate and commit the baseline to re-arm this gate:\n` +
-      `  node scripts/check-knip-exports-ratchet.mjs --update`,
+    `check:knip-exports-ratchet: baseline was measured with knip ${baseline.knipVersion}, installed is ` +
+      `${knipVersion}. Gating ${gated ? `only the ${gated.size} files this branch changed` : 'every file (no origin/main to diff against)'}.\n` +
+      `Re-baseline to gate the whole repo again: node scripts/check-knip-exports-ratchet.mjs --update`,
   );
-  process.exit(0);
 }
 
 const failures = [];
 for (const [file, count] of Object.entries(counts)) {
+  if (gated && !gated.has(file)) continue;
   const allowed = baseline.files[file] ?? 0;
   if (count > allowed) failures.push(`${file}: ${count} unused exports (baseline ${allowed})`);
 }
@@ -140,7 +158,8 @@ let improved = false;
 for (const [file, allowed] of Object.entries(baseline.files)) {
   if ((counts[file] ?? 0) < allowed) improved = true;
 }
-if (improved) {
+// Never auto-tighten across versions: that would bake the new knip's findings in unreviewed.
+if (improved && !versionMismatch) {
   writeBaseline(counts);
   console.log('check:knip-exports-ratchet: unused exports dropped — baseline tightened (commit the JSON).');
 }
