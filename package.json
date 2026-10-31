@@ -75,6 +75,7 @@
     "test:e2e:visual:crossbrowser": "VISUAL_MULTI_BROWSER=true playwright test --project=visual --project=visual-firefox --project=visual-webkit e2e/visual/apps.visual.spec.ts",
     "test:e2e:visual:crossbrowser:update": "VISUAL_MULTI_BROWSER=true playwright test --project=visual --project=visual-firefox --project=visual-webkit e2e/visual/apps.visual.spec.ts --update-snapshots",
     "test:e2e:visual:report": "playwright show-report",
+    "visual:review": "node scripts/review-visual-diffs.mjs",
     "test:audio:regression": "vitest run src/shared/beat/regression/syntheticAudioGenerator.audio-regression.test.ts",
     "test:audio:regression:update": "UPDATE_AUDIO_BASELINES=true vitest run src/shared/beat/regression/syntheticAudioGenerator.audio-regression.test.ts",
     "test:regression": "npm run test:audio:regression && npm run test:e2e:visual",
@@ -108,6 +109,7 @@
     "check:react-hooks-ratchet": "node scripts/check-react-hooks-ratchet.mjs",
     "check:complexity-ratchet": "node scripts/check-complexity-ratchet.mjs",
     "check:knip-exports-ratchet": "node scripts/check-knip-exports-ratchet.mjs",
+    "check:node-modules-sync": "node scripts/check-node-modules-sync.mjs --fix",
     "check:registry-drift": "node scripts/check-registry-drift.mjs",
     "verify:quick": "npm run check:ui-copy && npm run check:knip-exports-ratchet && npm run check:react-hooks-ratchet && npm run check:agent-guidance && npm run typecheck:full"
   },

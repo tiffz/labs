@@ -25,3 +25,6 @@ export function resolveDevServerPort(
   dir: string,
   env?: NodeJS.ProcessEnv | Record<string, string | undefined>,
 ): number;
+
+/** The port a linked worktree at `dir` derives from its path, ignoring overrides. */
+export function derivedDevPort(dir: string): number;

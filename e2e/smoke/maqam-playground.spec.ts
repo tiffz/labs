@@ -400,9 +400,11 @@ test.describe('Maqam Playground', () => {
     await expect(page.locator('.maqam-staff svg')).toBeVisible({ timeout: 15_000 });
 
     await page.locator('.maqam-titlepick').click();
-    const maqamat = await page
-      .locator('.maqam-menu [role="menuitemradio"] .maqam-menu__name')
-      .allTextContents();
+    const names = page.locator('.maqam-menu [role="menuitemradio"] .maqam-menu__name');
+    // `allTextContents` does not wait: read before the menu opened, it returned no maqamat and
+    // failed main on CI (2026-10-26, "Expected: > 5, Received: 0").
+    await expect(names.first()).toBeVisible();
+    const maqamat = await names.allTextContents();
     await page.keyboard.press('Escape');
     expect(maqamat.length).toBeGreaterThan(5);
 
@@ -543,6 +545,7 @@ test.describe('Maqam Playground', () => {
     await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
     await expect(page.locator('.maqam-staff svg')).toBeVisible({ timeout: 15_000 });
 
+    await expect(page.locator('.maqam-chip__name').first()).toBeVisible();
     const chipNames = await page.locator('.maqam-chip__name').allTextContents();
     expect(chipNames.length).toBeGreaterThan(1);
 

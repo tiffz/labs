@@ -41,8 +41,9 @@ const INTENTIONALLY_NOT_IN_PRESUBMIT: Record<string, string> = {
  * unexplained entry is how the gap reopens.
  */
 const INTENTIONALLY_NOT_IN_CI: Record<string, string> = {
-  // Nothing yet. When this map gains an entry, the reason must say why a developer skipping
-  // presubmit is allowed to bypass that gate entirely.
+  // The reason must say why a developer skipping presubmit is allowed to bypass that gate entirely.
+  'check:node-modules-sync':
+    'CI installs with npm ci on every run, so its node_modules cannot drift from the lockfile',
 };
 
 function ciScripts(): Set<string> {

@@ -50,6 +50,12 @@ async function runStage(label, taskFactories) {
   }
 }
 
+// Before anything else: every gate below runs what is installed, and a checkout that missed an
+// `npm ci` after a pull tests a different toolchain than CI does. Resyncs in ~15s when drifted.
+if (spawnSync('npm', ['run', '--silent', 'check:node-modules-sync'], { stdio: 'inherit' }).status !== 0) {
+  process.exit(1);
+}
+
 const staticChecks = [
   npmRun('import boundaries', 'check:import-boundaries'),
   npmRun('ui copy', 'check:ui-copy'),

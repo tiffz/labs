@@ -55,9 +55,18 @@ export function resolveDevServerPort(dir, env = process.env) {
   const override = Number(env.LABS_E2E_PORT);
   if (Number.isInteger(override) && override > 0 && override < 65536) return override;
   if (!isLinkedWorktree(dir)) return DEFAULT_DEV_PORT;
+  return derivedDevPort(dir);
+}
 
-  // Deterministic per path, so a worktree reuses its own server across runs
-  // instead of stranding a fresh Vite on every invocation.
+/**
+ * The port a linked worktree at `dir` derives. Deterministic per path, so a
+ * worktree reuses its own server across runs instead of stranding a fresh Vite
+ * on every invocation. Two paths share a port about once in 800.
+ *
+ * @param {string} dir
+ * @returns {number}
+ */
+export function derivedDevPort(dir) {
   const digest = createHash('sha256').update(dir).digest();
   return DEFAULT_DEV_PORT + 1 + (digest.readUInt16BE(0) % DERIVED_PORT_SPAN);
 }
