@@ -1,4 +1,4 @@
-import { test, type Locator, type Page } from '@playwright/test';
+import { test, type Locator, type Page } from '../labsTest';
 import {
   DEFAULT_INTERACTION_BUDGET_MS,
   HARD_FAIL_MULTIPLIER,

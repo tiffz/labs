@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../labsTest';
 import { enterEncoreApp } from '../helpers/enterEncoreApp';
 
 /** "Instrumental (no lyrics)": no lyrics stage, an instrumental outline, chords-first editing. */

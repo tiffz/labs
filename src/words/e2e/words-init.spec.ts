@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../../../e2e/labsTest';
 
 test.describe('Words in rhythm bootstrap', () => {
   test('loads app shell and rhythm input', async ({ page }) => {

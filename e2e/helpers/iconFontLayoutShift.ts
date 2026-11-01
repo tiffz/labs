@@ -85,7 +85,7 @@ export async function measureIconFontLayoutShift(
     if (ICON_FONT_URL_PATTERN.test(routeHandle.request().url())) {
       await iconFontGate;
     }
-    await routeHandle.continue();
+    await routeHandle.fallback();
   });
 
   await page.goto(route, { waitUntil: 'domcontentloaded' });

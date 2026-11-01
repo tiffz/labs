@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../labsTest';
 
 test.describe('Legacy Find the Beat route', () => {
   test('redirects /beat/ to Stanza', async ({ page }) => {

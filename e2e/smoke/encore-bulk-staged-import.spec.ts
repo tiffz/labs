@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Page } from '../labsTest';
 import { enterEncoreApp } from '../helpers/enterEncoreApp';
 import { seedZineboxE2eGoogleSession } from '../helpers/zineboxDriveImport';
 import { stubEncoreSignedInDrive } from '../helpers/encoreDriveStub';

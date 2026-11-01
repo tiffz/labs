@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../labsTest';
 import {
   collectPageConsoleErrors,
   prepareGestureE2ePage,

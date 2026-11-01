@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './labsTest';
 import { clickStanzaLibraryCard } from './helpers/stanzaLibrary';
 import { STANZA_E2E_STEM_SONG_TITLE } from '../src/stanza/e2e/stanzaE2eBootstrap';
 

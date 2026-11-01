@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../labsTest';
 
 import { expectStanzaLibraryChrome } from '../helpers/stanzaLibrary';
 

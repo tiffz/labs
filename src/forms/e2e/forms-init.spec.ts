@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../../../e2e/labsTest';
 
 test.describe('Form Intersections - Initialization', () => {
   test('should load the app without errors', async ({ page }) => {

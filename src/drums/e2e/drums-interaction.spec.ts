@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../../../e2e/labsTest';
 
 test.describe('Darbuka Rhythm Trainer - User Interactions', () => {
   test('playback and toolbar material icons are not FOUC-clipped', async ({ page }) => {

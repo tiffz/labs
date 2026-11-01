@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../labsTest';
 
 /** Inline for page.evaluate — must not close over module imports. */
 function auditBubblePathsInBrowser(): {

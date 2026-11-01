@@ -128,12 +128,13 @@ the two failed nightlies, and the gate failures in one long Lyrefly session.
 3. **A check that can skip itself will.** The ratchet's skip printed one log line and exited 0.
    A gate either gates or fails loudly; "skipped, see log" is off.
 
+**Since done:** every spec now imports `test` from [`e2e/labsTest.ts`](../e2e/labsTest.ts), which
+aborts requests to any host but this machine; `src/shared/e2eNetworkIsolation.test.ts` enforces it.
+That closes pattern 2. See [`E2E_SMOKE_CONVENTIONS.md`](E2E_SMOKE_CONVENTIONS.md) § No request
+leaves the machine.
+
 **Not yet done:**
 
-- **Block external hosts in every e2e by default.** Specs import `test` from `@playwright/test`
-  directly, so there is no shared fixture to hang a network allowlist on. A `e2e/fixtures.ts`
-  that aborts any request to a host it does not know, plus a guard that specs import it, closes
-  pattern 2 for good.
 - **A local Linux renderer** (Docker or colima) would let presubmit run the scoped visual step,
   turning "push, fail, import, push" into one push. `npm run test:e2e:visual:docker` already exists.
 - **Shared-touch fan-out.** Any `src/shared/**` edit runs the full Vitest and cross-app smoke,

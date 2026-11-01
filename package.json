@@ -148,6 +148,8 @@
     "@tiptap/extension-placeholder": "^3.32.0",
     "@tiptap/react": "^3.32.0",
     "@tiptap/starter-kit": "^3.32.0",
+    "@vexflow-fonts/academico": "^1.0.1",
+    "@vexflow-fonts/bravura": "^1.0.2",
     "cmu-pronouncing-dictionary": "^3.0.0",
     "culori": "^4.0.2",
     "d3-force": "^3.0.0",

@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../labsTest';
 import { labsDriveAutoPushAllowed } from '../../src/shared/drive/labsDriveSyncGuard';
 import { mergeOriginalSongPreservingContent } from '../../src/encore/originals/drive/encoreOriginalsMerge';
 import type { EncoreOriginalSong } from '../../src/encore/originals/types';

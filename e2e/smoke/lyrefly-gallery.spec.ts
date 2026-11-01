@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../labsTest';
 
 // 1x1 transparent PNG: a piece image for the bundle import, never shown at size.
 const PNG = Buffer.from(

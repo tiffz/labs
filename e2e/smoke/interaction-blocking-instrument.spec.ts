@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../labsTest';
 import { measureClickBlocking, reportInteractionBlocking } from '../helpers/interactionLatency';
 
 /**

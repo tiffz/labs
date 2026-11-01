@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../../../e2e/labsTest';
 
 test.describe('Story Generator - Initialization', () => {
   test('should load the story generator app shell', async ({ page }) => {

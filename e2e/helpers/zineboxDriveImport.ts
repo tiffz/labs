@@ -196,6 +196,6 @@ export async function stubZineboxDriveFolderImportApi(page: Page): Promise<void>
       return;
     }
 
-    await route.continue();
+    await route.fallback();
   });
 }

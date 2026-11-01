@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './labsTest';
 
 test.describe('Labs home bootstrap', () => {
   test('loads home catalog and primary app links', async ({ page }) => {

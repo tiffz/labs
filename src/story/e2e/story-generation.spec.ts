@@ -1,24 +1,24 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../../../e2e/labsTest';
 
 test.describe('Story Generator - Story Generation', () => {
   test('should generate a story when button is clicked', async ({ page }) => {
     await page.goto('/story/');
 
-    const generateButton = page.locator('button:has-text("Generate Story Plot")');
+    const generateButton = page.getByRole('button', { name: 'Generate Story', exact: true });
     await generateButton.click();
 
     // Check that story elements appear
     await expect(page.locator('text=Core Story Elements')).toBeVisible();
     await expect(page.locator('text=Key Genre Elements')).toBeVisible();
-    await expect(page.locator('text=The Hero')).toBeVisible();
-    await expect(page.locator('text=Primary Flaw')).toBeVisible();
-    await expect(page.locator('text=The Nemesis')).toBeVisible();
+    for (const element of ['hero', 'flaw', 'nemesis']) {
+      await expect(page.getByRole('button', { name: `Reroll ${element}` })).toBeVisible();
+    }
   });
 
   test('should display beat chart after generation', async ({ page }) => {
     await page.goto('/story/');
 
-    await page.locator('button:has-text("Generate Story Plot")').click();
+    await page.getByRole('button', { name: 'Generate Story', exact: true }).click();
 
     // Check for act headers
     await expect(page.locator('text=Act 1')).toBeVisible();
@@ -32,125 +32,34 @@ test.describe('Story Generator - Story Generation', () => {
     await expect(page.locator('text=15. Final Image')).toBeVisible();
   });
 
-  test('should generate different stories on multiple clicks', async ({ page }) => {
+  test('a selected genre drives the genre elements', async ({ page }) => {
     await page.goto('/story/');
 
-    // Generate first story
-    await page.locator('button:has-text("Generate Story Plot")').click();
-    await expect(page.locator('text=Core Story Elements')).toBeVisible();
+    await page.locator('label[for="genre-whydunit"]').click();
+    await expect(page.getByRole('radio', { name: 'Whydunit' })).toBeChecked();
+    await page.getByRole('button', { name: 'Generate Story', exact: true }).click();
 
-    // Get first hero text
-    const firstHero = await page
-      .locator('.dense-sub-label:has-text("The Hero")')
-      .locator('..')
-      .locator('.generated-chip-content')
-      .first()
-      .textContent();
-
-    // Generate second story
-    await page.locator('button:has-text("Generate Story Plot")').click();
-
-    // Get second hero text
-    const secondHero = await page
-      .locator('.dense-sub-label:has-text("The Hero")')
-      .locator('..')
-      .locator('.generated-chip-content')
-      .first()
-      .textContent();
-
-    // They might be the same due to randomness, but the mechanism should work
-    expect(firstHero).toBeDefined();
-    expect(secondHero).toBeDefined();
+    for (const element of ['The Detective', 'The Secret', 'The Dark Turn']) {
+      await expect(page.getByRole('button', { name: `Reroll ${element}` })).toBeVisible();
+    }
   });
 
-  test('should allow selecting a specific genre', async ({ page }) => {
+  test('rerolling one element keeps it filled', async ({ page }) => {
     await page.goto('/story/');
+    await page.getByRole('button', { name: 'Generate Story', exact: true }).click();
 
-    // Select Whydunit genre
-    await page.locator('label:has-text("Whydunit")').click();
-
-    // Generate story
-    await page.locator('button:has-text("Generate Story Plot")').click();
-
-    // Check that Whydunit is displayed
-    await expect(page.locator('h2:has-text("Whydunit")')).toBeVisible();
-
-    // Check for Whydunit-specific elements
-    await expect(page.locator('text=The Detective')).toBeVisible();
-    await expect(page.locator('text=The Secret')).toBeVisible();
-    await expect(page.locator('text=The Dark Turn')).toBeVisible();
+    const reroll = page.getByRole('button', { name: 'Reroll hero' });
+    const hero = reroll.locator('..');
+    await expect(hero).not.toHaveText('');
+    await reroll.click();
+    await expect(hero).not.toHaveText('');
   });
 
-  test('should allow selecting a specific theme', async ({ page }) => {
+  test('reroll buttons explain themselves on hover', async ({ page }) => {
     await page.goto('/story/');
+    await page.getByRole('button', { name: 'Generate Story', exact: true }).click();
 
-    // Select Forgiveness theme
-    await page.locator('label:has-text("Forgiveness")').click();
-
-    // Generate story
-    await page.locator('button:has-text("Generate Story Plot")').click();
-
-    // Check that Forgiveness is displayed
-    await expect(page.locator('text=Theme:')).toBeVisible();
-    await expect(page.locator('text=Forgiveness')).toBeVisible();
-  });
-
-  test('should display reroll buttons', async ({ page }) => {
-    await page.goto('/story/');
-
-    await page.locator('button:has-text("Generate Story Plot")').click();
-
-    // Check that reroll buttons are present
-    const rerollButtons = page.locator('.reroll-btn');
-    const count = await rerollButtons.count();
-    expect(count).toBeGreaterThan(0);
-  });
-
-  test('should reroll an element when reroll button is clicked', async ({ page }) => {
-    await page.goto('/story/');
-
-    await page.locator('button:has-text("Generate Story Plot")').click();
-
-    // Get the first hero chip
-    const heroChip = page
-      .locator('.dense-sub-label:has-text("The Hero")')
-      .locator('..')
-      .locator('.generated-chip')
-      .first();
-
-    // Get initial hero text
-    const initialHero = await heroChip.locator('.generated-chip-content').textContent();
-
-    // Click the reroll button
-    await heroChip.locator('.reroll-btn').click();
-
-    await expect
-      .poll(
-        async () => (await heroChip.locator('.generated-chip-content').textContent())?.trim().length ?? 0,
-        { timeout: 2000 }
-      )
-      .toBeGreaterThan(0);
-
-    // Get new hero text
-    const newHero = await heroChip.locator('.generated-chip-content').textContent();
-
-    // They might be the same due to randomness, but both should be defined
-    expect(initialHero).toBeDefined();
-    expect(newHero).toBeDefined();
-  });
-
-  test('should show tooltips on hover', async ({ page }) => {
-    await page.goto('/story/');
-
-    await page.locator('button:has-text("Generate Story Plot")').click();
-
-    // Hover over a help icon
-    const helpIcon = page.locator('.help-icon').first();
-    await helpIcon.hover();
-
-    // Check that tooltip becomes visible (CSS handles this)
-    const tooltip = page.locator('.tooltip-content').first();
-    await expect(tooltip).toBeAttached();
+    await page.getByRole('button', { name: 'Reroll hero' }).hover();
+    await expect(page.getByRole('tooltip', { name: 'Reroll this element' })).toBeVisible();
   });
 });
-

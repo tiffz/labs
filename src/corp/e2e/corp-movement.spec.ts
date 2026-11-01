@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../../../e2e/labsTest';
 
 test.describe('Corporate Ladder movement', () => {
   test('arrow keys move the player and change player position', async ({ page }) => {

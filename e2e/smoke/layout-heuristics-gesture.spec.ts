@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../labsTest';
 import { stubGestureDriveThumbnailImages } from '../helpers/gesturePreviewFixtures';
 import { runLayoutHeuristicsInBrowser } from '../helpers/layoutHeuristics';
 import { runContrastAuditInBrowser } from '../helpers/contrastAudit';
