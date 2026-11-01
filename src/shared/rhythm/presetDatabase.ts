@@ -103,6 +103,9 @@ export const RHYTHM_DATABASE: Record<string, RhythmDefinition> = {
     sixEightPattern: 'D--T--D-D-T-',
     variations: [
       { notation: 'D---T---D-D-T---' },
+      { notation: 'D-D-T---D-D-T---', preservesReferenceBackbone: true },
+      { notation: 'D-D-T---D-D-T-TK', preservesReferenceBackbone: true },
+      { notation: 'D---T--DD-D-T---', preservesReferenceBackbone: true },
       { notation: 'D---T---D---T---', note: 'Simple backbeat' },
       { notation: 'D-K-T-K-D-D-T-K-' },
     ],
