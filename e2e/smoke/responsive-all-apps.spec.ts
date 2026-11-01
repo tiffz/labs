@@ -4,7 +4,7 @@
  * no sub-24px touch targets. Per-app layout-heuristics specs add app-specific
  * assertions on top; this spec is the floor that new routes inherit for free.
  */
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../labsTest';
 import { SMOKE_ROUTE_SPECS, VISUAL_VIEWPORTS } from '../routeRegistry';
 import { runHorizontalScrollHeuristicInBrowser } from '../helpers/horizontalScrollHeuristic';
 import { runTouchTargetHeuristicInBrowser } from '../helpers/touchTargetHeuristic';

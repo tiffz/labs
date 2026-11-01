@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Page } from './labsTest';
 
 const PREVIEW = '?labs_preview_cookie_banner=1';
 

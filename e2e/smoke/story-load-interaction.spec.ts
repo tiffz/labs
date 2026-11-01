@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../labsTest';
 
 /** @see src/story/CUJs.md */
 test.describe('Story load interaction', () => {

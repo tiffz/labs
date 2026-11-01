@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../labsTest';
 import { enterEncoreApp } from '../helpers/enterEncoreApp';
 
 const MUI_MENU_FRAGMENT_RE = /MUI: The Menu component doesn't accept a Fragment as a child/i;

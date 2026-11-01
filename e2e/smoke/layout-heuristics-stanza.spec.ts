@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../labsTest';
 import { runHorizontalScrollHeuristicInBrowser } from '../helpers/horizontalScrollHeuristic';
 import { runLayoutHeuristicsInBrowser } from '../helpers/layoutHeuristics';
 import { runContrastAuditInBrowser } from '../helpers/contrastAudit';

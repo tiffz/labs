@@ -4,6 +4,16 @@ How to add Playwright smokes that catch shell wiring and **obvious-bad** UX regr
 
 Registry: [`e2e/routeRegistry.ts`](../e2e/routeRegistry.ts) — update when adding app boot smokes.
 
+## No request leaves the machine
+
+Every spec imports `test` and `expect` from [`e2e/labsTest.ts`](../e2e/labsTest.ts), never from
+`@playwright/test`. Its auto fixture aborts any request to a host other than this machine, so a
+test cannot race a real service. Stub a host you need with `page.route(...)` + `fulfill`; page
+routes run before the block. A catch-all stub ends in `route.fallback()`, never `route.continue()`,
+which would send the request past the block. Blocked hosts show up as a `blocked-external-hosts`
+annotation in the report. [`src/shared/e2eNetworkIsolation.test.ts`](../src/shared/e2eNetworkIsolation.test.ts)
+enforces the import and the `fallback`.
+
 ## When to add a smoke
 
 | Change                                            | Smoke                                                        |

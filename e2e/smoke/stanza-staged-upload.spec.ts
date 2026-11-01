@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../labsTest';
 
 /** Stanza (ADR 0030): a picked recording is staged for review and becomes a song only on confirm. */
 const MOV = path.join(path.dirname(fileURLToPath(import.meta.url)), '../fixtures/encore-take.mov');

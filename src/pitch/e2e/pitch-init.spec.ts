@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../../../e2e/labsTest';
 
 test.describe('Pitch detector bootstrap', () => {
   test('renders app shell and pitch controls', async ({ page }) => {

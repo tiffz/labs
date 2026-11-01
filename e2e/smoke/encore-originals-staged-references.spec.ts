@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../labsTest';
 import { enterEncoreApp } from '../helpers/enterEncoreApp';
 import { gotoEncoreOriginalsQueue } from '../helpers/encoreOriginalsQueue';
 import { seedZineboxE2eGoogleSession } from '../helpers/zineboxDriveImport';

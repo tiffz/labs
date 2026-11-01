@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../labsTest';
 
 test('scrapboard app loads', async ({ page }) => {
   await page.goto('/scrapboard/');

@@ -84,7 +84,7 @@ npm run presubmit               # before done
 ## Interaction smoke template
 
 ```typescript
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../labsTest';
 import { measureClickUntil } from '../helpers/interactionLatency';
 import { DEFAULT_INTERACTION_BUDGET_MS } from '../../src/shared/test/interactionLatencyCore';
 

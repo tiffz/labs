@@ -144,7 +144,7 @@ export async function stubGestureDriveUploadApi(page: Page): Promise<GestureDriv
       return;
     }
 
-    await route.continue();
+    await route.fallback();
   });
 
   return {

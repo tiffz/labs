@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../../../e2e/labsTest';
 
 test.describe('UI catalog bootstrap', () => {
   test('loads catalog shell and shared component docs', async ({ page }) => {

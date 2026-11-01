@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../labsTest';
 import { runScrollSanityInBrowser } from '../helpers/scrollSanity';
 
 test.describe('Stanza scroll sanity', () => {

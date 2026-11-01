@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../labsTest';
 import { measureClickUntil, reportInteractionLatency } from '../helpers/interactionLatency';
 import { RELAXED_INTERACTION_BUDGET_MS } from '../../src/shared/test/interactionLatencyCore';
 

@@ -36,7 +36,7 @@ export async function stubGestureDriveThumbnailImages(page: Page): Promise<void>
       await route.fulfill({ status: 200, contentType: 'image/png', body: GESTURE_E2E_TINY_PNG });
       return;
     }
-    await route.continue();
+    await route.fallback();
   });
 }
 

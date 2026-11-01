@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../labsTest';
 import { enterEncoreApp } from '../helpers/enterEncoreApp';
 import { measureClickBlocking, reportInteractionBlocking } from '../helpers/interactionLatency';
 import { TAB_NAVIGATION_BUDGET_MS } from '../../src/shared/test/interactionLatencyCore';

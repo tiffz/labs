@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../labsTest';
 
 /** @see src/chords/CUJs.md */
 test.describe('Chords load interaction', () => {

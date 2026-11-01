@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../labsTest';
 
 test('palettegen app loads with full bleed palette', async ({ page }) => {
   await page.goto('/palette/');

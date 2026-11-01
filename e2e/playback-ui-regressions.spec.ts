@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Page } from './labsTest';
 import { enterEncoreApp } from './helpers/enterEncoreApp';
 import { clickStanzaLibraryCard } from './helpers/stanzaLibrary';
 

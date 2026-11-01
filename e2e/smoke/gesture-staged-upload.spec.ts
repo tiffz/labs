@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../labsTest';
 import { prepareGestureE2ePage } from '../helpers/gesturePreviewFixtures';
 import { seedGestureE2eGoogleSession, stubGestureDriveUploadApi } from '../helpers/gestureUploadOfflineResume';
 

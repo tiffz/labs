@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../labsTest';
 
 /** Lyrefly (ADR 0030): uploaded page art is staged for review and becomes a page only on confirm. */
 const PROJECT = 'e2e00000-0000-4000-8000-00000e2e0001';

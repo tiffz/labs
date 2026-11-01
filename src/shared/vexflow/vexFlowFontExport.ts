@@ -1,11 +1,17 @@
+import academicoUrl from '@vexflow-fonts/academico/academico.woff2?url';
+import bravuraUrl from '@vexflow-fonts/bravura/bravura.woff2?url';
+
 /** VexFlow SMuFL fonts used for notation glyphs rendered as SVG `<text>`. */
 export const VEXFLOW_NOTATION_FONTS = ['Bravura'] as const;
 
-const VEXFLOW_FONT_CDN = 'https://cdn.jsdelivr.net/npm/@vexflow-fonts/';
-
-const VEXFLOW_FONT_FILES: Record<string, string> = {
-  Bravura: 'bravura/bravura.woff2',
-  Academico: 'academico/academico.woff2',
+/**
+ * Served from this site, never from VexFlow's default CDN. `VexFlow.loadFonts` fetches from
+ * cdn.jsdelivr.net, so a CDN outage dropped every notehead in the portfolio, and every e2e spec
+ * that drew notation raced the CDN.
+ */
+const VEXFLOW_FONT_URLS: Record<string, string> = {
+  Bravura: bravuraUrl,
+  Academico: academicoUrl,
 };
 
 const fontDataUrlCache = new Map<string, string>();
@@ -25,12 +31,12 @@ export async function fetchVexFlowFontDataUrl(fontName: string): Promise<string>
     return cached;
   }
 
-  const path = VEXFLOW_FONT_FILES[fontName];
-  if (!path) {
+  const url = VEXFLOW_FONT_URLS[fontName];
+  if (!url) {
     throw new Error(`Unknown VexFlow font: ${fontName}`);
   }
 
-  const response = await fetch(`${VEXFLOW_FONT_CDN}${path}`);
+  const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`Failed to fetch VexFlow font ${fontName}.`);
   }
@@ -67,8 +73,14 @@ export function injectSvgStyle(svg: SVGSVGElement, css: string): void {
 export async function ensureVexFlowFontsLoaded(
   fontNames: readonly string[] = VEXFLOW_NOTATION_FONTS,
 ): Promise<void> {
-  const { VexFlow } = await import('vexflow');
-  await VexFlow.loadFonts(...fontNames);
+  const { Font, VexFlow } = await import('vexflow');
+  await Promise.all(
+    fontNames.map((name) => {
+      const url = VEXFLOW_FONT_URLS[name];
+      if (!url) throw new Error(`Unknown VexFlow font: ${name}`);
+      return Font.load(name, url);
+    }),
+  );
   VexFlow.setFonts(...fontNames);
   if (typeof document !== 'undefined' && document.fonts) {
     await document.fonts.ready;

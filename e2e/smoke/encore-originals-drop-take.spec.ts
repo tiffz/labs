@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { test, expect, type Locator } from '@playwright/test';
+import { test, expect, type Locator } from '../labsTest';
 import { enterEncoreApp } from '../helpers/enterEncoreApp';
 import { gotoEncoreOriginalsQueue, openSeededOriginalStage } from '../helpers/encoreOriginalsQueue';
 

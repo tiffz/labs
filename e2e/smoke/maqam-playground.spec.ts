@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Page } from '../labsTest';
 
 /**
  * SMuFL codepoints, as vexflow 5.0.0 defines them

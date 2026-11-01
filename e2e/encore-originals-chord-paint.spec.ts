@@ -1,7 +1,9 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './labsTest';
+import { enterEncoreApp } from './helpers/enterEncoreApp';
 
 test.describe('Encore Originals chord paint', () => {
   test.beforeEach(async ({ page }) => {
+    await enterEncoreApp(page);
     await page.goto('/encore/#/originals');
     await expect(page.getByRole('heading', { name: 'Originals' })).toBeVisible({ timeout: 15_000 });
     await page.getByRole('button', { name: 'New Original' }).click();
@@ -11,7 +13,7 @@ test.describe('Encore Originals chord paint', () => {
     await expect(lyricsChart).toBeVisible({ timeout: 10_000 });
     await lyricsChart.fill('[Verse 1]\n[Bb]around here\n');
     await page.getByRole('button', { name: 'Add chords' }).click();
-    await expect(page.getByRole('button', { name: 'Play' })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('button', { name: 'Play', exact: true })).toBeVisible({ timeout: 10_000 });
   });
 
   test('moves a selected chord when clicking another word', async ({ page }) => {

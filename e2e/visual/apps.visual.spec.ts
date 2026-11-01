@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { test, expect, type Page, type TestInfo } from '@playwright/test';
+import { test, expect, type Page, type TestInfo } from '../labsTest';
 import { VISUAL_ROUTE_SPECS, VISUAL_VIEWPORTS } from '../routeRegistry';
 import {
   configureDeterministicBrowserState,

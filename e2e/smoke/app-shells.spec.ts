@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../labsTest';
 import { SMOKE_ROUTE_SPECS } from '../routeRegistry';
 
 test.describe('All app shells smoke', () => {

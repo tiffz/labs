@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../../../e2e/labsTest';
 
 test.describe('Cats app bootstrap', () => {
   test('initializes without major console errors', async ({ page }) => {

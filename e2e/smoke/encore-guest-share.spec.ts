@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../labsTest';
 import {
   E2E_GUEST_SNAPSHOT_FILE_ID,
   readDirectGoogleDriveHits,

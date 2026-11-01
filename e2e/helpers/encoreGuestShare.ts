@@ -44,7 +44,7 @@ export async function stubEncoreGuestSnapshotFetch(page: Page, fileId = E2E_GUES
       await route.abort('failed');
       return;
     }
-    await route.continue();
+    await route.fallback();
   });
 
   await page.route(`**/__encore/drive-public/${encodeURIComponent(fileId)}`, async (route) => {
