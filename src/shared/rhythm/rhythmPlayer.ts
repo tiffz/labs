@@ -96,8 +96,8 @@ function unrollMeasures(rhythm: ParsedRhythm) {
 /**
  * Rhythm player that schedules and plays notes based on BPM.
  *
- * Uses a requestAnimationFrame look-ahead loop combined with
- * AudioContext-based scheduling for sample-accurate timing.
+ * Uses a look-ahead loop (rAF when visible, a timer when hidden, via PreciseScheduler)
+ * combined with AudioContext-based scheduling for sample-accurate timing.
  * UI callbacks (note highlighting, metronome beat) are still delivered
  * via setTimeout but tracked for reliable cleanup on stop.
  *
@@ -127,9 +127,21 @@ class RhythmPlayer {
   private voicePack = new VoicePackLoader();
   private voiceSources: AudioBufferSourceNode[] = [];
 
-  private scheduledUpToSec = 0;
-  /** Absolute AudioContext time where the current loop iteration begins (event times are relative to this). */
+  /** Absolute AudioContext time where the loop iteration now PLAYING began. Read by aux schedulers. */
   private audioStartTimeSec = 0;
+  /** Duration and BPM of the playing iteration; `loopDurationSec`/`currentBpm` describe the queued one. */
+  private playingLoopDurationSec = 0;
+  private playingBpm = 120;
+  /**
+   * Absolute AudioContext time where the iteration being QUEUED begins (event times are relative
+   * to this). It runs ahead of `audioStartTimeSec` by up to one look-ahead, so the next loop's
+   * opening notes are queued before they are due, not after.
+   */
+  private queuedLoopStartSec = 0;
+  /** AudioContext time up to which events are already queued: the last tick's horizon. */
+  private queuedUpToSec = 0;
+  /** Queued iterations that have not started playing yet, oldest first. */
+  private upcomingLoops: Array<{ startSec: number; durationSec: number; bpm: number }> = [];
   private noteEvents: ScheduledNoteEvent[] = [];
   private metronomeEvents: ScheduledMetronomeEvent[] = [];
   private noteEventIndex = 0;
@@ -137,6 +149,11 @@ class RhythmPlayer {
   private loopDurationSec = 0;
 
   private static readonly LOOK_AHEAD_SEC = 0.25;
+  /**
+   * A note whose time has passed by more than this is dropped, not played. Web Audio plays a
+   * past start time at once, so after a stall the alternative is every missed note in one burst.
+   */
+  private static readonly LATE_DROP_SEC = 0.05;
   /** Background tabs throttle rAF; schedule farther ahead so clicks still fire on time. */
   private static readonly LOOK_AHEAD_HIDDEN_SEC = 3.5;
 
@@ -201,7 +218,11 @@ class RhythmPlayer {
     if (!ctx) return;
 
     this.audioStartTimeSec = ctx.currentTime + 0.05;
-    this.scheduledUpToSec = this.audioStartTimeSec;
+    this.queuedLoopStartSec = this.audioStartTimeSec;
+    this.playingLoopDurationSec = this.loopDurationSec;
+    this.playingBpm = this.currentBpm;
+    this.upcomingLoops = [];
+    this.queuedUpToSec = 0;
     this.noteEventIndex = 0;
     this.metronomeEventIndex = 0;
 
@@ -540,26 +561,29 @@ class RhythmPlayer {
     return { secPerSixteenth, effectiveStartTick, effectiveEndTick };
   }
 
+  /**
+   * Point the metronome cursor past everything already queued, so a rebuilt schedule neither
+   * repeats queued clicks nor queues ones that are already due.
+   */
   private resyncMetronomeEventIndexFromNow(): void {
     const ctx = audioPlayer.getAudioContext();
-    if (!ctx) {
-      this.metronomeEventIndex = 0;
-      return;
-    }
-
-    const elapsed = Math.max(0, ctx.currentTime - this.audioStartTimeSec);
+    const queuedUpTo = Math.max(this.queuedUpToSec, ctx?.currentTime ?? 0);
     this.metronomeEventIndex = 0;
     while (
       this.metronomeEventIndex < this.metronomeEvents.length &&
-      this.metronomeEvents[this.metronomeEventIndex].timeSec < elapsed
+      this.queuedLoopStartSec + this.metronomeEvents[this.metronomeEventIndex].timeSec <= queuedUpTo
     ) {
       this.metronomeEventIndex++;
     }
   }
 
   /**
-   * rAF tick: schedule events whose AudioContext time falls within the
-   * look-ahead window.
+   * Loop tick: queue every event whose AudioContext time falls within the look-ahead window.
+   *
+   * The window may cross a loop boundary, and then the next iteration is queued in the same tick.
+   * Wrapping only once `now` had passed the loop end left each loop's opening notes due before they
+   * were queued. At 60 Hz that cost a few ms; in a hidden tab, where ticks arrive at 1-4 Hz, it
+   * queued up to a second of notes in the past and they all played at once, every loop.
    */
   private tick = (): void => {
     if (!this.isPlaying) return;
@@ -568,120 +592,131 @@ class RhythmPlayer {
     if (!ctx) return;
 
     const now = ctx.currentTime;
-    const lookAhead = this.getLookAheadSec();
-    const horizon = now + lookAhead;
+    const horizon = now + this.getLookAheadSec();
 
-    const gap = now - this.scheduledUpToSec;
-    if (gap > lookAhead * 2) {
-      while (this.noteEventIndex < this.noteEvents.length) {
-        const evt = this.noteEvents[this.noteEventIndex];
-        if (this.audioStartTimeSec + evt.timeSec > now) break;
-        this.noteEventIndex++;
-      }
-      while (this.metronomeEventIndex < this.metronomeEvents.length) {
-        const evt = this.metronomeEvents[this.metronomeEventIndex];
-        if (this.audioStartTimeSec + evt.timeSec > now) break;
-        this.metronomeEventIndex++;
-      }
-      this.scheduledUpToSec = now;
+    this.skipLoopsMissedWhileStalled(now);
+
+    for (;;) {
+      this.queueNoteEvents(ctx, now, horizon);
+      this.queueMetronomeEvents(ctx, now, horizon);
+
+      const queuedLoopEndSec = this.queuedLoopStartSec + this.loopDurationSec;
+      if (!this.isLooping || this.loopDurationSec <= 0 || queuedLoopEndSec > horizon) break;
+      this.queueNextLoop(queuedLoopEndSec);
     }
+    this.queuedUpToSec = horizon;
 
-    // --- schedule note events ---
-    while (this.noteEventIndex < this.noteEvents.length) {
-      const evt = this.noteEvents[this.noteEventIndex];
-      const audioTime = this.audioStartTimeSec + evt.timeSec;
+    this.advancePlayingLoop(now);
 
-      if (audioTime > horizon) break;
-
-      if (audioTime >= this.scheduledUpToSec) {
-        if (!evt.isTiedFrom) {
-          if (evt.sound !== 'rest') {
-            audioPlayer.stopAllDrumSounds(audioTime);
-          }
-          audioPlayer.playNowIfReady(evt.sound, evt.volume, evt.fadeDuration, audioTime);
-        }
-
-        const delayMs = Math.max(0, (audioTime - now) * 1000);
-        const { measureIndex, noteIndex, repeatIteration, repeatCount } = evt;
-        this.scheduler.scheduleCallback(delayMs, () => {
-          if (!this.isPlaying) return;
-          this.onNotePlay?.(measureIndex, noteIndex, repeatIteration, repeatCount);
-        });
-      }
-
-      this.noteEventIndex++;
-    }
-
-    // --- schedule metronome events ---
-    while (this.metronomeEventIndex < this.metronomeEvents.length) {
-      const evt = this.metronomeEvents[this.metronomeEventIndex];
-      const audioTime = this.audioStartTimeSec + evt.timeSec;
-
-      if (audioTime > horizon) break;
-
-      if (audioTime >= this.scheduledUpToSec) {
-        if (this.metronomeEnabled && evt.shouldClick) {
-          audioPlayer.playClickNowIfReady(evt.clickVolume, audioTime, evt.clickPlaybackRate);
-        }
-        if (this.metronomeEnabled && evt.shouldVoice && evt.voiceSampleId && ctx) {
-          scheduleVoiceSampleOnContext(
-            ctx,
-            this.voicePack,
-            evt.voiceSampleId,
-            audioTime,
-            evt.voiceVolume,
-            evt.subdivDurationSec,
-            (source) => {
-              this.voiceSources.push(source);
-            },
-          );
-        }
-        if (this.metronomeEnabled && evt.shouldDrum && evt.drumSound) {
-          audioPlayer.playNowIfReady(evt.drumSound, evt.drumVolume, evt.subdivDurationSec, audioTime);
-        }
-
-        const delayMs = Math.max(0, (audioTime - now) * 1000);
-        const { measureIndex, positionInMeasure, isDownbeat } = evt;
-        this.scheduler.scheduleCallback(delayMs, () => {
-          if (!this.isPlaying) return;
-          this.onMetronomeBeat?.(measureIndex, positionInMeasure, isDownbeat);
-        });
-      }
-
-      this.metronomeEventIndex++;
-    }
-
-    // Advance the watermark before the loop-boundary check so a wrap
-    // can reset it to the new loop's start without being overwritten.
-    this.scheduledUpToSec = Math.max(this.scheduledUpToSec, now);
-
-    // --- loop boundary ---
-    // One pattern loop occupies [audioStartTimeSec, audioStartTimeSec + loopDurationSec).
-    // When BPM changes at the boundary, buildEventList() updates loopDurationSec for the *next*
-    // loop — we must advance audioStartTimeSec by the *completed* loop's duration (captured before
-    // rebuild), not by loopCount * newDuration (which mis-anchors and can skip or stall playback).
-    const loopEndTimeSec = this.audioStartTimeSec + this.loopDurationSec;
-
-    if (now >= loopEndTimeSec - 0.01) {
-      const durationOfCompletedLoop = this.loopDurationSec;
-      if (this.pendingBpm !== null && this.pendingBpm !== this.currentBpm) {
-        this.currentBpm = this.pendingBpm;
-        this.pendingBpm = null;
-        this.buildEventList();
-      }
-
-      if (this.isLooping) {
-        this.audioStartTimeSec += durationOfCompletedLoop;
-        this.noteEventIndex = 0;
-        this.metronomeEventIndex = 0;
-        this.scheduledUpToSec = this.audioStartTimeSec;
-      } else {
-        this.isPlaying = false;
-        this.scheduler.stop();
-        this.onPlaybackEnd?.();
-      }
+    if (!this.isLooping && now >= this.queuedLoopStartSec + this.loopDurationSec - 0.01) {
+      this.isPlaying = false;
+      this.scheduler.stop();
+      this.onPlaybackEnd?.();
     }
   };
+
+  /**
+   * Begin queuing the iteration that starts at `startSec`. A pending BPM change applies here, at
+   * the boundary. The start is the previous iteration's end, never `loopCount * newDuration`,
+   * which mis-anchors the clock after a tempo change.
+   */
+  private queueNextLoop(startSec: number): void {
+    if (this.pendingBpm !== null && this.pendingBpm !== this.currentBpm) {
+      this.currentBpm = this.pendingBpm;
+      this.pendingBpm = null;
+      this.buildEventList();
+    }
+    this.queuedLoopStartSec = startSec;
+    this.noteEventIndex = 0;
+    this.metronomeEventIndex = 0;
+    this.upcomingLoops.push({ startSec, durationSec: this.loopDurationSec, bpm: this.currentBpm });
+  }
+
+  /**
+   * After a stall longer than a whole loop (a frozen main thread, Chrome's per-minute timer budget
+   * for long-hidden tabs), jump to the iteration that contains `now` instead of walking every
+   * missed one. Late notes inside it are dropped by the queue functions.
+   */
+  private skipLoopsMissedWhileStalled(now: number): void {
+    const duration = this.loopDurationSec;
+    if (!this.isLooping || duration <= 0) return;
+    const missed = Math.floor((now - this.queuedLoopStartSec) / duration);
+    if (missed < 1) return;
+    this.queueNextLoop(this.queuedLoopStartSec + missed * duration);
+  }
+
+  /** Make the newest iteration that has started the playing one, for `getLoopTransportSnapshot`. */
+  private advancePlayingLoop(now: number): void {
+    while (this.upcomingLoops.length > 0 && this.upcomingLoops[0].startSec <= now) {
+      const loop = this.upcomingLoops.shift()!;
+      this.audioStartTimeSec = loop.startSec;
+      this.playingLoopDurationSec = loop.durationSec;
+      this.playingBpm = loop.bpm;
+    }
+  }
+
+  private queueNoteEvents(ctx: AudioContext, now: number, horizon: number): void {
+    while (this.noteEventIndex < this.noteEvents.length) {
+      const evt = this.noteEvents[this.noteEventIndex];
+      const audioTime = this.queuedLoopStartSec + evt.timeSec;
+
+      if (audioTime > horizon) break;
+      this.noteEventIndex++;
+      if (audioTime < now - RhythmPlayer.LATE_DROP_SEC) continue;
+
+      if (!evt.isTiedFrom) {
+        if (evt.sound !== 'rest') {
+          audioPlayer.stopAllDrumSounds(audioTime);
+        }
+        audioPlayer.playNowIfReady(evt.sound, evt.volume, evt.fadeDuration, audioTime);
+      }
+
+      const delayMs = Math.max(0, (audioTime - ctx.currentTime) * 1000);
+      const { measureIndex, noteIndex, repeatIteration, repeatCount } = evt;
+      this.scheduler.scheduleCallback(delayMs, () => {
+        if (!this.isPlaying) return;
+        this.onNotePlay?.(measureIndex, noteIndex, repeatIteration, repeatCount);
+      });
+    }
+  }
+
+  private queueMetronomeEvents(ctx: AudioContext, now: number, horizon: number): void {
+    while (this.metronomeEventIndex < this.metronomeEvents.length) {
+      const evt = this.metronomeEvents[this.metronomeEventIndex];
+      const audioTime = this.queuedLoopStartSec + evt.timeSec;
+
+      if (audioTime > horizon) break;
+      this.metronomeEventIndex++;
+      if (audioTime < now - RhythmPlayer.LATE_DROP_SEC) continue;
+
+      if (this.metronomeEnabled && evt.shouldClick) {
+        audioPlayer.playClickNowIfReady(evt.clickVolume, audioTime, evt.clickPlaybackRate);
+      }
+      if (this.metronomeEnabled && evt.shouldVoice && evt.voiceSampleId) {
+        scheduleVoiceSampleOnContext(
+          ctx,
+          this.voicePack,
+          evt.voiceSampleId,
+          audioTime,
+          evt.voiceVolume,
+          evt.subdivDurationSec,
+          (source) => {
+            this.voiceSources.push(source);
+          },
+        );
+      }
+      if (this.metronomeEnabled && evt.shouldDrum && evt.drumSound) {
+        audioPlayer.playNowIfReady(evt.drumSound, evt.drumVolume, evt.subdivDurationSec, audioTime);
+      }
+
+      const delayMs = Math.max(0, (audioTime - ctx.currentTime) * 1000);
+      const { measureIndex, positionInMeasure, isDownbeat } = evt;
+      this.scheduler.scheduleCallback(delayMs, () => {
+        if (!this.isPlaying) return;
+        this.onMetronomeBeat?.(measureIndex, positionInMeasure, isDownbeat);
+      });
+    }
+  }
 
   stop(): void {
     this.isPlaying = false;
@@ -782,8 +817,8 @@ class RhythmPlayer {
     if (!this.isPlaying || !this.currentRhythm) return null;
     return {
       audioStartTimeSec: this.audioStartTimeSec,
-      bpm: this.currentBpm,
-      loopDurationSec: this.loopDurationSec,
+      bpm: this.playingBpm,
+      loopDurationSec: this.playingLoopDurationSec,
       timeSignature: this.currentRhythm.timeSignature,
       isPlaying: this.isPlaying,
     };

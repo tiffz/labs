@@ -603,6 +603,101 @@ describe('rhythmPlayer timing accuracy', () => {
     });
   });
 
+  /*
+   * A hidden tab stops rAF and clamps timers (to 1 Hz in Chrome). The loop used to wrap only once
+   * `now` had passed the loop end, so each loop's opening notes were queued with a start time in
+   * the past, and Web Audio plays those at once: a burst at every loop start. The sorted-start-time
+   * tests above cannot see that, because a past start time still sorts in the right place. What
+   * the listener hears is the time each note is QUEUED against the clock, so assert that.
+   */
+  describe('hidden tab', () => {
+    const setHidden = (hidden: boolean) => {
+      Object.defineProperty(document, 'hidden', { configurable: true, value: hidden });
+      Object.defineProperty(document, 'visibilityState', {
+        configurable: true,
+        value: hidden ? 'hidden' : 'visible',
+      });
+      document.dispatchEvent(new Event('visibilitychange'));
+    };
+
+    afterEach(() => setHidden(false));
+
+    it.each([250, 1000])(
+      'never queues a note in the past with timers clamped to %ims',
+      async (clampMs) => {
+        const realSetInterval = window.setInterval.bind(window);
+        vi.spyOn(window, 'setInterval').mockImplementation(((fn: () => void, ms?: number) =>
+          realSetInterval(fn, Math.max(ms ?? 0, clampMs))) as typeof window.setInterval);
+
+        const lateBy: number[] = [];
+        vi.mocked(audioPlayer.playNowIfReady).mockImplementation((_s, _v, _f, startTime) => {
+          if (startTime !== undefined) lateBy.push(mockAudioCtx.currentTime - startTime);
+        });
+
+        // One 4/4 bar of sixteenths at 120 BPM: a 2s loop, a note every 125ms.
+        const parsedRhythm = parseRhythm('DTKT'.repeat(4), { numerator: 4, denominator: 4 });
+        await rhythmPlayer.play(parsedRhythm, 120);
+        pumpFrames(500);
+        setHidden(true);
+        vi.advanceTimersByTime(10_000);
+        setHidden(false);
+        pumpFrames(2000);
+
+        // ~12.5s of sixteenths: every note queued, none of them late.
+        expect(lateBy.length).toBeGreaterThanOrEqual(95);
+        expect(Math.max(...lateBy)).toBeLessThanOrEqual(0.001);
+      },
+    );
+
+    it('keeps the loop clock steady across loops while hidden', async () => {
+      const startTimes: number[] = [];
+      vi.mocked(audioPlayer.playNowIfReady).mockImplementation((_s, _v, _f, startTime) => {
+        if (startTime !== undefined) startTimes.push(startTime);
+      });
+
+      const parsedRhythm = parseRhythm('D---T---', { numerator: 2, denominator: 4 });
+      await rhythmPlayer.play(parsedRhythm, 120);
+      setHidden(true);
+      vi.advanceTimersByTime(6000);
+
+      // Queue order is play order: the gap between successive notes is one quarter note, every time.
+      expect(startTimes.length).toBeGreaterThanOrEqual(12);
+      for (let i = 1; i < startTimes.length; i++) {
+        expect(startTimes[i] - startTimes[i - 1]).toBeCloseTo(0.5, 6);
+      }
+    });
+    it('does not queue a click twice when metronome prefs change while hidden', async () => {
+      const prefs = {
+        subdivisionLevel: 1 as const,
+        sourceEnabled: { click: true, voice: false, drum: false },
+        subdivisionVolumes: { accent: 1, quarter: 0.8, eighth: 0, sixteenth: 0 },
+        levelChannelMutes: [],
+        channelClickMutes: [],
+        channelVoiceMutes: [],
+        channelDrumMutes: [],
+        clickGain: 0.5,
+        voiceGain: 0,
+        drumGain: 0,
+        voiceMode: 'counting' as const,
+        masterVolume: 100,
+        masterMuted: false,
+      };
+      const parsedRhythm = parseRhythm('D---T---K---S---', { numerator: 4, denominator: 4 });
+      await rhythmPlayer.play(
+        parsedRhythm, 120, undefined, undefined, true, undefined, undefined, undefined, 'sixteenth', prefs,
+      );
+      setHidden(true);
+      vi.advanceTimersByTime(500);
+      // The hidden horizon has already queued ~3.5s of clicks; a rebuild must not queue them again.
+      await rhythmPlayer.setMetronomePlaybackPrefs({ ...prefs, clickGain: 0.6 });
+      vi.advanceTimersByTime(5000);
+
+      const clickTimes = vi.mocked(audioPlayer.playClickNowIfReady).mock.calls.map((c) => c[1]);
+      expect(clickTimes.length).toBeGreaterThanOrEqual(10);
+      expect(new Set(clickTimes.map((t) => t?.toFixed(6))).size).toBe(clickTimes.length);
+    });
+  });
+
   describe('section repeats', () => {
     it('plays an x2 section twice, not three times', async () => {
       // The parser writes repeats out in full; the player expanded them again on top, so each x2
