@@ -17,9 +17,13 @@ A 3D visualization tool for practicing [Drawabox](https://drawabox.com/) form in
 3. CSG (Constructive Solid Geometry) operations compute intersection curves
 4. Intersection lines are rendered as highlighted edges
 
-### CSG output is brush-local
+### Intersection lines: how they stay put
 
-`three-bvh-csg`'s `Evaluator.evaluate()` returns geometry in brush A's local space and puts A's transform on the result brush (since 0.0.18). `intersectionComputer.ts` bakes `result.matrixWorld` into the edges before drawing them. `intersectionComputer.test.ts` asserts the lines land on the world-space overlap of both forms, so a library change that moves them fails CI.
+`three-bvh-csg` is pre-1.0, and 0.0.18 changed which frame `Evaluator.evaluate()` returns its result in (world space before, brush A's local space after). That broke every line for four months (#67). Three layers now guard it:
+
+1. **No dependence on the convention.** `intersectionComputer.ts` bakes each form's transform into its geometry and gives the brushes an identity transform, so world space and brush-local space are the same thing.
+2. **Geometry test.** `intersectionComputer.test.ts` asserts the lines land on the world-space overlap of both forms, for every pair of form types.
+3. **Screen test.** `e2e/smoke/forms-intersection-lines.spec.ts` renders four seeded scenes and checks the line pixels sit over forms, not bare background. It lives in `e2e/smoke/` on purpose: a Dependabot PR only touches `package*`, which runs the full smoke suite, and that suite does not include `src/forms/e2e/`.
 
 ## Usage
 
