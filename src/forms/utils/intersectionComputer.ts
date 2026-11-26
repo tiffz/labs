@@ -6,6 +6,10 @@ import {
   CylinderGeometry,
   ConeGeometry,
   Color,
+  Euler,
+  Matrix4,
+  Quaternion,
+  Vector3,
 } from 'three';
 import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js';
 import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js';
@@ -49,21 +53,24 @@ function createUnitGeometry(type: string): BoxGeometry | SphereGeometry | Cylind
 }
 
 /**
- * Creates a Brush from a FormConfig
- * Forms use unit-size geometry with scale applied
+ * Creates a Brush from a FormConfig, with the form's transform baked into world-space geometry.
+ *
+ * The brush itself keeps an identity transform. Which frame three-bvh-csg returns its result in
+ * has changed before (0.0.18 switched from world to brush A's local space, #67); with identity
+ * brushes the two are the same, so the output is world space under either convention.
  */
 function createBrushFromForm(form: FormConfig): Brush {
-  // Create unit-size geometry (matching how forms are rendered)
+  // Unit-size geometry, matching how forms are rendered
   const geometry = createUnitGeometry(form.type);
+  geometry.applyMatrix4(
+    new Matrix4().compose(
+      new Vector3(...form.position),
+      new Quaternion().setFromEuler(new Euler(...form.rotation)),
+      new Vector3(...form.scale)
+    )
+  );
   const brush = new Brush(geometry);
-  
-  // Apply position, rotation, and scale
-  brush.position.set(form.position[0], form.position[1], form.position[2]);
-  brush.rotation.set(form.rotation[0], form.rotation[1], form.rotation[2]);
-  brush.scale.set(form.scale[0], form.scale[1], form.scale[2]);
-  
   brush.updateMatrixWorld(true);
-  
   return brush;
 }
 
@@ -96,8 +103,8 @@ export function computeIntersectionEdges(
     // Use EdgesGeometry with very low threshold (10°) 
     // Captures nearly all intersection curves including shallow cone/pyramid angles
     const edgesGeometry = new EdgesGeometry(result.geometry, 10);
-    // three-bvh-csg returns the geometry in brush A's local space and puts A's transform on
-    // the result brush. The lines are drawn straight into the world scene, so bake it in.
+    // Identity for our world-space brushes; kept so a result that does carry a transform
+    // still lands in world space.
     edgesGeometry.applyMatrix4(result.matrixWorld);
 
     if (edgesGeometry.attributes.position.count === 0) {

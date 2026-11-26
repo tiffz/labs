@@ -115,6 +115,7 @@ const APP_SMOKE_SPECS = {
   count: [{ file: 'e2e/smoke/app-shells.spec.ts', grep: '/count/' }],
   forms: [
     'src/forms/e2e/forms-init.spec.ts',
+    'e2e/smoke/forms-intersection-lines.spec.ts',
     { file: 'e2e/smoke/app-shells.spec.ts', grep: '/forms/' },
     { file: 'e2e/smoke/responsive-all-apps.spec.ts', grep: '/forms/' },
   ],
