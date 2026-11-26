@@ -96,7 +96,10 @@ export function computeIntersectionEdges(
     // Use EdgesGeometry with very low threshold (10°) 
     // Captures nearly all intersection curves including shallow cone/pyramid angles
     const edgesGeometry = new EdgesGeometry(result.geometry, 10);
-    
+    // three-bvh-csg returns the geometry in brush A's local space and puts A's transform on
+    // the result brush. The lines are drawn straight into the world scene, so bake it in.
+    edgesGeometry.applyMatrix4(result.matrixWorld);
+
     if (edgesGeometry.attributes.position.count === 0) {
       brushA.geometry.dispose();
       brushB.geometry.dispose();

@@ -17,6 +17,10 @@ A 3D visualization tool for practicing [Drawabox](https://drawabox.com/) form in
 3. CSG (Constructive Solid Geometry) operations compute intersection curves
 4. Intersection lines are rendered as highlighted edges
 
+### CSG output is brush-local
+
+`three-bvh-csg`'s `Evaluator.evaluate()` returns geometry in brush A's local space and puts A's transform on the result brush (since 0.0.18). `intersectionComputer.ts` bakes `result.matrixWorld` into the edges before drawing them. `intersectionComputer.test.ts` asserts the lines land on the world-space overlap of both forms, so a library change that moves them fails CI.
+
 ## Usage
 
 1. Adjust the number of forms using the slider

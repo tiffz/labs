@@ -6,6 +6,7 @@ This plan turns dependency hygiene into a repeatable process with controlled ris
 
 - **Dependabot** (weekly, Monday): grouped minor/patch PRs for the root package, `workers/labs-session-bff`, and GitHub Actions. Majors are ignored — they land through the phases below.
 - **Auto-merge**: `.github/workflows/dependabot-auto-merge.yml` arms squash auto-merge on Dependabot minor/patch PRs; branch protection on `main` (required `checks`/`build`/`vitest`/`e2e`) means they only land green.
+- **Pre-1.0 "patches" are not safe.** Under semver, `0.0.x → 0.0.y` and `0.x → 0.y` may break the API, yet Dependabot files them as patch/minor and auto-merge lands them on green CI. Green only means something if a test covers the behaviour. `three-bvh-csg` 0.0.17 → 0.0.18 (#67) moved CSG results into brush-local space, and nothing tested the output, so Forms drew every intersection line in the wrong place for four months. List root deps on `0.x` with `node -e "const p=require('./package.json');for(const[k,v]of Object.entries({...p.dependencies,...p.devDependencies}))if(/^\^?0\./.test(v))console.log(k,v)"`; each one needs a behavioural test of the output the app consumes.
 - **Security fast lane** (weekly): `npm audit --omit=dev --audit-level=high` in `weekly-engineering-health.yml` fails the job and files a `security-audit` issue on high/critical advisories. `npm run audit:advisory` also runs (non-blocking) at the end of `presubmit:push`.
 - **Node pin**: `.nvmrc` (Node 22) + `engines` in `package.json`; workflows read `node-version-file: '.nvmrc'` so local/CI stay aligned.
 
